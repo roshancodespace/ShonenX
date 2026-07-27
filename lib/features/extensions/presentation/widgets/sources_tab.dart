@@ -1,4 +1,5 @@
 import 'dart:io';
+
 import 'package:anymex_extension_runtime_bridge/Services/Aniyomi/Models/Source.dart';
 import 'package:anymex_extension_runtime_bridge/anymex_extension_runtime_bridge.dart'
     as bridge;
@@ -46,11 +47,61 @@ class _LangHeaderTile extends StatelessWidget {
           ).colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
         ),
       ),
-      trailing: Icon(
-        isExpanded ? Icons.expand_less : Icons.expand_more,
-        color: Theme.of(context).colorScheme.onSurfaceVariant,
+      trailing: AnimatedRotation(
+        turns: isExpanded ? 0.5 : 0.0,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeInOutCubic,
+        child: Icon(
+          Icons.expand_more,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
       ),
       onTap: onTap,
+    );
+  }
+}
+
+class _SourceSettingsButton extends ConsumerWidget {
+  final SourceInfo sourceInfo;
+  final MediaType type;
+  final double iconSize;
+
+  const _SourceSettingsButton({
+    required this.sourceInfo,
+    required this.type,
+    this.iconSize = 20,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sourceImpl = type == MediaType.ANIME
+        ? ref.read(animeSourceProvider(sourceInfo)) as MediaSource
+        : ref.read(mangaSourceProvider(sourceInfo)) as MediaSource;
+
+    return FutureBuilder<List<SourceSetting>>(
+      future: sourceImpl.getSettingsSchema(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        return IconButton(
+          icon: Icon(Icons.settings_outlined, size: iconSize),
+          padding: EdgeInsets.all(iconSize <= 16 ? 4 : 8),
+          constraints: iconSize <= 16 ? const BoxConstraints() : null,
+          onPressed: () {
+            showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              builder: (context) => SourceSettingsSheet(
+                source: sourceInfo,
+                schema: snapshot.data!,
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }
@@ -63,139 +114,423 @@ class _GroupHeaderTile extends ConsumerWidget {
   final bool isInstalled;
   final MediaType type;
 
-  const _GroupHeaderTile(
-    this.name,
-    this.groupSources,
-    this.isExpanded,
-    this.onTap,
-    this.isInstalled,
-    this.type,
-  );
+  const _GroupHeaderTile({
+    required this.name,
+    required this.groupSources,
+    required this.isExpanded,
+    required this.onTap,
+    required this.isInstalled,
+    required this.type,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
     final isGroupProcessing = ref
         .watch(extensionsControllerProvider)
         .contains(name);
     final isNsfw = groupSources.any((s) => s.effectiveNsfw);
-    final bgColor = isNsfw ? Colors.red.withValues(alpha: 0.06) : null;
+    final controller = ref.read(extensionsControllerProvider.notifier);
+    final availableList = type == MediaType.ANIME
+        ? ref.watch(availableAnimeSourcesProvider).value
+        : (type == MediaType.MANGA
+              ? ref.watch(availableMangaSourcesProvider).value
+              : ref.watch(availableNovelSourcesProvider).value);
 
-    Widget trailingIcon = Icon(
-      isExpanded ? Icons.expand_less : Icons.expand_more,
-    );
-    Widget trailing = trailingIcon;
-
-    if (isInstalled) {
-      if (isGroupProcessing) {
-        trailing = Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Padding(
-              padding: EdgeInsets.all(12),
-              child: SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 10),
+          tileColor: isNsfw ? Colors.red.withValues(alpha: 0.05) : null,
+          leading: CachedNetworkImage(
+            imageUrl: groupSources.first.iconUrl ?? '',
+            width: 40,
+            height: 40,
+            fit: BoxFit.cover,
+            errorWidget: (_, __, ___) => const Icon(Icons.extension, size: 40),
+          ),
+          title: Text(
+            name,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w500,
             ),
-            trailingIcon,
-          ],
-        );
-      } else {
-        trailing = Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (groupSources.any((s) => s.hasUpdate))
-              Padding(
-                padding: const EdgeInsets.only(right: 6),
-                child: InkWell(
-                  onTap: () => ref
-                      .read(extensionsControllerProvider.notifier)
-                      .updateVariantGroup(context, name, type),
-                  borderRadius: BorderRadius.circular(12),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.primary.withValues(alpha: 0.15),
+            overflow: TextOverflow.ellipsis,
+          ),
+          subtitle: Text(
+            isNsfw
+                ? '18+ • ${groupSources.length} variants'
+                : '${groupSources.length} variants',
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: isNsfw
+                  ? Colors.red.shade400
+                  : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+              fontWeight: isNsfw ? FontWeight.w600 : null,
+            ),
+          ),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (isInstalled && isGroupProcessing)
+                const Padding(
+                  padding: EdgeInsets.all(12),
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                )
+              else if (isInstalled) ...[
+                if (groupSources.any((s) => s.hasUpdate))
+                  Padding(
+                    padding: const EdgeInsets.only(right: 6),
+                    child: InkWell(
+                      onTap: () =>
+                          controller.updateVariantGroup(context, name, type),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.primary.withValues(alpha: 0.4),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.arrow_upward_rounded,
-                          size: 13,
-                          color: Theme.of(context).colorScheme.primary,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
                         ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'UPDATE',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w800,
-                            color: Theme.of(context).colorScheme.primary,
-                            letterSpacing: 0.5,
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.primary.withValues(
+                            alpha: 0.15,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: theme.colorScheme.primary.withValues(
+                              alpha: 0.4,
+                            ),
                           ),
                         ),
-                      ],
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.arrow_upward_rounded,
+                              size: 13,
+                              color: theme.colorScheme.primary,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'UPDATE',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                                color: theme.colorScheme.primary,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
+                  ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline),
+                  onPressed: () => controller.uninstallVariantGroup(
+                    context,
+                    name,
+                    groupSources,
+                    type,
+                  ),
+                ),
+              ],
+              AnimatedRotation(
+                turns: isExpanded ? 0.5 : 0.0,
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeInOutCubic,
+                child: Icon(
+                  Icons.expand_more,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+          onTap: onTap,
+        ),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.fastOutSlowIn,
+          alignment: Alignment.topCenter,
+          child: isExpanded
+              ? Padding(
+                  padding: const EdgeInsets.only(
+                    left: 24,
+                    right: 10,
+                    top: 2,
+                    bottom: 6,
+                  ),
+                  child: Container(
+                    padding: const EdgeInsets.only(left: 10),
+                    decoration: BoxDecoration(
+                      border: Border(
+                        left: BorderSide(
+                          color: theme.colorScheme.primary.withValues(
+                            alpha: 0.4,
+                          ),
+                          width: 2,
+                        ),
+                      ),
+                    ),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final width = constraints.maxWidth;
+                        int crossAxisCount = 1;
+                        if (width >= 1050) {
+                          crossAxisCount = 4;
+                        } else if (width >= 720) {
+                          crossAxisCount = 3;
+                        } else if (width >= 420) {
+                          crossAxisCount = 2;
+                        }
+
+                        if (crossAxisCount == 1) {
+                          return Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: groupSources.map((source) {
+                              return _buildVariantSubItem(
+                                context,
+                                source,
+                                controller,
+                                availableList,
+                              );
+                            }).toList(),
+                          );
+                        }
+
+                        final columns = List.generate(
+                          crossAxisCount,
+                          (_) => <UnifiedSource>[],
+                        );
+                        for (int i = 0; i < groupSources.length; i++) {
+                          columns[i % crossAxisCount].add(groupSources[i]);
+                        }
+
+                        final rowChildren = <Widget>[];
+                        for (int i = 0; i < crossAxisCount; i++) {
+                          rowChildren.add(
+                            Expanded(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: columns[i].map((source) {
+                                  return _buildVariantSubItem(
+                                    context,
+                                    source,
+                                    controller,
+                                    availableList,
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+                          );
+
+                          if (i < crossAxisCount - 1) {
+                            rowChildren.add(
+                              Container(
+                                width: 1.5,
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.outline.withValues(
+                                    alpha: 0.6,
+                                  ),
+                                  borderRadius: BorderRadius.circular(1),
+                                ),
+                              ),
+                            );
+                          }
+                        }
+
+                        return IntrinsicHeight(
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: rowChildren,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                )
+              : const SizedBox.shrink(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildVariantSubItem(
+    BuildContext context,
+    UnifiedSource source,
+    ExtensionsController controller,
+    List<SourceInfo>? availableList,
+  ) {
+    final theme = Theme.of(context);
+    final isDefault = controller.isDefaultSource(source, type, availableList);
+    final langStr =
+        (source.lang ??
+                (source.sourceInfo?.type == SourceType.inbuilt
+                    ? 'inbuilt'
+                    : 'all'))
+            .toUpperCase();
+    final versionStr = source.version ?? source.versionLast;
+
+    String? engineStr;
+    if (source.isInbuilt) {
+      engineStr = 'INBUILT';
+    } else if (source.bridgeSource != null) {
+      final typeStr = source.bridgeSource.runtimeType.toString().toLowerCase();
+      if (typeStr.contains('aniyomi') || typeStr.contains('anymex')) {
+        engineStr = 'ANIYOMI';
+      } else if (typeStr.contains('tachiyomi')) {
+        engineStr = 'TACHIYOMI';
+      } else if (typeStr.contains('cloudstream')) {
+        engineStr = 'CLOUDSTREAM';
+      } else if (typeStr.contains('kotatsu')) {
+        engineStr = 'KOTATSU';
+      }
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 1),
+      child: Row(
+        children: [
+          // Left Pill: Info Container (Lang + Version + Engine)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: isDefault
+                  ? theme.colorScheme.primaryContainer.withValues(alpha: 0.3)
+                  : theme.colorScheme.surfaceContainerHigh.withValues(
+                      alpha: 0.5,
+                    ),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: isDefault
+                    ? theme.colorScheme.primary.withValues(alpha: 0.5)
+                    : theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
+                width: 1.0,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Language Tag Badge
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    langStr,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.5,
+                      color: theme.colorScheme.onPrimaryContainer,
+                    ),
+                  ),
+                ),
+                // Version Badge (if available)
+                if (versionStr != null && versionStr.isNotEmpty) ...[
+                  const SizedBox(width: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.secondaryContainer,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      'v$versionStr',
+                      style: TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w700,
+                        color: theme.colorScheme.onSecondaryContainer,
+                      ),
+                    ),
+                  ),
+                ],
+                // Extension Engine Badge (if available)
+                if (engineStr != null) ...[
+                  const SizedBox(width: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.tertiaryContainer,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      engineStr,
+                      style: TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.3,
+                        color: theme.colorScheme.onTertiaryContainer,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+
+          const Spacer(),
+          if (isInstalled && source.sourceInfo != null) ...[
+            if (isDefault)
+              Container(
+                margin: const EdgeInsets.only(right: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  'DEFAULT',
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.5,
+                    color: theme.colorScheme.onPrimary,
                   ),
                 ),
               ),
             IconButton(
-              icon: const Icon(Icons.delete_outline),
-              onPressed: () => ref
-                  .read(extensionsControllerProvider.notifier)
-                  .uninstallVariantGroup(context, name, type),
+              icon: Icon(
+                isDefault ? Icons.push_pin_rounded : Icons.push_pin_outlined,
+                size: 18,
+                color: isDefault
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+              ),
+              tooltip: isDefault
+                  ? 'Pinned as Default Source'
+                  : 'Pin as Default Source',
+              onPressed: () => controller.setDefaultSource(source, type),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
             ),
-            trailingIcon,
+            const SizedBox(width: 8),
+            _SourceSettingsButton(
+              sourceInfo: source.sourceInfo!,
+              type: type,
+              iconSize: 18,
+            ),
           ],
-        );
-      }
-    }
-
-    return ListTile(
-      tileColor: bgColor,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 10),
-      leading: CachedNetworkImage(
-        imageUrl: groupSources.first.iconUrl ?? '',
-        width: 40,
-        height: 40,
-        fit: BoxFit.cover,
-        errorWidget: (_, __, ___) => const Icon(Icons.extension, size: 40),
+        ],
       ),
-      title: Text(
-        name,
-        style: Theme.of(
-          context,
-        ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w500),
-        overflow: TextOverflow.ellipsis,
-      ),
-      subtitle: Text(
-        isNsfw
-            ? '18+ • ${groupSources.length} variants'
-            : '${groupSources.length} variants',
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: isNsfw
-              ? Colors.red.shade400
-              : Theme.of(
-                  context,
-                ).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
-          fontWeight: isNsfw ? FontWeight.w600 : null,
-        ),
-      ),
-      trailing: trailing,
-      onTap: onTap,
     );
   }
 }
@@ -576,61 +911,17 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
       outdatedGroups.putIfAbsent(s.name, () => []).add(s);
     }
 
-    // Flatten logic
-    final flatList = <SourceListItem>[];
+    final sectionWidgets = <Widget>[];
 
     if (widget.isInstalled && outdatedSources.isNotEmpty) {
-      flatList.add(UpdatesHeaderItem(outdatedSources, _isUpdatesExpanded));
-
-      if (_isUpdatesExpanded) {
-        for (final name in outdatedGroups.keys) {
-          final groupSources = outdatedGroups[name]!;
-          if (groupSources.length == 1) {
-            flatList.add(SingleSourceItem(groupSources.first, false));
-          } else {
-            final groupKey = '__UPDATE_GROUP__$name';
-            final isGroupExpanded = _expandedGroups.contains(groupKey);
-            flatList.add(
-              GroupHeaderItem(name, groupSources, isGroupExpanded, groupKey),
-            );
-
-            if (isGroupExpanded) {
-              for (final s in groupSources) {
-                flatList.add(SingleSourceItem(s, true));
-              }
-            }
-          }
-        }
-      }
+      sectionWidgets.add(
+        _buildUpdatesSection(context, outdatedSources, outdatedGroups),
+      );
     }
 
     for (final lang in sortedLangs) {
       final nameGroups = groupedByLang[lang]!;
-      final sortedNames = nameGroups.keys.toList();
-      final isLangExpanded = _expandedLangs.contains(lang);
-
-      flatList.add(LangHeaderItem(lang, nameGroups.length, isLangExpanded));
-
-      if (isLangExpanded) {
-        for (final name in sortedNames) {
-          final groupSources = nameGroups[name]!;
-          if (groupSources.length == 1) {
-            flatList.add(SingleSourceItem(groupSources.first, false));
-          } else {
-            final groupKey = '${lang}_$name';
-            final isGroupExpanded = _expandedGroups.contains(groupKey);
-            flatList.add(
-              GroupHeaderItem(name, groupSources, isGroupExpanded, groupKey),
-            );
-
-            if (isGroupExpanded) {
-              for (final s in groupSources) {
-                flatList.add(SingleSourceItem(s, true));
-              }
-            }
-          }
-        }
-      }
+      sectionWidgets.add(_buildLanguageSection(context, lang, nameGroups));
     }
 
     return RefreshIndicator(
@@ -644,62 +935,127 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(8, 8, 8, 120),
             sliver: SliverList.builder(
-              itemCount: flatList.length,
-              itemBuilder: (context, index) {
-                final item = flatList[index];
-
-                if (item is UpdatesHeaderItem) {
-                  return _UpdatesHeaderTile(
-                    item.outdatedSources,
-                    item.isExpanded,
-                    () {
-                      setState(() {
-                        _isUpdatesExpanded = !_isUpdatesExpanded;
-                      });
-                    },
-                  );
-                } else if (item is LangHeaderItem) {
-                  return _LangHeaderTile(
-                    item.lang,
-                    item.count,
-                    item.isExpanded,
-                    () {
-                      setState(() {
-                        if (item.isExpanded) {
-                          _expandedLangs.remove(item.lang);
-                        } else {
-                          _expandedLangs.add(item.lang);
-                        }
-                      });
-                    },
-                  );
-                } else if (item is GroupHeaderItem) {
-                  return _GroupHeaderTile(
-                    item.name,
-                    item.sources,
-                    item.isExpanded,
-                    () {
-                      setState(() {
-                        if (item.isExpanded) {
-                          _expandedGroups.remove(item.groupKey);
-                        } else {
-                          _expandedGroups.add(item.groupKey);
-                        }
-                      });
-                    },
-                    widget.isInstalled,
-                    widget.type,
-                  );
-                } else if (item is SingleSourceItem) {
-                  return _buildItem(context, item.source, item.isSubItem);
-                }
-
-                return const SizedBox.shrink();
-              },
+              itemCount: sectionWidgets.length,
+              itemBuilder: (context, index) => sectionWidgets[index],
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildUpdatesSection(
+    BuildContext context,
+    List<UnifiedSource> outdatedSources,
+    Map<String, List<UnifiedSource>> outdatedGroups,
+  ) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _UpdatesHeaderTile(outdatedSources, _isUpdatesExpanded, () {
+          setState(() {
+            _isUpdatesExpanded = !_isUpdatesExpanded;
+          });
+        }),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.fastOutSlowIn,
+          alignment: Alignment.topCenter,
+          child: _isUpdatesExpanded
+              ? Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: outdatedGroups.keys.map((name) {
+                    final groupSources = outdatedGroups[name]!;
+                    if (groupSources.length == 1) {
+                      return _buildItem(context, groupSources.first, false);
+                    } else {
+                      final groupKey = '__UPDATE_GROUP__$name';
+                      final isGroupExpanded = _expandedGroups.contains(
+                        groupKey,
+                      );
+                      return _GroupHeaderTile(
+                        name: name,
+                        groupSources: groupSources,
+                        isExpanded: isGroupExpanded,
+                        onTap: () {
+                          setState(() {
+                            if (isGroupExpanded) {
+                              _expandedGroups.remove(groupKey);
+                            } else {
+                              _expandedGroups.add(groupKey);
+                            }
+                          });
+                        },
+                        isInstalled: widget.isInstalled,
+                        type: widget.type,
+                      );
+                    }
+                  }).toList(),
+                )
+              : const SizedBox.shrink(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLanguageSection(
+    BuildContext context,
+    String lang,
+    Map<String, List<UnifiedSource>> nameGroups,
+  ) {
+    final isLangExpanded = _expandedLangs.contains(lang);
+    final sortedNames = nameGroups.keys.toList();
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _LangHeaderTile(lang, nameGroups.length, isLangExpanded, () {
+          setState(() {
+            if (isLangExpanded) {
+              _expandedLangs.remove(lang);
+            } else {
+              _expandedLangs.add(lang);
+            }
+          });
+        }),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.fastOutSlowIn,
+          alignment: Alignment.topCenter,
+          child: isLangExpanded
+              ? Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: sortedNames.map((name) {
+                    final groupSources = nameGroups[name]!;
+                    if (groupSources.length == 1) {
+                      return _buildItem(context, groupSources.first, false);
+                    } else {
+                      final groupKey = '${lang}_$name';
+                      final isGroupExpanded = _expandedGroups.contains(
+                        groupKey,
+                      );
+                      return _GroupHeaderTile(
+                        name: name,
+                        groupSources: groupSources,
+                        isExpanded: isGroupExpanded,
+                        onTap: () {
+                          setState(() {
+                            if (isGroupExpanded) {
+                              _expandedGroups.remove(groupKey);
+                            } else {
+                              _expandedGroups.add(groupKey);
+                            }
+                          });
+                        },
+                        isInstalled: widget.isInstalled,
+                        type: widget.type,
+                      );
+                    }
+                  }).toList(),
+                )
+              : const SizedBox.shrink(),
+        ),
+      ],
     );
   }
 
@@ -712,6 +1068,40 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
         .watch(extensionsControllerProvider)
         .contains(source.id);
     final controller = ref.read(extensionsControllerProvider.notifier);
+    final versionStr = source.version ?? source.versionLast;
+
+    String? engineStr;
+    if (source.isInbuilt) {
+      engineStr = 'INBUILT';
+    } else if (source.bridgeSource != null) {
+      final typeStr = source.bridgeSource.runtimeType.toString().toLowerCase();
+      if (typeStr.contains('aniyomi') || typeStr.contains('anymex')) {
+        engineStr = 'ANIYOMI';
+      } else if (typeStr.contains('tachiyomi')) {
+        engineStr = 'TACHIYOMI';
+      } else if (typeStr.contains('cloudstream')) {
+        engineStr = 'CLOUDSTREAM';
+      } else if (typeStr.contains('kotatsu')) {
+        engineStr = 'KOTATSU';
+      }
+    }
+
+    final subtitleParts = <String>[];
+    if (source.effectiveNsfw) subtitleParts.add('18+');
+    if (source.lang != null &&
+        source.lang!.toLowerCase() != 'all' &&
+        source.lang!.toLowerCase() != 'multi') {
+      subtitleParts.add(source.lang!.toUpperCase());
+    }
+    if (versionStr != null && versionStr.isNotEmpty) {
+      subtitleParts.add('v$versionStr');
+    }
+    if (engineStr != null) {
+      subtitleParts.add(engineStr);
+    }
+    final subtitleText = subtitleParts.isNotEmpty
+        ? subtitleParts.join(' • ')
+        : null;
 
     return SettingsActionTile(
       title: isSubItem
@@ -721,13 +1111,7 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
                         : 'all'))
                 .toUpperCase()
           : source.name,
-      subtitle: isSubItem
-          ? (source.effectiveNsfw ? '18+ • ${source.id}' : source.id)
-          : (source.lang != null && source.lang != 'all'
-                ? (source.effectiveNsfw
-                      ? '18+ • ${source.lang} • ${source.id}'
-                      : '${source.lang} • ${source.id}')
-                : (source.effectiveNsfw ? '18+ • ${source.id}' : source.id)),
+      subtitle: subtitleText,
       tileColor: source.isInbuilt
           ? Theme.of(context).colorScheme.secondaryContainer
           : (source.effectiveNsfw ? Colors.red.withValues(alpha: 0.06) : null),

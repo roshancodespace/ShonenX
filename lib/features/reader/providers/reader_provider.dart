@@ -1,159 +1,152 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/features/history/domain/models/read_history_entry.dart';
+import 'package:shonenx/features/history/providers/read_history_provider.dart';
 import 'package:shonenx/features/reader/domain/reader_mode.dart';
-import 'package:shonenx/shared/models/unified_episode.dart';
+import 'package:shonenx/features/tracking/engine/sync_engine.dart';
 import 'package:shonenx/source_engine/models/chapter_page.dart';
 import 'package:shonenx/source_engine/source_engine_provider.dart';
 
-class ChapterData {
-  final UnifiedEpisode episode;
-  final List<ChapterPage> pages;
-
-  const ChapterData({required this.episode, required this.pages});
-}
-
 class ReaderState {
-  final ChapterData? prevChapterData;
-  final ChapterData? currentChapterData;
-  final ChapterData? nextChapterData;
-  final bool isLoading;
-  final String? error;
+  final ReaderModeOnline mode;
+  final AsyncValue<List<ChapterPage>> pages;
+  final int currentPage;
+  final int totalPages;
+  final bool showOverlay;
 
   const ReaderState({
-    this.prevChapterData,
-    this.currentChapterData,
-    this.nextChapterData,
-    this.isLoading = true,
-    this.error,
+    required this.mode,
+    this.pages = const AsyncValue.loading(),
+    this.currentPage = 0,
+    this.totalPages = 0,
+    this.showOverlay = false,
   });
 
   ReaderState copyWith({
-    ChapterData? Function()? prevChapterData,
-    ChapterData? Function()? currentChapterData,
-    ChapterData? Function()? nextChapterData,
-    bool? isLoading,
-    String? error,
+    ReaderModeOnline? mode,
+    AsyncValue<List<ChapterPage>>? pages,
+    int? currentPage,
+    int? totalPages,
+    bool? showOverlay,
   }) {
     return ReaderState(
-      prevChapterData: prevChapterData != null
-          ? prevChapterData()
-          : this.prevChapterData,
-      currentChapterData: currentChapterData != null
-          ? currentChapterData()
-          : this.currentChapterData,
-      nextChapterData: nextChapterData != null
-          ? nextChapterData()
-          : this.nextChapterData,
-      isLoading: isLoading ?? this.isLoading,
-      error: error,
+      mode: mode ?? this.mode,
+      pages: pages ?? this.pages,
+      currentPage: currentPage ?? this.currentPage,
+      totalPages: totalPages ?? this.totalPages,
+      showOverlay: showOverlay ?? this.showOverlay,
     );
   }
 }
 
-class ReaderNotifier extends AsyncNotifier<ReaderState> {
-  late ReaderModeOnline mode;
-  bool _isLoadingAdjacent = false;
+class ReaderNotifier extends Notifier<ReaderState> {
+  late final ReaderModeOnline arg;
 
-  ReaderNotifier(this.mode);
+  ReaderNotifier(this.arg);
 
   @override
-  Future<ReaderState> build() async {
-    return _fetchInitial();
+  ReaderState build() {
+    final startPage = arg.startPosition == -1
+        ? 0
+        : (arg.startPosition > 0 ? arg.startPosition - 1 : 0);
+
+    Future.microtask(() => _fetchPages(arg));
+
+    return ReaderState(
+      mode: arg,
+      currentPage: startPage,
+      totalPages: 0,
+      showOverlay: false,
+    );
   }
 
-  Future<ReaderState> _fetchInitial() async {
+  Future<void> _fetchPages(ReaderModeOnline mode) async {
+    state = state.copyWith(pages: const AsyncValue.loading());
     try {
       final source = ref.read(mangaSourceProvider(mode.sourceInfo));
-      final pages = await source.getPages(mode.episode.id);
+      final pageList = await source.getPages(mode.episode.id);
 
-      if (pages.isEmpty) {
-        return const ReaderState(isLoading: false, error: 'No pages found.');
+      if (pageList.isEmpty) {
+        state = state.copyWith(
+          pages: AsyncValue.error(
+            Exception('No pages found for this chapter.'),
+            StackTrace.current,
+          ),
+        );
+        return;
       }
 
-      return ReaderState(
-        isLoading: false,
-        currentChapterData: ChapterData(episode: mode.episode, pages: pages),
+      final startPage = mode.startPosition == -1
+          ? pageList.length - 1
+          : (mode.startPosition > 0 ? mode.startPosition - 1 : 0).clamp(
+              0,
+              pageList.length - 1,
+            );
+
+      state = state.copyWith(
+        pages: AsyncValue.data(pageList),
+        totalPages: pageList.length,
+        currentPage: startPage,
       );
-    } catch (e) {
-      return ReaderState(isLoading: false, error: e.toString());
+
+      _saveHistory(startPage, pageList.length);
+    } catch (e, st) {
+      state = state.copyWith(pages: AsyncValue.error(e, st));
     }
   }
 
-  Future<void> retry() async {
-    state = const AsyncData(ReaderState(isLoading: true));
-    state = AsyncData(await _fetchInitial());
+  void setPage(int page) {
+    if (page < 0 || (state.totalPages > 0 && page >= state.totalPages)) return;
+    if (state.currentPage == page) return;
+
+    state = state.copyWith(currentPage: page);
+    _saveHistory(page, state.totalPages);
   }
 
-  Future<void> loadAdjacentChapter(
-    UnifiedEpisode nextEpisode, {
-    required bool next,
-  }) async {
-    if (state.value == null || state.value!.isLoading || _isLoadingAdjacent)
-      return;
-    final currentState = state.value!;
-
-    // Already loaded?
-    if (next) {
-      if (currentState.nextChapterData?.episode.id == nextEpisode.id) return;
-    } else {
-      if (currentState.prevChapterData?.episode.id == nextEpisode.id) return;
-    }
-
-    _isLoadingAdjacent = true;
-    try {
-      final source = ref.read(mangaSourceProvider(mode.sourceInfo));
-      final pages = await source.getPages(nextEpisode.id);
-
-      if (pages.isNotEmpty) {
-        if (next) {
-          state = AsyncData(
-            currentState.copyWith(
-              nextChapterData: () =>
-                  ChapterData(episode: nextEpisode, pages: pages),
-            ),
-          );
-        } else {
-          state = AsyncData(
-            currentState.copyWith(
-              prevChapterData: () =>
-                  ChapterData(episode: nextEpisode, pages: pages),
-            ),
-          );
-        }
-      }
-    } finally {
-      _isLoadingAdjacent = false;
-    }
+  void toggleOverlay() {
+    state = state.copyWith(showOverlay: !state.showOverlay);
   }
 
-  void shiftNext() {
-    if (state.value == null) return;
-    final currentState = state.value!;
-
-    state = AsyncData(
-      currentState.copyWith(
-        prevChapterData: () => currentState.currentChapterData,
-        currentChapterData: () => currentState.nextChapterData,
-        nextChapterData: () => null,
-      ),
-    );
+  void setOverlay(bool show) {
+    state = state.copyWith(showOverlay: show);
   }
 
-  void shiftPrev() {
-    if (state.value == null) return;
-    final currentState = state.value!;
+  void retry() {
+    _fetchPages(arg);
+  }
 
-    state = AsyncData(
-      currentState.copyWith(
-        nextChapterData: () => currentState.currentChapterData,
-        currentChapterData: () => currentState.prevChapterData,
-        prevChapterData: () => null,
-      ),
-    );
+  void _saveHistory(int pageIndex, int total) {
+    if (total == 0) return;
+    final savedPageNumber = pageIndex + 1;
+
+    final entry = ReadHistoryEntry()
+      ..chapterNumber = arg.episode.number
+      ..mangaId = arg.media.id
+      ..mangaTitle = arg.media.title.availableTitle
+      ..cover = arg.media.cover
+      ..banner = arg.media.banner
+      ..positionPage = savedPageNumber
+      ..totalPages = total
+      ..sourceId = arg.sourceInfo.id
+      ..sourceName = arg.sourceInfo.name
+      ..providerId = arg.media.providerId != arg.media.id
+          ? arg.media.providerId
+          : null
+      ..lastUpdated = DateTime.now();
+
+    ref.read(readHistoryRepositoryProvider).saveProgress(entry);
+    ref
+        .read(syncEngineProvider)
+        .processReading(
+          media: arg.media,
+          chapterNumber: arg.episode.number,
+          positionPage: savedPageNumber,
+          totalPages: total,
+        );
   }
 }
 
-final readerProvider =
-    AsyncNotifierProvider.family<ReaderNotifier, ReaderState, ReaderModeOnline>(
+final readerProvider = NotifierProvider.autoDispose
+    .family<ReaderNotifier, ReaderState, ReaderModeOnline>(
       ReaderNotifier.new,
       name: 'readerProvider',
     );

@@ -74,6 +74,10 @@ android {
     packaging {
         jniLibs {
             useLegacyPackaging = true
+            excludes += "**/libtorrent_flutter.so"
+        }
+        resources {
+            excludes += "META-INF/versions/9/OSGI-INF/MANIFEST.MF"
         }
     }
 }

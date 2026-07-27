@@ -1,7 +1,7 @@
 name: shonenx
 description: "Minimal yet feature-rich Anime/Manga Client"
 publish_to: "none"
-version: 2.1.0+4
+version: 2.1.1+4
 
 environment:
   sdk: ^3.9.2
@@ -139,8 +139,6 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  shaders:
-    - assets/shaders/liquid_glass.frag
 
 inno_bundle:
   id: 17cd6e7b-cedc-43b7-86b1-4de6ab23dd4d

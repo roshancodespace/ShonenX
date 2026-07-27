@@ -356,6 +356,7 @@ class _ReaderContentState extends ConsumerState<ReaderContent> {
       physics: const BouncingScrollPhysics(),
       itemCount: flatList.length,
       initialScrollIndex: initIndex,
+      minCacheExtent: 9999, // Preload multiple pages ahead and behind
       itemScrollController: widget.itemScrollController,
       scrollOffsetController: widget.scrollOffsetController,
       itemPositionsListener: widget.itemPositionsListener,
@@ -420,6 +421,7 @@ class _ReaderContentState extends ConsumerState<ReaderContent> {
       physics: const BouncingScrollPhysics(),
       controller: widget.pageController,
       reverse: widget.prefs.direction == ReaderDirection.rtl,
+      allowImplicitScrolling: true, // Preload adjacent pages
       itemCount: flatList.length,
       onPageChanged: (index) {
         if (index >= 0 && index < flatList.length) {

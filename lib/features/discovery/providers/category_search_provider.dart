@@ -1,12 +1,13 @@
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import 'package:shonenx/features/discovery/providers/discovery_prefs_provider.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_category.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
-import 'package:shonenx/source_engine/source_engine_provider.dart';
-import 'package:shonenx/source_engine/utils/media_type_extensions.dart';
 import 'package:shonenx/shared/providers/content_prefs_provider.dart';
 import 'package:shonenx/source_engine/models/paginated_result.dart';
+import 'package:shonenx/source_engine/source_engine_provider.dart';
+import 'package:shonenx/source_engine/utils/media_type_extensions.dart';
 
 class CategorySearchArgs {
   final String category;
@@ -57,7 +58,7 @@ class CategorySearchNotifier
 
       final catLower = arg.category.toLowerCase();
       TrackerCategory? matchedCategory;
-      
+
       if (catLower.contains('upcoming')) {
         matchedCategory = TrackerCategory.upcoming;
       } else if (catLower.contains('popular')) {
@@ -94,6 +95,9 @@ class CategorySearchNotifier
       final allSources = await ref.read(
         arg.type.availableSourcesProvider.future,
       );
+      if (!ref.mounted) {
+        return const PaginatedResult(items: [], hasNextPage: false);
+      }
 
       final activeSources = allSources
           .where((s) => prefs.activeSources.contains(s.id))
@@ -164,6 +168,7 @@ class CategorySearchNotifier
 
     try {
       final newPageResult = await _fetchPage(_currentPage);
+      if (!ref.mounted) return;
       final newItems = newPageResult.items;
       final hasNext = newPageResult.hasNextPage && newItems.isNotEmpty;
       state = AsyncData(
@@ -175,6 +180,7 @@ class CategorySearchNotifier
         ),
       );
     } catch (e, _) {
+      if (!ref.mounted) return;
       _currentPage--;
       state = AsyncData(
         PaginatedResult(items: currentData.items, hasNextPage: false),

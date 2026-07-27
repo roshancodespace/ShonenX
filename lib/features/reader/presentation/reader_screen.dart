@@ -589,6 +589,25 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                                   2 +
                                   _currentPageNotifier.value;
 
+                              double topAlignment = 0.0;
+                              if (readerPrefs.direction ==
+                                  ReaderDirection.webtoon) {
+                                final positions =
+                                    _itemPositionsListener.itemPositions.value;
+                                if (positions.isNotEmpty) {
+                                  final topItem = positions
+                                      .where((p) => p.itemTrailingEdge > 0)
+                                      .reduce(
+                                        (min, p) =>
+                                            p.itemLeadingEdge <
+                                                min.itemLeadingEdge
+                                            ? p
+                                            : min,
+                                      );
+                                  topAlignment = topItem.itemLeadingEdge;
+                                }
+                              }
+
                               ref
                                   .read(readerProvider(widget.mode).notifier)
                                   .shiftNext();
@@ -598,6 +617,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                                 if (_itemScrollController.isAttached) {
                                   _itemScrollController.jumpTo(
                                     index: jumpIndex,
+                                    alignment: topAlignment,
                                   );
                                 }
                               } else {
@@ -623,6 +643,25 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                                   (reallyHasPrev ? 1 : 0) +
                                   _currentPageNotifier.value;
 
+                              double topAlignment = 0.0;
+                              if (readerPrefs.direction ==
+                                  ReaderDirection.webtoon) {
+                                final positions =
+                                    _itemPositionsListener.itemPositions.value;
+                                if (positions.isNotEmpty) {
+                                  final topItem = positions
+                                      .where((p) => p.itemTrailingEdge > 0)
+                                      .reduce(
+                                        (min, p) =>
+                                            p.itemLeadingEdge <
+                                                min.itemLeadingEdge
+                                            ? p
+                                            : min,
+                                      );
+                                  topAlignment = topItem.itemLeadingEdge;
+                                }
+                              }
+
                               ref
                                   .read(readerProvider(widget.mode).notifier)
                                   .shiftPrev();
@@ -632,6 +671,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                                 if (_itemScrollController.isAttached) {
                                   _itemScrollController.jumpTo(
                                     index: jumpIndex,
+                                    alignment: topAlignment,
                                   );
                                 }
                               } else {

@@ -39,13 +39,25 @@ class ReaderWebtoonViewState extends State<ReaderWebtoonView> {
   int _pointerCount = 0;
   bool _isCtrlPressed = false;
   int _lastReportedPage = -1;
+  late bool _isInitialScrollDone;
 
   @override
   void initState() {
     super.initState();
+    _lastReportedPage = widget.initialPage;
+    _isInitialScrollDone = widget.initialPage == 0;
     _zoomController.addListener(_onZoomChanged);
     HardwareKeyboard.instance.addHandler(_onKeyEvent);
     _positionsListener.itemPositions.addListener(_onScroll);
+  }
+
+  @override
+  void didUpdateWidget(covariant ReaderWebtoonView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialPage != widget.initialPage) {
+      _lastReportedPage = widget.initialPage;
+      _isInitialScrollDone = widget.initialPage == 0;
+    }
   }
 
   @override
@@ -61,6 +73,7 @@ class ReaderWebtoonViewState extends State<ReaderWebtoonView> {
   void jumpToPage(int page) {
     if (page < 0 || page >= widget.pages.length) return;
     _lastReportedPage = page; // Prevent scroll listener from overriding
+    _isInitialScrollDone = true;
     if (_scrollController.isAttached) {
       _scrollController.jumpTo(index: page);
     }
@@ -69,6 +82,17 @@ class ReaderWebtoonViewState extends State<ReaderWebtoonView> {
   void _onScroll() {
     final positions = _positionsListener.itemPositions.value;
     if (positions.isEmpty) return;
+
+    if (!_isInitialScrollDone) {
+      final hasReachedInitial = positions.any(
+        (p) => p.index == widget.initialPage,
+      );
+      if (hasReachedInitial) {
+        _isInitialScrollDone = true;
+      } else {
+        return;
+      }
+    }
 
     final visible = positions.where(
       (p) => p.itemLeadingEdge <= 0.5 && p.itemTrailingEdge > 0.0,

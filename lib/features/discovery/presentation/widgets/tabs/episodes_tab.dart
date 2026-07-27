@@ -84,7 +84,7 @@ class EpisodesTabWidget extends ConsumerWidget {
                 final int startPosition;
                 if (historyEntry != null &&
                     historyEntry.positionPage > 0 &&
-                    historyEntry.positionPage < historyEntry.totalPages) {
+                    historyEntry.positionPage <= historyEntry.totalPages) {
                   startPosition = historyEntry.positionPage;
                 } else {
                   startPosition = 1;

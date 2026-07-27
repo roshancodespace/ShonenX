@@ -77,7 +77,6 @@ class ReaderPrefState {
   final bool showMiniStatus;
   final bool keepScreenOn;
   final bool tapToTurnPage;
-  final double autoScrollSpeed;
 
   const ReaderPrefState({
     this.direction = ReaderDirection.webtoon,
@@ -87,7 +86,6 @@ class ReaderPrefState {
     this.showMiniStatus = true,
     this.keepScreenOn = true,
     this.tapToTurnPage = true,
-    this.autoScrollSpeed = 1.0,
   });
 
   ReaderPrefState copyWith({
@@ -98,7 +96,6 @@ class ReaderPrefState {
     bool? showMiniStatus,
     bool? keepScreenOn,
     bool? tapToTurnPage,
-    double? autoScrollSpeed,
   }) {
     return ReaderPrefState(
       direction: direction ?? this.direction,
@@ -108,7 +105,6 @@ class ReaderPrefState {
       showMiniStatus: showMiniStatus ?? this.showMiniStatus,
       keepScreenOn: keepScreenOn ?? this.keepScreenOn,
       tapToTurnPage: tapToTurnPage ?? this.tapToTurnPage,
-      autoScrollSpeed: autoScrollSpeed ?? this.autoScrollSpeed,
     );
   }
 
@@ -120,7 +116,6 @@ class ReaderPrefState {
     'showMiniStatus': showMiniStatus,
     'keepScreenOn': keepScreenOn,
     'tapToTurnPage': tapToTurnPage,
-    'autoScrollSpeed': autoScrollSpeed,
   };
 
   factory ReaderPrefState.fromJson(Map<String, dynamic> json) {
@@ -144,7 +139,6 @@ class ReaderPrefState {
       showMiniStatus: json['showMiniStatus'] as bool? ?? true,
       keepScreenOn: json['keepScreenOn'] as bool? ?? true,
       tapToTurnPage: json['tapToTurnPage'] as bool? ?? true,
-      autoScrollSpeed: (json['autoScrollSpeed'] as num?)?.toDouble() ?? 1.0,
     );
   }
 }
@@ -198,11 +192,6 @@ class ReaderPrefsNotifier extends Notifier<ReaderPrefState> {
 
   void updateTapToTurnPage(bool tap) {
     state = state.copyWith(tapToTurnPage: tap);
-    _saveDb();
-  }
-
-  void updateAutoScrollSpeed(double speed) {
-    state = state.copyWith(autoScrollSpeed: speed);
     _saveDb();
   }
 

@@ -18,6 +18,23 @@ class ReaderModeOnline extends ReaderMode {
     required this.sourceInfo,
     this.startPosition = 1,
   });
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ReaderModeOnline &&
+          runtimeType == other.runtimeType &&
+          media.id == other.media.id &&
+          episode.id == other.episode.id &&
+          sourceInfo.id == other.sourceInfo.id &&
+          startPosition == other.startPosition;
+
+  @override
+  int get hashCode =>
+      media.id.hashCode ^
+      episode.id.hashCode ^
+      sourceInfo.id.hashCode ^
+      startPosition.hashCode;
 }
 
 class ReaderModeOffline extends ReaderMode {

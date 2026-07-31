@@ -1,8 +1,10 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
+
 import 'package:shonenx/core/network/http_client.dart';
 import 'package:shonenx/core/services/one_dm_service.dart';
 import 'package:shonenx/core/utils/device_info.dart';
@@ -14,10 +16,10 @@ import 'package:shonenx/shared/models/unified_episode.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/models/video_server.dart';
 import 'package:shonenx/shared/models/video_stream.dart';
-import 'package:shonenx/source_engine/models/source_info.dart';
-import 'package:shonenx/source_engine/source_engine_provider.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/shared/widgets/permission_sheet.dart';
+import 'package:shonenx/source_engine/models/source_info.dart';
+import 'package:shonenx/source_engine/source_engine_provider.dart';
 
 enum _BatchStep {
   selectEpisodes,
@@ -591,179 +593,181 @@ class _BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
   }
 
   Widget _buildFailedRecoveryState(ColorScheme cs, TextTheme textTheme) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: cs.errorContainer.withValues(alpha: 0.3),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: cs.error.withValues(alpha: 0.3)),
-          ),
-          child: Row(
-            children: [
-              Icon(Icons.error_outline_rounded, color: cs.error, size: 24),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '$_successCount episodes queued • ${_failedEpisodes.length} failed',
-                      style: textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        color: cs.error,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Would you like to choose a different server or quality for the failed episodes, or continue?',
-                      style: textTheme.bodySmall?.copyWith(
-                        color: cs.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        Text(
-          'FAILED EPISODES',
-          style: textTheme.labelSmall?.copyWith(
-            fontWeight: FontWeight.w800,
-            letterSpacing: 1.1,
-            color: cs.error,
-          ),
-        ),
-        const SizedBox(height: 8),
-        ConstrainedBox(
-          constraints: const BoxConstraints(maxHeight: 220),
-          child: ListView.separated(
-            shrinkWrap: true,
-            itemCount: _failedEpisodes.length,
-            separatorBuilder: (_, __) => const Divider(height: 1),
-            itemBuilder: (context, index) {
-              final ep = _failedEpisodes[index];
-              final epNumStr = ep.number.toString().contains('.0')
-                  ? ep.number.toInt().toString()
-                  : ep.number.toString();
-              final reason = _failureReasons[ep] ?? 'Unknown error';
-
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 52,
-                      alignment: Alignment.center,
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      decoration: BoxDecoration(
-                        color: cs.errorContainer.withValues(alpha: 0.4),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        'Ep $epNumStr',
-                        style: TextStyle(
+    return SingleChildScrollView(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: cs.errorContainer.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: cs.error.withValues(alpha: 0.3)),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.error_outline_rounded, color: cs.error, size: 24),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '$_successCount episodes queued • ${_failedEpisodes.length} failed',
+                        style: textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w800,
                           color: cs.error,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 12,
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            ep.title?.isNotEmpty == true
-                                ? '${ep.title}'
-                                : 'Episode $epNumStr',
-                            style: textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          Text(
-                            reason,
-                            style: textTheme.bodySmall?.copyWith(
-                              color: cs.error.withValues(alpha: 0.8),
-                              fontSize: 11,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
+                      const SizedBox(height: 4),
+                      Text(
+                        'Would you like to choose a different server or quality for the failed episodes, or continue?',
+                        style: textTheme.bodySmall?.copyWith(
+                          color: cs.onSurfaceVariant,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              );
-            },
-          ),
-        ),
-        const SizedBox(height: 24),
-        Row(
-          children: [
-            OutlinedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                if (_successCount > 0) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'Queued $_successCount episodes for download.',
-                      ),
-                    ),
-                  );
-                }
-              },
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 18,
-                  vertical: 14,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
-              child: const Text('Continue'),
+              ],
             ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: FilledButton.icon(
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'FAILED EPISODES',
+            style: textTheme.labelSmall?.copyWith(
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.1,
+              color: cs.error,
+            ),
+          ),
+          const SizedBox(height: 8),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 220),
+            child: ListView.separated(
+              shrinkWrap: true,
+              itemCount: _failedEpisodes.length,
+              separatorBuilder: (_, __) => const Divider(height: 1),
+              itemBuilder: (context, index) {
+                final ep = _failedEpisodes[index];
+                final epNumStr = ep.number.toString().contains('.0')
+                    ? ep.number.toInt().toString()
+                    : ep.number.toString();
+                final reason = _failureReasons[ep] ?? 'Unknown error';
+
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 52,
+                        alignment: Alignment.center,
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        decoration: BoxDecoration(
+                          color: cs.errorContainer.withValues(alpha: 0.4),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          'Ep $epNumStr',
+                          style: TextStyle(
+                            color: cs.error,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              ep.title?.isNotEmpty == true
+                                  ? '${ep.title}'
+                                  : 'Episode $epNumStr',
+                              style: textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              reason,
+                              style: textTheme.bodySmall?.copyWith(
+                                color: cs.error.withValues(alpha: 0.8),
+                                fontSize: 11,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              OutlinedButton(
                 onPressed: () {
-                  setState(() {
-                    _selectedEpisodes = _failedEpisodes.toSet();
-                    _failedEpisodes.clear();
-                    _failureReasons.clear();
-                  });
-                  _goToChoosePreference();
+                  Navigator.of(context).pop();
+                  if (_successCount > 0) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'Queued $_successCount episodes for download.',
+                        ),
+                      ),
+                    );
+                  }
                 },
-                icon: const Icon(
-                  Icons.settings_backup_restore_rounded,
-                  size: 18,
-                ),
-                label: Text(
-                  'Re-fetch (${_failedEpisodes.length})',
-                  style: const TextStyle(fontWeight: FontWeight.w700),
-                ),
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 14,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
+                child: const Text('Continue'),
               ),
-            ),
-          ],
-        ),
-      ],
+              const SizedBox(width: 10),
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: () {
+                    setState(() {
+                      _selectedEpisodes = _failedEpisodes.toSet();
+                      _failedEpisodes.clear();
+                      _failureReasons.clear();
+                    });
+                    _goToChoosePreference();
+                  },
+                  icon: const Icon(
+                    Icons.settings_backup_restore_rounded,
+                    size: 18,
+                  ),
+                  label: Text(
+                    'Re-fetch (${_failedEpisodes.length})',
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 

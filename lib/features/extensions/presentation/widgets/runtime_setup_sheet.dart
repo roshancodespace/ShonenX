@@ -5,6 +5,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get/get.dart';
+import 'package:shonenx/core/network/http_client.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/source_engine/source_registry.dart';
 import 'package:shonenx/features/extensions/providers/runtime_update_provider.dart';
@@ -58,11 +59,96 @@ class _RuntimeSetupSheetState extends ConsumerState<RuntimeSetupSheet> {
     }
   }
 
-  Future<void> _startSetup({bool force = false, String? version}) async {
+  Future<void> _selectRelease() async {
+    final controller = bridge.AnymeXRuntimeBridge.controller;
+    controller.updateStatus("Fetching releases...");
+    controller.isDownloading.value = true;
+
+    try {
+      final http = HTTP();
+      final response = await http.get(
+        'https://api.github.com/repos/RyanYuuki/AnymeXExtensionRuntimeBridge/releases',
+      );
+
+      controller.isDownloading.value = false;
+
+      if (!mounted) return;
+
+      if (response.json is! List) {
+        throw Exception("Failed to parse releases");
+      }
+
+      final releases = (response.json as List).cast<Map<String, dynamic>>();
+
+      final selected = await showModalBottomSheet<Map<String, dynamic>>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => AppBottomSheet(
+          title: 'Select Release',
+          child: SizedBox(
+            height: MediaQuery.of(context).size.height * 0.6,
+            child: ListView.builder(
+              itemCount: releases.length,
+              itemBuilder: (context, index) {
+                final release = releases[index];
+                final tagName = release['tag_name'] as String? ?? 'Unknown';
+                final name = release['name'] as String? ?? tagName;
+                final publishedAt = release['published_at'] as String? ?? '';
+
+                return ListTile(
+                  title: Text(name),
+                  subtitle: Text(publishedAt.split('T').first),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () => Navigator.pop(context, release),
+                );
+              },
+            ),
+          ),
+        ),
+      );
+
+      if (selected != null && mounted) {
+        final tagName = selected['tag_name'] as String;
+        final isAndroid = Platform.isAndroid;
+        final assetName = isAndroid
+            ? 'anymex_runtime_host.apk'
+            : 'anymex_desktop_runtime.jar';
+
+        final assets = selected['assets'] as List?;
+        final asset = assets?.firstWhere(
+          (a) => a['name'] == assetName,
+          orElse: () => null,
+        );
+
+        final downloadUrl =
+            asset?['browser_download_url'] as String? ??
+            'https://github.com/RyanYuuki/AnymeXExtensionRuntimeBridge/releases/download/$tagName/$assetName';
+
+        await _startSetup(
+          force: true,
+          version: tagName.replaceAll('v', ''),
+          customDownloadUrl: downloadUrl,
+        );
+      }
+    } catch (e) {
+      controller.isDownloading.value = false;
+      controller.setError(e.toString());
+    }
+  }
+
+  Future<void> _startSetup({
+    bool force = false,
+    String? version,
+    String? customDownloadUrl,
+  }) async {
     final controller = bridge.AnymeXRuntimeBridge.controller;
     controller.error.value = '';
     try {
-      await bridge.AnymeXRuntimeBridge.setupRuntime(force: force);
+      await bridge.AnymeXRuntimeBridge.setupRuntime(
+        force: force,
+        customDownloadUrl: customDownloadUrl,
+      );
       if (controller.isReady.value) {
         try {
           final latest =
@@ -296,37 +382,55 @@ class _RuntimeSetupSheetState extends ConsumerState<RuntimeSetupSheet> {
                         final updateAsync = ref.watch(runtimeUpdateProvider);
                         final updateVersion = updateAsync.value;
 
-                        return Row(
+                        return Column(
                           children: [
-                            Expanded(
-                              child: OutlinedButton.icon(
-                                onPressed: () => _startSetup(
-                                  force: true,
-                                  version: updateVersion,
-                                ),
-                                icon: const Icon(
-                                  Icons.system_update_alt_rounded,
-                                ),
-                                label: Text(
-                                  updateVersion != null
-                                      ? 'Update Available (v$updateVersion)'
-                                      : 'Force Update',
-                                ),
-                                style: OutlinedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 12,
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: OutlinedButton.icon(
+                                    onPressed: () => _startSetup(
+                                      force: true,
+                                      version: updateVersion,
+                                    ),
+                                    icon: const Icon(
+                                      Icons.system_update_alt_rounded,
+                                    ),
+                                    label: Text(
+                                      updateVersion != null
+                                          ? 'Update Available (v$updateVersion)'
+                                          : 'Force Update',
+                                    ),
+                                    style: OutlinedButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 12,
+                                      ),
+                                      foregroundColor: updateVersion != null
+                                          ? cs.primary
+                                          : null,
+                                      side: updateVersion != null
+                                          ? BorderSide(color: cs.primary)
+                                          : null,
+                                    ),
                                   ),
-                                  foregroundColor: updateVersion != null
-                                      ? cs.primary
-                                      : null,
-                                  side: updateVersion != null
-                                      ? BorderSide(color: cs.primary)
-                                      : null,
                                 ),
-                              ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: OutlinedButton.icon(
+                                    onPressed: _selectRelease,
+                                    icon: const Icon(Icons.list_alt_rounded),
+                                    label: const Text('Select Release'),
+                                    style: OutlinedButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 12,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
+                            const SizedBox(height: 12),
+                            SizedBox(
+                              width: double.infinity,
                               child: FilledButton(
                                 onPressed: () => Navigator.pop(context),
                                 style: FilledButton.styleFrom(

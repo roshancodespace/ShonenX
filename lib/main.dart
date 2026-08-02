@@ -1,6 +1,8 @@
+import 'dart:io';
 import 'dart:ui';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_single_instance/flutter_single_instance.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shonenx/app_init.dart';
 import 'package:shonenx/shared/providers/database_provider.dart';
@@ -19,6 +21,14 @@ final _riverpodLog = AppLogger.scope('RiverpodObserver');
 
 void main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+    await windowManager.ensureInitialized();
+    if (!await FlutterSingleInstance().isFirstInstance()) {
+      await FlutterSingleInstance().focus();
+      exit(0);
+    }
+  }
 
   FlutterError.onError = (details) {
     FlutterError.presentError(details);

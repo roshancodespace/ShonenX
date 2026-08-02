@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:go_router/go_router.dart';
+import 'package:shonenx/core/router/app_navigator.dart';
 import 'package:shonenx/features/player/domain/player_mode.dart';
 import 'package:shonenx/features/downloads/domain/models/download_task.dart';
 import 'package:shonenx/features/downloads/providers/download_prefs_provider.dart';
@@ -392,8 +392,9 @@ class _DownloadTileState extends ConsumerState<_DownloadTile> {
   String _formatDuration(Duration d) {
     final parts = <String>[];
     if (d.inHours > 0) parts.add('${d.inHours}h');
-    if (d.inMinutes.remainder(60) > 0)
+    if (d.inMinutes.remainder(60) > 0) {
       parts.add('${d.inMinutes.remainder(60)}m');
+    }
     parts.add('${d.inSeconds.remainder(60)}s');
     return parts.join(' ');
   }
@@ -465,10 +466,7 @@ class _DownloadedFilesTabState extends ConsumerState<_DownloadedFilesTab> {
 
   void _openFile(File file) {
     final name = file.path.split('/').last.replaceAll('.mp4', '');
-    context.push(
-      '/player',
-      extra: PlayerModeOffline(filePath: file.path, title: name),
-    );
+    context.pushPlayer(PlayerModeOffline(filePath: file.path, title: name));
   }
 
   Future<void> _openExternal(File file) async {

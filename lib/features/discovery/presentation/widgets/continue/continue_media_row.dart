@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+import 'package:shonenx/core/router/app_navigator.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/continue/continue_reading_card.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/continue/continue_watching_card.dart';
@@ -55,7 +55,7 @@ class ContinueMediaRow extends ConsumerWidget {
       height: layoutHeight,
       emptyText: isAnime ? 'No anime in this list.' : 'No manga in this list.',
       data: asyncData,
-      onMoreTap: () => context.push('/continue/${type.id}'),
+      onMoreTap: () => context.pushContinueHistory(type),
       itemBuilder: (context, dynamic entry) {
         if (isAnime) {
           final watchEntry = entry as WatchHistoryEntry;

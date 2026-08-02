@@ -2,9 +2,9 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shonenx/core/network/http_client.dart';
+import 'package:shonenx/core/router/app_navigator.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
 import 'package:shonenx/shared/widgets/svg_icon.dart';
@@ -91,7 +91,7 @@ class AboutScreen extends ConsumerWidget {
                 icon: Icons.system_update_outlined,
                 title: 'Check for Updates',
                 subtitle: 'Update settings and pre-release options',
-                onTap: () => context.push('/settings/updates'),
+                onTap: () => context.pushSettingsUpdates(),
               ),
               SettingsActionTile(
                 icon: Icons.code_rounded,

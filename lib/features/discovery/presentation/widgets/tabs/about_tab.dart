@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shonenx/core/router/app_navigator.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:shonenx/core/utils/formatting.dart';
@@ -451,7 +452,7 @@ class _GenresAndTagsSection extends StatelessWidget {
                   ),
                 ),
                 onPressed: () {
-                  context.go('/discover?genres=${Uri.encodeComponent(genre)}');
+                  context.goDiscover(genres: [genre]);
                 },
               );
             }).toList(),
@@ -961,7 +962,7 @@ class _TagChip extends StatelessWidget {
         ),
       ),
       onPressed: () {
-        context.go('/discover?tags=${Uri.encodeComponent(label)}');
+        context.goDiscover(tags: [label]);
       },
     );
   }

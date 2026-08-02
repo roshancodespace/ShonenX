@@ -19,6 +19,21 @@ final _riverpodLog = AppLogger.scope('RiverpodObserver');
 
 void main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+    _log.e(
+      'FlutterError: ${details.exception}',
+      details.exception,
+      details.stack,
+    );
+  };
+
+  PlatformDispatcher.instance.onError = (error, stack) {
+    _log.e('PlatformDispatcherError: $error', error, stack);
+    return true;
+  };
+
   final log = _log.child('main');
   try {
     await AppLogger.init();
@@ -54,7 +69,7 @@ void main(List<String> args) async {
       ),
     );
   } catch (e, st) {
-    _log.e(e.toString(), st);
+    _log.e(e.toString(), e, st);
 
     runApp(
       MaterialApp(

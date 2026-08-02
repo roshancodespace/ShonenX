@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+import 'package:shonenx/core/router/app_navigator.dart';
 import 'package:shonenx/shared/providers/content_prefs_provider.dart';
 import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
@@ -228,7 +228,7 @@ class HomeScreen extends ConsumerWidget {
                             const SizedBox(width: 8),
                             _HeaderButton(
                               tooltip: 'Settings',
-                              onTap: () => context.push('/settings'),
+                              onTap: () => context.pushSettings(),
                               icon: Icons.settings_outlined,
                             ),
                           ],
@@ -400,9 +400,8 @@ class HomeScreen extends ConsumerWidget {
         return HorizontalSection<UnifiedMedia>(
           title: section.title,
           height: style.getLayout(isWideMode: isWide).height,
-          onMoreTap: () => context.push(
-            '/category/${Uri.encodeComponent(section.title)}?type=${mediaType.id}',
-          ),
+          onMoreTap: () =>
+              context.pushDiscover(category: section.title, type: mediaType),
           data: data,
           skeletonItemBuilder: (context, index) {
             return MediaCard(
@@ -427,9 +426,10 @@ class HomeScreen extends ConsumerWidget {
               title: item.title.availableTitle,
               imageUrl: item.cover ?? '',
               style: style,
-              onTap: () => context.push(
-                '/details/${item.type.id}?tag=${section.id}-${item.id}',
-                extra: item,
+              onTap: () => context.pushDetails(
+                mediaType: item.type,
+                media: item,
+                tag: '${section.id}-${item.id}',
               ),
             );
           },
@@ -538,9 +538,7 @@ class HomeScreen extends ConsumerWidget {
     return HorizontalSection<UnifiedMedia>(
       title: title,
       height: style.getLayout(isWideMode: isWide).height,
-      onMoreTap: () => context.push(
-        '/category/${Uri.encodeComponent(title)}?type=${mediaType.id}',
-      ),
+      onMoreTap: () => context.pushDiscover(category: title, type: mediaType),
       data: sourceData,
       skeletonItemBuilder: (context, index) {
         return MediaCard(
@@ -565,9 +563,10 @@ class HomeScreen extends ConsumerWidget {
           title: item.title.availableTitle,
           imageUrl: item.cover ?? '',
           style: style,
-          onTap: () => context.push(
-            '/details/${item.type.id}?tag=$title-${item.id}',
-            extra: item,
+          onTap: () => context.pushDetails(
+            mediaType: item.type,
+            media: item,
+            tag: '$title-${item.id}',
           ),
         );
       },

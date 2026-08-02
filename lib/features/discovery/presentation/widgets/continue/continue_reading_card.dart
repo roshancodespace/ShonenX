@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+import 'package:shonenx/core/router/app_navigator.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/continue/continue_media_mixin.dart';
 import 'package:shonenx/features/history/domain/models/read_history_entry.dart';
@@ -49,13 +49,11 @@ class _ContinueReadingItemState extends ConsumerState<ContinueReadingItem>
             .read(continueReadingResolverProvider)
             .resolve(widget.entry);
         if (!mounted) return;
-        context.push(
-          '/details/${result.mode.media.type.id}',
-          extra: {
-            'media': result.mode.media,
-            'initialTabIndex': 1,
-            'autoPlayMode': result.mode,
-          },
+        context.pushDetails(
+          mediaType: result.mode.media.type,
+          media: result.mode.media,
+          initialTabIndex: 1,
+          autoPlayMode: result.mode,
         );
       },
       mediaType: MediaType.MANGA,
@@ -70,9 +68,9 @@ class _ContinueReadingItemState extends ConsumerState<ContinueReadingItem>
       mediaType: MediaType.MANGA,
       mediaTitle: widget.entry.mangaTitle,
       onViewDetails: () {
-        context.push(
-          '/details/manga',
-          extra: UnifiedMedia(
+        context.pushDetails(
+          mediaType: MediaType.MANGA,
+          media: UnifiedMedia(
             id: widget.entry.mangaId,
             title: MediaTitle(english: widget.entry.mangaTitle),
             type: MediaType.MANGA,

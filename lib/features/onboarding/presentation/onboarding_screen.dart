@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart'; // FIXED: Added to access kIsWeb
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+import 'package:shonenx/core/router/app_navigator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:collection/collection.dart';
 import 'package:shonenx/features/discovery/domain/models/home_section.dart';
@@ -61,9 +61,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   void _finishOnboarding() {
     ref.read(onboardingProvider.notifier).completeOnboarding();
-    // FIXED: Added mounted check before using context.go to prevent "deactivated widget" exceptions
     if (mounted) {
-      context.go('/home');
+      context.goHome();
     }
   }
 

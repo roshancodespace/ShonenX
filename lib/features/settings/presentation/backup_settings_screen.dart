@@ -5,7 +5,7 @@ import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+import 'package:shonenx/core/router/app_navigator.dart';
 import 'package:shonenx/shared/providers/backup_provider.dart';
 import 'package:shonenx/core/services/backup_service.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
@@ -87,7 +87,7 @@ class _BackupSettingsScreenState extends ConsumerState<BackupSettingsScreen> {
       final manifest = BackupManifest.fromJson(json);
 
       if (mounted) {
-        context.push('/settings/backup/preview', extra: manifest);
+        context.pushSettingsBackupPreview(manifest);
       }
     } catch (e) {
       if (mounted) _snack('Invalid backup file');

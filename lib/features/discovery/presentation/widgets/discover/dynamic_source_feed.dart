@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+import 'package:shonenx/core/router/app_navigator.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/cards/media_card.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/rows/horizontal_section.dart';
@@ -171,7 +171,7 @@ class SourceFeedRow extends ConsumerWidget {
             if (onSourceSelect != null) {
               onSourceSelect!(info.id);
             } else {
-              context.push('/discover?source=${info.id}&type=${type.id}');
+              context.pushDiscover(source: info.id, type: type);
             }
           },
           data: AsyncValue.data(items),
@@ -186,9 +186,10 @@ class SourceFeedRow extends ConsumerWidget {
               title: item.title.availableTitle,
               imageUrl: item.cover ?? '',
               style: style,
-              onTap: () => context.push(
-                '/details/${item.type.id}?tag=src-${info.id}-${item.id}',
-                extra: item,
+              onTap: () => context.pushDetails(
+                mediaType: item.type,
+                media: item,
+                tag: 'src-${info.id}-${item.id}',
               ),
             );
           },

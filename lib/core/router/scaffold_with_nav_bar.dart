@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shonenx/core/router/app_navigator.dart';
 
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/core/remote_config/providers/remote_config_provider.dart';
@@ -63,8 +64,8 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
       AppInit.pendingDeepLink = null;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          context.push('/settings');
-          context.push(pendingLink);
+          context.pushSettings();
+          context.pushPendingLink(pendingLink);
         }
       });
     }
@@ -108,7 +109,7 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
             providerId: providerId,
           );
 
-          context.push('/details/${mediaType.id}', extra: media);
+          context.pushDetails(mediaType: mediaType, media: media);
           return;
         }
       }
@@ -183,8 +184,8 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
         }
       } catch (_) {}
 
-      context.push('/settings');
-      context.push(target);
+      context.pushSettings();
+      context.pushPendingLink(target);
     }
   }
 
@@ -262,7 +263,7 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
           case LogicalKeyboardKey.digit3:
             widget.navigationShell.goBranch(2);
           case LogicalKeyboardKey.digit4:
-            context.push('/downloads');
+            context.pushDownloads();
         }
       },
       child: ResponsiveHandler(
@@ -744,7 +745,7 @@ class _DownloadButton extends ConsumerWidget {
             ],
           ),
         ),
-        onPressed: () => context.push('/downloads'),
+        onPressed: () => context.pushDownloads(),
       ),
     );
 
@@ -1159,7 +1160,7 @@ class _TallDownloadPillContent extends ConsumerWidget {
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
-        onTap: () => context.push('/downloads'),
+        onTap: () => context.pushDownloads(),
         child: Badge(
           isLabelVisible: count > 0,
           backgroundColor: cs.primary,

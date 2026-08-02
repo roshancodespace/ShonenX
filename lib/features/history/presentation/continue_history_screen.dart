@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shonenx/core/router/app_navigator.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/continue/continue_media_mixin.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/cards/media_card.dart';
@@ -89,9 +90,7 @@ class _ContinueHistoryScreenState extends ConsumerState<ContinueHistoryScreen> {
             title: Text(isAnime ? 'Continue Watching' : 'Continue Reading'),
             onTap: () {
               Navigator.pop(context);
-              context.push(
-                '/continue/${widget.type.id}/${Uri.encodeComponent(id)}',
-              );
+              context.pushContinueHistoryItem(widget.type, id);
             },
           ),
           ListTile(
@@ -99,9 +98,9 @@ class _ContinueHistoryScreenState extends ConsumerState<ContinueHistoryScreen> {
             title: const Text('Open Details (No Play)'),
             onTap: () {
               Navigator.pop(context);
-              context.push(
-                '/details/${widget.type.id}',
-                extra: UnifiedMedia(
+              context.pushDetails(
+                mediaType: widget.type,
+                media: UnifiedMedia(
                   id: id,
                   title: MediaTitle(english: title),
                   type: widget.type,
@@ -349,8 +348,9 @@ class _ContinueHistoryScreenState extends ConsumerState<ContinueHistoryScreen> {
                                       if (_isSelectionMode) {
                                         _toggleSelection(id);
                                       } else {
-                                        context.push(
-                                          '/continue/${widget.type.id}/${Uri.encodeComponent(id)}',
+                                        context.pushContinueHistoryItem(
+                                          widget.type,
+                                          id,
                                         );
                                       }
                                     },

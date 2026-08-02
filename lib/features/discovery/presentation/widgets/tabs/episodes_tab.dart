@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shonenx/core/router/app_navigator.dart';
 
 import 'package:shonenx/features/discovery/domain/media_args.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/sheets/download_sheet.dart';
@@ -90,9 +91,8 @@ class EpisodesTabWidget extends ConsumerWidget {
                   startPosition = 1;
                 }
 
-                context.push(
-                  '/reader',
-                  extra: ReaderModeOnline(
+                context.pushReader(
+                  ReaderModeOnline(
                     media: media,
                     episode: episode,
                     sourceInfo: sourceInfo,
@@ -116,9 +116,8 @@ class EpisodesTabWidget extends ConsumerWidget {
                   startPosition = null;
                 }
 
-                context.push(
-                  '/player',
-                  extra: PlayerModeOnline(
+                context.pushPlayer(
+                  PlayerModeOnline(
                     media: media,
                     episode: episode,
                     sourceInfo: sourceInfo,
@@ -522,7 +521,7 @@ class _NoExtensionsPlaceholder extends StatelessWidget {
             ),
             const SizedBox(height: 22),
             FilledButton.icon(
-              onPressed: () => context.push('/settings/extensions'),
+              onPressed: () => context.pushSettingsExtensions(),
               icon: const Icon(Icons.extension_rounded),
               label: const Text('Get Extensions'),
               style: FilledButton.styleFrom(

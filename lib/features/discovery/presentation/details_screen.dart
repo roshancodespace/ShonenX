@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 
+import 'package:shonenx/core/router/app_navigator.dart';
 import 'package:shonenx/features/auth/providers/auth_provider.dart';
 import 'package:shonenx/features/comments/presentation/widgets/comments_tab.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/tabs/about_tab.dart';
@@ -110,9 +111,9 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen>
       _autoLinkPrimaryTracker();
       if (!mounted) return;
       if (widget.autoPlayMode is PlayerMode) {
-        context.push('/player', extra: widget.autoPlayMode);
+        context.pushPlayer(widget.autoPlayMode as PlayerMode);
       } else if (widget.autoPlayMode is ReaderModeOnline) {
-        context.push('/reader', extra: widget.autoPlayMode);
+        context.pushReader(widget.autoPlayMode as ReaderModeOnline);
       }
     });
   }
@@ -814,7 +815,7 @@ class _DownloadAppBarButton extends ConsumerWidget {
         label: Text(activeCount.toString()),
         offset: const Offset(2, -2),
         child: AppIconButton(
-          onPressed: () => context.push('/downloads'),
+          onPressed: () => context.pushDownloads(),
           backgroundColor: colorScheme.primaryContainer,
           foregroundColor: colorScheme.onPrimaryContainer,
           icon: Stack(

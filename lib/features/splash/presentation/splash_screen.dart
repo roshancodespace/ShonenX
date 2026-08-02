@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+import 'package:shonenx/core/router/app_navigator.dart';
 import 'package:shonenx/app_init.dart';
 import 'package:shonenx/features/onboarding/providers/onboarding_provider.dart';
 import 'package:shonenx/features/splash/presentation/splash_quotes.dart';
@@ -113,18 +113,18 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
           AppInit.pendingDeepLink = null;
           final onboardingComplete = ref.read(onboardingProvider);
           if (onboardingComplete) {
-            context.go('/home');
+            context.goHome();
           } else {
-            context.go('/onboarding');
+            context.goOnboarding();
           }
-          context.push('/settings');
-          context.push(pendingLink);
+          context.pushSettings();
+          context.pushPendingLink(pendingLink);
         } else {
           final onboardingComplete = ref.read(onboardingProvider);
           if (onboardingComplete) {
-            context.go('/home');
+            context.goHome();
           } else {
-            context.go('/onboarding');
+            context.goOnboarding();
           }
         }
       }

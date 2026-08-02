@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+import 'package:shonenx/core/router/app_navigator.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/cards/media_card.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/rows/horizontal_section.dart';
@@ -111,7 +111,7 @@ class GenreFeedRow extends ConsumerWidget {
             if (onGenreSelect != null) {
               onGenreSelect!(genre);
             } else {
-              context.push('/discover?genres=$genre&type=${type.id}');
+              context.pushDiscover(genres: [genre], type: type);
             }
           },
           data: AsyncValue.data(items),
@@ -126,9 +126,10 @@ class GenreFeedRow extends ConsumerWidget {
               title: item.title.availableTitle,
               imageUrl: item.cover ?? '',
               style: style,
-              onTap: () => context.push(
-                '/details/${item.type.id}?tag=feed-$genre-${item.id}',
-                extra: item,
+              onTap: () => context.pushDetails(
+                mediaType: item.type,
+                media: item,
+                tag: 'feed-$genre-${item.id}',
               ),
             );
           },

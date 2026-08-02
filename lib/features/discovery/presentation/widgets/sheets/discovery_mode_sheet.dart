@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shonenx/core/router/app_navigator.dart';
 
 import 'package:shonenx/features/discovery/providers/discovery_prefs_provider.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
@@ -487,7 +488,7 @@ class _SourceConfig extends ConsumerWidget {
         InkWell(
           onTap: () {
             context.pop();
-            context.push('/settings/extensions');
+            context.pushSettingsExtensions();
           },
           borderRadius: BorderRadius.circular(12),
           child: Container(

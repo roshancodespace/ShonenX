@@ -23,6 +23,11 @@ enum MediaType {
   }
 
   String get id => name.toLowerCase();
+
+  static MediaType fromId(String id) => MediaType.values.firstWhere(
+    (t) => t.id == id,
+    orElse: () => throw ArgumentError('Invalid MediaType id: $id'),
+  );
 }
 
 enum TitlePreference {

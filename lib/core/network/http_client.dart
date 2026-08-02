@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/caching/cache_manager.dart';
@@ -8,9 +9,17 @@ import 'package:shonenx/core/caching/domain/cache_entry.dart';
 class HttpResponse {
   final int statusCode;
   final Map<String, String>? headers;
-  final String body;
+  final Uint8List bodyBytes;
 
-  HttpResponse(this.statusCode, this.body, {this.headers});
+  HttpResponse(this.statusCode, this.bodyBytes, {this.headers});
+
+  String get body {
+    try {
+      return utf8.decode(bodyBytes);
+    } catch (_) {
+      return String.fromCharCodes(bodyBytes);
+    }
+  }
 
   dynamic get json {
     if (statusCode < 200 || statusCode >= 300) {
@@ -119,7 +128,7 @@ class HTTP {
         isCacheable) {
       final cached = await _cache.get(key);
       if (cached != null) {
-        return HttpResponse(200, utf8.decode(cached.bodyBytes));
+        return HttpResponse(200, Uint8List.fromList(cached.bodyBytes));
       }
     }
 
@@ -142,10 +151,15 @@ class HTTP {
       onTimeout: () => throw HttpException('Request timeout'),
     );
 
-    final resBody = await res.transform(utf8.decoder).join();
+    final builder = BytesBuilder();
+    await for (final chunk in res) {
+      builder.add(chunk);
+    }
+    final bodyBytes = builder.toBytes();
+
     final response = HttpResponse(
       res.statusCode,
-      resBody,
+      bodyBytes,
       headers: res.headers.contentType == null
           ? {}
           : {'content-type': res.headers.contentType!.mimeType},
@@ -159,12 +173,12 @@ class HTTP {
         isCacheable &&
         res.statusCode >= 200 &&
         res.statusCode < 300 &&
-        resBody.trim().isNotEmpty) {
+        bodyBytes.isNotEmpty) {
       await _cache.put(
         key,
         CacheEntry()
           ..key = key
-          ..bodyBytes = utf8.encode(resBody)
+          ..bodyBytes = bodyBytes
           ..etag = res.headers.value(HttpHeaders.etagHeader)
           ..lastModified = res.headers.value(HttpHeaders.lastModifiedHeader),
         effectiveTtl,

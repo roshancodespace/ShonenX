@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+import 'package:shonenx/core/router/app_navigator.dart';
+import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/cards/media_card.dart';
 import 'package:shonenx/features/library/providers/cloud_library_provider.dart';
@@ -133,9 +134,10 @@ class LibraryGridWidget extends ConsumerWidget {
                     imageUrl: entry.cover,
                     style: cardStyle,
                     onTap: () {
-                      context.push(
-                        '/details/${entry.type}',
-                        extra: entry.toUnifiedMedia(),
+                      context.pushDetails(
+                        mediaType: MediaType.fromId(entry.type!),
+                        media: entry.toUnifiedMedia(),
+                        tag: 'library-${entry.id}',
                       );
                     },
                   );

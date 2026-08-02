@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shonenx/core/network/http_client.dart';
 
@@ -36,7 +35,7 @@ class HTTPAdapter extends http.BaseClient {
     }
 
     return http.StreamedResponse(
-      Stream.value(utf8.encode(response.body)),
+      Stream.value(response.bodyBytes),
       response.statusCode,
       headers: response.headers ?? {},
     );

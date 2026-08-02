@@ -810,287 +810,296 @@ class _BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
         ? _referenceEpisode?.number.toInt().toString()
         : _referenceEpisode?.number.toString();
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: BoxDecoration(
-            color: isFallback
-                ? cs.errorContainer.withValues(alpha: 0.35)
-                : cs.surfaceContainerHighest.withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                isFallback
-                    ? Icons.warning_amber_rounded
-                    : Icons.auto_awesome_rounded,
-                color: isFallback ? cs.error : cs.primary,
-                size: 20,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      isFallback
-                          ? 'Preference Missing for Episode $epNumStr'
-                          : 'Template Reference: Episode $epNumStr',
-                      style: textTheme.labelLarge?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: isFallback ? cs.error : cs.onSurface,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      isFallback
-                          ? 'Please choose a new server & quality for the remaining ${_sortedSelected.length - _currentIndex} episodes.'
-                          : 'Select your preferred server and quality for all ${_selectedEpisodes.length} selected episodes.',
-                      style: textTheme.bodySmall?.copyWith(
-                        color: cs.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 20),
-        Text(
-          'SELECT SERVER',
-          style: textTheme.labelSmall?.copyWith(
-            fontWeight: FontWeight.w800,
-            letterSpacing: 1.1,
-            color: cs.primary,
-          ),
-        ),
-        const SizedBox(height: 10),
-        if (_serversError != null)
-          Text(
-            'Error loading servers: $_serversError',
-            style: TextStyle(color: cs.error),
-          )
-        else if (_availableServers == null)
-          const Center(
-            child: Padding(
-              padding: EdgeInsets.all(16),
-              child: CircularProgressIndicator(),
-            ),
-          )
-        else if (_availableServers!.isEmpty)
-          const Text('No servers available.')
-        else if (_availableServers!.length == 1)
+    return SingleChildScrollView(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
-              color: cs.primaryContainer.withValues(alpha: 0.35),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: cs.primary.withValues(alpha: 0.3)),
+              color: isFallback
+                  ? cs.errorContainer.withValues(alpha: 0.35)
+                  : cs.surfaceContainerHighest.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(14),
             ),
             child: Row(
               children: [
-                Icon(Icons.info_outline_rounded, color: cs.primary, size: 18),
-                const SizedBox(width: 10),
+                Icon(
+                  isFallback
+                      ? Icons.warning_amber_rounded
+                      : Icons.auto_awesome_rounded,
+                  color: isFallback ? cs.error : cs.primary,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
                 Expanded(
-                  child: Text(
-                    'Only 1 server available: ${_availableServers!.first.name} • ${_availableServers!.first.type.displayName} (Auto-selected)',
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        isFallback
+                            ? 'Preference Missing for Episode $epNumStr'
+                            : 'Template Reference: Episode $epNumStr',
+                        style: textTheme.labelLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: isFallback ? cs.error : cs.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        isFallback
+                            ? 'Please choose a new server & quality for the remaining ${_sortedSelected.length - _currentIndex} episodes.'
+                            : 'Select your preferred server and quality for all ${_selectedEpisodes.length} selected episodes.',
+                        style: textTheme.bodySmall?.copyWith(
+                          color: cs.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'SELECT SERVER',
+            style: textTheme.labelSmall?.copyWith(
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.1,
+              color: cs.primary,
+            ),
+          ),
+          const SizedBox(height: 10),
+          if (_serversError != null)
+            Text(
+              'Error loading servers: $_serversError',
+              style: TextStyle(color: cs.error),
+            )
+          else if (_availableServers == null)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(16),
+                child: CircularProgressIndicator(),
+              ),
+            )
+          else if (_availableServers!.isEmpty)
+            const Text('No servers available.')
+          else if (_availableServers!.length == 1)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: cs.primaryContainer.withValues(alpha: 0.35),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: cs.primary.withValues(alpha: 0.3)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline_rounded, color: cs.primary, size: 18),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Only 1 server available: ${_availableServers!.first.name} • ${_availableServers!.first.type.displayName} (Auto-selected)',
+                      style: TextStyle(
+                        color: cs.onSurface,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _availableServers!.map((server) {
+                final isSelected = _selectedServer == server;
+                return ChoiceChip(
+                  label: Text(
+                    '${server.name} • ${server.type.displayName}',
                     style: TextStyle(
-                      color: cs.onSurface,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
+                      fontWeight: isSelected
+                          ? FontWeight.w700
+                          : FontWeight.w500,
                     ),
                   ),
-                ),
-              ],
+                  selected: isSelected,
+                  showCheckmark: false,
+                  onSelected: (selected) {
+                    if (selected) {
+                      _fetchStreamsForReference(_referenceEpisode!, server);
+                    }
+                  },
+                  selectedColor: cs.primaryContainer,
+                  backgroundColor: cs.surfaceContainerHighest.withValues(
+                    alpha: 0.4,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(
+                      color: isSelected ? cs.primary : Colors.transparent,
+                    ),
+                  ),
+                );
+              }).toList(),
             ),
-          )
-        else
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _availableServers!.map((server) {
-              final isSelected = _selectedServer == server;
-              return ChoiceChip(
-                label: Text(
-                  '${server.name} • ${server.type.displayName}',
-                  style: TextStyle(
-                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                  ),
-                ),
-                selected: isSelected,
-                showCheckmark: false,
-                onSelected: (selected) {
-                  if (selected) {
-                    _fetchStreamsForReference(_referenceEpisode!, server);
-                  }
-                },
-                selectedColor: cs.primaryContainer,
-                backgroundColor: cs.surfaceContainerHighest.withValues(
-                  alpha: 0.4,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(
-                    color: isSelected ? cs.primary : Colors.transparent,
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        const SizedBox(height: 20),
-        Text(
-          'SELECT VIDEO QUALITY',
-          style: textTheme.labelSmall?.copyWith(
-            fontWeight: FontWeight.w800,
-            letterSpacing: 1.1,
-            color: cs.primary,
-          ),
-        ),
-        const SizedBox(height: 10),
-        if (_loadingStreams)
-          const Center(
-            child: Padding(
-              padding: EdgeInsets.all(16),
-              child: CircularProgressIndicator(),
+          const SizedBox(height: 20),
+          Text(
+            'SELECT VIDEO QUALITY',
+            style: textTheme.labelSmall?.copyWith(
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.1,
+              color: cs.primary,
             ),
-          )
-        else if (_streamsError != null)
-          Text(
-            'Error loading qualities: $_streamsError',
-            style: TextStyle(color: cs.error),
-          )
-        else if (_availableStreams == null || _availableStreams!.isEmpty)
-          Text(
-            'No stream links found for this server.',
-            style: TextStyle(color: cs.onSurfaceVariant),
-          )
-        else
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _availableStreams!.map((stream) {
-              final isSelected = _selectedStream == stream;
-              return ChoiceChip(
-                label: Text(
-                  stream.quality,
-                  style: TextStyle(
-                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                  ),
-                ),
-                selected: isSelected,
-                showCheckmark: false,
-                onSelected: (selected) {
-                  if (selected) {
-                    setState(() => _selectedStream = stream);
-                  }
-                },
-                selectedColor: cs.primaryContainer,
-                backgroundColor: cs.surfaceContainerHighest.withValues(
-                  alpha: 0.4,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(
-                    color: isSelected ? cs.primary : Colors.transparent,
-                  ),
-                ),
-              );
-            }).toList(),
           ),
-        const SizedBox(height: 28),
-        Builder(
-          builder: (context) {
-            final isOneDMInstalledAsync = ref.watch(isOneDMInstalledProvider);
-            final isOneDMInstalled = isOneDMInstalledAsync.value ?? false;
+          const SizedBox(height: 10),
+          if (_loadingStreams)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(16),
+                child: CircularProgressIndicator(),
+              ),
+            )
+          else if (_streamsError != null)
+            Text(
+              'Error loading qualities: $_streamsError',
+              style: TextStyle(color: cs.error),
+            )
+          else if (_availableStreams == null || _availableStreams!.isEmpty)
+            Text(
+              'No stream links found for this server.',
+              style: TextStyle(color: cs.onSurfaceVariant),
+            )
+          else
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _availableStreams!.map((stream) {
+                final isSelected = _selectedStream == stream;
+                return ChoiceChip(
+                  label: Text(
+                    stream.quality,
+                    style: TextStyle(
+                      fontWeight: isSelected
+                          ? FontWeight.w700
+                          : FontWeight.w500,
+                    ),
+                  ),
+                  selected: isSelected,
+                  showCheckmark: false,
+                  onSelected: (selected) {
+                    if (selected) {
+                      setState(() => _selectedStream = stream);
+                    }
+                  },
+                  selectedColor: cs.primaryContainer,
+                  backgroundColor: cs.surfaceContainerHighest.withValues(
+                    alpha: 0.4,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(
+                      color: isSelected ? cs.primary : Colors.transparent,
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          const SizedBox(height: 28),
+          Builder(
+            builder: (context) {
+              final isOneDMInstalledAsync = ref.watch(isOneDMInstalledProvider);
+              final isOneDMInstalled = isOneDMInstalledAsync.value ?? false;
 
-            return Row(
-              children: [
-                if (!isFallback) ...[
-                  OutlinedButton(
-                    onPressed: () => setState(
-                      () => _currentStep = _BatchStep.selectEpisodes,
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 14,
+              return Row(
+                children: [
+                  if (!isFallback) ...[
+                    OutlinedButton(
+                      onPressed: () => setState(
+                        () => _currentStep = _BatchStep.selectEpisodes,
                       ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      child: const Text('Back'),
+                    ),
+                    const SizedBox(width: 10),
+                  ],
+                  if (isOneDMInstalled && Platform.isAndroid) ...[
+                    OutlinedButton.icon(
+                      onPressed:
+                          (_selectedServer == null || _selectedStream == null)
+                          ? null
+                          : () => _startQueueLoop(
+                              fromIndexZero: !isFallback,
+                              overrideOneDM: true,
+                            ),
+                      icon: Icon(
+                        Icons.cloud_download_outlined,
+                        size: 18,
+                        color: cs.primary,
+                      ),
+                      label: const Text('1DM Batch'),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 14,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
                       ),
                     ),
-                    child: const Text('Back'),
+                    const SizedBox(width: 10),
+                  ],
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed:
+                          (_selectedServer == null || _selectedStream == null)
+                          ? null
+                          : () => _startQueueLoop(fromIndexZero: !isFallback),
+                      icon: Icon(
+                        isFallback
+                            ? Icons.play_arrow_rounded
+                            : Icons.download_rounded,
+                      ),
+                      label: Text(
+                        isFallback
+                            ? 'Resume Downloading'
+                            : 'Start Batch Download (${_selectedEpisodes.length})',
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                    ),
                   ),
-                  const SizedBox(width: 10),
                 ],
-                if (isOneDMInstalled && Platform.isAndroid) ...[
-                  OutlinedButton.icon(
-                    onPressed:
-                        (_selectedServer == null || _selectedStream == null)
-                        ? null
-                        : () => _startQueueLoop(
-                            fromIndexZero: !isFallback,
-                            overrideOneDM: true,
-                          ),
-                    icon: Icon(
-                      Icons.cloud_download_outlined,
-                      size: 18,
-                      color: cs.primary,
-                    ),
-                    label: const Text('1DM Batch'),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 14,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                ],
-                Expanded(
-                  child: FilledButton.icon(
-                    onPressed:
-                        (_selectedServer == null || _selectedStream == null)
-                        ? null
-                        : () => _startQueueLoop(fromIndexZero: !isFallback),
-                    icon: Icon(
-                      isFallback
-                          ? Icons.play_arrow_rounded
-                          : Icons.download_rounded,
-                    ),
-                    label: Text(
-                      isFallback
-                          ? 'Resume Downloading'
-                          : 'Start Batch Download (${_selectedEpisodes.length})',
-                      style: const TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                    style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            );
-          },
-        ),
-      ],
+              );
+            },
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildSelectState(ColorScheme cs, TextTheme textTheme) {
     final sortedEpisodes = widget.episodes.toList()
       ..sort((a, b) => a.number.compareTo(b.number));
+    final screenHeight = MediaQuery.of(context).size.height;
+    final maxListHeight = (screenHeight * 0.52).clamp(340.0, 620.0);
+    final isLargeList = sortedEpisodes.length >= 30;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -1143,9 +1152,12 @@ class _BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
         ),
         const SizedBox(height: 8),
         ConstrainedBox(
-          constraints: const BoxConstraints(maxHeight: 340),
+          constraints: BoxConstraints(maxHeight: maxListHeight),
           child: ListView.separated(
-            shrinkWrap: true,
+            shrinkWrap: !isLargeList,
+            physics: const AlwaysScrollableScrollPhysics(
+              parent: BouncingScrollPhysics(),
+            ),
             itemCount: sortedEpisodes.length,
             separatorBuilder: (_, __) => Divider(
               height: 1,

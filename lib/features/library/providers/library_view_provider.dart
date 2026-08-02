@@ -21,7 +21,11 @@ class LibraryViewState {
     this.mediaType = MediaType.ANIME,
   });
 
-  LibraryViewState copyWith({LibraryMode? mode, TrackedStatus? status, MediaType? mediaType}) {
+  LibraryViewState copyWith({
+    LibraryMode? mode,
+    TrackedStatus? status,
+    MediaType? mediaType,
+  }) {
     return LibraryViewState(
       mode: mode ?? this.mode,
       status: status ?? this.status,
@@ -60,13 +64,25 @@ final dynamicLibraryProvider =
         trackingPrefsProvider.select((s) => s.primaryTracker),
       );
       final libraryView = ref.watch(libraryViewStateProvider);
-      final isCloudLoggedIn = ref.watch(trackerProfileProvider)[primaryTrackerType] != null;
+      final isCloudLoggedIn =
+          ref.watch(trackerProfileProvider)[primaryTrackerType] != null;
 
       if (libraryView.mode == LibraryMode.local ||
           primaryTrackerType == TrackerType.local ||
           !isCloudLoggedIn) {
-        return ref.watch(localLibraryListProvider((status: libraryView.status, mediaType: libraryView.mediaType)));
+        return ref.watch(
+          localLibraryListProvider((
+            status: libraryView.status,
+            mediaType: libraryView.mediaType,
+          )),
+        );
       } else {
-        return ref.watch(cloudLibraryProvider((status: libraryView.status, trackerType: null, mediaType: libraryView.mediaType)));
+        return ref.watch(
+          cloudLibraryProvider((
+            status: libraryView.status,
+            trackerType: null,
+            mediaType: libraryView.mediaType,
+          )),
+        );
       }
     });

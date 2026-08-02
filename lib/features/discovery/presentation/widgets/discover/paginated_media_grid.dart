@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+import 'package:shonenx/core/router/app_navigator.dart';
 import 'package:shonenx/core/utils/responsive.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/cards/media_card.dart';
@@ -100,9 +100,10 @@ class PaginatedMediaGrid extends ConsumerWidget {
                   imageUrl: media.cover ?? media.banner ?? '',
                   style: style,
                   onTap: () {
-                    context.push(
-                      '/details/${media.type.id}?tag=media-${media.id}',
-                      extra: media,
+                    context.pushDetails(
+                      mediaType: media.type,
+                      media: media,
+                      tag: 'media-${media.id}',
                     );
                   },
                 );

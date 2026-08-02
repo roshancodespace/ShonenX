@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import 'package:shonenx/app_init.dart';
+import 'package:shonenx/core/router/app_navigator.dart';
 import 'package:shonenx/features/extensions/providers/extension_service_provider.dart';
 import 'package:shonenx/features/extensions/providers/extensions_provider.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
@@ -522,7 +522,7 @@ class _ExtensionsSettingsScreenState
       IconButton(
         icon: const Icon(Icons.speed_rounded),
         tooltip: 'Test Extensions',
-        onPressed: () => context.push('/settings/extensions/test'),
+        onPressed: () => context.pushSettingsExtensionsTest(),
       ),
 
       IconButton(

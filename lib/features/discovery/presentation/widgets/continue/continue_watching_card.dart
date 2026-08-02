@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+import 'package:shonenx/core/router/app_navigator.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/core/utils/image_headers.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/continue/continue_media_mixin.dart';
@@ -52,13 +52,11 @@ class _ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem>
             .read(continueWatchingResolverProvider)
             .resolve(widget.entry);
         if (!mounted) return;
-        context.push(
-          '/details/${result.mode.media.type.id}',
-          extra: {
-            'media': result.mode.media,
-            'initialTabIndex': 1,
-            'autoPlayMode': result.mode,
-          },
+        context.pushDetails(
+          mediaType: result.mode.media.type,
+          media: result.mode.media,
+          initialTabIndex: 1,
+          autoPlayMode: result.mode,
         );
       },
       mediaType: MediaType.ANIME,
@@ -73,13 +71,13 @@ class _ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem>
       mediaType: MediaType.ANIME,
       mediaTitle: widget.entry.animeTitle,
       onViewDetails: () {
-        context.push(
-          '/details/anime',
-          extra: UnifiedMedia(
+        context.pushDetails(
+          mediaType: MediaType.ANIME,
+          media: UnifiedMedia(
             id: widget.entry.animeId,
             title: MediaTitle(english: widget.entry.animeTitle),
             type: MediaType.ANIME,
-            cover: widget.entry.cover ?? widget.entry.thumbnailUrl,
+            cover: widget.entry.cover,
             banner: widget.entry.banner,
           ),
         );

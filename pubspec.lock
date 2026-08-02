@@ -971,12 +971,11 @@ packages:
     source: hosted
     version: "3.0.2"
   libtorrent_flutter:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
-      name: libtorrent_flutter
-      sha256: "48605ded68779749246deac803bce4ecea75eb2aac2394fdb8b85961014a3d36"
-      url: "https://pub.dev"
-    source: hosted
+      path: "packages/anymex_extension_bridge/packages/libtorrent_flutter"
+      relative: true
+    source: path
     version: "1.8.5"
   lints:
     dependency: transitive

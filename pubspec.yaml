@@ -129,8 +129,8 @@ dependency_overrides:
       url: https://github.com/Predidit/media-kit.git
       ref: main
       path: ./libs/macos/media_kit_libs_macos_video
-  # libtorrent_flutter:
-  #   path: packages/anymex_extension_bridge/packages/libtorrent_flutter
+  libtorrent_flutter:
+    path: packages/anymex_extension_bridge/packages/libtorrent_flutter
 
 dev_dependencies:
   flutter_test:

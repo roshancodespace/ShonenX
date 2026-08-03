@@ -153,7 +153,7 @@ jobs:
       - name: Install system dependencies
         run: |
           pacman -Syu --noconfirm
-          pacman -S --noconfirm git jq zip unzip curl xz tar clang cmake ninja pkgconf gtk3 libsecret webkit2gtk-4.1 mpv alsa-lib
+          pacman -S --noconfirm git jq zip unzip curl xz tar clang cmake ninja pkgconf gtk3 libsecret webkit2gtk-4.1 mpv alsa-lib wpewebkit
 
       - name: Trust git directory
         run: git config --global --add safe.directory '*'

@@ -49,63 +49,89 @@ class MediaCard extends ConsumerWidget {
     final scale = ref.watch(themePrefsProvider).uiScaleFactor;
     final layout = style.getScaledLayout(scale, isWideMode: isWideMode);
 
-    return FocusHoverDetector(
-      onTap: onTap,
-      onSecondaryTap: onSecondaryTap,
-      onLongPress: onLongPress,
-      actions: {
-        ActivateIntent: CallbackAction<ActivateIntent>(
-          onInvoke: (_) {
-            onTap();
-            return null;
-          },
-        ),
-      },
-      builder: (context, isFocused, isHovered) {
-        final isActive = isFocused || isHovered;
-        final baseLayout = style.getBaseLayout(isWideMode: isWideMode);
-        final child = CardRenderer(
-          style: style,
-          config: CardConfig(
-            width: baseLayout.width,
-            height: baseLayout.height,
-            isActive: isActive,
-            isWideMode: isWideMode,
-            title: title,
-            imageUrl: imageUrl,
-            heroTag: tag,
-            badgeText: format,
-            topRightBadge: badge,
-            score: uiState.showCardRatings ? score : null,
-            subtitle: subtitle,
-            year: uiState.showCardYear ? year : null,
-            status: status,
-            genres: uiState.showCardGenres ? genres : null,
+    return RepaintBoundary(
+      child: FocusHoverDetector(
+        onTap: onTap,
+        onSecondaryTap: onSecondaryTap,
+        onLongPress: onLongPress,
+        actions: {
+          ActivateIntent: CallbackAction<ActivateIntent>(
+            onInvoke: (_) {
+              onTap();
+              return null;
+            },
           ),
-        );
-
-        final currentTextScale = MediaQuery.of(context).textScaler.scale(1.0);
-        final scaleFactor = layout.width / baseLayout.width;
-        final normalizedChild = MediaQuery(
-          data: MediaQuery.of(context).copyWith(
-            textScaler: TextScaler.linear(currentTextScale / scaleFactor),
-          ),
-          child: child,
-        );
-
-        return SizedBox(
-          width: layout.width,
-          height: layout.height,
-          child: FittedBox(
-            fit: BoxFit.contain,
-            child: SizedBox(
+        },
+        builder: (context, isFocused, isHovered) {
+          final isActive = isFocused || isHovered;
+          final baseLayout = style.getBaseLayout(isWideMode: isWideMode);
+          final child = CardRenderer(
+            style: style,
+            config: CardConfig(
               width: baseLayout.width,
               height: baseLayout.height,
-              child: normalizedChild,
+              isActive: isActive,
+              isWideMode: isWideMode,
+              title: title,
+              imageUrl: imageUrl,
+              heroTag: tag,
+              badgeText: format,
+              topRightBadge: badge,
+              score: uiState.showCardRatings ? score : null,
+              subtitle: subtitle,
+              year: uiState.showCardYear ? year : null,
+              status: status,
+              genres: uiState.showCardGenres ? genres : null,
             ),
-          ),
-        );
-      },
+          );
+
+          final currentTextScale = MediaQuery.of(context).textScaler.scale(1.0);
+          final scaleFactor = layout.width / baseLayout.width;
+          final normalizedChild = MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: TextScaler.linear(currentTextScale / scaleFactor),
+            ),
+            child: child,
+          );
+
+          return AnimatedScale(
+            scale: isActive ? 1.04 : 1.0,
+            duration: const Duration(milliseconds: 160),
+            curve: Curves.easeOutCubic,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 160),
+              curve: Curves.easeOutCubic,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: isActive
+                    ? [
+                        BoxShadow(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.primary.withValues(alpha: 0.22),
+                          blurRadius: 14,
+                          spreadRadius: 1,
+                          offset: const Offset(0, 4),
+                        ),
+                      ]
+                    : [],
+              ),
+              child: SizedBox(
+                width: layout.width,
+                height: layout.height,
+                child: FittedBox(
+                  fit: BoxFit.contain,
+                  child: SizedBox(
+                    width: baseLayout.width,
+                    height: baseLayout.height,
+                    child: normalizedChild,
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 }

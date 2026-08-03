@@ -40,14 +40,27 @@ class MediaKitEngine implements VideoEngine {
       await _player.setVolume(prefs.boostVolume ? 140 : 100);
       if (_disposed) return;
 
+      await player.setProperty('cache', 'yes');
+      await player.setProperty('demuxer-seekable-cache', 'yes');
       await player.setProperty(
-        'cache-secs',
-        prefs.maxBuffer.inSeconds.toString(),
-      );
+        'demuxer-max-bytes',
+        '154857600',
+      ); // 150MB buffer for smooth 4K/1080p
       await player.setProperty(
-        'demuxer-readahead-secs',
-        prefs.maxBuffer.inSeconds.toString(),
-      );
+        'demuxer-max-back-bytes',
+        '52428800',
+      ); // 50MB back buffer
+      await player.setProperty(
+        'demuxer-lavf-probesize',
+        '5000000',
+      ); // 5MB probe size
+      await player.setProperty('demuxer-lavf-analyzeduration', '5000000');
+
+      final readaheadSecs = prefs.maxBuffer.inSeconds < 60
+          ? '60'
+          : prefs.maxBuffer.inSeconds.toString();
+      await player.setProperty('cache-secs', readaheadSecs);
+      await player.setProperty('demuxer-readahead-secs', readaheadSecs);
 
       if (prefs.rawConfiguration.isNotEmpty) {
         for (final line in prefs.rawConfiguration.split('\n')) {

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/discord/models/discord_rpc_custom_settings.dart';
 import 'package:shonenx/features/discord/providers/discord_provider.dart';
 import 'package:shonenx/features/discord/services/discord_rpc_service.dart';
@@ -43,6 +44,7 @@ class DiscordRpcNotifier extends Notifier<DiscordRpcState>
   static const _enabledKey = 'discord_rpc_enabled';
   static const _customSettingsKey = 'discord_rpc_custom_settings';
 
+  final _log = AppLogger.scope(DiscordRpcNotifier);
   final _rpcService = DiscordRpcService();
 
   SharedPreferences get _prefs => ref.read(sharedPreferencesProvider);
@@ -53,8 +55,10 @@ class DiscordRpcNotifier extends Notifier<DiscordRpcState>
 
     ref.listen<DiscordState>(discordProvider, (previous, next) {
       if (next.isLoggedIn && state.isEnabled) {
+        _log.i('Discord user logged in, initiating RPC connection');
         _connect(next.token!);
       } else if (!next.isLoggedIn) {
+        _log.i('Discord user logged out, disconnecting RPC');
         _rpcService.disconnect();
         state = state.copyWith(isConnected: false);
       }
@@ -69,7 +73,9 @@ class DiscordRpcNotifier extends Notifier<DiscordRpcState>
         customSettings = DiscordRpcCustomSettings.fromJson(
           jsonDecode(rawCustomSettings) as Map<String, dynamic>,
         );
-      } catch (_) {}
+      } catch (e, s) {
+        _log.w('Failed to parse custom RPC settings', e, s);
+      }
     }
 
     _initConnection(isEnabled);
@@ -110,11 +116,13 @@ class DiscordRpcNotifier extends Notifier<DiscordRpcState>
     if (!discordState.isLoggedIn || discordState.token == null) return;
 
     if (appState == AppLifecycleState.resumed && !_rpcService.isConnected) {
+      _log.i('App resumed, reconnecting Discord RPC');
       _connect(discordState.token!);
     }
   }
 
   Future<void> toggleEnabled(bool value) async {
+    _log.i('Toggled Discord RPC enabled: $value');
     await _prefs.setBool(_enabledKey, value);
     state = state.copyWith(isEnabled: value);
 
@@ -133,6 +141,7 @@ class DiscordRpcNotifier extends Notifier<DiscordRpcState>
   Future<void> updateCustomSettings(
     DiscordRpcCustomSettings newSettings,
   ) async {
+    _log.i('Updating custom RPC settings');
     state = state.copyWith(customSettings: newSettings);
     await _prefs.setString(
       _customSettingsKey,

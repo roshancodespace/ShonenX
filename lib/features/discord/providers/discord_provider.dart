@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shonenx/core/network/secure_storage.dart';
+import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/discord/models/discord_user.dart';
 import 'package:shonenx/features/discord/services/discord_api_service.dart';
 
@@ -47,6 +48,7 @@ class DiscordNotifier extends Notifier<DiscordState> {
   static const _tokenKey = 'discord_token';
   static const _userKey = 'discord_user_data';
 
+  final _log = AppLogger.scope(DiscordNotifier);
   final _apiService = DiscordApiService();
 
   FlutterSecureStorage get _storage => ref.read(secureStorageProvider);
@@ -58,6 +60,7 @@ class DiscordNotifier extends Notifier<DiscordState> {
   }
 
   Future<void> _loadInitialState() async {
+    _log.i('Loading stored Discord credentials...');
     try {
       final token = await _storage.read(key: _tokenKey);
       final userJson = await _storage.read(key: _userKey);
@@ -74,12 +77,14 @@ class DiscordNotifier extends Notifier<DiscordState> {
       if (token != null && token.isNotEmpty) {
         _refreshProfile(token);
       }
-    } catch (_) {
+    } catch (e, s) {
+      _log.w('Error loading stored Discord credentials', e, s);
       state = const DiscordState(isLoading: false);
     }
   }
 
   Future<void> _refreshProfile(String token) async {
+    _log.i('Refreshing Discord user profile...');
     final fetchedUser = await _apiService.fetchUserProfile(token);
     if (fetchedUser != null) {
       await _storage.write(
@@ -93,6 +98,7 @@ class DiscordNotifier extends Notifier<DiscordState> {
   }
 
   Future<bool> loginWithToken(String token) async {
+    _log.i('Logging in with Discord token...');
     state = state.copyWith(isLoading: true, clearError: true);
     final user = await _apiService.fetchUserProfile(token);
 
@@ -100,8 +106,10 @@ class DiscordNotifier extends Notifier<DiscordState> {
       await _storage.write(key: _tokenKey, value: token);
       await _storage.write(key: _userKey, value: jsonEncode(user.toJson()));
       state = DiscordState(isLoading: false, token: token, user: user);
+      _log.s('Discord login successful for ${user.username}');
       return true;
     } else {
+      _log.w('Discord login with token failed');
       state = state.copyWith(
         isLoading: false,
         error: 'Failed to fetch Discord user profile. Check token validity.',
@@ -111,6 +119,7 @@ class DiscordNotifier extends Notifier<DiscordState> {
   }
 
   Future<void> logout() async {
+    _log.i('Logging out of Discord');
     await _storage.delete(key: _tokenKey);
     await _storage.delete(key: _userKey);
     state = const DiscordState();

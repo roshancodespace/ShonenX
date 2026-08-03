@@ -223,6 +223,9 @@ jobs:
       - name: Enable Linux config
         run: flutter config --enable-linux-desktop
 
+      - name: Clean stale build directory
+        run: rm -rf build
+
       - name: Get Dependencies
         run: find . -name "pubspec.lock" -type f -delete && flutter pub upgrade
 

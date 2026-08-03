@@ -121,6 +121,10 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     _disposeSystemUI();
 
     try {
+      ref.read(videoEngineProvider).dispose();
+    } catch (_) {}
+
+    try {
       if (widget.mode is PlayerModeOnline) {
         ref
             .read(discordRpcProvider.notifier)
@@ -128,10 +132,6 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
       } else {
         ref.read(discordRpcProvider.notifier).updateBrowsingPresence();
       }
-    } catch (_) {}
-
-    try {
-      ref.read(videoEngineProvider).dispose();
     } catch (_) {}
 
     super.dispose();

@@ -118,9 +118,13 @@ class PlayerController extends Notifier<PlayerState> {
   String? _preferredSubtitleLang = 'eng';
   String? _preferredAudioLang;
 
+  bool _isDisposed = false;
+
   @override
   PlayerState build() {
+    _isDisposed = false;
     ref.onDispose(() {
+      _isDisposed = true;
       _positionSubscription?.close();
       _progressTimer?.cancel();
     });
@@ -177,7 +181,7 @@ class PlayerController extends Notifier<PlayerState> {
       prev,
       current,
     ) {
-      if (prev != current) {
+      if (!_isDisposed && prev != current) {
         _updateDiscordRpc();
       }
     });
@@ -186,7 +190,7 @@ class PlayerController extends Notifier<PlayerState> {
   }
 
   void _updateDiscordRpc() {
-    if (_media == null) return;
+    if (_isDisposed || _media == null) return;
     final activeEp = state.activeEpisode;
     if (activeEp == null) return;
 

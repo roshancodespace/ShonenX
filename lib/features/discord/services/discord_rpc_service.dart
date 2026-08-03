@@ -27,8 +27,11 @@ class DiscordRpcService {
   bool _isConnected = false;
   Map<String, dynamic>? _lastPresencePayload;
   String? _activeMediaId;
+  int? _activeEpisodeNumber;
   int? _mediaStartTimeMs;
   int? _browsingStartTimeMs;
+  int? _animeStartTimeMs;
+  int? _animeEndTimeMs;
   final Map<String, String> _assetCache = {};
 
   bool get isConnected => _isConnected;
@@ -222,12 +225,28 @@ class DiscordRpcService {
         : 0;
     final totalSeconds = durationMs != null ? (durationMs / 1000).round() : 0;
 
-    final startTime = DateTime.now().subtract(
-      Duration(seconds: currentSeconds),
-    );
-    final endTime = totalSeconds > currentSeconds
-        ? DateTime.now().add(Duration(seconds: totalSeconds - currentSeconds))
+    final nowMs = DateTime.now().millisecondsSinceEpoch;
+    final calcStartMs = nowMs - (currentSeconds * 1000);
+    // Ignore initial small segment durations (< 60s) from HLS parsers
+    final calcEndMs = (totalSeconds > 60 && totalSeconds > currentSeconds)
+        ? nowMs + ((totalSeconds - currentSeconds) * 1000)
         : null;
+
+    if (_activeMediaId != anime.id ||
+        _activeEpisodeNumber != episodeNumber ||
+        _animeStartTimeMs == null ||
+        (_animeStartTimeMs! - calcStartMs).abs() > 3000 ||
+        (_animeEndTimeMs == null && calcEndMs != null)) {
+      _activeMediaId = anime.id;
+      _activeEpisodeNumber = episodeNumber;
+      _animeStartTimeMs = calcStartMs;
+      _animeEndTimeMs = calcEndMs;
+    }
+    _browsingStartTimeMs = null;
+    _mediaStartTimeMs = null;
+
+    final startTimeMs = _animeStartTimeMs!;
+    final endTimeMs = _animeEndTimeMs;
 
     final title = anime.title.availableTitle;
     final epString =
@@ -253,8 +272,8 @@ class DiscordRpcService {
             'details': title,
             'state': stateString,
             'timestamps': {
-              'start': startTime.millisecondsSinceEpoch,
-              if (endTime != null) 'end': endTime.millisecondsSinceEpoch,
+              'start': startTimeMs,
+              if (endTimeMs != null) 'end': endTimeMs,
             },
             'assets': {
               'large_image': await _processImageUrl(coverUrl),
@@ -417,11 +436,16 @@ class DiscordRpcService {
       return;
     }
 
-    if (_activeMediaId != media.id || _mediaStartTimeMs == null) {
+    if (_activeMediaId != media.id ||
+        _mediaStartTimeMs == null ||
+        _animeStartTimeMs != null) {
       _activeMediaId = media.id;
       _mediaStartTimeMs = DateTime.now().millisecondsSinceEpoch;
     }
     _browsingStartTimeMs = null;
+    _animeStartTimeMs = null;
+    _animeEndTimeMs = null;
+    _activeEpisodeNumber = null;
 
     final title = media.title.availableTitle;
     final typeStr = media.type == MediaType.MANGA ? 'Manga' : 'Anime';
@@ -481,7 +505,10 @@ class DiscordRpcService {
 
     _browsingStartTimeMs ??= DateTime.now().millisecondsSinceEpoch;
     _activeMediaId = null;
+    _activeEpisodeNumber = null;
     _mediaStartTimeMs = null;
+    _animeStartTimeMs = null;
+    _animeEndTimeMs = null;
 
     _log.i('Updating Browsing presence: ${activity ?? 'Glazing ShonenX'}');
 
@@ -518,8 +545,11 @@ class DiscordRpcService {
   void resetPresenceState() {
     _lastPresencePayload = null;
     _activeMediaId = null;
+    _activeEpisodeNumber = null;
     _mediaStartTimeMs = null;
     _browsingStartTimeMs = null;
+    _animeStartTimeMs = null;
+    _animeEndTimeMs = null;
   }
 
   Future<void> clearPresence() async {

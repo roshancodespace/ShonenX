@@ -14,6 +14,7 @@ import 'package:shonenx/shared/models/unified_episode.dart';
 import 'package:shonenx/shared/models/ui_style_enums.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/source_engine/models/chapter_page.dart';
+import 'package:shonenx/features/discord/providers/discord_rpc_provider.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
 
 import 'widgets/chapters_bottom_sheet.dart';
@@ -80,9 +81,22 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     _pageController.dispose();
     _disableImmersiveMode();
     try {
+      ref.read(discordRpcProvider.notifier).updateMediaPresence(widget.mode.media);
+    } catch (_) {}
+    try {
       WakelockPlus.disable();
     } catch (_) {}
     super.dispose();
+  }
+
+  void _updateDiscordRpc(ReaderState state) {
+    ref.read(discordRpcProvider.notifier).updateMangaPresence(
+      manga: widget.mode.media,
+      chapterNumber: widget.mode.episode.number.toInt(),
+      chapterTitle: widget.mode.episode.title,
+      currentPage: state.currentPage + 1,
+      totalPages: state.totalPages > 0 ? state.totalPages : null,
+    );
   }
 
   // ──────────────── System UI ────────────────
@@ -265,6 +279,10 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     final state = ref.watch(readerProvider(widget.mode));
     final prefs = ref.watch(readerPrefsProvider);
     final themeInfo = _getThemeInfo(prefs.backgroundColor);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _updateDiscordRpc(state);
+    });
 
     return Scaffold(
       backgroundColor: themeInfo.bgColor,

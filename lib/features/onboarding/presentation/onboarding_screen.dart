@@ -24,6 +24,10 @@ import 'package:shonenx/shared/widgets/permission_sheet.dart';
 import 'package:shonenx/shared/widgets/svg_icon.dart';
 import 'package:anymex_extension_runtime_bridge/anymex_extension_runtime_bridge.dart'
     as bridge;
+import 'package:shonenx/features/discord/presentation/discord_login_page.dart';
+import 'package:shonenx/features/discord/presentation/widgets/discord_rpc_preview_card.dart';
+import 'package:shonenx/features/discord/providers/discord_provider.dart';
+import 'package:shonenx/features/discord/providers/discord_rpc_provider.dart';
 import 'package:shonenx/features/extensions/presentation/widgets/runtime_setup_sheet.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
@@ -39,7 +43,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   // FIXED: Added kIsWeb check to prevent UnsupportedError on Web
   bool get _isMobile => !kIsWeb && (Platform.isAndroid || Platform.isIOS);
-  int get _totalPages => _isMobile ? 6 : 5;
+  int get _totalPages => _isMobile ? 7 : 6;
 
   void _nextPage() {
     // FIXED: Use actual PageController position instead of lagging _currentIndex state to prevent animation jitter on rapid taps
@@ -83,6 +87,33 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           SafeArea(
             child: Column(
               children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16.0,
+                    vertical: 4.0,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      if (_currentIndex > 0 && _currentIndex < _totalPages - 1)
+                        TextButton(
+                          onPressed: _finishOnboarding,
+                          style: TextButton.styleFrom(
+                            foregroundColor: cs.onSurfaceVariant,
+                          ),
+                          child: const Text(
+                            'Skip',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                          ),
+                        )
+                      else
+                        const SizedBox(height: 36),
+                    ],
+                  ),
+                ),
                 Expanded(
                   child: PageView(
                     controller: _pageController,
@@ -96,6 +127,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       _buildDiscoveryGuidePage(theme, cs),
                       _buildTrackersPage(theme, cs),
                       _buildExtensionsPage(theme, cs),
+                      _buildDiscordRpcPage(theme, cs),
                       if (_isMobile) _buildNotificationsPage(theme, cs),
                     ],
                   ),
@@ -835,6 +867,224 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     );
   }
 
+  Widget _buildDiscordRpcPage(ThemeData theme, ColorScheme cs) {
+    final rpcState = ref.watch(discordRpcProvider);
+    final discordState = ref.watch(discordProvider);
+
+    return _buildPageLayout(
+      title: 'Discord Rich Presence (Optional)',
+      description: _isMobile
+          ? 'Broadcast what you\'re watching or reading live to Discord on Mobile using Gateway Sync.'
+          : 'ShonenX connects automatically to your running Discord desktop app. No login required!',
+      customIcon: const SvgIcon(
+        '''<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
+            <path d="M0 0h24v24H0z" fill="none" />
+            <path fill="currentColor" d="M18.59 5.89c-1.23-.57-2.54-.99-3.92-1.23c-.17.3-.37.71-.5 1.04c-1.46-.22-2.91-.22-4.34 0c-.14-.33-.34-.74-.51-1.04c-1.38.24-2.69.66-3.92 1.23c-2.48 3.74-3.15 7.39-2.82 10.98c1.65 1.23 3.24 1.97 4.81 2.46c.39-.53.73-1.1 1.03-1.69c-.57-.21-1.11-.48-1.62-.79c.14-.1.27-.21.4-.31c3.13 1.46 6.52 1.46 9.61 0c.13.11.26.21.4.31c-.51.31-1.06.57-1.62.79c.3.59.64 1.16 1.03 1.69c1.57-.49 3.17-1.23 4.81-2.46c.39-4.17-.67-7.78-2.82-10.98Zm-9.75 8.78c-.94 0-1.71-.87-1.71-1.94s.75-1.94 1.71-1.94s1.72.87 1.71 1.94c0 1.06-.75 1.94-1.71 1.94m6.31 0c-.94 0-1.71-.87-1.71-1.94s.75-1.94 1.71-1.94s1.72.87 1.71 1.94c0 1.06-.75 1.94-1.71 1.94" />
+          </svg>''',
+        size: 56,
+        color: Color(0xFF5865F2),
+      ),
+      theme: theme,
+      cs: cs,
+      customWidget: Padding(
+        padding: const EdgeInsets.only(top: 4),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SwitchListTile(
+              secondary: Icon(Icons.sync, color: cs.primary),
+              title: const Text('Enable Discord RPC'),
+              subtitle: Text(
+                _isMobile
+                    ? 'Display anime/manga activity status via Gateway'
+                    : 'Auto-connects to desktop Discord client',
+              ),
+              value: rpcState.isEnabled,
+              onChanged: (val) {
+                ref.read(discordRpcProvider.notifier).toggleEnabled(val);
+              },
+              contentPadding: EdgeInsets.zero,
+            ),
+            const SizedBox(height: 4),
+            if (discordState.isLoggedIn)
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: cs.surfaceContainerHigh,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: const Color(0xFF5865F2).withValues(alpha: 0.4),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 16,
+                      backgroundColor: const Color(0xFF5865F2),
+                      backgroundImage: discordState.user?.avatarUrl != null
+                          ? NetworkImage(discordState.user!.avatarUrl!)
+                          : null,
+                      child: discordState.user?.avatarUrl == null
+                          ? const Icon(
+                              Icons.person,
+                              size: 18,
+                              color: Colors.white,
+                            )
+                          : null,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            discordState.user?.globalName ??
+                                discordState.user?.username ??
+                                'Discord Account',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
+                          ),
+                          const Text(
+                            'Connected for Gateway Sync',
+                            style: TextStyle(fontSize: 11, color: Colors.green),
+                          ),
+                        ],
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        ref.read(discordProvider.notifier).logout();
+                      },
+                      style: TextButton.styleFrom(
+                        foregroundColor: cs.error,
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                      ),
+                      child: const Text(
+                        'Disconnect',
+                        style: TextStyle(fontSize: 12),
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else if (!_isMobile)
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: cs.surfaceContainerHigh.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: cs.outlineVariant.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.desktop_windows_rounded,
+                          size: 18,
+                          color: Color(0xFF5865F2),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Auto-detects running Discord app',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: cs.onSurface,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Just launch Discord on your PC. Token sign-in is optional.',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: cs.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton.icon(
+                        style: TextButton.styleFrom(
+                          foregroundColor: const Color(0xFF5865F2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        icon: const Icon(Icons.key_rounded, size: 14),
+                        label: const Text(
+                          'Token Sign-in (Optional)',
+                          style: TextStyle(fontSize: 11),
+                        ),
+                        onPressed: () {
+                          context.showDiscordLogin((token) async {
+                            await ref
+                                .read(discordProvider.notifier)
+                                .loginWithToken(token);
+                          });
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF5865F2),
+                    side: const BorderSide(color: Color(0xFF5865F2)),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                  ),
+                  icon: const Icon(Icons.key_rounded, size: 16),
+                  label: const Text(
+                    'Sign in with Discord Token',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
+                  onPressed: () {
+                    context.showDiscordLogin((token) async {
+                      await ref
+                          .read(discordProvider.notifier)
+                          .loginWithToken(token);
+                    });
+                  },
+                ),
+              ),
+            const SizedBox(height: 6),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: SizedBox(
+                width: 480,
+                child: DiscordRpcPreviewCard(
+                  user: discordState.user,
+                  settings: rpcState.customSettings,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildNotificationsPage(ThemeData theme, ColorScheme cs) {
     return _buildPageLayout(
       title: 'Stay Updated',
@@ -922,45 +1172,55 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     required ColorScheme cs,
     Widget? customWidget,
   }) {
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 600),
-        child: SingleChildScrollView(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
           physics: const BouncingScrollPhysics(),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Container(
-                height: 140,
-                alignment: Alignment.center,
-                child: customIcon ?? Icon(icon, size: 84, color: cs.primary),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: constraints.maxHeight > 32
+                    ? constraints.maxHeight - 32.0
+                    : constraints.maxHeight,
+                maxWidth: 600,
               ),
-              const SizedBox(height: 32),
-              Text(
-                title,
-                style: theme.textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: -0.5,
-                ),
-                textAlign: TextAlign.center,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Container(
+                    height: 120,
+                    alignment: Alignment.center,
+                    child:
+                        customIcon ?? Icon(icon, size: 72, color: cs.primary),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    title,
+                    style: theme.textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.5,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    description,
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color: cs.onSurfaceVariant,
+                      height: 1.5,
+                      fontSize: 15,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  if (customWidget != null) customWidget,
+                ],
               ),
-              const SizedBox(height: 12),
-              Text(
-                description,
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: cs.onSurfaceVariant,
-                  height: 1.5,
-                  fontSize: 15,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              if (customWidget != null) customWidget,
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

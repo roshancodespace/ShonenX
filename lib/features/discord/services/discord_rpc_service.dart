@@ -1,0 +1,516 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
+import 'package:shonenx/shared/models/unified_media.dart';
+
+// Reference: https://github.com/RyanYuuki/AnymeX/blob/main/lib/controllers/discord/discord_rpc.dart
+class DiscordRpcService {
+  static const String applicationId = '1435544312296505394';
+  static const String _gatewayUrl =
+      'wss://gateway.discord.gg/?v=10&encoding=json';
+  static const String _appIconUrl =
+      'https://raw.githubusercontent.com/roshancodespace/ShonenX/refs/heads/main/assets/images/app_icon.png';
+
+  WebSocket? _gatewaySocket;
+  Timer? _heartbeatTimer;
+  int? _heartbeatInterval;
+  int? _sequenceNumber;
+  bool _heartbeatAckReceived = true;
+  Completer<void>? _connectCompleter;
+
+  String? _token;
+  bool _isConnected = false;
+  Map<String, dynamic>? _lastPresencePayload;
+  String? _activeMediaId;
+  int? _mediaStartTimeMs;
+  int? _browsingStartTimeMs;
+  final Map<String, String> _assetCache = {};
+
+  bool get isConnected => _isConnected;
+  Map<String, dynamic>? get lastPresencePayload => _lastPresencePayload;
+
+  Future<void> connect(String token) async {
+    if (_isConnected && _token == token) return;
+    if (_connectCompleter != null && !_connectCompleter!.isCompleted) {
+      return _connectCompleter!.future;
+    }
+
+    _connectCompleter = Completer<void>();
+    _token = token;
+
+    try {
+      if (token.isNotEmpty) {
+        await _connectGateway();
+      }
+    } catch (e) {
+      debugPrint('Discord RPC connection error: $e');
+      _isConnected = false;
+    } finally {
+      if (_connectCompleter != null && !_connectCompleter!.isCompleted) {
+        _connectCompleter!.complete();
+      }
+    }
+  }
+
+  Future<void> _connectGateway() async {
+    await disconnect();
+
+    try {
+      _gatewaySocket = await WebSocket.connect(_gatewayUrl);
+      _gatewaySocket!.listen(
+        _handleGatewayMessage,
+        onError: (error) {
+          debugPrint('Discord Gateway error: $error');
+          _isConnected = false;
+        },
+        onDone: () {
+          debugPrint('Discord Gateway disconnected');
+          _isConnected = false;
+          _heartbeatTimer?.cancel();
+        },
+      );
+    } catch (e) {
+      debugPrint('Failed to connect to Discord Gateway: $e');
+      _isConnected = false;
+    }
+  }
+
+  void _handleGatewayMessage(dynamic message) {
+    try {
+      final data = jsonDecode(message as String);
+      final op = data['op'] as int?;
+      _sequenceNumber = data['s'] as int?;
+
+      switch (op) {
+        case 10: // Hello
+          _heartbeatInterval = data['d']['heartbeat_interval'] as int?;
+          _heartbeatAckReceived = true;
+          _identify();
+          _startHeartbeat();
+          break;
+        case 0: // Dispatch
+          final event = data['t'] as String?;
+          if (event == 'READY') {
+            _isConnected = true;
+            debugPrint('Discord Gateway Connected & Ready');
+            if (_lastPresencePayload != null) {
+              _sendPayload(_lastPresencePayload!);
+            } else {
+              updateBrowsingPresence();
+            }
+          }
+          break;
+        case 11: // Heartbeat ACK
+          _heartbeatAckReceived = true;
+          break;
+      }
+    } catch (e) {
+      debugPrint('Error handling Gateway message: $e');
+    }
+  }
+
+  void _identify() {
+    if (_token == null || _token!.isEmpty) return;
+
+    final payload = {
+      'op': 2,
+      'd': {
+        'token': _token,
+        'properties': {
+          '\$os': Platform.operatingSystem,
+          '\$browser': 'ShonenX',
+          '\$device': 'ShonenX Client',
+        },
+        'presence': {'status': 'online', 'afk': false},
+      },
+    };
+
+    _gatewaySocket?.add(jsonEncode(payload));
+  }
+
+  void _startHeartbeat() {
+    _heartbeatTimer?.cancel();
+    if (_heartbeatInterval != null) {
+      _heartbeatTimer = Timer.periodic(
+        Duration(milliseconds: _heartbeatInterval!),
+        (_) => _sendHeartbeat(),
+      );
+    }
+  }
+
+  void _sendHeartbeat() {
+    if (!_heartbeatAckReceived) {
+      debugPrint('Heartbeat ACK missed. Reconnecting...');
+      if (_token != null) connect(_token!);
+      return;
+    }
+
+    _heartbeatAckReceived = false;
+    final payload = {'op': 1, 'd': _sequenceNumber};
+    _gatewaySocket?.add(jsonEncode(payload));
+  }
+
+  static const String _defaultAssetKey = 'app_icon';
+
+  Future<String> _processImageUrl(String? url) async {
+    if (url == null || url.isEmpty) return _defaultAssetKey;
+    if (_token == null || _token!.isEmpty) return _defaultAssetKey;
+    if (_assetCache.containsKey(url)) return _assetCache[url]!;
+
+    try {
+      final response = await http
+          .post(
+            Uri.parse(
+              'https://discord.com/api/v9/applications/$applicationId/external-assets',
+            ),
+            headers: {
+              'Authorization': _token!,
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode({
+              'urls': [url],
+            }),
+          )
+          .timeout(const Duration(seconds: 3));
+
+      if (response.statusCode == 200) {
+        final List data = jsonDecode(response.body);
+        if (data.isNotEmpty && data[0]['external_asset_path'] != null) {
+          final assetPath = 'mp:${data[0]['external_asset_path']}';
+          _assetCache[url] = assetPath;
+          return assetPath;
+        }
+      }
+    } catch (_) {}
+
+    return _defaultAssetKey;
+  }
+
+  Future<void> updateAnimePresence({
+    required UnifiedMedia anime,
+    required int episodeNumber,
+    String? episodeTitle,
+    int? timeStampMs,
+    int? durationMs,
+    int? totalEpisodes,
+  }) async {
+    if (!_isConnected || _gatewaySocket == null) return;
+
+    final currentSeconds = timeStampMs != null
+        ? (timeStampMs / 1000).round()
+        : 0;
+    final totalSeconds = durationMs != null ? (durationMs / 1000).round() : 0;
+
+    final startTime = DateTime.now().subtract(
+      Duration(seconds: currentSeconds),
+    );
+    final endTime = totalSeconds > currentSeconds
+        ? DateTime.now().add(Duration(seconds: totalSeconds - currentSeconds))
+        : null;
+
+    final title = anime.title.availableTitle;
+    final epString =
+        'Episode $episodeNumber${totalEpisodes != null ? '/$totalEpisodes' : ''}';
+    final stateString = episodeTitle != null && episodeTitle.isNotEmpty
+        ? '$epString – $episodeTitle'
+        : epString;
+
+    final coverUrl = anime.cover ?? anime.banner;
+    final mediaUrl = 'https://anilist.co/anime/${anime.id}';
+
+    final payload = {
+      'op': 3,
+      'd': {
+        'since': null,
+        'activities': [
+          {
+            'application_id': applicationId,
+            'name': 'ShonenX',
+            'type': 3, // Watching
+            'details': title,
+            'state': stateString,
+            'timestamps': {
+              'start': startTime.millisecondsSinceEpoch,
+              if (endTime != null) 'end': endTime.millisecondsSinceEpoch,
+            },
+            'assets': {
+              'large_image': await _processImageUrl(coverUrl),
+              'large_text': title,
+              'small_image': await _processImageUrl(_appIconUrl),
+              'small_text': 'ShonenX',
+            },
+            'buttons': ['View Anime', 'Watch on ShonenX'],
+            'metadata': {
+              'button_urls': [
+                mediaUrl,
+                'https://github.com/roshancodespace/shonenx',
+              ],
+            },
+          },
+        ],
+        'status': 'online',
+        'afk': false,
+      },
+    };
+
+    _sendPayload(payload);
+  }
+
+  Future<void> updateAnimePresencePaused({
+    required UnifiedMedia anime,
+    required int episodeNumber,
+    int? timeStampMs,
+    int? durationMs,
+  }) async {
+    if (!_isConnected || _gatewaySocket == null) return;
+
+    final currentSec = timeStampMs != null ? (timeStampMs / 1000).round() : 0;
+    final totalSec = durationMs != null ? (durationMs / 1000).round() : 0;
+    final timeDisplay = (currentSec > 0 && totalSec > 0)
+        ? ' • ${_formatDuration(Duration(seconds: currentSec))} / ${_formatDuration(Duration(seconds: totalSec))}'
+        : '';
+
+    final title = anime.title.availableTitle;
+    final coverUrl = anime.cover ?? anime.banner;
+    final mediaUrl = 'https://anilist.co/anime/${anime.id}';
+
+    final payload = {
+      'op': 3,
+      'd': {
+        'since': null,
+        'activities': [
+          {
+            'application_id': applicationId,
+            'name': 'ShonenX',
+            'type': 3,
+            'details': title,
+            'state': 'Episode $episodeNumber$timeDisplay (Paused)',
+            'assets': {
+              'large_image': await _processImageUrl(coverUrl),
+              'large_text': title,
+              'small_image': await _processImageUrl(_appIconUrl),
+              'small_text': 'ShonenX',
+            },
+            'buttons': ['View Anime', 'Watch on ShonenX'],
+            'metadata': {
+              'button_urls': [
+                mediaUrl,
+                'https://github.com/roshancodespace/shonenx',
+              ],
+            },
+          },
+        ],
+        'status': 'online',
+        'afk': false,
+      },
+    };
+
+    _sendPayload(payload);
+  }
+
+  Future<void> updateMangaPresence({
+    required UnifiedMedia manga,
+    int? chapterNumber,
+    String? chapterTitle,
+    int? currentPage,
+    int? totalPages,
+    int? totalChapters,
+  }) async {
+    if (!_isConnected || _gatewaySocket == null) return;
+
+    if (_activeMediaId != manga.id || _mediaStartTimeMs == null) {
+      _activeMediaId = manga.id;
+      _mediaStartTimeMs = DateTime.now().millisecondsSinceEpoch;
+    }
+    _browsingStartTimeMs = null;
+
+    final title = manga.title.availableTitle;
+    final chString = chapterNumber != null
+        ? 'Chapter $chapterNumber${totalChapters != null ? '/$totalChapters' : ''}'
+        : 'Reading';
+    final pageString = currentPage != null && totalPages != null
+        ? ' • Page $currentPage/$totalPages'
+        : '';
+
+    final coverUrl = manga.cover ?? manga.banner;
+    final mediaUrl = 'https://anilist.co/manga/${manga.id}';
+
+    final payload = {
+      'op': 3,
+      'd': {
+        'since': null,
+        'activities': [
+          {
+            'application_id': applicationId,
+            'name': 'ShonenX',
+            'type': 0, // Playing / Reading
+            'details': title,
+            'state': '$chString$pageString',
+            'timestamps': {'start': _mediaStartTimeMs},
+            'assets': {
+              'large_image': await _processImageUrl(coverUrl),
+              'large_text': title,
+              'small_image': await _processImageUrl(_appIconUrl),
+              'small_text': 'ShonenX',
+            },
+            'buttons': ['View Manga', 'Read on ShonenX'],
+            'metadata': {
+              'button_urls': [
+                mediaUrl,
+                'https://github.com/roshancodespace/shonenx',
+              ],
+            },
+          },
+        ],
+        'status': 'online',
+        'afk': false,
+      },
+    };
+
+    _sendPayload(payload);
+  }
+
+  void _sendPayload(Map<String, dynamic> payload) {
+    _lastPresencePayload = payload;
+    if (_isConnected && _gatewaySocket != null) {
+      _gatewaySocket?.add(jsonEncode(payload));
+    }
+  }
+
+  Future<void> updateMediaPresence({required UnifiedMedia media}) async {
+    if (!_isConnected || _gatewaySocket == null) return;
+
+    if (_activeMediaId != media.id || _mediaStartTimeMs == null) {
+      _activeMediaId = media.id;
+      _mediaStartTimeMs = DateTime.now().millisecondsSinceEpoch;
+    }
+    _browsingStartTimeMs = null;
+
+    final title = media.title.availableTitle;
+    final typeStr = media.type == MediaType.MANGA ? 'Manga' : 'Anime';
+    final coverUrl = media.cover ?? media.banner;
+    final mediaUrl = 'https://anilist.co/${media.type.id}/${media.id}';
+
+    final images = await Future.wait([
+      _processImageUrl(coverUrl),
+      _processImageUrl(_appIconUrl),
+    ]);
+
+    final payload = {
+      'op': 3,
+      'd': {
+        'since': null,
+        'activities': [
+          {
+            'application_id': applicationId,
+            'name': 'ShonenX',
+            'type': 0,
+            'details': 'Viewing $title',
+            'state': 'Inspecting $typeStr Details',
+            'timestamps': {'start': _mediaStartTimeMs},
+            'assets': {
+              'large_image': images[0],
+              'large_text': title,
+              'small_image': images[1],
+              'small_text': 'ShonenX',
+            },
+            'buttons': ['View $typeStr', 'Get ShonenX'],
+            'metadata': {
+              'button_urls': [
+                mediaUrl,
+                'https://github.com/roshancodespace/shonenx',
+              ],
+            },
+          },
+        ],
+        'status': 'online',
+        'afk': false,
+      },
+    };
+
+    _sendPayload(payload);
+  }
+
+  Future<void> updateBrowsingPresence({
+    String? activity,
+    String? details,
+  }) async {
+    if (!_isConnected || _gatewaySocket == null) return;
+
+    _browsingStartTimeMs ??= DateTime.now().millisecondsSinceEpoch;
+    _activeMediaId = null;
+    _mediaStartTimeMs = null;
+
+    final payload = {
+      'op': 3,
+      'd': {
+        'since': null,
+        'activities': [
+          {
+            'application_id': applicationId,
+            'name': 'ShonenX',
+            'type': 0,
+            'details': activity ?? 'Glazing ShonenX',
+            'state': details ?? 'Browsing Catalog',
+            'timestamps': {'start': _browsingStartTimeMs},
+            'assets': {
+              'large_image': await _processImageUrl(_appIconUrl),
+              'large_text': 'ShonenX - Anime & Manga Client',
+            },
+            'buttons': ['Get ShonenX'],
+            'metadata': {
+              'button_urls': ['https://github.com/roshancodespace/shonenx'],
+            },
+          },
+        ],
+        'status': 'online',
+        'afk': false,
+      },
+    };
+
+    _sendPayload(payload);
+  }
+
+  void resetPresenceState() {
+    _lastPresencePayload = null;
+    _activeMediaId = null;
+    _mediaStartTimeMs = null;
+    _browsingStartTimeMs = null;
+  }
+
+  Future<void> clearPresence() async {
+    resetPresenceState();
+    if (!_isConnected || _gatewaySocket == null) return;
+
+    final payload = {
+      'op': 3,
+      'd': {'since': null, 'activities': [], 'status': 'online', 'afk': false},
+    };
+
+    _gatewaySocket?.add(jsonEncode(payload));
+  }
+
+  Future<void> disconnect() async {
+    _heartbeatTimer?.cancel();
+    _heartbeatTimer = null;
+    await _gatewaySocket?.close();
+    _gatewaySocket = null;
+    _sequenceNumber = null;
+    _isConnected = false;
+  }
+
+  String _formatDuration(Duration duration) {
+    final hours = duration.inHours;
+    final minutes = duration.inMinutes.remainder(60);
+    final seconds = duration.inSeconds.remainder(60);
+
+    if (hours > 0) {
+      return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+    } else {
+      return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+    }
+  }
+}

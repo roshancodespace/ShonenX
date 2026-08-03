@@ -23,9 +23,11 @@ class HomeSettingsScreen extends ConsumerWidget {
       margin: const EdgeInsets.fromLTRB(16, 8, 16, 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: theme.colorScheme.tertiaryContainer.withOpacity(0.4),
+        color: theme.colorScheme.tertiaryContainer.withValues(alpha: 0.4),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: theme.colorScheme.tertiary.withOpacity(0.3)),
+        border: Border.all(
+          color: theme.colorScheme.tertiary.withValues(alpha: 0.3),
+        ),
       ),
       child: Row(
         children: [
@@ -50,8 +52,8 @@ class HomeSettingsScreen extends ConsumerWidget {
                 Text(
                   'Content extensions only support a single Trending feed. Switch to Tracker Discovery Mode to unlock custom categories (Popular, Upcoming, Top Rated).',
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onTertiaryContainer.withOpacity(
-                      0.9,
+                    color: theme.colorScheme.onTertiaryContainer.withValues(
+                      alpha: 0.9,
                     ),
                   ),
                 ),
@@ -155,8 +157,8 @@ class HomeSettingsScreen extends ConsumerWidget {
                       Icon(
                         getSectionIcon(),
                         color: isDisabled
-                            ? theme.colorScheme.onSurfaceVariant.withOpacity(
-                                0.5,
+                            ? theme.colorScheme.onSurfaceVariant.withValues(
+                                alpha: 0.5,
                               )
                             : theme.colorScheme.primary,
                       ),
@@ -334,9 +336,11 @@ class _EditSectionSheetState extends ConsumerState<_EditSectionSheet> {
     final isSourceMode = ref.watch(
       discoveryPrefsProvider.select((p) => p.mode == MetadataMode.source),
     );
-    final activeTracker = !isSourceMode ? ref.watch(metadataSourceProvider) : null;
-    final availableMediaTypes = isSourceMode 
-        ? [MediaType.ANIME, MediaType.MANGA] 
+    final activeTracker = !isSourceMode
+        ? ref.watch(metadataSourceProvider)
+        : null;
+    final availableMediaTypes = isSourceMode
+        ? [MediaType.ANIME, MediaType.MANGA]
         : (activeTracker?.supportedMediaTypes ?? MediaType.values);
     final availableCategories = isSourceMode
         ? [TrackerCategory.trending]
@@ -388,13 +392,11 @@ class _EditSectionSheetState extends ConsumerState<_EditSectionSheet> {
                 ),
               ),
               items: availableCategories
-                      .map(
-                        (cat) => DropdownMenuItem(
-                          value: cat,
-                          child: Text(cat.label),
-                        ),
-                      )
-                      .toList(),
+                  .map(
+                    (cat) =>
+                        DropdownMenuItem(value: cat, child: Text(cat.label)),
+                  )
+                  .toList(),
               onChanged: isSourceMode
                   ? null
                   : (val) {
@@ -522,7 +524,9 @@ class _AddSectionSheetState extends ConsumerState<_AddSectionSheet> {
     final isSourceMode = ref.watch(
       discoveryPrefsProvider.select((p) => p.mode == MetadataMode.source),
     );
-    final activeTracker = !isSourceMode ? ref.watch(metadataSourceProvider) : null;
+    final activeTracker = !isSourceMode
+        ? ref.watch(metadataSourceProvider)
+        : null;
 
     if (isSourceMode) {
       final hasDiscoverySection = widget.existingSections.any(
@@ -534,7 +538,8 @@ class _AddSectionSheetState extends ConsumerState<_AddSectionSheet> {
       return const [TrackerCategory.trending];
     }
 
-    final categories = activeTracker?.supportedCategories ?? TrackerCategory.values;
+    final categories =
+        activeTracker?.supportedCategories ?? TrackerCategory.values;
     return categories.where((cat) {
       return !widget.existingSections.any(
         (s) =>
@@ -569,14 +574,19 @@ class _AddSectionSheetState extends ConsumerState<_AddSectionSheet> {
   void initState() {
     super.initState();
     _titleController = TextEditingController();
-    
-    final isSourceMode = ref.read(discoveryPrefsProvider).mode == MetadataMode.source;
-    final activeTracker = !isSourceMode ? ref.read(metadataSourceProvider) : null;
-    final availableMediaTypes = isSourceMode 
-        ? [MediaType.ANIME, MediaType.MANGA] 
+
+    final isSourceMode =
+        ref.read(discoveryPrefsProvider).mode == MetadataMode.source;
+    final activeTracker = !isSourceMode
+        ? ref.read(metadataSourceProvider)
+        : null;
+    final availableMediaTypes = isSourceMode
+        ? [MediaType.ANIME, MediaType.MANGA]
         : (activeTracker?.supportedMediaTypes ?? MediaType.values);
-        
-    _selectedMediaType = availableMediaTypes.isNotEmpty ? availableMediaTypes.first : MediaType.ANIME;
+
+    _selectedMediaType = availableMediaTypes.isNotEmpty
+        ? availableMediaTypes.first
+        : MediaType.ANIME;
     _updateFormState();
   }
 
@@ -722,18 +732,27 @@ class _AddSectionSheetState extends ConsumerState<_AddSectionSheet> {
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            items: (() {
-              final isSourceMode = ref.watch(discoveryPrefsProvider).mode == MetadataMode.source;
-              final activeTracker = !isSourceMode ? ref.watch(metadataSourceProvider) : null;
-              final availableMediaTypes = isSourceMode 
-                  ? [MediaType.ANIME, MediaType.MANGA] 
-                  : (activeTracker?.supportedMediaTypes ?? MediaType.values);
-              return availableMediaTypes;
-            })()
-                .map(
-                  (t) => DropdownMenuItem(value: t, child: Text(t.displayName)),
-                )
-                .toList(),
+            items:
+                (() {
+                      final isSourceMode =
+                          ref.watch(discoveryPrefsProvider).mode ==
+                          MetadataMode.source;
+                      final activeTracker = !isSourceMode
+                          ? ref.watch(metadataSourceProvider)
+                          : null;
+                      final availableMediaTypes = isSourceMode
+                          ? [MediaType.ANIME, MediaType.MANGA]
+                          : (activeTracker?.supportedMediaTypes ??
+                                MediaType.values);
+                      return availableMediaTypes;
+                    })()
+                    .map(
+                      (t) => DropdownMenuItem(
+                        value: t,
+                        child: Text(t.displayName),
+                      ),
+                    )
+                    .toList(),
             onChanged: (val) {
               if (val != null) {
                 setState(() {

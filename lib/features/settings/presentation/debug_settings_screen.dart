@@ -2,8 +2,10 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/core/network/cf_client.dart';
 import 'package:shonenx/core/router/app_navigator.dart';
 import 'package:shonenx/core/services/notification_service.dart';
+import 'package:shonenx/features/discord/presentation/discord_login_page.dart';
 import 'package:shonenx/features/onboarding/providers/onboarding_provider.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
@@ -18,6 +20,42 @@ class DebugSettingsScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.only(bottom: 50),
         children: [
+          SettingsSection(
+            title: 'Web & Webview Debug',
+            children: [
+              SettingsActionTile(
+                icon: Icons.web_rounded,
+                title: 'Test CFClient Webview (AnimePahe)',
+                subtitle: 'Launch CfSolverScreen to test Cloudflare webview',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          const CfSolverScreen(baseUrl: 'https://animepahe.ru'),
+                    ),
+                  );
+                },
+              ),
+              SettingsActionTile(
+                icon: Icons.discord,
+                title: 'Test Discord Webview Login',
+                subtitle: 'Launch Discord login webview directly',
+                onTap: () {
+                  context.showDiscordLogin((token) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'Token Extracted: ${token.substring(0, 10)}...',
+                        ),
+                      ),
+                    );
+                  });
+                },
+              ),
+            ],
+          ),
+
           SettingsSection(
             title: 'App State & Onboarding',
             children: [

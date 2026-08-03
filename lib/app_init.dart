@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:anymex_extension_runtime_bridge/Settings/KvStore.dart';
 import 'package:anymex_extension_runtime_bridge/anymex_extension_runtime_bridge.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get/get.dart';
@@ -39,7 +40,8 @@ class AppInit {
 
     log.section('START');
 
-    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+    if (!kIsWeb &&
+        (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
       await _initWindowManager();
       log.s('Window manager initialized');
     }

@@ -48,7 +48,7 @@ class _HeaderButton extends StatelessWidget {
       child: Material(
         color: active
             ? theme.colorScheme.primaryContainer
-            : theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+            : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(12),
         child: InkWell(
           onTap: onTap,
@@ -59,8 +59,8 @@ class _HeaderButton extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: active
-                    ? theme.colorScheme.primary.withOpacity(0.5)
-                    : theme.colorScheme.outlineVariant.withOpacity(0.3),
+                    ? theme.colorScheme.primary.withValues(alpha: 0.5)
+                    : theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
               ),
             ),
             child: Icon(

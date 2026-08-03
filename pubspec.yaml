@@ -89,6 +89,10 @@ dependency_overrides:
     git:
       url: https://github.com/roshancodespace/flutter_inappwebview.git
       path: flutter_inappwebview
+  flutter_inappwebview_linux:
+    git:
+      url: https://github.com/roshancodespace/flutter_inappwebview.git
+      path: flutter_inappwebview_linux
   media_kit:
     git:
       url: https://github.com/Predidit/media-kit.git

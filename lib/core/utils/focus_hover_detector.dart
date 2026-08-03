@@ -34,9 +34,9 @@ class _FocusHoverDetectorState extends State<FocusHoverDetector> {
   bool _isHovered = false;
 
   void _setFocused(bool value) {
+    if (_isFocused == value) return;
     setState(() {
       _isFocused = value;
-
       if (value) {
         _isHovered = false;
       }
@@ -44,9 +44,9 @@ class _FocusHoverDetectorState extends State<FocusHoverDetector> {
   }
 
   void _setHovered(bool value) {
+    if (_isHovered == value) return;
     setState(() {
       _isHovered = value;
-
       if (value) {
         _isFocused = false;
       }

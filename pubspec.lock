@@ -474,7 +474,7 @@ packages:
     description:
       path: flutter_inappwebview
       ref: HEAD
-      resolved-ref: "4a7528f5a996f1e68ec6f5951dab7ecbbdc7c9be"
+      resolved-ref: "61a4c18ff04041c1eec316dbd2fa3992a2b105c4"
       url: "https://github.com/roshancodespace/flutter_inappwebview.git"
     source: git
     version: "6.2.0-beta.3"
@@ -503,11 +503,11 @@ packages:
     source: hosted
     version: "1.2.0-beta.3"
   flutter_inappwebview_linux:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
       path: flutter_inappwebview_linux
-      ref: "4a7528f5a996f1e68ec6f5951dab7ecbbdc7c9be"
-      resolved-ref: "4a7528f5a996f1e68ec6f5951dab7ecbbdc7c9be"
+      ref: HEAD
+      resolved-ref: "61a4c18ff04041c1eec316dbd2fa3992a2b105c4"
       url: "https://github.com/roshancodespace/flutter_inappwebview.git"
     source: git
     version: "0.1.0-beta.1"

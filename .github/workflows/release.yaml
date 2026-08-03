@@ -131,7 +131,7 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
-          cache: 'gradle'
+          cache: "gradle"
 
       - uses: subosito/flutter-action@v2
         with:
@@ -181,13 +181,17 @@ jobs:
     needs: resolve-release-tag
     if: github.event_name == 'push' || github.event.inputs.build_linux == 'true'
     runs-on: ubuntu-latest
+    container:
+      image: archlinux:base-devel
 
     steps:
-      - name: Install dependencies
+      - name: Install system dependencies
         run: |
-          sudo add-apt-repository universe
-          sudo apt-get update
-          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev libsecret-1-dev libmpv-dev libasound2-dev webkit2gtk-4.1
+          pacman -Syu --noconfirm
+          pacman -S --noconfirm git jq zip unzip curl xz tar clang cmake ninja pkgconf gtk3 libsecret webkit2gtk-4.1 mpv alsa-lib
+
+      - name: Trust git directory
+        run: git config --global --add safe.directory '*'
 
       - uses: actions/checkout@v4
 
@@ -218,13 +222,13 @@ jobs:
 
       - name: Enable Linux config
         run: flutter config --enable-linux-desktop
-      
+
       - name: Get Dependencies
         run: find . -name "pubspec.lock" -type f -delete && flutter pub upgrade
 
       - name: Build Linux app
         run: flutter build linux --release --dart-define-from-file=keys.json
-      
+
       - name: Upload Linux Artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -291,7 +295,7 @@ jobs:
   create-release:
     needs: [resolve-release-tag, build-android, build-linux, build-windows]
     runs-on: ubuntu-latest
-    
+
     if: always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled')
 
     steps:
@@ -356,10 +360,11 @@ jobs:
 
           Rules:
           1. Keep it minimal and professional.
-          2. Group related changes logically (e.g., Features, Bug Fixes, Improvements, Refactoring) if applicable, or just use clean bullet points.
-          3. DO NOT deviate significantly from what the commit messages say. Do not invent features or exaggerate changes.
-          4. Avoid using too many emojis (at most 1-2 subtle section icons, or none at all).
-          5. Return ONLY the Markdown text for the release notes without any introductory or concluding remarks from the AI.
+          2. Focus ONLY on user-facing app features, bug fixes, UI/UX enhancements, and app improvements. Completely EXCLUDE any CI/CD, GitHub Actions, workflow, build configuration, or internal script changes.
+          3. Group related user-facing changes logically (e.g., Features, Bug Fixes, Improvements) if applicable, or use clean bullet points.
+          4. DO NOT deviate significantly from what the commit messages say. Do not invent features or exaggerate changes.
+          5. Avoid using too many emojis (at most 1-2 subtle section icons, or none at all).
+          6. Return ONLY the Markdown text for the release notes without any introductory or concluding remarks from the AI.
 
           Commits:
           ${COMMITS}"

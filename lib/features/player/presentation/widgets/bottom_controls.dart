@@ -234,7 +234,8 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
                       final remaining = duration.inSeconds - position.inSeconds;
                       final isNearEnd =
                           widget.controller.hasNextEpisode &&
-                          duration.inSeconds > 0 &&
+                          duration.inSeconds >= 60 &&
+                          position.inSeconds > 30 &&
                           (remaining <= playerPrefs.nextEpisodeThreshold ||
                               position.inSeconds >= duration.inSeconds);
 

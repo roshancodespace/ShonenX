@@ -1,9 +1,3 @@
-Here is the complete updated workflow YAML containing:
-1. The **Arch Linux** container environment for `build-linux`.
-2. The **Gemini release notes prompt rule** excluding CI/CD and workflow commits (only including app features and fixes).
-3. The **Telegram notification step** that parses and includes the formatted HTML changelog directly inside the Telegram release message.
-
-```yaml
 name: Build ShonenX
 
 on:
@@ -553,4 +547,3 @@ jobs:
             -F parse_mode="HTML" \
             -F disable_web_page_preview="true" \
             --form-string text="$MSG"
-```

@@ -53,7 +53,8 @@ class SettingsSection extends StatelessWidget {
 }
 
 class SettingsNavTile extends StatelessWidget {
-  final IconData icon;
+  final IconData? icon;
+  final Widget? leading;
   final String title;
   final String? subtitle;
   final VoidCallback onTap;
@@ -61,7 +62,8 @@ class SettingsNavTile extends StatelessWidget {
 
   const SettingsNavTile({
     super.key,
-    required this.icon,
+    this.icon,
+    this.leading,
     required this.title,
     this.subtitle,
     required this.onTap,
@@ -74,7 +76,9 @@ class SettingsNavTile extends StatelessWidget {
 
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 10.0),
-      leading: Icon(icon, color: theme.colorScheme.primary),
+      leading:
+          leading ??
+          (icon != null ? Icon(icon, color: theme.colorScheme.primary) : null),
       title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
       subtitle: subtitle != null
           ? Text(

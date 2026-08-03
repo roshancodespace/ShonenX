@@ -7,6 +7,7 @@ import 'package:shonenx/core/router/scaffold_with_nav_bar.dart';
 import 'package:shonenx/features/discovery/presentation/details_screen.dart';
 import 'package:shonenx/features/onboarding/presentation/onboarding_screen.dart';
 import 'package:shonenx/features/discovery/presentation/home_screen.dart';
+import 'package:shonenx/features/settings/presentation/discord_settings_screen.dart';
 import 'package:shonenx/features/splash/presentation/splash_screen.dart';
 import 'package:shonenx/features/discovery/presentation/discover_screen.dart';
 import 'package:shonenx/features/downloads/presentation/downloads_screen.dart';
@@ -226,10 +227,6 @@ final routerProvider = Provider<GoRouter>((ref) {
           );
         },
       ),
-      // GoRoute(
-      //     path: AppRoutes.sourceSettings,
-      //     builder: (context, state) => const SourceSettingsScreen(),
-      //   ),
       GoRoute(
         path: '/player',
         builder: (context, state) {
@@ -252,6 +249,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/settings',
         builder: (context, state) => const SettingsScreen(),
         routes: [
+          GoRoute(
+            path: 'discord',
+            builder: (context, state) => const DiscordSettingsScreen(),
+          ),
           GoRoute(
             path: 'downloads',
             builder: (context, state) => const DownloadSettingsScreen(),

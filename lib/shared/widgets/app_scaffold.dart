@@ -6,6 +6,7 @@ import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
 class AppScaffold extends ConsumerWidget {
   final String? title;
   final Widget? titleWidget;
+  final Widget? leadingWidget;
   final bool extendBody;
   final String? subtitle;
   final PreferredSizeWidget? barBottom;
@@ -21,6 +22,7 @@ class AppScaffold extends ConsumerWidget {
     super.key,
     this.title,
     this.titleWidget,
+    this.leadingWidget,
     this.extendBody = false,
     this.subtitle,
     this.barBottom,
@@ -48,6 +50,43 @@ class AppScaffold extends ConsumerWidget {
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
 
+    Widget? defaultTitle;
+    if (title != null) {
+      final textColumn = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            title!,
+            style: textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.5,
+            ),
+          ),
+          if (subtitle != null)
+            Text(
+              subtitle!,
+              style: textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+        ],
+      );
+
+      if (leadingWidget != null) {
+        defaultTitle = Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            leadingWidget!,
+            const SizedBox(width: 10),
+            Flexible(child: textColumn),
+          ],
+        );
+      } else {
+        defaultTitle = textColumn;
+      }
+    }
+
     return Scaffold(
       backgroundColor: (useGradients || hasImage || useNoiseOverlay)
           ? Colors.transparent
@@ -56,29 +95,7 @@ class AppScaffold extends ConsumerWidget {
       appBar: title == null && titleWidget == null && actions == null
           ? null
           : AppBar(
-              title:
-                  titleWidget ??
-                  (title == null
-                      ? null
-                      : Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              title!,
-                              style: textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                            if (subtitle != null)
-                              Text(
-                                subtitle!,
-                                style: textTheme.bodySmall?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                          ],
-                        )),
+              title: titleWidget ?? defaultTitle,
               bottom: barBottom,
               centerTitle: centerTitle,
               elevation: 0,

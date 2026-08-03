@@ -15,6 +15,7 @@ import 'package:shonenx/features/discovery/domain/media_args.dart';
 import 'package:shonenx/features/discovery/providers/episodes_provider.dart';
 import 'package:shonenx/features/history/domain/models/watch_history_entry.dart';
 import 'package:shonenx/features/history/providers/watch_history_provider.dart';
+import 'package:shonenx/features/discord/providers/discord_rpc_provider.dart';
 import 'package:shonenx/features/player/domain/aniskip_prefs.dart';
 import 'package:shonenx/features/player/domain/player_mode.dart';
 import 'package:shonenx/features/player/providers/aniskip_prefs_provider.dart';
@@ -172,7 +173,49 @@ class PlayerController extends Notifier<PlayerState> {
       }
     });
 
+    ref.listen(videoEngineStateProvider.select((s) => s.isPlaying), (
+      prev,
+      current,
+    ) {
+      if (prev != current) {
+        _updateDiscordRpc();
+      }
+    });
+
     return const PlayerState();
+  }
+
+  void _updateDiscordRpc() {
+    if (_media == null) return;
+    final activeEp = state.activeEpisode;
+    if (activeEp == null) return;
+
+    final engine = ref.read(videoEngineProvider);
+    final isPlaying = ref.read(videoEngineStateProvider).isPlaying;
+    final positionMs = engine.currentPosition.inMilliseconds;
+    final durationMs = engine.currentDuration.inMilliseconds;
+
+    if (isPlaying) {
+      ref
+          .read(discordRpcProvider.notifier)
+          .updateAnimePresence(
+            anime: _media!,
+            episodeNumber: activeEp.number.toInt(),
+            episodeTitle: activeEp.title,
+            timeStampMs: positionMs > 0 ? positionMs : null,
+            durationMs: durationMs > 0 ? durationMs : null,
+            totalEpisodes: _media!.episodes,
+          );
+    } else {
+      ref
+          .read(discordRpcProvider.notifier)
+          .updateAnimePresencePaused(
+            anime: _media!,
+            episodeNumber: activeEp.number.toInt(),
+            timeStampMs: positionMs > 0 ? positionMs : null,
+            durationMs: durationMs > 0 ? durationMs : null,
+          );
+    }
   }
 
   Future<void> _applyNativeSubtitle(SubtitleTrack? subtitle) async {
@@ -530,6 +573,7 @@ class PlayerController extends Notifier<PlayerState> {
           );
 
       _startProgressTracker();
+      _updateDiscordRpc();
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }

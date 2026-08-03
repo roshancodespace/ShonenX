@@ -49,7 +49,7 @@ class _ExtensionBeginnerSheetState
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               decoration: BoxDecoration(
-                color: cs.errorContainer.withOpacity(0.6),
+                color: cs.errorContainer.withValues(alpha: 0.6),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
@@ -95,12 +95,12 @@ class _ExtensionBeginnerSheetState
                       decoration: BoxDecoration(
                         color: isSelected
                             ? cs.primary
-                            : cs.surfaceContainerHighest.withOpacity(0.5),
+                            : cs.surfaceContainerHighest.withValues(alpha: 0.5),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
                           color: isSelected
                               ? cs.primary
-                              : cs.outlineVariant.withOpacity(0.3),
+                              : cs.outlineVariant.withValues(alpha: 0.3),
                         ),
                       ),
                       child: Text(
@@ -191,9 +191,11 @@ class _ExtensionBeginnerSheetState
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: cs.secondaryContainer.withOpacity(0.4),
+                      color: cs.secondaryContainer.withValues(alpha: 0.4),
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: cs.secondary.withOpacity(0.2)),
+                      border: Border.all(
+                        color: cs.secondary.withValues(alpha: 0.2),
+                      ),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -232,10 +234,10 @@ class _ExtensionBeginnerSheetState
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: cs.surfaceContainerHighest.withOpacity(0.4),
+                      color: cs.surfaceContainerHighest.withValues(alpha: 0.4),
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                        color: cs.outlineVariant.withOpacity(0.3),
+                        color: cs.outlineVariant.withValues(alpha: 0.3),
                       ),
                     ),
                     child: Column(

@@ -25,6 +25,7 @@ import 'package:shonenx/features/player/providers/player_controller.dart';
 import 'package:shonenx/features/player/providers/player_prefs_provider.dart';
 import 'package:shonenx/features/player/providers/video_engine_provider.dart';
 import 'package:shonenx/features/comments/presentation/widgets/comments_tab.dart';
+import 'package:shonenx/features/discord/providers/discord_rpc_provider.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 
 class PlayerScreen extends ConsumerStatefulWidget {
@@ -118,6 +119,16 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     } catch (_) {}
     _controlsTimer?.cancel();
     _disposeSystemUI();
+
+    try {
+      if (widget.mode is PlayerModeOnline) {
+        ref
+            .read(discordRpcProvider.notifier)
+            .updateMediaPresence((widget.mode as PlayerModeOnline).media);
+      } else {
+        ref.read(discordRpcProvider.notifier).updateBrowsingPresence();
+      }
+    } catch (_) {}
 
     try {
       ref.read(videoEngineProvider).dispose();

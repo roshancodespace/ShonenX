@@ -2,8 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 
 // Reference: https://github.com/RyanYuuki/AnymeX/blob/main/lib/controllers/discord/discord_rpc.dart
@@ -13,6 +13,8 @@ class DiscordRpcService {
       'wss://gateway.discord.gg/?v=10&encoding=json';
   static const String _appIconUrl =
       'https://raw.githubusercontent.com/roshancodespace/ShonenX/refs/heads/main/assets/images/app_icon.png';
+
+  final _log = AppLogger.scope(DiscordRpcService);
 
   WebSocket? _gatewaySocket;
   Timer? _heartbeatTimer;
@@ -40,13 +42,14 @@ class DiscordRpcService {
 
     _connectCompleter = Completer<void>();
     _token = token;
+    _log.i('Connection requested');
 
     try {
       if (token.isNotEmpty) {
         await _connectGateway();
       }
-    } catch (e) {
-      debugPrint('Discord RPC connection error: $e');
+    } catch (e, s) {
+      _log.e('Discord RPC connection error', e, s);
       _isConnected = false;
     } finally {
       if (_connectCompleter != null && !_connectCompleter!.isCompleted) {
@@ -57,23 +60,24 @@ class DiscordRpcService {
 
   Future<void> _connectGateway() async {
     await disconnect();
+    _log.i('Connecting to Discord Gateway socket...');
 
     try {
       _gatewaySocket = await WebSocket.connect(_gatewayUrl);
       _gatewaySocket!.listen(
         _handleGatewayMessage,
         onError: (error) {
-          debugPrint('Discord Gateway error: $error');
+          _log.e('Discord Gateway socket error', error);
           _isConnected = false;
         },
         onDone: () {
-          debugPrint('Discord Gateway disconnected');
+          _log.w('Discord Gateway connection closed');
           _isConnected = false;
           _heartbeatTimer?.cancel();
         },
       );
-    } catch (e) {
-      debugPrint('Failed to connect to Discord Gateway: $e');
+    } catch (e, s) {
+      _log.e('Failed to connect to Discord Gateway', e, s);
       _isConnected = false;
     }
   }
@@ -88,6 +92,9 @@ class DiscordRpcService {
         case 10: // Hello
           _heartbeatInterval = data['d']['heartbeat_interval'] as int?;
           _heartbeatAckReceived = true;
+          _log.d(
+            'Gateway HELLO received (heartbeat interval: ${_heartbeatInterval}ms)',
+          );
           _identify();
           _startHeartbeat();
           break;
@@ -95,7 +102,7 @@ class DiscordRpcService {
           final event = data['t'] as String?;
           if (event == 'READY') {
             _isConnected = true;
-            debugPrint('Discord Gateway Connected & Ready');
+            _log.s('Discord Gateway Connected & READY');
             if (_lastPresencePayload != null) {
               _sendPayload(_lastPresencePayload!);
             } else {
@@ -107,13 +114,14 @@ class DiscordRpcService {
           _heartbeatAckReceived = true;
           break;
       }
-    } catch (e) {
-      debugPrint('Error handling Gateway message: $e');
+    } catch (e, s) {
+      _log.e('Error handling Gateway message', e, s);
     }
   }
 
   void _identify() {
     if (_token == null || _token!.isEmpty) return;
+    _log.d('Sending Gateway IDENTIFY payload');
 
     final payload = {
       'op': 2,
@@ -143,7 +151,7 @@ class DiscordRpcService {
 
   void _sendHeartbeat() {
     if (!_heartbeatAckReceived) {
-      debugPrint('Heartbeat ACK missed. Reconnecting...');
+      _log.w('Heartbeat ACK missed! Reconnecting...');
       if (_token != null) connect(_token!);
       return;
     }
@@ -181,10 +189,17 @@ class DiscordRpcService {
         if (data.isNotEmpty && data[0]['external_asset_path'] != null) {
           final assetPath = 'mp:${data[0]['external_asset_path']}';
           _assetCache[url] = assetPath;
+          _log.d('Registered external asset: $assetPath');
           return assetPath;
         }
+      } else {
+        _log.w(
+          'Failed to register external asset for image: HTTP ${response.statusCode}',
+        );
       }
-    } catch (_) {}
+    } catch (e, s) {
+      _log.w('Error registering external asset for image: $url', e, s);
+    }
 
     return _defaultAssetKey;
   }
@@ -197,7 +212,10 @@ class DiscordRpcService {
     int? durationMs,
     int? totalEpisodes,
   }) async {
-    if (!_isConnected || _gatewaySocket == null) return;
+    if (!_isConnected || _gatewaySocket == null) {
+      _log.w('Skipped updateAnimePresence (Gateway not connected)');
+      return;
+    }
 
     final currentSeconds = timeStampMs != null
         ? (timeStampMs / 1000).round()
@@ -220,6 +238,8 @@ class DiscordRpcService {
 
     final coverUrl = anime.cover ?? anime.banner;
     final mediaUrl = 'https://anilist.co/anime/${anime.id}';
+
+    _log.i('Updating Anime presence: $title ($epString)');
 
     final payload = {
       'op': 3,
@@ -265,7 +285,10 @@ class DiscordRpcService {
     int? timeStampMs,
     int? durationMs,
   }) async {
-    if (!_isConnected || _gatewaySocket == null) return;
+    if (!_isConnected || _gatewaySocket == null) {
+      _log.w('Skipped updateAnimePresencePaused (Gateway not connected)');
+      return;
+    }
 
     final currentSec = timeStampMs != null ? (timeStampMs / 1000).round() : 0;
     final totalSec = durationMs != null ? (durationMs / 1000).round() : 0;
@@ -276,6 +299,8 @@ class DiscordRpcService {
     final title = anime.title.availableTitle;
     final coverUrl = anime.cover ?? anime.banner;
     final mediaUrl = 'https://anilist.co/anime/${anime.id}';
+
+    _log.i('Updating Anime presence (Paused): $title');
 
     final payload = {
       'op': 3,
@@ -319,7 +344,10 @@ class DiscordRpcService {
     int? totalPages,
     int? totalChapters,
   }) async {
-    if (!_isConnected || _gatewaySocket == null) return;
+    if (!_isConnected || _gatewaySocket == null) {
+      _log.w('Skipped updateMangaPresence (Gateway not connected)');
+      return;
+    }
 
     if (_activeMediaId != manga.id || _mediaStartTimeMs == null) {
       _activeMediaId = manga.id;
@@ -337,6 +365,8 @@ class DiscordRpcService {
 
     final coverUrl = manga.cover ?? manga.banner;
     final mediaUrl = 'https://anilist.co/manga/${manga.id}';
+
+    _log.i('Updating Manga presence: $title ($chString)');
 
     final payload = {
       'op': 3,
@@ -376,12 +406,16 @@ class DiscordRpcService {
   void _sendPayload(Map<String, dynamic> payload) {
     _lastPresencePayload = payload;
     if (_isConnected && _gatewaySocket != null) {
+      _log.d('Dispatched presence payload over Gateway');
       _gatewaySocket?.add(jsonEncode(payload));
     }
   }
 
   Future<void> updateMediaPresence({required UnifiedMedia media}) async {
-    if (!_isConnected || _gatewaySocket == null) return;
+    if (!_isConnected || _gatewaySocket == null) {
+      _log.w('Skipped updateMediaPresence (Gateway not connected)');
+      return;
+    }
 
     if (_activeMediaId != media.id || _mediaStartTimeMs == null) {
       _activeMediaId = media.id;
@@ -393,6 +427,8 @@ class DiscordRpcService {
     final typeStr = media.type == MediaType.MANGA ? 'Manga' : 'Anime';
     final coverUrl = media.cover ?? media.banner;
     final mediaUrl = 'https://anilist.co/${media.type.id}/${media.id}';
+
+    _log.i('Updating Media presence: $title');
 
     final images = await Future.wait([
       _processImageUrl(coverUrl),
@@ -438,11 +474,16 @@ class DiscordRpcService {
     String? activity,
     String? details,
   }) async {
-    if (!_isConnected || _gatewaySocket == null) return;
+    if (!_isConnected || _gatewaySocket == null) {
+      _log.w('Skipped updateBrowsingPresence (Gateway not connected)');
+      return;
+    }
 
     _browsingStartTimeMs ??= DateTime.now().millisecondsSinceEpoch;
     _activeMediaId = null;
     _mediaStartTimeMs = null;
+
+    _log.i('Updating Browsing presence: ${activity ?? 'Glazing ShonenX'}');
 
     final payload = {
       'op': 3,
@@ -482,6 +523,7 @@ class DiscordRpcService {
   }
 
   Future<void> clearPresence() async {
+    _log.i('Clearing Discord presence');
     resetPresenceState();
     if (!_isConnected || _gatewaySocket == null) return;
 
@@ -494,6 +536,7 @@ class DiscordRpcService {
   }
 
   Future<void> disconnect() async {
+    _log.i('Disconnecting Discord Gateway...');
     _heartbeatTimer?.cancel();
     _heartbeatTimer = null;
     await _gatewaySocket?.close();

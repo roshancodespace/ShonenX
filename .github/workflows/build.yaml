@@ -193,16 +193,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pub-
 
-      - name: Cache Linux build state
-        uses: actions/cache@v4
-        with:
-          path: |
-            build/
-            .dart_tool/
-          key: ${{ runner.os }}-flutter-build-${{ hashFiles('**/pubspec.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-flutter-build-
-
       - name: Create env file
         run: |
           cat > keys.json <<EOF

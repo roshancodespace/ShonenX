@@ -118,9 +118,13 @@ class PlayerController extends Notifier<PlayerState> {
   String? _preferredSubtitleLang = 'eng';
   String? _preferredAudioLang;
 
+  bool _isDisposed = false;
+
   @override
   PlayerState build() {
+    _isDisposed = false;
     ref.onDispose(() {
+      _isDisposed = true;
       _positionSubscription?.close();
       _progressTimer?.cancel();
     });
@@ -177,7 +181,7 @@ class PlayerController extends Notifier<PlayerState> {
       prev,
       current,
     ) {
-      if (prev != current) {
+      if (!_isDisposed && prev != current) {
         _updateDiscordRpc();
       }
     });
@@ -186,7 +190,7 @@ class PlayerController extends Notifier<PlayerState> {
   }
 
   void _updateDiscordRpc() {
-    if (_media == null) return;
+    if (_isDisposed || _media == null) return;
     final activeEp = state.activeEpisode;
     if (activeEp == null) return;
 
@@ -368,9 +372,13 @@ class PlayerController extends Notifier<PlayerState> {
       ).selectAsync((s) => s.episodes),
     );
 
-    final currentIndex = episodes.indexWhere(
-      (e) => e.id == state.activeEpisode!.id,
-    );
+    final activeEp = state.activeEpisode!;
+    int currentIndex = episodes.indexWhere((e) => e.id == activeEp.id);
+    if (currentIndex == -1) {
+      currentIndex = episodes.indexWhere(
+        (e) => (e.number - activeEp.number).abs() < 0.01,
+      );
+    }
     if (currentIndex == -1) return;
 
     final targetIndex = currentIndex + (forward ? 1 : -1);
@@ -386,9 +394,13 @@ class PlayerController extends Notifier<PlayerState> {
         .value;
     if (episodesState != null) {
       final episodes = episodesState.episodes;
-      final currentIndex = episodes.indexWhere(
-        (e) => e.id == state.activeEpisode!.id,
-      );
+      final activeEp = state.activeEpisode!;
+      int currentIndex = episodes.indexWhere((e) => e.id == activeEp.id);
+      if (currentIndex == -1) {
+        currentIndex = episodes.indexWhere(
+          (e) => (e.number - activeEp.number).abs() < 0.01,
+        );
+      }
       if (currentIndex != -1) {
         return currentIndex < episodes.length - 1;
       }
@@ -399,6 +411,27 @@ class PlayerController extends Notifier<PlayerState> {
       return state.activeEpisode!.number < total;
     }
     return true; // Assume there is one if total is unknown, until proven otherwise
+  }
+
+  bool get hasPrevEpisode {
+    if (_media == null || state.activeEpisode == null) return false;
+    final episodesState = ref
+        .read(episodesListProvider(MediaArgs.fromMedia(_media!)))
+        .value;
+    if (episodesState != null) {
+      final episodes = episodesState.episodes;
+      final activeEp = state.activeEpisode!;
+      int currentIndex = episodes.indexWhere((e) => e.id == activeEp.id);
+      if (currentIndex == -1) {
+        currentIndex = episodes.indexWhere(
+          (e) => (e.number - activeEp.number).abs() < 0.01,
+        );
+      }
+      if (currentIndex != -1) {
+        return currentIndex > 0;
+      }
+    }
+    return state.activeEpisode!.number > 1;
   }
 
   bool _matchesQuality(String candidate, String target) {

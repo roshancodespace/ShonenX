@@ -44,10 +44,10 @@ class _CenterControlsState extends ConsumerState<CenterControls> {
               []
         : [];
     final isFirst = episodes.isEmpty
-        ? true
+        ? !widget.controller.hasPrevEpisode
         : widget.playerState.activeEpisode?.number == episodes.first.number;
     final isLast = episodes.isEmpty
-        ? true
+        ? !widget.controller.hasNextEpisode
         : widget.playerState.activeEpisode?.number == episodes.last.number;
 
     final isBuffering =

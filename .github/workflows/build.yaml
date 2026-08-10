@@ -1,0 +1,539 @@
+name: Build ShonenX
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Release Tag (Leave empty to auto-extract from pubspec.yaml)'
+        required: false
+        type: string
+      upgrade_dependencies:
+        description: 'Run flutter pub upgrade instead of pub get'
+        type: boolean
+        default: false
+      build_android:
+        type: boolean
+        default: true
+      build_linux:
+        type: boolean
+        default: true
+      build_windows:
+        type: boolean
+        default: true
+
+# REQUIRED: Gives GitHub Actions permission to create a Release
+permissions:
+  contents: write
+
+jobs:
+  start_building:
+    runs-on: ubuntu-latest
+    env:
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+    steps:
+      - name: Notify Telegram — Build Started
+        run: |
+          MSG=$(cat <<EOF
+          <b>Build Initiated: ShonenX</b>
+          
+          <b>Branch:</b> <code>${{ github.ref_name }}</code>
+          <b>Triggered by:</b> <code>${{ github.actor }}</code>
+          <b>Repository:</b> <a href="https://github.com/${{ github.repository }}">View Repository</a>
+          
+          <a href="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}">View Action Logs</a>
+          EOF
+          )
+          
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -F chat_id="${TELEGRAM_CHAT_ID}" \
+            -F parse_mode="HTML" \
+            -F disable_web_page_preview="true" \
+            --form-string text="$MSG"
+
+  build-android:
+    if: github.event.inputs.build_android == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          token: ${{ secrets.SUBMODULE_PAT }}
+
+      - name: Override pubspec.yaml version
+        if: github.event.inputs.release_tag != ''
+        shell: bash
+        run: |
+          CLEAN_VER="${{ github.event.inputs.release_tag }}"
+          CLEAN_VER="${CLEAN_VER#v}" # Strip 'v' if provided
+          
+          # Extract existing build number
+          EXISTING_VER=$(grep '^version:' pubspec.yaml | awk '{print $2}')
+          if [[ "$EXISTING_VER" == *"+"* ]] && [[ "$CLEAN_VER" != *"+"* ]]; then
+            BUILD_NUM="+${EXISTING_VER#*+}"
+            CLEAN_VER="${CLEAN_VER}${BUILD_NUM}"
+          fi
+          
+          echo "Overriding pubspec.yaml version to: $CLEAN_VER"
+          sed -i -e "s/^version: .*/version: $CLEAN_VER/g" pubspec.yaml
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: 'gradle'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.35.7
+          cache: true
+
+      - name: Cache Pub dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
+      - name: Decode keystore
+        run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
+
+      - name: Create key.properties
+        run: |
+          cat > android/key.properties <<EOF
+          storePassword=${{ secrets.ANDROID_STORE_PASSWORD }}
+          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
+          storeFile=upload-keystore.jks
+          EOF
+
+      - name: Create env file
+        run: |
+          cat > keys.json <<EOF
+          {
+            "ANILIST_CLIENT_ID": "${{ secrets.ANILIST_CLIENT_ID }}",
+            "ANILIST_CLIENT_SECRET": "${{ secrets.ANILIST_CLIENT_SECRET }}",
+            "MAL_CLIENT_ID": "${{ secrets.MAL_CLIENT_ID }}",
+            "MAL_CLIENT_SECRET": "${{ secrets.MAL_CLIENT_SECRET }}",
+            "SIMKL_CLIENT_ID": "${{ secrets.SIMKL_CLIENT_ID }}",
+            "SIMKL_CLIENT_SECRET": "${{ secrets.SIMKL_CLIENT_SECRET }}",
+            "COMMENTUM_API_URL": "${{ secrets.COMMENTUM_API_URL }}",
+            "RELEASE_REPO": "Chitransh193/ShonenX"
+          }
+          EOF
+
+      - name: Resolve Dependencies
+        shell: bash
+        run: |
+          if [ "${{ github.event.inputs.upgrade_dependencies }}" == 'true' ]; then
+            echo "Running flutter pub upgrade..."
+            flutter pub upgrade
+          else
+            echo "Running flutter pub get..."
+            flutter pub get
+          fi
+
+      - name: Build APKs
+        run: flutter build apk --release --split-per-abi --dart-define-from-file=keys.json
+
+      - name: Upload Android Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apks
+          path: build/app/outputs/flutter-apk/*.apk
+
+  build-linux:
+    if: github.event.inputs.build_linux == 'true'
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:base-devel
+
+    steps:
+      - name: Install system dependencies
+        run: |
+          pacman -Syu --noconfirm
+          pacman -S --noconfirm git jq zip unzip curl xz tar clang cmake ninja pkgconf gtk3 libsecret webkit2gtk-4.1 mpv alsa-lib wpewebkit
+
+      - name: Trust git directory
+        run: git config --global --add safe.directory '*'
+
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          token: ${{ secrets.SUBMODULE_PAT }}
+
+      - name: Override pubspec.yaml version
+        if: github.event.inputs.release_tag != ''
+        shell: bash
+        run: |
+          CLEAN_VER="${{ github.event.inputs.release_tag }}"
+          CLEAN_VER="${CLEAN_VER#v}"
+          
+          # Extract existing build number
+          EXISTING_VER=$(grep '^version:' pubspec.yaml | awk '{print $2}')
+          if [[ "$EXISTING_VER" == *"+"* ]] && [[ "$CLEAN_VER" != *"+"* ]]; then
+            BUILD_NUM="+${EXISTING_VER#*+}"
+            CLEAN_VER="${CLEAN_VER}${BUILD_NUM}"
+          fi
+          
+          echo "Overriding pubspec.yaml version to: $CLEAN_VER"
+          sed -i -e "s/^version: .*/version: $CLEAN_VER/g" pubspec.yaml
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.35.7
+          cache: true
+
+      - name: Cache Pub dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
+      - name: Create env file
+        run: |
+          cat > keys.json <<EOF
+          {
+            "ANILIST_CLIENT_ID": "${{ secrets.ANILIST_CLIENT_ID }}",
+            "ANILIST_CLIENT_SECRET": "${{ secrets.ANILIST_CLIENT_SECRET }}",
+            "MAL_CLIENT_ID": "${{ secrets.MAL_CLIENT_ID }}",
+            "MAL_CLIENT_SECRET": "${{ secrets.MAL_CLIENT_SECRET }}",
+            "SIMKL_CLIENT_ID": "${{ secrets.SIMKL_CLIENT_ID }}",
+            "SIMKL_CLIENT_SECRET": "${{ secrets.SIMKL_CLIENT_SECRET }}",
+            "COMMENTUM_API_URL": "${{ secrets.COMMENTUM_API_URL }}",
+            "RELEASE_REPO": "Chitransh193/ShonenX"
+          }
+          EOF
+
+      - name: Enable Linux config
+        run: flutter config --enable-linux-desktop
+
+      - name: Resolve Dependencies
+        shell: bash
+        run: |
+          if [ "${{ github.event.inputs.upgrade_dependencies }}" == 'true' ]; then
+            echo "Running flutter pub upgrade..."
+            flutter pub upgrade
+          else
+            echo "Running flutter pub get..."
+            flutter pub get
+          fi
+
+      - name: Build Linux app
+        run: flutter build linux --release --dart-define-from-file=keys.json -v
+        
+      - name: Upload Linux Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-bundle
+          path: build/linux/x64/release/bundle
+
+  build-windows:
+    if: github.event.inputs.build_windows == 'true'
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          token: ${{ secrets.SUBMODULE_PAT }}
+
+      - name: Override pubspec.yaml version
+        if: github.event.inputs.release_tag != ''
+        shell: bash
+        run: |
+          CLEAN_VER="${{ github.event.inputs.release_tag }}"
+          CLEAN_VER="${CLEAN_VER#v}"
+          
+          # Extract existing build number
+          EXISTING_VER=$(grep '^version:' pubspec.yaml | awk '{print $2}')
+          if [[ "$EXISTING_VER" == *"+"* ]] && [[ "$CLEAN_VER" != *"+"* ]]; then
+            BUILD_NUM="+${EXISTING_VER#*+}"
+            CLEAN_VER="${CLEAN_VER}${BUILD_NUM}"
+          fi
+          
+          echo "Overriding pubspec.yaml version to: $CLEAN_VER"
+          sed -i -e "s/^version: .*/version: $CLEAN_VER/g" pubspec.yaml
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.35.7
+          cache: true
+
+      - name: Cache Pub dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~\AppData\Local\Pub\Cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
+      - name: Enable Windows config
+        run: flutter config --enable-windows-desktop
+
+      - name: Create env file
+        shell: bash
+        run: |
+          cat > keys.json <<EOF
+          {
+            "ANILIST_CLIENT_ID": "${{ secrets.ANILIST_CLIENT_ID }}",
+            "ANILIST_CLIENT_SECRET": "${{ secrets.ANILIST_CLIENT_SECRET }}",
+            "MAL_CLIENT_ID": "${{ secrets.MAL_CLIENT_ID }}",
+            "MAL_CLIENT_SECRET": "${{ secrets.MAL_CLIENT_SECRET }}",
+            "SIMKL_CLIENT_ID": "${{ secrets.SIMKL_CLIENT_ID }}",
+            "SIMKL_CLIENT_SECRET": "${{ secrets.SIMKL_CLIENT_SECRET }}",
+            "COMMENTUM_API_URL": "${{ secrets.COMMENTUM_API_URL }}",
+            "RELEASE_REPO": "Chitransh193/ShonenX"
+          }
+          EOF
+
+      - name: Resolve Dependencies
+        shell: bash
+        run: |
+          if [ "${{ github.event.inputs.upgrade_dependencies }}" == 'true' ]; then
+            echo "Running flutter pub upgrade..."
+            flutter pub upgrade
+          else
+            echo "Running flutter pub get..."
+            flutter pub get
+          fi
+
+      - name: Build Windows app
+        shell: bash
+        run: |
+          flutter build windows --release --dart-define-from-file=keys.json || {
+            echo "First build failed (likely due to media_kit libmpv download race condition). Retrying..."
+            flutter build windows --release --dart-define-from-file=keys.json
+          }
+
+      - name: Build installer (InnoBundle)
+        run: dart run inno_bundle --release --no-app
+
+      - name: Upload Windows Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          path: build/windows/x64/installer/Release
+
+  release_and_upload:
+    if: always()
+    needs: [start_building, build-android, build-linux, build-windows]
+    runs-on: ubuntu-latest
+    env:
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # ── Download Active Artifacts ────────────────────────────────────────────────
+      - name: Download Android artifacts
+        if: ${{ needs.build-android.result == 'success' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: android-apks
+          path: artifacts/android
+
+      - name: Download Linux artifacts
+        if: ${{ needs.build-linux.result == 'success' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-bundle
+          path: artifacts/linux
+
+      - name: Download Windows artifacts
+        if: ${{ needs.build-windows.result == 'success' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-installer
+          path: artifacts/windows
+
+      # ── Zip Linux bundle ────────────────────────────────────────────────────────
+      - name: Zip Linux bundle
+        if: ${{ needs.build-linux.result == 'success' }}
+        run: |
+          cd artifacts
+          zip -r ShonenX-linux.zip linux
+
+      # ── Determine Tag ───────────────────────────────────────────────────────────
+      - name: Determine Release Tag
+        id: determine_tag
+        run: |
+          if [ -n "${{ github.event.inputs.release_tag }}" ]; then
+            TAG="${{ github.event.inputs.release_tag }}"
+          else
+            VERSION=$(grep '^version:' pubspec.yaml | awk '{print $2}' | cut -d'+' -f1)
+            TAG="v$VERSION"
+          fi
+          echo "TAG=$TAG" >> $GITHUB_ENV
+
+      # ── Generate Release Notes (Gemini API) ─────────────────────────────────────
+      - name: Generate Release Notes
+        id: release_notes
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          CURRENT_TAG: ${{ env.TAG }}
+        run: |
+          set -euo pipefail
+          git fetch --tags --force
+
+          # FIX: Sort tags by semantic versioning strictly, ignoring commit ancestry graph
+          if git rev-parse -q --verify "refs/tags/$CURRENT_TAG" >/dev/null; then
+            echo "Tag $CURRENT_TAG already exists. Finding the previous tag by version..."
+            PREV_TAG=$(git tag --sort=-v:refname | grep -A 1 "^${CURRENT_TAG}$" | tail -n 1)
+            if [ "$PREV_TAG" = "$CURRENT_TAG" ]; then
+              PREV_TAG="" # No older tag exists
+            fi
+          else
+            echo "Tag $CURRENT_TAG does not exist yet. Finding the latest tag by version..."
+            PREV_TAG=$(git tag --sort=-v:refname | head -n 1)
+          fi
+
+          echo "Previous Tag resolved to: $PREV_TAG"
+
+          if [ -n "$PREV_TAG" ]; then
+            echo "Comparing $PREV_TAG..HEAD"
+            COMMITS=$(git log "${PREV_TAG}..HEAD" --pretty=format:"- %s (%h)")
+            COMPARE_LINK="https://github.com/${{ github.repository }}/compare/${PREV_TAG}...${CURRENT_TAG}"
+          else
+            echo "No previous tag found, getting recent commits"
+            COMMITS=$(git log --pretty=format:"- %s (%h)" -n 30)
+            COMPARE_LINK=""
+          fi
+
+          echo "Commits to format:"
+          echo "$COMMITS"
+
+          NOTES=""
+          if [ -n "$GEMINI_API_KEY" ]; then
+            PROMPT="You are a professional software release manager. Format the following git commit messages into minimal, clean, professional Markdown release notes for version ${CURRENT_TAG}.
+
+          Rules:
+          1. Keep it minimal and professional.
+          2. Focus ONLY on user-facing app features, bug fixes, UI/UX enhancements, and app improvements. Completely EXCLUDE any CI/CD, GitHub Actions, workflow, build configuration, or internal script changes.
+          3. Group related user-facing changes logically (e.g., Features, Bug Fixes, Improvements) if applicable, or use clean bullet points.
+          4. DO NOT deviate significantly from what the commit messages say. Do not invent features or exaggerate changes.
+          5. STRICT NO EMOJI POLICY: Do NOT output a single emoji whatsoever. 0 emojis.
+          6. Return ONLY the Markdown text for the release notes without any introductory or concluding remarks from the AI.
+
+          Commits:
+          ${COMMITS}"
+
+            PAYLOAD=$(jq -n --arg prompt "$PROMPT" '{contents: [{parts: [{"text": $prompt}]}]}')
+
+            call_gemini() {
+              local model="$1"
+              curl -s -X POST \
+                "https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}" \
+                -H "Content-Type: application/json" \
+                -d "$PAYLOAD"
+            }
+
+            for MODEL in "gemini-2.5-flash" "gemini-3.5-flash" "gemini-2.5-pro" "gemini-1.5-flash"; do
+              echo "Trying Gemini model: $MODEL..."
+              RESPONSE=$(call_gemini "$MODEL")
+              NOTES=$(echo "$RESPONSE" | jq -r '.candidates[0].content.parts[0].text // empty')
+              if [ -n "$NOTES" ]; then
+                echo "Successfully generated release notes using $MODEL"
+                break
+              else
+                echo "Model $MODEL failed or returned empty. Response: $RESPONSE"
+              fi
+            done
+          else
+            echo "GEMINI_API_KEY secret is not set. Falling back to default commit list."
+          fi
+
+          if [ -z "$NOTES" ]; then
+            echo "Using fallback commit list for release notes."
+            NOTES="## What's Changed
+
+          $COMMITS"
+          fi
+
+          if [ -n "$COMPARE_LINK" ]; then
+            NOTES="$NOTES
+
+          ---
+          **Full Changelog**: $COMPARE_LINK"
+          fi
+
+          echo "$NOTES" > release_notes.md
+          echo "Generated release_notes.md:"
+          cat release_notes.md
+
+      # ── Create or Update GitHub Release ─────────────────────────────────────────
+      - name: Create or Update GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.TAG }}
+          name: Release ${{ env.TAG }}
+          body_path: release_notes.md
+          files: |
+            artifacts/**/*.apk
+            artifacts/**/*.exe
+            artifacts/**/*.msi
+            artifacts/**/*.zip
+            artifacts/ShonenX-linux.zip
+
+      # ── Notify Telegram with Clean Asset Links & Formatted Changelog ───────────
+      - name: Send Release Links to Telegram
+        run: |
+          REPO_URL="https://github.com/${{ github.repository }}"
+          RELEASE_URL="${REPO_URL}/releases/download/${{ env.TAG }}"
+          
+          # Convert Markdown release notes into Telegram HTML supported tags
+          CHANGELOG_HTML=$(cat release_notes.md \
+            | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g' \
+            | sed -E 's/^#+[[:space:]]*(.*)/<b>\1<\/b>/' \
+            | sed -E 's/\*\*([^*]+)\*\*/<b>\1<\/b>/g' \
+            | sed -E 's/`([^`]+)`/<code>\1<\/code>/g' \
+            | sed -E 's/^[[:space:]]*-[[:space:]]*/• /' \
+            | head -c 2000)
+          
+          # Base message template
+          MSG=$(cat <<EOF
+          <b>ShonenX Release Compiled: ${{ env.TAG }}</b>
+          
+          The build pipeline has completed successfully.
+          
+          <b>Repository:</b> <a href="${REPO_URL}">View Repository</a>
+          <b>Release Notes:</b> <a href="${REPO_URL}/releases/tag/${{ env.TAG }}">View Release Page</a>
+          
+          <b>Changelog:</b>
+          ${CHANGELOG_HTML}
+          
+          <b>Direct Asset Downloads:</b>
+          EOF
+          )
+          
+          # Programmatically look for generated assets and add formatted HTML links
+          if [ "${{ needs.build-android.result }}" = "success" ]; then
+            cd artifacts/android
+            for f in *.apk; do
+              [ -e "$f" ] && MSG="${MSG}"$'\n• <a href="'"${RELEASE_URL}/${f}"'">'${f}'</a>'
+            done
+            cd ../..
+          fi
+          
+          if [ "${{ needs.build-windows.result }}" = "success" ]; then
+            cd artifacts/windows
+            for f in *.exe *.msi; do
+              [ -e "$f" ] && MSG="${MSG}"$'\n• <a href="'"${RELEASE_URL}/${f}"'">'${f}'</a>'
+            done
+            cd ../..
+          fi
+          
+          if [ "${{ needs.build-linux.result }}" = "success" ]; then
+            MSG="${MSG}"$'\n• <a href="'"${RELEASE_URL}/ShonenX-linux.zip"'">ShonenX-linux.zip</a>'
+          fi
+          
+          # Ship message to Telegram
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -F chat_id="${TELEGRAM_CHAT_ID}" \
+            -F parse_mode="HTML" \
+            -F disable_web_page_preview="true" \
+            --form-string text="$MSG"

@@ -21,6 +21,7 @@ import 'package:shonenx/shared/models/video_server.dart';
 import 'package:shonenx/shared/models/video_stream.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 
+// Bottom controls overlay: progress bar, skip buttons, subtitles/audio pickers, etc.
 class BottomControls extends ConsumerStatefulWidget {
   final bool showControls;
   final Function onToggleLockControls;
@@ -57,16 +58,15 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
   double? _dragingValue;
   bool _isFullScreen = false;
   bool _isPortrait = false;
+
+  // Prevent auto-next from triggering multiple times per episode
   bool _hasTriggeredAutoNext = false;
 
-  @override
-  void didUpdateWidget(covariant BottomControls oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.playerState.activeEpisode?.id !=
-        widget.playerState.activeEpisode?.id) {
-      _hasTriggeredAutoNext = false;
-    }
-  }
+  // Cooldown after skipping ending to prevent instant auto-next trigger
+  bool _endingSkipCooldown = false;
+
+  // Ensures auto-skip listener is set up only once per episode
+  bool _autoSkipSetup = false;
 
   @override
   void initState() {
@@ -75,6 +75,18 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
       windowManager.isFullScreen().then((val) {
         if (mounted) setState(() => _isFullScreen = val);
       });
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant BottomControls oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.playerState.activeEpisode?.id !=
+        widget.playerState.activeEpisode?.id) {
+      _hasTriggeredAutoNext = false;
+      _endingSkipCooldown = false;
+      _autoSkipSetup = false;
     }
   }
 
@@ -124,14 +136,12 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final mediaQuery = MediaQuery.of(context);
-
     final aniSkips = ref.watch(aniSkipProvider(widget.aniskipArgs));
 
-    ref.listen(videoEngineStateProvider.select((s) => s.position), (
-      previous,
-      current,
-    ) {
-      if (current.inSeconds > 0) {
+    // Setup auto-skip listener once when playback begins
+    ref.listen(videoEngineStateProvider.select((s) => s.position), (prev, current) {
+      if (!_autoSkipSetup && current.inSeconds > 0) {
+        _autoSkipSetup = true;
         widget.controller.setupAutoSkipListener(widget.aniskipArgs);
       }
     });
@@ -180,127 +190,9 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  Consumer(
-                    builder: (aniContext, aniRef, child) {
-                      final skips = aniSkips.value ?? [];
-
-                      final position = aniRef.watch(
-                        videoEngineStateProvider.select((s) => s.position),
-                      );
-
-                      final prefs = aniRef.watch(aniskipPrefsProvider);
-
-                      final currentSkip = skips
-                          .cast<AniSkipStamp?>()
-                          .firstWhere((skip) {
-                            if (skip == null) {
-                              return false;
-                            }
-
-                            final seconds = position.inSeconds;
-
-                            return seconds >= skip.startTime &&
-                                seconds < skip.endTime;
-                          }, orElse: () => null);
-
-                      if (currentSkip != null &&
-                          prefs.mode(currentSkip.type) != SkipMode.off) {
-                        final label = switch (currentSkip.type) {
-                          SkipType.opening => 'Skip Opening',
-                          SkipType.ending => 'Skip Ending',
-                          SkipType.mixedOpening => 'Skip Opening',
-                          SkipType.mixedEnding => 'Skip Ending',
-                          SkipType.recap => 'Skip Recap',
-                        };
-
-                        return _buildActionButton(
-                          leading: const Icon(Icons.skip_next_rounded),
-                          displayText: label,
-                          onTap: () async {
-                            await widget.engine.seekTo(
-                              Duration(seconds: currentSkip.endTime.ceil()),
-                            );
-                          },
-                          theme: theme,
-                          defaultAccentColor: theme.colorScheme.onSecondary,
-                          defaultBackgroundColor: theme.colorScheme.secondary,
-                        );
-                      }
-
-                      final playerPrefs = ref.watch(playerPrefsProvider);
-                      final duration = aniRef.watch(
-                        videoEngineStateProvider.select((s) => s.duration),
-                      );
-                      final remaining = duration.inSeconds - position.inSeconds;
-                      final isNearEnd =
-                          widget.controller.hasNextEpisode &&
-                          duration.inSeconds >= 60 &&
-                          position.inSeconds > 30 &&
-                          (remaining <= playerPrefs.nextEpisodeThreshold ||
-                              position.inSeconds >= duration.inSeconds);
-
-                      if (isNearEnd) {
-                        final progress = playerPrefs.nextEpisodeThreshold > 0
-                            ? ((playerPrefs.nextEpisodeThreshold - remaining) /
-                                      playerPrefs.nextEpisodeThreshold)
-                                  .clamp(0.0, 1.0)
-                            : 1.0;
-
-                        if (playerPrefs.autoNext &&
-                            !_hasTriggeredAutoNext &&
-                            (progress >= 1.0 || remaining <= 0)) {
-                          _hasTriggeredAutoNext = true;
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            widget.controller.skipEpisode();
-                          });
-                        }
-
-                        return _buildActionButton(
-                          leading: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              if (playerPrefs.autoNext)
-                                SizedBox(
-                                  width: 24,
-                                  height: 24,
-                                  child: CircularProgressIndicator(
-                                    value: progress,
-                                    strokeWidth: 2,
-                                    color: theme.colorScheme.onSecondary,
-                                  ),
-                                ),
-                              const Icon(Icons.skip_next_rounded, size: 18),
-                            ],
-                          ),
-                          displayText: 'Next Episode',
-                          onTap: () async {
-                            _hasTriggeredAutoNext = true;
-                            await widget.controller.skipEpisode();
-                          },
-                          theme: theme,
-                          defaultAccentColor: theme.colorScheme.onSecondary,
-                          defaultBackgroundColor: theme.colorScheme.secondary,
-                        );
-                      }
-
-                      if (playerPrefs.showSkipButton &&
-                          playerPrefs.skipDuration > 0) {
-                        return _buildActionButton(
-                          leading: const Icon(Icons.skip_next_rounded),
-                          displayText: '+${playerPrefs.skipDuration}s',
-                          onTap: () async {
-                            await widget.engine.seekRelative(
-                              Duration(seconds: playerPrefs.skipDuration),
-                            );
-                          },
-                          theme: theme,
-                          defaultAccentColor: theme.colorScheme.onSecondary,
-                          defaultBackgroundColor: theme.colorScheme.secondary,
-                        );
-                      }
-
-                      return const SizedBox.shrink();
-                    },
+                  _buildSkipActionArea(
+                    theme: theme,
+                    aniSkips: aniSkips,
                   ),
                   const SizedBox(width: 10),
                 ],
@@ -331,324 +223,17 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
                   crossAxisAlignment: WrapCrossAlignment.center,
                   alignment: WrapAlignment.spaceBetween,
                   children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _buildActionIcon(
-                          Icons.lock_outline_rounded,
-                          () => widget.onToggleLockControls(),
-                        ),
-
-                        const SizedBox(width: 12),
-
-                        if (widget.playerState.subtitles.isNotEmpty)
-                          _buildBottomSheetTrigger(
-                            context: context,
-                            value: widget.playerState.activeSubtitle,
-                            items: widget.playerState.subtitles,
-                            itemLabel: (s) => s.language,
-                            onChanged: (v) {
-                              widget.controller.changeSubtitle(v);
-                            },
-                            onLongPress: () {
-                              showModalBottomSheet(
-                                context: context,
-                                isScrollControlled: true,
-                                backgroundColor: Colors.transparent,
-                                constraints: const BoxConstraints(
-                                  maxWidth: double.infinity,
-                                ),
-                                builder: (context) {
-                                  return const SubtitleSettingsSheet();
-                                },
-                              );
-                            },
-                            actions: [
-                              IconButton.filledTonal(
-                                tooltip: 'Customize Subtitles',
-                                style: IconButton.styleFrom(
-                                  backgroundColor:
-                                      widget.theme.colorScheme.primary,
-                                  foregroundColor:
-                                      widget.theme.colorScheme.onPrimary,
-                                ),
-                                icon: const Icon(Icons.tune_rounded, size: 18),
-                                onPressed: () {
-                                  Navigator.of(context).pop();
-                                  showModalBottomSheet(
-                                    context: context,
-                                    isScrollControlled: true,
-                                    backgroundColor: Colors.transparent,
-                                    constraints: const BoxConstraints(
-                                      maxWidth: double.infinity,
-                                    ),
-                                    builder: (context) =>
-                                        const SubtitleSettingsSheet(),
-                                  );
-                                },
-                              ),
-                            ],
-                            isDisabled: widget.playerState.subtitles.isEmpty,
-                            withBadge: false,
-                            displayText: 'Subtitles',
-                            displayWidget: Badge(
-                              label: Text(
-                                (widget.playerState.subtitles.length - 1)
-                                    .toString(),
-                              ),
-                              isLabelVisible:
-                                  widget.playerState.subtitles.isNotEmpty,
-                              backgroundColor: widget.theme.colorScheme.primary,
-                              textColor: widget.theme.colorScheme.onPrimary,
-                              child:
-                                  widget.playerState.subtitles.isEmpty ||
-                                      widget.playerState.activeSubtitle == null
-                                  ? Icon(
-                                      Icons.subtitles_off_outlined,
-                                      color:
-                                          widget.playerState.subtitles.isEmpty
-                                          ? Colors.white54
-                                          : Colors.white,
-                                    )
-                                  : const Icon(Icons.subtitles_outlined),
-                            ),
-                          ),
-
-                        if (actualAudioCount > 0) ...[
-                          const SizedBox(width: 12),
-                          _buildBottomSheetTrigger<AudioTrack>(
-                            context: context,
-                            value: activeAudioTrack,
-                            items: audioTracks,
-                            itemLabel: (s) => s.label,
-                            onChanged: (v) {
-                              widget.controller.changeAudioTrack(v);
-                            },
-                            withBadge: false,
-                            displayText: 'Audio',
-                            displayWidget: Badge(
-                              label: Text(actualAudioCount.toString()),
-                              isLabelVisible: actualAudioCount > 0,
-                              backgroundColor: widget.theme.colorScheme.primary,
-                              textColor: widget.theme.colorScheme.onPrimary,
-                              child: activeAudioTrack?.id == 'no'
-                                  ? const Icon(
-                                      Icons.volume_off_outlined,
-                                      color: Colors.white,
-                                    )
-                                  : const Icon(
-                                      Icons.audiotrack_outlined,
-                                      color: Colors.white,
-                                    ),
-                            ),
-                          ),
-                        ],
-
-                        if (widget.mode is PlayerModeOnline) ...[
-                          const SizedBox(width: 12),
-                          _buildActionIcon(
-                            Icons.format_list_bulleted_rounded,
-                            () {
-                              if (widget.onShowEpisodePanel != null) {
-                                widget.onShowEpisodePanel!();
-                              } else {
-                                _showEpisodePanel(context);
-                              }
-                            },
-                          ),
-                        ],
-                      ],
+                    _buildLeftControls(
+                      audioTracks: audioTracks,
+                      activeAudioTrack: activeAudioTrack,
+                      actualAudioCount: actualAudioCount,
                     ),
 
-                    if (!isVeryCompact)
-                      Consumer(
-                        builder: (context, ref, child) {
-                          final position = ref.watch(
-                            videoEngineStateProvider.select((s) => s.position),
-                          );
+                    if (!isVeryCompact) _buildTimeDisplay(),
 
-                          final duration = ref.watch(
-                            videoEngineStateProvider.select((s) => s.duration),
-                          );
-
-                          return Text(
-                            '${_formatDuration(position)} / ${_formatDuration(duration)}',
-                            style: widget.theme.textTheme.labelMedium?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          );
-                        },
-                      ),
-
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Builder(
-                          builder: (context) {
-                            final hasServerToggle =
-                                widget.playerState.activeServer != null &&
-                                widget.playerState.servers.length > 1 &&
-                                widget.playerState.servers.any(
-                                  (e) => e.type == ServerType.sub,
-                                ) &&
-                                widget.playerState.servers.any(
-                                  (e) => e.type == ServerType.dub,
-                                );
-
-                            bool isStreamDub(VideoStream? s) {
-                              if (s == null) return false;
-                              final q = s.quality.toLowerCase();
-                              return q.contains('dub') || q.contains('english');
-                            }
-
-                            final hasDubStream = widget.playerState.streams.any(
-                              (e) => isStreamDub(e),
-                            );
-                            final hasSubStream = widget.playerState.streams.any(
-                              (e) => !isStreamDub(e),
-                            );
-                            final hasStreamToggle =
-                                !hasServerToggle &&
-                                hasDubStream &&
-                                hasSubStream &&
-                                widget.playerState.streams.length > 1;
-
-                            if (hasServerToggle || hasStreamToggle) {
-                              final isCurrentlyDub = hasServerToggle
-                                  ? widget.playerState.activeServer?.type ==
-                                        ServerType.dub
-                                  : isStreamDub(
-                                      widget.playerState.activeStream,
-                                    );
-
-                              return Padding(
-                                padding: const EdgeInsets.only(right: 14),
-                                child: _buildActionButton(
-                                  displayText: isCurrentlyDub ? 'DUB' : 'SUB',
-                                  onTap: () {
-                                    if (hasServerToggle) {
-                                      widget.controller.changeServerType();
-                                    } else {
-                                      widget.controller.changeStreamType();
-                                    }
-                                  },
-                                  isHighlighted: true,
-                                  highlightedAccentColor: isCurrentlyDub
-                                      ? widget.theme.colorScheme.primary
-                                      : widget.theme.colorScheme.secondary,
-                                  highlightedBackgroundColor: isCurrentlyDub
-                                      ? widget.theme.colorScheme.primary
-                                            .withValues(alpha: 0.1)
-                                      : widget.theme.colorScheme.secondary
-                                            .withValues(alpha: 0.1),
-                                  theme: widget.theme,
-                                ),
-                              );
-                            }
-                            return const SizedBox.shrink();
-                          },
-                        ),
-
-                        if (widget.playerState.servers.length > 1 &&
-                            !isCompact) ...[
-                          _buildBottomSheetTrigger<VideoServer>(
-                            context: context,
-                            value: widget.playerState.activeServer,
-                            items: widget.playerState.servers,
-                            itemLabel: (s) =>
-                                '[ ${trimText(s.id, maxLength: 30)} ] ${s.name}',
-                            onChanged: (v) {
-                              widget.controller.changeServer(v);
-                            },
-                            displayText: (() {
-                              final server = widget.playerState.activeServer;
-
-                              if (server == null) return 'Default';
-
-                              if (server.id.length <= 20) {
-                                return server.id;
-                              }
-
-                              final name = server.name;
-                              return name.length > 30
-                                  ? '${name.substring(0, 27)}...'
-                                  : name;
-                            })(),
-                            badgeBuilder: (s) {
-                              if (s.type == ServerType.unknown) {
-                                return null;
-                              }
-
-                              return Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: s.type == ServerType.dub
-                                      ? theme.colorScheme.primary
-                                      : theme.colorScheme.secondary,
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Text(
-                                  s.type == ServerType.dub
-                                      ? 'DUB'
-                                      : s.type == ServerType.sub
-                                      ? 'SUB'
-                                      : '',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w700,
-                                    color: s.type == ServerType.dub
-                                        ? theme.colorScheme.onPrimary
-                                        : theme.colorScheme.onSecondary,
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ],
-
-                        if (widget.playerState.streams.length > 1 &&
-                            !isCompact) ...[
-                          const SizedBox(width: 14),
-                          _buildBottomSheetTrigger<VideoStream>(
-                            context: context,
-                            value: widget.playerState.activeStream,
-                            items: widget.playerState.streams,
-                            itemLabel: (s) => s.quality,
-                            onChanged: (v) {
-                              widget.controller.changeStream(v);
-                            },
-                            displayText:
-                                widget.playerState.activeStream?.quality ??
-                                'Auto',
-                          ),
-                        ],
-
-                        if (Platform.isAndroid || Platform.isIOS) ...[
-                          const SizedBox(width: 14),
-                          _buildActionIcon(
-                            _isPortrait
-                                ? Icons.screen_lock_landscape_outlined
-                                : Icons.screen_lock_portrait_outlined,
-                            _toggleOrientation,
-                          ),
-                        ],
-
-                        if (Platform.isWindows ||
-                            Platform.isLinux ||
-                            Platform.isMacOS) ...[
-                          const SizedBox(width: 14),
-                          _buildActionIcon(
-                            (widget.isFullScreen ?? _isFullScreen)
-                                ? Icons.fullscreen_exit_rounded
-                                : Icons.fullscreen_rounded,
-                            _toggleFullScreen,
-                          ),
-                        ],
-                      ],
+                    _buildRightControls(
+                      theme: theme,
+                      isCompact: isCompact,
                     ),
                   ],
                 ),
@@ -660,6 +245,548 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
     );
   }
 
+  // Renders skip button (AniSkip segment, Next Episode, or +Ns quick skip)
+  Widget _buildSkipActionArea({
+    required ThemeData theme,
+    required AsyncValue<List<AniSkipStamp>> aniSkips,
+  }) {
+    return Consumer(
+      builder: (context, aniRef, child) {
+        final skips = aniSkips.value ?? [];
+        final position = aniRef.watch(
+          videoEngineStateProvider.select((s) => s.position),
+        );
+        final prefs = aniRef.watch(aniskipPrefsProvider);
+
+        // ── Priority 1: AniSkip segment button ──────────────────────────
+        final currentSkip = _findActiveSkip(skips, position);
+
+        if (currentSkip != null && prefs.mode(currentSkip.type) != SkipMode.off) {
+          return _buildSkipSegmentButton(
+            theme: theme,
+            skip: currentSkip,
+          );
+        }
+
+        // ── Priority 2: Auto-next / "Next Episode" button ───────────────
+        final playerPrefs = ref.watch(playerPrefsProvider);
+        final duration = aniRef.watch(
+          videoEngineStateProvider.select((s) => s.duration),
+        );
+
+        final autoNextResult = _checkAutoNext(
+          position: position,
+          duration: duration,
+          playerPrefs: playerPrefs,
+        );
+
+        if (autoNextResult != null) {
+          return _buildNextEpisodeButton(
+            theme: theme,
+            progress: autoNextResult,
+            playerPrefs: playerPrefs,
+          );
+        }
+
+        // ── Priority 3: Quick skip button (+Ns) ─────────────────────────
+        if (playerPrefs.showSkipButton && playerPrefs.skipDuration > 0) {
+          return _buildQuickSkipButton(
+            theme: theme,
+            skipDuration: playerPrefs.skipDuration,
+          );
+        }
+
+        return const SizedBox.shrink();
+      },
+    );
+  }
+
+  /// Finds the AniSkip segment the playback position is currently inside.
+  /// Returns null if not inside any segment.
+  AniSkipStamp? _findActiveSkip(List<AniSkipStamp> skips, Duration position) {
+    final seconds = position.inSeconds;
+    for (final skip in skips) {
+      if (seconds >= skip.startTime && seconds < skip.endTime) {
+        return skip;
+      }
+    }
+    return null;
+  }
+
+  /// Checks if we're near enough to the end to show/trigger auto-next.
+  ///
+  /// Returns the progress value (0.0 to 1.0) if near end, null otherwise.
+  /// Also handles triggering auto-next when progress reaches 100%.
+  double? _checkAutoNext({
+    required Duration position,
+    required Duration duration,
+    required PlayerPrefsState playerPrefs,
+  }) {
+    final remaining = duration.inSeconds - position.inSeconds;
+
+    // Don't show auto-next if:
+    // - No next episode exists
+    // - Duration is too short (< 60s) to be a real episode
+    // - Position is too early (< 30s) — avoids false triggers at start
+    // - Not near the end yet
+    // - Currently in a loading state (episode transition in progress)
+    final isNearEnd =
+        widget.controller.hasNextEpisode &&
+        duration.inSeconds >= 60 &&
+        position.inSeconds > 30 &&
+        !widget.playerState.isLoading &&
+        (remaining <= playerPrefs.nextEpisodeThreshold ||
+            position.inSeconds >= duration.inSeconds);
+
+    if (!isNearEnd) return null;
+
+    final progress = playerPrefs.nextEpisodeThreshold > 0
+        ? ((playerPrefs.nextEpisodeThreshold - remaining) /
+                  playerPrefs.nextEpisodeThreshold)
+              .clamp(0.0, 1.0)
+        : 1.0;
+
+    // Trigger auto-next when progress is complete
+    if (playerPrefs.autoNext &&
+        !_hasTriggeredAutoNext &&
+        !_endingSkipCooldown &&
+        (progress >= 1.0 || remaining <= 0)) {
+      _hasTriggeredAutoNext = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        widget.controller.skipEpisode();
+      });
+    }
+
+    return progress;
+  }
+
+  // ── Skip Segment Button ─────────────────────────────────────────────────
+
+  /// "Skip Opening" / "Skip Ending" / "Skip Recap" button.
+  Widget _buildSkipSegmentButton({
+    required ThemeData theme,
+    required AniSkipStamp skip,
+  }) {
+    final label = switch (skip.type) {
+      SkipType.opening => 'Skip Opening',
+      SkipType.ending => 'Skip Ending',
+      SkipType.mixedOpening => 'Skip Opening',
+      SkipType.mixedEnding => 'Skip Ending',
+      SkipType.recap => 'Skip Recap',
+    };
+
+    return _buildActionButton(
+      leading: const Icon(Icons.skip_next_rounded),
+      displayText: label,
+      onTap: () async {
+        await widget.engine.seekTo(
+          Duration(seconds: skip.endTime.ceil()),
+        );
+
+        // If this was an ending skip, enable cooldown to prevent the
+        // auto-next from firing immediately (the seek lands near the end).
+        if (skip.type == SkipType.ending || skip.type == SkipType.mixedEnding) {
+          _endingSkipCooldown = true;
+          // Clear cooldown after 3 seconds — gives the user time to see
+          // the "Next Episode" button and decide manually.
+          Future.delayed(const Duration(seconds: 3), () {
+            if (mounted) setState(() => _endingSkipCooldown = false);
+          });
+        }
+      },
+      theme: theme,
+      defaultAccentColor: theme.colorScheme.onSecondary,
+      defaultBackgroundColor: theme.colorScheme.secondary,
+    );
+  }
+
+  // ── Next Episode Button ─────────────────────────────────────────────────
+
+  /// "Next Episode" button with circular progress indicator.
+  Widget _buildNextEpisodeButton({
+    required ThemeData theme,
+    required double progress,
+    required PlayerPrefsState playerPrefs,
+  }) {
+    return _buildActionButton(
+      leading: Stack(
+        alignment: Alignment.center,
+        children: [
+          if (playerPrefs.autoNext && !_endingSkipCooldown)
+            SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(
+                value: progress,
+                strokeWidth: 2,
+                color: theme.colorScheme.onSecondary,
+              ),
+            ),
+          const Icon(Icons.skip_next_rounded, size: 18),
+        ],
+      ),
+      displayText: 'Next Episode',
+      onTap: () async {
+        _hasTriggeredAutoNext = true;
+        await widget.controller.skipEpisode();
+      },
+      theme: theme,
+      defaultAccentColor: theme.colorScheme.onSecondary,
+      defaultBackgroundColor: theme.colorScheme.secondary,
+    );
+  }
+
+  // ── Quick Skip Button ───────────────────────────────────────────────────
+
+  /// "+85s" (or whatever the configured skip duration is) quick-skip button.
+  Widget _buildQuickSkipButton({
+    required ThemeData theme,
+    required int skipDuration,
+  }) {
+    return _buildActionButton(
+      leading: const Icon(Icons.skip_next_rounded),
+      displayText: '+${skipDuration}s',
+      onTap: () async {
+        await widget.engine.seekRelative(
+          Duration(seconds: skipDuration),
+        );
+      },
+      theme: theme,
+      defaultAccentColor: theme.colorScheme.onSecondary,
+      defaultBackgroundColor: theme.colorScheme.secondary,
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // Bottom Controls Row — Left, Center, Right
+  // ══════════════════════════════════════════════════════════════════════════
+
+  /// Left side: lock, subtitles, audio, episodes list.
+  Widget _buildLeftControls({
+    required List<AudioTrack> audioTracks,
+    required AudioTrack? activeAudioTrack,
+    required int actualAudioCount,
+  }) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Lock controls button
+        _buildActionIcon(
+          Icons.lock_outline_rounded,
+          () => widget.onToggleLockControls(),
+        ),
+
+        const SizedBox(width: 12),
+
+        // Subtitle picker
+        if (widget.playerState.subtitles.isNotEmpty)
+          _buildBottomSheetTrigger(
+            context: context,
+            value: widget.playerState.activeSubtitle,
+            items: widget.playerState.subtitles,
+            itemLabel: (s) => s.language,
+            onChanged: (v) {
+              widget.controller.changeSubtitle(v);
+            },
+            onLongPress: () {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                constraints: const BoxConstraints(
+                  maxWidth: double.infinity,
+                ),
+                builder: (context) {
+                  return const SubtitleSettingsSheet();
+                },
+              );
+            },
+            actions: [
+              IconButton.filledTonal(
+                tooltip: 'Customize Subtitles',
+                style: IconButton.styleFrom(
+                  backgroundColor:
+                      widget.theme.colorScheme.primary,
+                  foregroundColor:
+                      widget.theme.colorScheme.onPrimary,
+                ),
+                icon: const Icon(Icons.tune_rounded, size: 18),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    constraints: const BoxConstraints(
+                      maxWidth: double.infinity,
+                    ),
+                    builder: (context) =>
+                        const SubtitleSettingsSheet(),
+                  );
+                },
+              ),
+            ],
+            isDisabled: widget.playerState.subtitles.isEmpty,
+            withBadge: false,
+            displayText: 'Subtitles',
+            displayWidget: Badge(
+              label: Text(
+                (widget.playerState.subtitles.length - 1)
+                    .toString(),
+              ),
+              isLabelVisible:
+                  widget.playerState.subtitles.isNotEmpty,
+              backgroundColor: widget.theme.colorScheme.primary,
+              textColor: widget.theme.colorScheme.onPrimary,
+              child:
+                  widget.playerState.subtitles.isEmpty ||
+                      widget.playerState.activeSubtitle == null
+                  ? Icon(
+                      Icons.subtitles_off_outlined,
+                      color:
+                          widget.playerState.subtitles.isEmpty
+                          ? Colors.white54
+                          : Colors.white,
+                    )
+                  : const Icon(Icons.subtitles_outlined),
+            ),
+          ),
+
+        // Audio track picker
+        if (actualAudioCount > 0) ...[
+          const SizedBox(width: 12),
+          _buildBottomSheetTrigger<AudioTrack>(
+            context: context,
+            value: activeAudioTrack,
+            items: audioTracks,
+            itemLabel: (s) => s.label,
+            onChanged: (v) {
+              widget.controller.changeAudioTrack(v);
+            },
+            withBadge: false,
+            displayText: 'Audio',
+            displayWidget: Badge(
+              label: Text(actualAudioCount.toString()),
+              isLabelVisible: actualAudioCount > 0,
+              backgroundColor: widget.theme.colorScheme.primary,
+              textColor: widget.theme.colorScheme.onPrimary,
+              child: activeAudioTrack?.id == 'no'
+                  ? const Icon(
+                      Icons.volume_off_outlined,
+                      color: Colors.white,
+                    )
+                  : const Icon(
+                      Icons.audiotrack_outlined,
+                      color: Colors.white,
+                    ),
+            ),
+          ),
+        ],
+
+        // Episodes panel button
+        if (widget.mode is PlayerModeOnline) ...[
+          const SizedBox(width: 12),
+          _buildActionIcon(
+            Icons.format_list_bulleted_rounded,
+            () {
+              if (widget.onShowEpisodePanel != null) {
+                widget.onShowEpisodePanel!();
+              } else {
+                _showEpisodePanel(context);
+              }
+            },
+          ),
+        ],
+      ],
+    );
+  }
+
+  /// Center: current position / total duration.
+  Widget _buildTimeDisplay() {
+    return Consumer(
+      builder: (context, ref, child) {
+        final position = ref.watch(
+          videoEngineStateProvider.select((s) => s.position),
+        );
+        final duration = ref.watch(
+          videoEngineStateProvider.select((s) => s.duration),
+        );
+
+        return Text(
+          '${_formatDuration(position)} / ${_formatDuration(duration)}',
+          style: widget.theme.textTheme.labelMedium?.copyWith(
+            color: Colors.white,
+            fontWeight: FontWeight.w500,
+          ),
+        );
+      },
+    );
+  }
+
+  /// Right side: sub/dub toggle, server picker, stream picker, fullscreen.
+  Widget _buildRightControls({
+    required ThemeData theme,
+    required bool isCompact,
+  }) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Sub/Dub toggle button
+        _buildSubDubToggle(theme: theme),
+
+        // Server picker (hidden on compact screens)
+        if (widget.playerState.servers.length > 1 && !isCompact) ...[
+          _buildBottomSheetTrigger<VideoServer>(
+            context: context,
+            value: widget.playerState.activeServer,
+            items: widget.playerState.servers,
+            itemLabel: (s) =>
+                '[ ${trimText(s.id, maxLength: 30)} ] ${s.name}',
+            onChanged: (v) {
+              widget.controller.changeServer(v);
+            },
+            displayText: (() {
+              final server = widget.playerState.activeServer;
+              if (server == null) return 'Default';
+              if (server.id.length <= 20) return server.id;
+              final name = server.name;
+              return name.length > 30
+                  ? '${name.substring(0, 27)}...'
+                  : name;
+            })(),
+            badgeBuilder: (s) {
+              if (s.type == ServerType.unknown) return null;
+              return Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 6,
+                  vertical: 2,
+                ),
+                decoration: BoxDecoration(
+                  color: s.type == ServerType.dub
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.secondary,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  s.type == ServerType.dub
+                      ? 'DUB'
+                      : s.type == ServerType.sub
+                      ? 'SUB'
+                      : '',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: s.type == ServerType.dub
+                        ? theme.colorScheme.onPrimary
+                        : theme.colorScheme.onSecondary,
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+
+        // Stream (mirror) picker (hidden on compact screens)
+        if (widget.playerState.streams.length > 1 && !isCompact) ...[
+          const SizedBox(width: 14),
+          _buildBottomSheetTrigger<VideoStream>(
+            context: context,
+            value: widget.playerState.activeStream,
+            items: widget.playerState.streams,
+            itemLabel: (s) => s.quality,
+            onChanged: (v) {
+              widget.controller.changeStream(v);
+            },
+            displayText:
+                widget.playerState.activeStream?.quality ?? 'Auto',
+          ),
+        ],
+
+        // Orientation toggle (mobile only)
+        if (Platform.isAndroid || Platform.isIOS) ...[
+          const SizedBox(width: 14),
+          _buildActionIcon(
+            _isPortrait
+                ? Icons.screen_lock_landscape_outlined
+                : Icons.screen_lock_portrait_outlined,
+            _toggleOrientation,
+          ),
+        ],
+
+        // Fullscreen toggle (desktop only)
+        if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) ...[
+          const SizedBox(width: 14),
+          _buildActionIcon(
+            (widget.isFullScreen ?? _isFullScreen)
+                ? Icons.fullscreen_exit_rounded
+                : Icons.fullscreen_rounded,
+            _toggleFullScreen,
+          ),
+        ],
+      ],
+    );
+  }
+
+  // ── Sub/Dub Toggle ──────────────────────────────────────────────────────
+
+  /// Builds the SUB/DUB toggle button if both types are available.
+  ///
+  /// Detects whether the source uses server-level toggling (separate servers
+  /// for sub/dub) or stream-level toggling (streams with "dub"/"english"
+  /// in the quality label) and calls the appropriate controller method.
+  Widget _buildSubDubToggle({required ThemeData theme}) {
+    // Check if the source has separate sub and dub servers
+    final hasServerToggle =
+        widget.playerState.activeServer != null &&
+        widget.playerState.servers.length > 1 &&
+        widget.playerState.servers.any((e) => e.type == ServerType.sub) &&
+        widget.playerState.servers.any((e) => e.type == ServerType.dub);
+
+    bool isStreamDub(VideoStream? s) {
+      if (s == null) return false;
+      final q = s.quality.toLowerCase();
+      return q.contains('dub') || q.contains('english');
+    }
+
+    // Check if streams have both sub and dub options in their labels
+    final hasDubStream = widget.playerState.streams.any((e) => isStreamDub(e));
+    final hasSubStream = widget.playerState.streams.any((e) => !isStreamDub(e));
+    final hasStreamToggle =
+        !hasServerToggle &&
+        hasDubStream &&
+        hasSubStream &&
+        widget.playerState.streams.length > 1;
+
+    if (!hasServerToggle && !hasStreamToggle) return const SizedBox.shrink();
+
+    final isCurrentlyDub = hasServerToggle
+        ? widget.playerState.activeServer?.type == ServerType.dub
+        : isStreamDub(widget.playerState.activeStream);
+
+    return Padding(
+      padding: const EdgeInsets.only(right: 14),
+      child: _buildActionButton(
+        displayText: isCurrentlyDub ? 'DUB' : 'SUB',
+        onTap: () {
+          if (hasServerToggle) {
+            widget.controller.changeServerType();
+          } else {
+            widget.controller.changeStreamType();
+          }
+        },
+        isHighlighted: true,
+        highlightedAccentColor: isCurrentlyDub
+            ? widget.theme.colorScheme.primary
+            : widget.theme.colorScheme.secondary,
+        highlightedBackgroundColor: isCurrentlyDub
+            ? widget.theme.colorScheme.primary.withValues(alpha: 0.1)
+            : widget.theme.colorScheme.secondary.withValues(alpha: 0.1),
+        theme: widget.theme,
+      ),
+    );
+  }
+
+  // Fallback episode drawer
   void _showEpisodePanel(BuildContext context) {
     showGeneralDialog(
       context: context,

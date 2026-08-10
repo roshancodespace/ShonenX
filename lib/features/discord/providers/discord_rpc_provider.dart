@@ -56,9 +56,9 @@ class DiscordRpcNotifier extends Notifier<DiscordRpcState>
     ref.listen<DiscordState>(discordProvider, (previous, next) {
       if (next.isLoggedIn && state.isEnabled) {
         _log.i('Discord user logged in, initiating RPC connection');
-        _connect(next.token!);
-      } else if (!next.isLoggedIn) {
-        _log.i('Discord user logged out, disconnecting RPC');
+        _connect(next.token);
+      } else if (!next.isLoggedIn && !_rpcService.isDesktopPlatform) {
+        _log.i('Discord user logged out, disconnecting Gateway RPC');
         _rpcService.disconnect();
         state = state.copyWith(isConnected: false);
       }
@@ -90,13 +90,11 @@ class DiscordRpcNotifier extends Notifier<DiscordRpcState>
     if (!enabled) return;
     _rpcService.resetPresenceState();
     final discordState = ref.read(discordProvider);
-    if (discordState.isLoggedIn && discordState.token != null) {
-      await _connect(discordState.token!);
-      await updateBrowsingPresence();
-    }
+    await _connect(discordState.token);
+    await updateBrowsingPresence();
   }
 
-  Future<void> _connect(String token) async {
+  Future<void> _connect([String? token]) async {
     await _rpcService.connect(token);
     state = state.copyWith(isConnected: _rpcService.isConnected);
   }
@@ -104,20 +102,17 @@ class DiscordRpcNotifier extends Notifier<DiscordRpcState>
   Future<void> _ensureConnected() async {
     if (_rpcService.isConnected) return;
     final discordState = ref.read(discordProvider);
-    if (discordState.isLoggedIn && discordState.token != null) {
-      await _connect(discordState.token!);
-    }
+    await _connect(discordState.token);
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState appState) {
     if (!state.isEnabled) return;
     final discordState = ref.read(discordProvider);
-    if (!discordState.isLoggedIn || discordState.token == null) return;
 
     if (appState == AppLifecycleState.resumed && !_rpcService.isConnected) {
       _log.i('App resumed, reconnecting Discord RPC');
-      _connect(discordState.token!);
+      _connect(discordState.token);
     }
   }
 
@@ -128,9 +123,7 @@ class DiscordRpcNotifier extends Notifier<DiscordRpcState>
 
     if (value) {
       final discordState = ref.read(discordProvider);
-      if (discordState.isLoggedIn && discordState.token != null) {
-        await _connect(discordState.token!);
-      }
+      await _connect(discordState.token);
     } else {
       await _rpcService.clearPresence();
       await _rpcService.disconnect();

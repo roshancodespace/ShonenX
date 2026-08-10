@@ -28,6 +28,7 @@ import 'package:shonenx/features/comments/presentation/widgets/comments_tab.dart
 import 'package:shonenx/features/discord/providers/discord_rpc_provider.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 
+// Main video player screen.
 class PlayerScreen extends ConsumerStatefulWidget {
   final PlayerMode mode;
 
@@ -50,6 +51,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
 
   static const _controlsAutoHideDuration = Duration(seconds: 3);
 
+  /// Display title: either the anime title or the local file name.
   String get _mediaTitle {
     if (widget.mode is PlayerModeOnline) {
       return (widget.mode as PlayerModeOnline).media.title.availableTitle;
@@ -57,6 +59,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     return (widget.mode as PlayerModeOffline).title ?? 'Local Media';
   }
 
+  /// Constructs [AniSkipArgs] from the current mode, or returns null
+  /// for offline mode / media without a MAL ID.
   AniSkipArgs? _getAniSkipArgs(VideoEngine engine) {
     if (widget.mode is PlayerModeOnline) {
       final onlineMode = widget.mode as PlayerModeOnline;
@@ -85,7 +89,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref
           .read(playerControllerProvider.notifier)
-          .initialize(widget.mode, screenshot: _screenshotController);
+          .initialize(widget.mode, screenshotController: _screenshotController);
       _showControlsTemporarily();
       if (ref.read(playerPrefsProvider).showShortcutsSheetOnStart && mounted) {
         KeyboardShortcutsSheet.show(context);

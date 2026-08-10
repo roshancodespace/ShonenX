@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/features/discovery/domain/models/search_filter_options.dart';
 import 'package:shonenx/shared/providers/content_prefs_provider.dart';
 import 'package:shonenx/features/discovery/providers/discovery_prefs_provider.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
@@ -12,6 +13,9 @@ class SearchArgs {
   final List<String> genres;
   final List<String> tags;
   final String? source;
+  final SearchSort sort;
+  final SearchStatusFilter status;
+  final SearchFormatFilter format;
 
   const SearchArgs({
     required this.query,
@@ -19,6 +23,9 @@ class SearchArgs {
     this.genres = const [],
     this.tags = const [],
     this.source,
+    this.sort = SearchSort.popularity,
+    this.status = SearchStatusFilter.all,
+    this.format = SearchFormatFilter.all,
   });
 
   @override
@@ -26,6 +33,9 @@ class SearchArgs {
     query,
     type,
     source,
+    sort,
+    status,
+    format,
     Object.hashAll(genres),
     Object.hashAll(tags),
   );
@@ -35,7 +45,12 @@ class SearchArgs {
     if (identical(this, other)) return true;
     if (other is! SearchArgs) return false;
 
-    if (query != other.query || type != other.type || source != other.source) {
+    if (query != other.query ||
+        type != other.type ||
+        source != other.source ||
+        sort != other.sort ||
+        status != other.status ||
+        format != other.format) {
       return false;
     }
 
@@ -73,7 +88,10 @@ class SearchNotifier extends AsyncNotifier<PaginatedResult<UnifiedMedia>?> {
     if (arg.query.isEmpty &&
         arg.genres.isEmpty &&
         arg.tags.isEmpty &&
-        arg.source == null) {
+        arg.source == null &&
+        arg.sort == SearchSort.popularity &&
+        arg.status == SearchStatusFilter.all &&
+        arg.format == SearchFormatFilter.all) {
       return null;
     }
     return _fetchPage(1);
@@ -92,6 +110,9 @@ class SearchNotifier extends AsyncNotifier<PaginatedResult<UnifiedMedia>?> {
         adultMode: adultMode,
         genres: arg.genres,
         tags: arg.tags,
+        sort: arg.sort,
+        status: arg.status,
+        format: arg.format,
       );
     } else {
       final allSources = await ref.read(
@@ -130,6 +151,7 @@ class SearchNotifier extends AsyncNotifier<PaginatedResult<UnifiedMedia>?> {
           if (items.isEmpty) {
             items = await source.search('', arg.type, page: page);
           }
+          items = _applySourceFilters(items);
           return PaginatedResult(
             items: items,
             hasNextPage: items.isNotEmpty && items.length >= 8,
@@ -160,13 +182,77 @@ class SearchNotifier extends AsyncNotifier<PaginatedResult<UnifiedMedia>?> {
       });
 
       final results = await Future.wait(futures);
-      final merged = results.expand((list) => list).toList();
+      var merged = results.expand((list) => list).toList();
+      merged = _applySourceFilters(merged);
 
       return PaginatedResult(
         items: merged,
         hasNextPage: merged.isNotEmpty && merged.length >= 8,
       );
     }
+  }
+
+  List<UnifiedMedia> _applySourceFilters(List<UnifiedMedia> items) {
+    var filtered = items;
+
+    // Apply Status Filter
+    if (arg.status != SearchStatusFilter.all) {
+      filtered = filtered.where((item) {
+        final st = item.status?.toLowerCase() ?? '';
+        if (arg.status == SearchStatusFilter.releasing) {
+          return st.contains('releasing') || st.contains('ongoing');
+        } else if (arg.status == SearchStatusFilter.finished) {
+          return st.contains('finished') || st.contains('completed');
+        } else if (arg.status == SearchStatusFilter.notYetReleased) {
+          return st.contains('not_yet_released') ||
+              st.contains('upcoming') ||
+              st.contains('unreleased');
+        }
+        return true;
+      }).toList();
+    }
+
+    // Apply Format Filter
+    if (arg.format != SearchFormatFilter.all) {
+      filtered = filtered.where((item) {
+        final fmt = item.format?.toUpperCase() ?? '';
+        switch (arg.format) {
+          case SearchFormatFilter.tv:
+            return fmt.contains('TV');
+          case SearchFormatFilter.movie:
+            return fmt.contains('MOVIE');
+          case SearchFormatFilter.ova:
+            return fmt.contains('OVA') || fmt.contains('ONA') || fmt.contains('SPECIAL');
+          case SearchFormatFilter.manga:
+            return fmt.contains('MANGA');
+          case SearchFormatFilter.oneShot:
+            return fmt.contains('ONE_SHOT') || fmt.contains('ONE SHOT');
+          case SearchFormatFilter.all:
+            return true;
+        }
+      }).toList();
+    }
+
+    // Apply Client Sort
+    switch (arg.sort) {
+      case SearchSort.alphabeticalAZ:
+        filtered.sort((a, b) => a.title.availableTitle.toLowerCase().compareTo(b.title.availableTitle.toLowerCase()));
+        break;
+      case SearchSort.alphabeticalZA:
+        filtered.sort((a, b) => b.title.availableTitle.toLowerCase().compareTo(a.title.availableTitle.toLowerCase()));
+        break;
+      case SearchSort.newest:
+        filtered.sort((a, b) => (b.season ?? '').compareTo(a.season ?? ''));
+        break;
+      case SearchSort.oldest:
+        filtered.sort((a, b) => (a.season ?? '').compareTo(b.season ?? ''));
+        break;
+      case SearchSort.popularity:
+        // default order
+        break;
+    }
+
+    return filtered;
   }
 
   Future<void> loadNextPage() async {

@@ -56,22 +56,7 @@ class CategorySearchNotifier
       final engine = ref.read(metadataSourceProvider);
       final adultMode = ref.read(contentPrefsProvider).adultContentMode;
 
-      final catLower = arg.category.toLowerCase();
-      TrackerCategory? matchedCategory;
-
-      if (catLower.contains('upcoming')) {
-        matchedCategory = TrackerCategory.upcoming;
-      } else if (catLower.contains('popular')) {
-        matchedCategory = TrackerCategory.popular;
-      } else if (catLower.contains('top rated') ||
-          catLower.contains('top_rated')) {
-        matchedCategory = TrackerCategory.topRated;
-      } else if (catLower.contains('recently updated') ||
-          catLower.contains('updated')) {
-        matchedCategory = TrackerCategory.recentlyUpdated;
-      } else if (catLower.contains('trending')) {
-        matchedCategory = TrackerCategory.trending;
-      }
+      final matchedCategory = TrackerCategory.tryFromId(arg.category);
 
       if (matchedCategory != null) {
         return await engine.getCategoryItems(

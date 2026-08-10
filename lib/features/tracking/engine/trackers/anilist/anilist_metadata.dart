@@ -1,3 +1,5 @@
+import 'package:shonenx/features/discovery/domain/models/search_filter_options.dart';
+import 'package:shonenx/features/tracking/domain/models/tracker_filter_options.dart';
 import 'dart:developer';
 
 import 'package:shonenx/core/network/http_client.dart';
@@ -47,30 +49,24 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
       );
     }
 
-    final List<String> sortOptions;
+    SearchSort sortOption = SearchSort.popularity;
+    SearchStatusFilter statusOption = SearchStatusFilter.all;
+
     switch (category) {
       case TrackerCategory.popular:
       case TrackerCategory.popularThisSeason:
-        sortOptions = ['POPULARITY_DESC'];
-        break;
       case TrackerCategory.topRated:
-        sortOptions = ['SCORE_DESC'];
+        sortOption = SearchSort.popularity;
         break;
       case TrackerCategory.recentlyUpdated:
-        sortOptions = ['UPDATED_AT_DESC'];
+        sortOption = SearchSort.newest;
         break;
       case TrackerCategory.upcoming:
-        return search(
-          '',
-          page: page,
-          type: type,
-          cacheDuration: cacheDuration,
-          adultMode: adultMode,
-          sort: ['POPULARITY_DESC'],
-          statusIn: ['NOT_YET_RELEASED'],
-        );
+        sortOption = SearchSort.popularity;
+        statusOption = SearchStatusFilter.notYetReleased;
+        break;
       default:
-        sortOptions = ['POPULARITY_DESC'];
+        sortOption = SearchSort.popularity;
         break;
     }
 
@@ -80,7 +76,8 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
       type: type,
       cacheDuration: cacheDuration,
       adultMode: adultMode,
-      sort: sortOptions,
+      sort: sortOption,
+      status: statusOption,
     );
   }
 
@@ -177,12 +174,70 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
     MediaType type = MediaType.ANIME,
     List<String>? genres,
     List<String>? tags,
-    List<String>? statusIn,
+    SearchSort sort = SearchSort.popularity,
+    SearchStatusFilter status = SearchStatusFilter.all,
+    SearchFormatFilter format = SearchFormatFilter.all,
     Duration? cacheDuration,
     AdultContentMode adultMode = AdultContentMode.safe,
-    List<String> sort = const ['SEARCH_MATCH'],
   }) {
     final requestId = DateTime.now().microsecondsSinceEpoch;
+
+    List<String> sortList;
+    switch (sort) {
+      case SearchSort.popularity:
+        sortList = query.isNotEmpty ? ['SEARCH_MATCH'] : ['POPULARITY_DESC'];
+        break;
+      case SearchSort.newest:
+        sortList = ['START_DATE_DESC'];
+        break;
+      case SearchSort.oldest:
+        sortList = ['START_DATE'];
+        break;
+      case SearchSort.alphabeticalAZ:
+        sortList = ['TITLE_ROMAJI'];
+        break;
+      case SearchSort.alphabeticalZA:
+        sortList = ['TITLE_ROMAJI_DESC'];
+        break;
+    }
+
+    List<String>? statusIn;
+    switch (status) {
+      case SearchStatusFilter.releasing:
+        statusIn = ['RELEASING'];
+        break;
+      case SearchStatusFilter.finished:
+        statusIn = ['FINISHED'];
+        break;
+      case SearchStatusFilter.notYetReleased:
+        statusIn = ['NOT_YET_RELEASED'];
+        break;
+      case SearchStatusFilter.all:
+        statusIn = null;
+        break;
+    }
+
+    List<String>? formatIn;
+    switch (format) {
+      case SearchFormatFilter.tv:
+        formatIn = ['TV', 'TV_SHORT'];
+        break;
+      case SearchFormatFilter.movie:
+        formatIn = ['MOVIE'];
+        break;
+      case SearchFormatFilter.ova:
+        formatIn = ['OVA', 'ONA', 'SPECIAL'];
+        break;
+      case SearchFormatFilter.manga:
+        formatIn = ['MANGA'];
+        break;
+      case SearchFormatFilter.oneShot:
+        formatIn = ['ONE_SHOT'];
+        break;
+      case SearchFormatFilter.all:
+        formatIn = null;
+        break;
+    }
 
     return executeApi(
       'SEARCH_METADATA',
@@ -191,7 +246,7 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
           'search': query.isEmpty ? null : query,
           'page': page,
           'type': type.name,
-          'sort': sort,
+          'sort': sortList,
         };
 
         if (genres != null && genres.isNotEmpty) {
@@ -204,6 +259,10 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
 
         if (statusIn != null && statusIn.isNotEmpty) {
           variables['status_in'] = statusIn;
+        }
+
+        if (formatIn != null && formatIn.isNotEmpty) {
+          variables['format_in'] = formatIn;
         }
 
         final response = await http.post(
@@ -281,6 +340,18 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
 
       return _mapToUnified(json, type, requestId);
     });
+  }
+
+  @override
+  Future<TrackerFilterOptions> fetchFilterOptions() async {
+    final results = await Future.wait([fetchGenres(), fetchTags()]);
+    return TrackerFilterOptions(
+      genres: results[0],
+      tags: results[1],
+      sorts: SearchSort.values,
+      statuses: SearchStatusFilter.values,
+      formats: SearchFormatFilter.values,
+    );
   }
 
   @override

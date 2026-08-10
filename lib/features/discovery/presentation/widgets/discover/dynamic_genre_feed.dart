@@ -111,7 +111,7 @@ class GenreFeedRow extends ConsumerWidget {
             if (onGenreSelect != null) {
               onGenreSelect!(genre);
             } else {
-              context.pushDiscover(genres: [genre], type: type);
+              context.pushFilteredDiscover(genres: [genre], type: type);
             }
           },
           data: AsyncValue.data(items),

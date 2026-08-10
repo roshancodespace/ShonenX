@@ -3,7 +3,6 @@ import 'dart:ui';
 import 'dart:async';
 import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shonenx/core/router/app_navigator.dart';
@@ -250,53 +249,36 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
 
   @override
   Widget build(BuildContext context) {
-    return KeyboardListener(
-      focusNode: FocusNode(),
-      autofocus: true,
-      onKeyEvent: (event) {
-        if (event is! KeyDownEvent) return;
-        switch (event.logicalKey) {
-          case LogicalKeyboardKey.digit1:
-            widget.navigationShell.goBranch(0);
-          case LogicalKeyboardKey.digit2:
-            widget.navigationShell.goBranch(1);
-          case LogicalKeyboardKey.digit3:
-            widget.navigationShell.goBranch(2);
-          case LogicalKeyboardKey.digit4:
-            context.pushDownloads();
-        }
-      },
-      child: ResponsiveHandler(
-        breakpoints: _navBreakpoints,
-        builder: (context, r) {
-          return AppScaffold(
-            extendBody: true,
-            body: r.isDesktop || r.isTabletLandscape
-                ? Row(
-                    children: [
-                      _SideNavBar(navigationShell: widget.navigationShell),
-                      Expanded(
-                        child: Stack(
-                          children: [
-                            widget.navigationShell,
-                            _SideNavAttachment(
-                              navigationShell: widget.navigationShell,
-                            ),
-                          ],
-                        ),
+    return ResponsiveHandler(
+      breakpoints: _navBreakpoints,
+      builder: (context, r) {
+        return AppScaffold(
+          extendBody: true,
+          body: r.isDesktop || r.isTabletLandscape
+              ? Row(
+                  children: [
+                    _SideNavBar(navigationShell: widget.navigationShell),
+                    Expanded(
+                      child: Stack(
+                        children: [
+                          widget.navigationShell,
+                          _SideNavAttachment(
+                            navigationShell: widget.navigationShell,
+                          ),
+                        ],
                       ),
-                    ],
-                  )
-                : Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      widget.navigationShell,
-                      _BottomNavBar(navigationShell: widget.navigationShell),
-                    ],
-                  ),
-          );
-        },
-      ),
+                    ),
+                  ],
+                )
+              : Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    widget.navigationShell,
+                    _BottomNavBar(navigationShell: widget.navigationShell),
+                  ],
+                ),
+        );
+      },
     );
   }
 }

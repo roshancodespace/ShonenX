@@ -14,6 +14,7 @@ class PaginatedMediaGrid extends ConsumerWidget {
   final bool isLoadingMore;
   final VoidCallback onAutoLoad;
   final double paddingTop;
+  final double paddingHorizontal;
 
   const PaginatedMediaGrid({
     super.key,
@@ -22,6 +23,7 @@ class PaginatedMediaGrid extends ConsumerWidget {
     required this.isLoadingMore,
     required this.onAutoLoad,
     this.paddingTop = 80,
+    this.paddingHorizontal = 12,
   });
 
   @override
@@ -32,7 +34,13 @@ class PaginatedMediaGrid extends ConsumerWidget {
       loading: () => Skeletonizer(
         enabled: true,
         child: GridView.builder(
-          padding: EdgeInsets.only(bottom: 200, top: paddingTop),
+          clipBehavior: Clip.none,
+          padding: EdgeInsets.only(
+            bottom: 200,
+            top: paddingTop,
+            left: paddingHorizontal,
+            right: paddingHorizontal,
+          ),
           gridDelegate: SliverGridDelegateWithMinCrossAxisExtent(
             minCrossAxisExtent: style.layout.width,
             childAspectRatio: style.layout.aspectRatio,
@@ -77,8 +85,14 @@ class PaginatedMediaGrid extends ConsumerWidget {
         return Stack(
           children: [
             GridView.builder(
+              clipBehavior: Clip.none,
               controller: scrollController,
-              padding: EdgeInsets.only(bottom: 200, top: paddingTop),
+              padding: EdgeInsets.only(
+                bottom: 200,
+                top: paddingTop,
+                left: paddingHorizontal,
+                right: paddingHorizontal,
+              ),
               gridDelegate: SliverGridDelegateWithMinCrossAxisExtent(
                 minCrossAxisExtent: style.layout.width,
                 childAspectRatio: style.layout.aspectRatio,

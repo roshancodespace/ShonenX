@@ -4,11 +4,13 @@ import 'package:go_router/go_router.dart';
 import 'package:shonenx/app_init.dart';
 import 'package:shonenx/core/router/complex_extra_codec.dart';
 import 'package:shonenx/core/router/scaffold_with_nav_bar.dart';
+import 'package:shonenx/features/discovery/domain/models/search_filter_options.dart';
 import 'package:shonenx/features/discovery/presentation/details_screen.dart';
 import 'package:shonenx/features/onboarding/presentation/onboarding_screen.dart';
 import 'package:shonenx/features/discovery/presentation/home_screen.dart';
 import 'package:shonenx/features/settings/presentation/discord_settings_screen.dart';
 import 'package:shonenx/features/splash/presentation/splash_screen.dart';
+import 'package:shonenx/features/discovery/presentation/filtered_discover_screen.dart';
 import 'package:shonenx/features/discovery/presentation/discover_screen.dart';
 import 'package:shonenx/features/downloads/presentation/downloads_screen.dart';
 import 'package:shonenx/features/extensions/presentation/extensions_settings_screen.dart';
@@ -196,6 +198,37 @@ final routerProvider = Provider<GoRouter>((ref) {
             ],
           ),
         ],
+      ),
+      GoRoute(
+        path: '/discover/results',
+        builder: (context, state) {
+          final query = state.uri.queryParameters['query'];
+          final title = state.uri.queryParameters['title'];
+          final source = state.uri.queryParameters['source'];
+          final type = MediaType.values.firstWhere(
+            (e) => e.id == state.uri.queryParameters['type'],
+            orElse: () => MediaType.ANIME,
+          );
+          final genres = state.uri.queryParametersAll['genres'] ?? [];
+          final tags = state.uri.queryParametersAll['tags'] ?? [];
+          final category = state.uri.queryParameters['category'];
+          final sortParam = SearchSort.tryFromId(state.uri.queryParameters['sort']);
+          final statusParam = SearchStatusFilter.tryFromId(state.uri.queryParameters['status']);
+          final formatParam = SearchFormatFilter.tryFromId(state.uri.queryParameters['format']);
+
+          return FilteredDiscoverScreen(
+            initialQuery: query,
+            category: category,
+            type: type,
+            initialGenres: genres,
+            initialTags: tags,
+            source: source,
+            customTitle: title,
+            initialSort: sortParam,
+            initialStatus: statusParam,
+            initialFormat: formatParam,
+          );
+        },
       ),
       GoRoute(
         path: '/details/:mediaType',

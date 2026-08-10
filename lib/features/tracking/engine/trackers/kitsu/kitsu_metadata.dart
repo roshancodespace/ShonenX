@@ -1,3 +1,5 @@
+import 'package:shonenx/features/discovery/domain/models/search_filter_options.dart';
+import 'package:shonenx/features/tracking/domain/models/tracker_filter_options.dart';
 import 'dart:developer';
 import 'package:shonenx/core/network/http_client.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_category.dart';
@@ -226,7 +228,9 @@ mixin KitsuMetadata on BaseTracker implements RemoteTracker {
     MediaType type = MediaType.ANIME,
     List<String>? genres,
     List<String>? tags,
-    List<String>? statusIn,
+    SearchSort sort = SearchSort.popularity,
+    SearchStatusFilter status = SearchStatusFilter.all,
+    SearchFormatFilter format = SearchFormatFilter.all,
     Duration? cacheDuration,
     AdultContentMode adultMode = AdultContentMode.safe,
   }) {
@@ -259,6 +263,22 @@ mixin KitsuMetadata on BaseTracker implements RemoteTracker {
 
         if (categoryFilters.isNotEmpty) {
           queryParams['filter[categories]'] = categoryFilters.join(',');
+        }
+
+        List<String>? statusIn;
+        switch (status) {
+          case SearchStatusFilter.releasing:
+            statusIn = ['current'];
+            break;
+          case SearchStatusFilter.finished:
+            statusIn = ['finished'];
+            break;
+          case SearchStatusFilter.notYetReleased:
+            statusIn = ['upcoming'];
+            break;
+          case SearchStatusFilter.all:
+            statusIn = null;
+            break;
         }
 
         if (statusIn != null && statusIn.isNotEmpty) {
@@ -355,6 +375,18 @@ mixin KitsuMetadata on BaseTracker implements RemoteTracker {
 
       return _mapToUnified(item, type, requestId, includedMap: includedMap);
     });
+  }
+
+  @override
+  Future<TrackerFilterOptions> fetchFilterOptions() async {
+    final genres = await fetchGenres();
+    return TrackerFilterOptions(
+      genres: genres,
+      tags: const [],
+      sorts: const [SearchSort.popularity],
+      statuses: SearchStatusFilter.values,
+      formats: const [],
+    );
   }
 
   @override

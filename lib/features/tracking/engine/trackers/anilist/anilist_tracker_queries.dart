@@ -168,6 +168,7 @@ class AnilistTrackerQueries {
       \$genre_in: [String],
       \$tag_in: [String],
       \$status_in: [MediaStatus],
+      \$format_in: [MediaFormat],
       \$sort: [MediaSort] = [SEARCH_MATCH],
     ) {
       Page(page: \$page, perPage: 20) {
@@ -180,6 +181,7 @@ class AnilistTrackerQueries {
           genre_in: \$genre_in
           tag_in: \$tag_in
           status_in: \$status_in
+          format_in: \$format_in
           $adultFilter
           sort: \$sort
         ) {

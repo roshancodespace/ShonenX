@@ -8,6 +8,7 @@ import 'package:shonenx/shared/widgets/media_switcher_overlay.dart';
 import 'package:shonenx/shared/widgets/unified_search_bar.dart';
 import 'package:shonenx/shared/providers/navbar_action_provider.dart';
 import 'package:shonenx/features/discovery/providers/metadata_tags_provider.dart';
+import 'package:shonenx/core/router/app_navigator.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/sheets/advanced_search_sheet.dart';
 import 'package:shonenx/source_engine/source_engine_provider.dart';
 import 'package:shonenx/source_engine/source_registry.dart';
@@ -156,21 +157,9 @@ class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen>
   void _onSearchTextChanged() {
     _debounceTimer?.cancel();
     final text = _searchController.text.trim();
-
-    if (text.isEmpty) {
-      if (_query.isNotEmpty) {
-        setState(() {
-          _query = '';
-        });
-      }
-    } else {
-      setState(() {});
-      _debounceTimer = Timer(const Duration(milliseconds: 500), () {
-        if (mounted) {
-          setState(() {
-            _query = text;
-          });
-        }
+    if (text.isEmpty && _query.isNotEmpty) {
+      setState(() {
+        _query = '';
       });
     }
   }
@@ -179,9 +168,16 @@ class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen>
     _debounceTimer?.cancel();
     final trimmedText = text.trim();
     if (trimmedText.isNotEmpty) {
-      setState(() {
-        _query = trimmedText;
-      });
+      final currentType =
+          (_tabController.index >= 0 &&
+              _tabController.index < _supportedMediaTypes.length)
+          ? _supportedMediaTypes[_tabController.index]
+          : MediaType.ANIME;
+      context.pushFilteredDiscover(
+        query: trimmedText,
+        type: currentType,
+        source: widget.source,
+      );
     }
   }
 
@@ -204,9 +200,7 @@ class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen>
       discoveryFiltersProvider((type: currentType, sourceId: widget.source)),
     );
     final hasFilters =
-        filtersState.value != null &&
-        (filtersState.value!.genres.isNotEmpty ||
-            filtersState.value!.tags.isNotEmpty);
+        filtersState.value != null && filtersState.value!.options.hasAnyFilter;
     if (!hasFilters) return;
 
     showModalBottomSheet(
@@ -222,13 +216,17 @@ class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen>
           initialGenres: _genres,
           initialTags: _tags,
           sourceId: widget.source,
-          onApply: (query, genres, tags) {
-            setState(() {
-              _query = query.trim();
-              _searchController.text = _query;
-              _genres = genres;
-              _tags = tags;
-            });
+          onApply: (query, genres, tags, sort, status, format) {
+            context.pushFilteredDiscover(
+              query: query.trim(),
+              genres: genres,
+              tags: tags,
+              sort: sort,
+              status: status,
+              format: format,
+              source: widget.source,
+              type: currentType,
+            );
           },
         );
       },
@@ -248,9 +246,7 @@ class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen>
       discoveryFiltersProvider((type: currentType, sourceId: widget.source)),
     );
     final hasFilters =
-        filtersState.value != null &&
-        (filtersState.value!.genres.isNotEmpty ||
-            filtersState.value!.tags.isNotEmpty);
+        filtersState.value != null && filtersState.value!.options.hasAnyFilter;
 
     String pageTitle = 'Discover';
     String pageSubtitle = 'Find your next anime or manga';
@@ -359,14 +355,16 @@ class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen>
                               tags: _tags,
                               source: _source,
                               onGenreSelect: (g) {
-                                setState(() {
-                                  _genres = [g];
-                                });
+                                context.pushFilteredDiscover(
+                                  genres: [g],
+                                  type: type,
+                                );
                               },
                               onSourceSelect: (sId) {
-                                setState(() {
-                                  _source = sId;
-                                });
+                                context.pushFilteredDiscover(
+                                  source: sId,
+                                  type: type,
+                                );
                               },
                             );
                           }).toList(),

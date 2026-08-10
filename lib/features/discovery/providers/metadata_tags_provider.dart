@@ -1,25 +1,25 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/features/discovery/providers/discovery_prefs_provider.dart';
+import 'package:shonenx/features/tracking/domain/models/tracker_filter_options.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/source_engine/source_engine_provider.dart';
 import 'package:shonenx/source_engine/utils/media_type_extensions.dart';
 
 class MetadataTagsState {
-  final List<String> genres;
-  final List<String> tags;
+  final TrackerFilterOptions options;
 
-  const MetadataTagsState({this.genres = const [], this.tags = const []});
+  const MetadataTagsState({this.options = const TrackerFilterOptions()});
+
+  List<String> get genres => options.genres;
+  List<String> get tags => options.tags;
 }
 
 final metadataTagsProvider = FutureProvider.autoDispose<MetadataTagsState>((
   ref,
 ) async {
   final source = ref.watch(metadataSourceProvider);
-
-  final genres = await source.fetchGenres();
-  final tags = await source.fetchTags();
-
-  return MetadataTagsState(genres: genres, tags: tags);
+  final options = await source.fetchFilterOptions();
+  return MetadataTagsState(options: options);
 });
 
 typedef DiscoveryFilterArgs = ({MediaType type, String? sourceId});
@@ -58,13 +58,14 @@ final discoveryFiltersProvider = FutureProvider.autoDispose
         }
 
         return MetadataTagsState(
-          genres: allGenres.toList()..sort(),
-          tags: allTags.toList()..sort(),
+          options: TrackerFilterOptions(
+            genres: allGenres.toList()..sort(),
+            tags: allTags.toList()..sort(),
+          ),
         );
       } else {
         final tracker = ref.watch(metadataSourceProvider);
-        final genres = await tracker.fetchGenres();
-        final tags = await tracker.fetchTags();
-        return MetadataTagsState(genres: genres, tags: tags);
+        final options = await tracker.fetchFilterOptions();
+        return MetadataTagsState(options: options);
       }
     });

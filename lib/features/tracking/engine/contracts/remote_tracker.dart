@@ -1,5 +1,7 @@
+import 'package:shonenx/features/discovery/domain/models/search_filter_options.dart';
 import 'package:shonenx/core/network/auth/authenticator.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_category.dart';
+import 'package:shonenx/features/tracking/domain/models/tracker_filter_options.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_profile.dart';
 import 'package:shonenx/features/tracking/engine/contracts/tracking_service.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
@@ -12,8 +14,13 @@ abstract interface class RemoteTracker implements TrackingService {
 
   Future<TrackerProfile> fetchProfile();
 
+  Future<TrackerFilterOptions> fetchFilterOptions() async =>
+      const TrackerFilterOptions();
+
+  @Deprecated('Use fetchFilterOptions() instead')
   Future<List<String>> fetchGenres();
 
+  @Deprecated('Use fetchFilterOptions() instead')
   Future<List<String>> fetchTags();
 
   List<TrackerCategory> get supportedCategories => [
@@ -56,7 +63,9 @@ abstract interface class RemoteTracker implements TrackingService {
     required MediaType type,
     List<String>? genres,
     List<String>? tags,
-    List<String>? statusIn,
+    SearchSort sort = SearchSort.popularity,
+    SearchStatusFilter status = SearchStatusFilter.all,
+    SearchFormatFilter format = SearchFormatFilter.all,
     Duration? cacheDuration,
     AdultContentMode adultMode = AdultContentMode.safe,
   });

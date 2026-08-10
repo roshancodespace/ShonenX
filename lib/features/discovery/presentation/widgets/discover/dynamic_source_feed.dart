@@ -171,7 +171,11 @@ class SourceFeedRow extends ConsumerWidget {
             if (onSourceSelect != null) {
               onSourceSelect!(info.id);
             } else {
-              context.pushDiscover(source: info.id, type: type);
+              context.pushFilteredDiscover(
+                source: info.id,
+                type: type,
+                title: info.name,
+              );
             }
           },
           data: AsyncValue.data(items),

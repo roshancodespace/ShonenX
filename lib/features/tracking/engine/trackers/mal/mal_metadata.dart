@@ -1,3 +1,5 @@
+import 'package:shonenx/features/discovery/domain/models/search_filter_options.dart';
+import 'package:shonenx/features/tracking/domain/models/tracker_filter_options.dart';
 import 'dart:developer';
 import 'dart:io';
 import 'package:shonenx/core/network/http_client.dart';
@@ -209,7 +211,9 @@ mixin MalMetadata on BaseTracker implements RemoteTracker {
     MediaType type = MediaType.ANIME,
     List<String>? genres,
     List<String>? tags,
-    List<String>? statusIn,
+    SearchSort sort = SearchSort.popularity,
+    SearchStatusFilter status = SearchStatusFilter.all,
+    SearchFormatFilter format = SearchFormatFilter.all,
     Duration? cacheDuration,
     AdultContentMode adultMode = AdultContentMode.safe,
   }) {
@@ -285,6 +289,17 @@ mixin MalMetadata on BaseTracker implements RemoteTracker {
 
       return _mapToUnified(data, type, requestId);
     });
+  }
+
+  @override
+  Future<TrackerFilterOptions> fetchFilterOptions() async {
+    return TrackerFilterOptions(
+      genres: await fetchGenres(),
+      tags: const [],
+      sorts: const [],
+      statuses: const [],
+      formats: const [],
+    );
   }
 
   @override

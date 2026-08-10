@@ -2,11 +2,12 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
+import 'package:flutter_discord_rpc/flutter_discord_rpc.dart';
 import 'package:http/http.dart' as http;
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 
-// Reference: https://github.com/RyanYuuki/AnymeX/blob/main/lib/controllers/discord/discord_rpc.dart
 class DiscordRpcService {
   static const String applicationId = '1435544312296505394';
   static const String _gatewayUrl =
@@ -16,6 +17,7 @@ class DiscordRpcService {
 
   final _log = AppLogger.scope(DiscordRpcService);
 
+  bool _isDesktopInitialized = false;
   WebSocket? _gatewaySocket;
   Timer? _heartbeatTimer;
   int? _heartbeatInterval;
@@ -26,6 +28,8 @@ class DiscordRpcService {
   String? _token;
   bool _isConnected = false;
   Map<String, dynamic>? _lastPresencePayload;
+  RPCActivity? _lastDesktopActivity;
+
   String? _activeMediaId;
   int? _activeEpisodeNumber;
   int? _mediaStartTimeMs;
@@ -34,26 +38,56 @@ class DiscordRpcService {
   int? _animeEndTimeMs;
   final Map<String, String> _assetCache = {};
 
-  bool get isConnected => _isConnected;
+  bool get isDesktopPlatform =>
+      !kIsWeb && (Platform.isLinux || Platform.isMacOS || Platform.isWindows);
+
+  bool get isConnected =>
+      _isConnected || (isDesktopPlatform && _isDesktopInitialized);
   Map<String, dynamic>? get lastPresencePayload => _lastPresencePayload;
 
-  Future<void> connect(String token) async {
-    if (_isConnected && _token == token) return;
+  Future<void> initDesktopRpc() async {
+    if (!isDesktopPlatform || _isDesktopInitialized) return;
+    try {
+      _log.i('Initializing FlutterDiscordRPC for app $applicationId...');
+      await FlutterDiscordRPC.initialize(applicationId);
+      _isDesktopInitialized = true;
+      _log.s('FlutterDiscordRPC initialized successfully');
+    } catch (e, s) {
+      _log.e('Failed to initialize FlutterDiscordRPC', e, s);
+    }
+  }
+
+  Future<void> connect([String? token]) async {
     if (_connectCompleter != null && !_connectCompleter!.isCompleted) {
       return _connectCompleter!.future;
     }
 
     _connectCompleter = Completer<void>();
     _token = token;
-    _log.i('Connection requested');
+    _log.i(
+      'Connection requested (Token provided: ${token != null && token.isNotEmpty})',
+    );
 
     try {
-      if (token.isNotEmpty) {
+      if (isDesktopPlatform) {
+        await initDesktopRpc();
+        if (_isDesktopInitialized) {
+          _log.i('Connecting Desktop Discord RPC via IPC...');
+          FlutterDiscordRPC.instance.connect();
+          _isConnected = true;
+          if (_lastDesktopActivity != null) {
+            FlutterDiscordRPC.instance.setActivity(
+              activity: _lastDesktopActivity!,
+            );
+          }
+        }
+      }
+
+      if (token != null && token.isNotEmpty) {
         await _connectGateway();
       }
     } catch (e, s) {
       _log.e('Discord RPC connection error', e, s);
-      _isConnected = false;
     } finally {
       if (_connectCompleter != null && !_connectCompleter!.isCompleted) {
         _connectCompleter!.complete();
@@ -62,26 +96,24 @@ class DiscordRpcService {
   }
 
   Future<void> _connectGateway() async {
-    await disconnect();
     _log.i('Connecting to Discord Gateway socket...');
-
     try {
+      await _gatewaySocket?.close();
       _gatewaySocket = await WebSocket.connect(_gatewayUrl);
       _gatewaySocket!.listen(
         _handleGatewayMessage,
         onError: (error) {
           _log.e('Discord Gateway socket error', error);
-          _isConnected = false;
+          if (!isDesktopPlatform) _isConnected = false;
         },
         onDone: () {
           _log.w('Discord Gateway connection closed');
-          _isConnected = false;
+          if (!isDesktopPlatform) _isConnected = false;
           _heartbeatTimer?.cancel();
         },
       );
     } catch (e, s) {
       _log.e('Failed to connect to Discord Gateway', e, s);
-      _isConnected = false;
     }
   }
 
@@ -92,28 +124,26 @@ class DiscordRpcService {
       _sequenceNumber = data['s'] as int?;
 
       switch (op) {
-        case 10: // Hello
+        case 10:
           _heartbeatInterval = data['d']['heartbeat_interval'] as int?;
           _heartbeatAckReceived = true;
-          _log.d(
-            'Gateway HELLO received (heartbeat interval: ${_heartbeatInterval}ms)',
-          );
+          _log.d('Gateway HELLO received');
           _identify();
           _startHeartbeat();
           break;
-        case 0: // Dispatch
+        case 0:
           final event = data['t'] as String?;
           if (event == 'READY') {
             _isConnected = true;
             _log.s('Discord Gateway Connected & READY');
             if (_lastPresencePayload != null) {
-              _sendPayload(_lastPresencePayload!);
+              _sendGatewayPayload(_lastPresencePayload!);
             } else {
               updateBrowsingPresence();
             }
           }
           break;
-        case 11: // Heartbeat ACK
+        case 11:
           _heartbeatAckReceived = true;
           break;
       }
@@ -124,8 +154,6 @@ class DiscordRpcService {
 
   void _identify() {
     if (_token == null || _token!.isEmpty) return;
-    _log.d('Sending Gateway IDENTIFY payload');
-
     final payload = {
       'op': 2,
       'd': {
@@ -138,7 +166,6 @@ class DiscordRpcService {
         'presence': {'status': 'online', 'afk': false},
       },
     };
-
     _gatewaySocket?.add(jsonEncode(payload));
   }
 
@@ -158,7 +185,6 @@ class DiscordRpcService {
       if (_token != null) connect(_token!);
       return;
     }
-
     _heartbeatAckReceived = false;
     final payload = {'op': 1, 'd': _sequenceNumber};
     _gatewaySocket?.add(jsonEncode(payload));
@@ -192,19 +218,41 @@ class DiscordRpcService {
         if (data.isNotEmpty && data[0]['external_asset_path'] != null) {
           final assetPath = 'mp:${data[0]['external_asset_path']}';
           _assetCache[url] = assetPath;
-          _log.d('Registered external asset: $assetPath');
           return assetPath;
         }
-      } else {
-        _log.w(
-          'Failed to register external asset for image: HTTP ${response.statusCode}',
-        );
       }
     } catch (e, s) {
-      _log.w('Error registering external asset for image: $url', e, s);
+      _log.w('Error registering external asset: $url', e, s);
     }
 
     return _defaultAssetKey;
+  }
+
+  void _dispatchPresence({
+    required RPCActivity desktopActivity,
+    required Map<String, dynamic> gatewayPayload,
+  }) {
+    _lastDesktopActivity = desktopActivity;
+    _lastPresencePayload = gatewayPayload;
+
+    if (isDesktopPlatform && _isDesktopInitialized) {
+      try {
+        _log.d('Updating activity via FlutterDiscordRPC');
+        FlutterDiscordRPC.instance.setActivity(activity: desktopActivity);
+      } catch (e, s) {
+        _log.e('Failed to set desktop activity', e, s);
+      }
+    }
+
+    if (_gatewaySocket != null && _isConnected) {
+      _sendGatewayPayload(gatewayPayload);
+    }
+  }
+
+  void _sendGatewayPayload(Map<String, dynamic> payload) {
+    if (_gatewaySocket != null) {
+      _gatewaySocket?.add(jsonEncode(payload));
+    }
   }
 
   Future<void> updateAnimePresence({
@@ -215,11 +263,6 @@ class DiscordRpcService {
     int? durationMs,
     int? totalEpisodes,
   }) async {
-    if (!_isConnected || _gatewaySocket == null) {
-      _log.w('Skipped updateAnimePresence (Gateway not connected)');
-      return;
-    }
-
     final currentSeconds = timeStampMs != null
         ? (timeStampMs / 1000).round()
         : 0;
@@ -227,7 +270,6 @@ class DiscordRpcService {
 
     final nowMs = DateTime.now().millisecondsSinceEpoch;
     final calcStartMs = nowMs - (currentSeconds * 1000);
-    // Ignore initial small segment durations (< 60s) from HLS parsers
     final calcEndMs = (totalSeconds > 60 && totalSeconds > currentSeconds)
         ? nowMs + ((totalSeconds - currentSeconds) * 1000)
         : null;
@@ -260,7 +302,26 @@ class DiscordRpcService {
 
     _log.i('Updating Anime presence: $title ($epString)');
 
-    final payload = {
+    final desktopActivity = RPCActivity(
+      details: title,
+      state: stateString,
+      timestamps: RPCTimestamps(start: startTimeMs, end: endTimeMs),
+      assets: RPCAssets(
+        largeImage: coverUrl ?? _appIconUrl,
+        largeText: title,
+        smallImage: _appIconUrl,
+        smallText: 'ShonenX',
+      ),
+      buttons: [
+        RPCButton(label: 'View Anime', url: mediaUrl),
+        const RPCButton(
+          label: 'Watch on ShonenX',
+          url: 'https://github.com/roshancodespace/shonenx',
+        ),
+      ],
+    );
+
+    final gatewayPayload = {
       'op': 3,
       'd': {
         'since': null,
@@ -268,7 +329,7 @@ class DiscordRpcService {
           {
             'application_id': applicationId,
             'name': 'ShonenX',
-            'type': 3, // Watching
+            'type': 3,
             'details': title,
             'state': stateString,
             'timestamps': {
@@ -295,7 +356,10 @@ class DiscordRpcService {
       },
     };
 
-    _sendPayload(payload);
+    _dispatchPresence(
+      desktopActivity: desktopActivity,
+      gatewayPayload: gatewayPayload,
+    );
   }
 
   Future<void> updateAnimePresencePaused({
@@ -304,11 +368,6 @@ class DiscordRpcService {
     int? timeStampMs,
     int? durationMs,
   }) async {
-    if (!_isConnected || _gatewaySocket == null) {
-      _log.w('Skipped updateAnimePresencePaused (Gateway not connected)');
-      return;
-    }
-
     final currentSec = timeStampMs != null ? (timeStampMs / 1000).round() : 0;
     final totalSec = durationMs != null ? (durationMs / 1000).round() : 0;
     final timeDisplay = (currentSec > 0 && totalSec > 0)
@@ -321,7 +380,25 @@ class DiscordRpcService {
 
     _log.i('Updating Anime presence (Paused): $title');
 
-    final payload = {
+    final desktopActivity = RPCActivity(
+      details: title,
+      state: 'Episode $episodeNumber$timeDisplay (Paused)',
+      assets: RPCAssets(
+        largeImage: coverUrl ?? _appIconUrl,
+        largeText: title,
+        smallImage: _appIconUrl,
+        smallText: 'ShonenX',
+      ),
+      buttons: [
+        RPCButton(label: 'View Anime', url: mediaUrl),
+        const RPCButton(
+          label: 'Watch on ShonenX',
+          url: 'https://github.com/roshancodespace/shonenx',
+        ),
+      ],
+    );
+
+    final gatewayPayload = {
       'op': 3,
       'd': {
         'since': null,
@@ -352,7 +429,10 @@ class DiscordRpcService {
       },
     };
 
-    _sendPayload(payload);
+    _dispatchPresence(
+      desktopActivity: desktopActivity,
+      gatewayPayload: gatewayPayload,
+    );
   }
 
   Future<void> updateMangaPresence({
@@ -363,11 +443,6 @@ class DiscordRpcService {
     int? totalPages,
     int? totalChapters,
   }) async {
-    if (!_isConnected || _gatewaySocket == null) {
-      _log.w('Skipped updateMangaPresence (Gateway not connected)');
-      return;
-    }
-
     if (_activeMediaId != manga.id || _mediaStartTimeMs == null) {
       _activeMediaId = manga.id;
       _mediaStartTimeMs = DateTime.now().millisecondsSinceEpoch;
@@ -387,7 +462,26 @@ class DiscordRpcService {
 
     _log.i('Updating Manga presence: $title ($chString)');
 
-    final payload = {
+    final desktopActivity = RPCActivity(
+      details: title,
+      state: '$chString$pageString',
+      timestamps: RPCTimestamps(start: _mediaStartTimeMs),
+      assets: RPCAssets(
+        largeImage: coverUrl ?? _appIconUrl,
+        largeText: title,
+        smallImage: _appIconUrl,
+        smallText: 'ShonenX',
+      ),
+      buttons: [
+        RPCButton(label: 'View Manga', url: mediaUrl),
+        const RPCButton(
+          label: 'Read on ShonenX',
+          url: 'https://github.com/roshancodespace/shonenx',
+        ),
+      ],
+    );
+
+    final gatewayPayload = {
       'op': 3,
       'd': {
         'since': null,
@@ -395,7 +489,7 @@ class DiscordRpcService {
           {
             'application_id': applicationId,
             'name': 'ShonenX',
-            'type': 0, // Playing / Reading
+            'type': 0,
             'details': title,
             'state': '$chString$pageString',
             'timestamps': {'start': _mediaStartTimeMs},
@@ -419,23 +513,13 @@ class DiscordRpcService {
       },
     };
 
-    _sendPayload(payload);
-  }
-
-  void _sendPayload(Map<String, dynamic> payload) {
-    _lastPresencePayload = payload;
-    if (_isConnected && _gatewaySocket != null) {
-      _log.d('Dispatched presence payload over Gateway');
-      _gatewaySocket?.add(jsonEncode(payload));
-    }
+    _dispatchPresence(
+      desktopActivity: desktopActivity,
+      gatewayPayload: gatewayPayload,
+    );
   }
 
   Future<void> updateMediaPresence({required UnifiedMedia media}) async {
-    if (!_isConnected || _gatewaySocket == null) {
-      _log.w('Skipped updateMediaPresence (Gateway not connected)');
-      return;
-    }
-
     if (_activeMediaId != media.id ||
         _mediaStartTimeMs == null ||
         _animeStartTimeMs != null) {
@@ -454,12 +538,31 @@ class DiscordRpcService {
 
     _log.i('Updating Media presence: $title');
 
+    final desktopActivity = RPCActivity(
+      details: 'Viewing $title',
+      state: 'Inspecting $typeStr Details',
+      timestamps: RPCTimestamps(start: _mediaStartTimeMs),
+      assets: RPCAssets(
+        largeImage: coverUrl ?? _appIconUrl,
+        largeText: title,
+        smallImage: _appIconUrl,
+        smallText: 'ShonenX',
+      ),
+      buttons: [
+        RPCButton(label: 'View $typeStr', url: mediaUrl),
+        const RPCButton(
+          label: 'Get ShonenX',
+          url: 'https://github.com/roshancodespace/shonenx',
+        ),
+      ],
+    );
+
     final images = await Future.wait([
       _processImageUrl(coverUrl),
       _processImageUrl(_appIconUrl),
     ]);
 
-    final payload = {
+    final gatewayPayload = {
       'op': 3,
       'd': {
         'since': null,
@@ -491,18 +594,16 @@ class DiscordRpcService {
       },
     };
 
-    _sendPayload(payload);
+    _dispatchPresence(
+      desktopActivity: desktopActivity,
+      gatewayPayload: gatewayPayload,
+    );
   }
 
   Future<void> updateBrowsingPresence({
     String? activity,
     String? details,
   }) async {
-    if (!_isConnected || _gatewaySocket == null) {
-      _log.w('Skipped updateBrowsingPresence (Gateway not connected)');
-      return;
-    }
-
     _browsingStartTimeMs ??= DateTime.now().millisecondsSinceEpoch;
     _activeMediaId = null;
     _activeEpisodeNumber = null;
@@ -512,7 +613,23 @@ class DiscordRpcService {
 
     _log.i('Updating Browsing presence: ${activity ?? 'Glazing ShonenX'}');
 
-    final payload = {
+    final desktopActivity = RPCActivity(
+      details: activity ?? 'Glazing ShonenX',
+      state: details ?? 'Browsing Catalog',
+      timestamps: RPCTimestamps(start: _browsingStartTimeMs),
+      assets: const RPCAssets(
+        largeImage: _appIconUrl,
+        largeText: 'ShonenX - Anime & Manga Client',
+      ),
+      buttons: const [
+        RPCButton(
+          label: 'Get ShonenX',
+          url: 'https://github.com/roshancodespace/shonenx',
+        ),
+      ],
+    );
+
+    final gatewayPayload = {
       'op': 3,
       'd': {
         'since': null,
@@ -539,11 +656,15 @@ class DiscordRpcService {
       },
     };
 
-    _sendPayload(payload);
+    _dispatchPresence(
+      desktopActivity: desktopActivity,
+      gatewayPayload: gatewayPayload,
+    );
   }
 
   void resetPresenceState() {
     _lastPresencePayload = null;
+    _lastDesktopActivity = null;
     _activeMediaId = null;
     _activeEpisodeNumber = null;
     _mediaStartTimeMs = null;
@@ -555,20 +676,39 @@ class DiscordRpcService {
   Future<void> clearPresence() async {
     _log.i('Clearing Discord presence');
     resetPresenceState();
-    if (!_isConnected || _gatewaySocket == null) return;
+    if (isDesktopPlatform && _isDesktopInitialized) {
+      try {
+        FlutterDiscordRPC.instance.clearActivity();
+      } catch (e, s) {
+        _log.e('Failed to clear desktop activity', e, s);
+      }
+    }
 
-    final payload = {
-      'op': 3,
-      'd': {'since': null, 'activities': [], 'status': 'online', 'afk': false},
-    };
-
-    _gatewaySocket?.add(jsonEncode(payload));
+    if (_gatewaySocket != null && _isConnected) {
+      final payload = {
+        'op': 3,
+        'd': {
+          'since': null,
+          'activities': [],
+          'status': 'online',
+          'afk': false,
+        },
+      };
+      _gatewaySocket?.add(jsonEncode(payload));
+    }
   }
 
   Future<void> disconnect() async {
-    _log.i('Disconnecting Discord Gateway...');
+    _log.i('Disconnecting Discord RPC...');
     _heartbeatTimer?.cancel();
     _heartbeatTimer = null;
+    if (isDesktopPlatform && _isDesktopInitialized) {
+      try {
+        FlutterDiscordRPC.instance.disconnect();
+      } catch (e, s) {
+        _log.e('Failed to disconnect desktop RPC', e, s);
+      }
+    }
     await _gatewaySocket?.close();
     _gatewaySocket = null;
     _sequenceNumber = null;

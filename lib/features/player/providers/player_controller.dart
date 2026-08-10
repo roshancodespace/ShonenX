@@ -1,29 +1,23 @@
 import 'dart:async';
-import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:file_picker/file_picker.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:screenshot/screenshot.dart';
-import 'package:share_plus/share_plus.dart';
 
 import 'package:shonenx/core/network/http_client.dart';
 import 'package:shonenx/core/utils/extensions.dart';
-import 'package:shonenx/core/utils/http_x.dart';
 import 'package:shonenx/features/discovery/domain/media_args.dart';
 import 'package:shonenx/features/discovery/providers/episodes_provider.dart';
-import 'package:shonenx/features/history/domain/models/watch_history_entry.dart';
-import 'package:shonenx/features/history/providers/watch_history_provider.dart';
 import 'package:shonenx/features/discord/providers/discord_rpc_provider.dart';
 import 'package:shonenx/features/player/domain/aniskip_prefs.dart';
 import 'package:shonenx/features/player/domain/player_mode.dart';
 import 'package:shonenx/features/player/providers/aniskip_prefs_provider.dart';
 import 'package:shonenx/features/player/providers/aniskip_provider.dart';
 import 'package:shonenx/features/player/providers/player_prefs_provider.dart';
+import 'package:shonenx/features/player/providers/progress_tracker.dart';
+import 'package:shonenx/features/player/providers/selection_resolver.dart';
 import 'package:shonenx/features/player/providers/subtitle_prefs_provider.dart';
 import 'package:shonenx/features/player/providers/video_engine_provider.dart';
-import 'package:shonenx/features/tracking/engine/sync_engine.dart';
+import 'package:shonenx/features/player/utils/screenshot_helper.dart';
 import 'package:shonenx/shared/models/unified_episode.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/models/video_server.dart';
@@ -31,8 +25,11 @@ import 'package:shonenx/shared/models/video_stream.dart';
 import 'package:shonenx/source_engine/providers/anime_source.dart';
 import 'package:shonenx/source_engine/source_engine_provider.dart';
 
+// Sentinel object for copyWith error handling.
+// Needed because null is a valid error value (to clear error state).
 const _keepError = Object();
 
+// Holds state for the player UI.
 class PlayerState {
   final List<VideoServer> servers;
   final List<VideoStream> streams;
@@ -93,100 +90,550 @@ class PlayerState {
   }
 }
 
+// Manages playback, stream switching, episode changing, and progress tracking.
 class PlayerController extends Notifier<PlayerState> {
-  Timer? _progressTimer;
   UnifiedMedia? _media;
   UnifiedMedia? get media => _media;
   AnimeSource? _source;
-  late ScreenshotController _screenshot;
+  late ScreenshotController _screenshotController;
 
-  // Thumbnail caching
-  String? _cachedThumbnail;
-  DateTime? _lastThumbnailTime;
-  bool _initialCaptureDone = false;
-  static const _thumbnailRefreshInterval = Duration(minutes: 2);
+  late final SelectionResolver _resolver;
+  late final ProgressTracker _progressTracker;
 
+  // Track auto-skipped segments to prevent repeat triggers when seeking backwards
   final Set<SkipType> _alreadyAutoSkipped = {};
 
-  // Subscriptions
+  // Prevents multiple skip triggers during episode loading transitions
+  bool _isSkipping = false;
+
+  // Cache last skip args to avoid setting up duplicate listeners on every tick
+  AniSkipArgs? _lastAutoSkipArgs;
+
   ProviderSubscription<Duration>? _positionSubscription;
-
-  // Smart Memory
-  String? _preferredServerId;
-  ServerType? _preferredServerType;
-  String? _preferredQuality;
-  String? _preferredSubtitleLang = 'eng';
-  String? _preferredAudioLang;
-
   bool _isDisposed = false;
 
   @override
   PlayerState build() {
     _isDisposed = false;
+
+    final prefs = ref.read(playerPrefsProvider);
+    _resolver = SelectionResolver(
+      preferredQuality: prefs.defaultQuality,
+      preferredSubtitleLang: prefs.defaultSubtitleLang,
+      preferredAudioLang: prefs.defaultAudioLang,
+      preferredServerType: prefs.defaultServerType == ServerType.unknown
+          ? null
+          : prefs.defaultServerType,
+    );
+    _progressTracker = ProgressTracker(ref);
+
     ref.onDispose(() {
       _isDisposed = true;
       _positionSubscription?.close();
-      _progressTimer?.cancel();
+      _progressTracker.cancel();
     });
 
-    final prefs = ref.read(playerPrefsProvider);
-    _preferredQuality = prefs.defaultQuality;
-    _preferredSubtitleLang = prefs.defaultSubtitleLang;
-    _preferredAudioLang = prefs.defaultAudioLang;
-    _preferredServerType = prefs.defaultServerType == ServerType.unknown
-        ? null
-        : prefs.defaultServerType;
-
+    // Re-apply native subtitle when the "use custom subtitle" pref toggles
     ref.listen(subtitlePrefsProvider, (prev, current) {
       if (prev?.useCustomSubtitle != current.useCustomSubtitle) {
         _applyNativeSubtitle(state.activeSubtitle);
       }
     });
 
+    // Auto-select preferred audio track when tracks become available
     ref.listen(videoEngineStateProvider.select((s) => s.audioTracks), (
-      prev,
-      current,
+      _,
+      tracks,
     ) {
-      if (_preferredAudioLang != null &&
-          _preferredAudioLang != 'Auto' &&
-          current.isNotEmpty) {
-        final match = current.firstWhereOrNull(
-          (t) =>
-              t.language?.toLowerCase().contains(
-                    _preferredAudioLang!.toLowerCase(),
-                  ) ==
-                  true ||
-              t.label.toLowerCase().contains(
-                    _preferredAudioLang!.toLowerCase(),
-                  ) ==
-                  true ||
-              _preferredAudioLang!.toLowerCase().contains(
-                    t.language?.toLowerCase() ?? '---',
-                  ) ==
-                  true ||
-              _preferredAudioLang!.toLowerCase().contains(
-                    t.label.toLowerCase(),
-                  ) ==
-                  true,
-        );
+      if (tracks.isNotEmpty) {
+        final match = _resolver.resolveAudioTrack(tracks);
         if (match != null) {
           ref.read(videoEngineProvider).setAudioTrack(match);
         }
-      } else if (_preferredAudioLang == 'Auto') {
-        ref.read(videoEngineProvider).setAudioTrack(AudioTrack.auto);
       }
     });
 
+    // Update Discord RPC when play/pause changes
     ref.listen(videoEngineStateProvider.select((s) => s.isPlaying), (
       prev,
       current,
     ) {
-      if (!_isDisposed && prev != current) {
-        _updateDiscordRpc();
-      }
+      if (!_isDisposed && prev != current) _updateDiscordRpc();
     });
 
     return const PlayerState();
+  }
+
+  Future<void> initialize(
+    PlayerMode mode, {
+    required ScreenshotController screenshotController,
+  }) async {
+    _screenshotController = screenshotController;
+    _progressTracker.setScreenshotController(screenshotController);
+
+    if (mode is PlayerModeOnline) {
+      _source = ref.read(animeSourceProvider(mode.sourceInfo));
+      _media = mode.media;
+      await _loadData(mode.episode, startPosition: mode.startPosition);
+    } else if (mode is PlayerModeOffline) {
+      _source = null;
+      _media = null;
+      await _loadOfflineData(mode);
+    }
+  }
+
+  /// Loads a local file for offline playback (no servers, no quality picker).
+  Future<void> _loadOfflineData(PlayerModeOffline mode) async {
+    state = state.copyWith(isLoading: true, error: null, activeEpisode: null);
+
+    try {
+      final localStream = VideoStream(
+        url: mode.filePath,
+        quality: 'Local',
+        subtitles: [],
+      );
+
+      state = state.copyWith(
+        servers: [],
+        activeServer: null,
+        streams: [localStream],
+        activeStream: localStream,
+        qualities: [localStream],
+        activeQuality: localStream,
+        subtitles: [SubtitleTrack.none],
+        activeSubtitle: SubtitleTrack.none,
+        isLoading: false,
+      );
+
+      await ref
+          .read(videoEngineProvider)
+          .initialize(localStream, subtitle: null, startAt: Duration.zero);
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
+  // Loads episode media streams (servers -> streams -> quality manifest -> subtitles)
+  // and initializes the video engine using remembered user preferences.
+  Future<void> _loadData(
+    UnifiedEpisode episode, {
+    VideoServer? server,
+    Duration? startPosition,
+    bool force = false,
+  }) async {
+    if (_source == null) return;
+
+    if (state.activeEpisode?.id != episode.id) {
+      _alreadyAutoSkipped.clear();
+    }
+
+    state = state.copyWith(
+      isLoading: true,
+      error: null,
+      activeEpisode: episode,
+    );
+
+    try {
+      // Step 1: Fetch available video servers for this episode
+      List<VideoServer> servers = state.servers;
+      if (force || server == null || state.activeEpisode?.id != episode.id) {
+        servers = await _source!.getServers(episode.id);
+        if (servers.isEmpty) throw Exception('No servers available.');
+      }
+
+      // Step 2: Pick server matching user's preferred type (sub/dub) or explicit choice
+      final activeServer = _resolver.resolveServer(servers, explicit: server);
+
+      // Step 3: Fetch video stream mirrors from selected server
+      final streams = await _source!.getSources(episode.id, activeServer);
+      if (streams.isEmpty) throw Exception('No streams available.');
+
+      // Step 4: Pick stream matching preferred sub/dub type & quality settings
+      final activeStream = _resolver.resolveStream(streams);
+
+      // Step 5: Parse HLS M3U8 manifest into individual quality options (1080p, 720p, etc.)
+      final httpClient = ref.read(httpClientProvider);
+      final qualityResult = await _resolver.resolveQualities(
+        activeStream,
+        httpClient,
+      );
+
+      // Step 6: Select preferred subtitle language (or default to Off)
+      final subtitles = [SubtitleTrack.none, ...activeStream.subtitles];
+      final activeSubtitle = _resolver.resolveSubtitle(subtitles);
+
+      // Step 7: Update controller state with resolved active options
+      state = state.copyWith(
+        servers: servers,
+        activeServer: activeServer,
+        streams: streams,
+        activeStream: activeStream,
+        qualities: qualityResult.list,
+        activeQuality: qualityResult.active,
+        subtitles: subtitles,
+        activeSubtitle: activeSubtitle,
+        isLoading: false,
+      );
+
+      // Step 8: Initialize video engine with selected quality and subtitle track
+      final useCustomSub = ref.read(subtitlePrefsProvider).useCustomSubtitle;
+      await ref
+          .read(videoEngineProvider)
+          .initialize(
+            qualityResult.active,
+            subtitle: useCustomSub || activeSubtitle.url.isEmpty
+                ? null
+                : activeSubtitle,
+            startAt: startPosition,
+          );
+
+      // Step 9: Start progress tracking timer & update Discord Rich Presence
+      _progressTracker.start(
+        () => ProgressContext(
+          media: _media,
+          activeEpisode: state.activeEpisode,
+          activeServer: state.activeServer,
+          sourceInfo: _source?.sourceInfo,
+        ),
+      );
+      _updateDiscordRpc();
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
+  // Switch active server and reload streams while preserving playback position
+  Future<void> changeServer(VideoServer newServer) async {
+    final active = state.activeServer;
+    if (active != null &&
+        newServer.id == active.id &&
+        newServer.type == active.type) {
+      return; // Already on this server
+    }
+
+    // Save preferred server settings for future episodes
+    _resolver.preferredServerId = newServer.id;
+    _resolver.preferredServerType = newServer.type;
+    ref.read(playerPrefsProvider.notifier).setDefaultServerType(newServer.type);
+
+    final currentPos = ref.read(videoEngineProvider).currentPosition;
+    await _loadData(
+      state.activeEpisode!,
+      server: newServer,
+      startPosition: currentPos,
+    );
+  }
+
+  // Switch between sub/dub server variants if available
+  Future<void> changeServerType({bool? isDub, bool toggle = true}) async {
+    ServerType targetType = isDub == true ? ServerType.dub : ServerType.sub;
+    if (toggle && isDub == null) {
+      targetType = state.activeServer?.type == ServerType.dub
+          ? ServerType.sub
+          : ServerType.dub;
+    }
+
+    final server = state.servers.firstWhereOrNull((s) => s.type == targetType);
+    if (server == null) return;
+    await changeServer(server);
+  }
+
+  // Switch between sub/dub stream labels within the active server
+  Future<void> changeStreamType({bool? isDub, bool toggle = true}) async {
+    final currentStream = state.activeStream;
+    if (currentStream == null) return;
+
+    bool targetDub = isDub ?? false;
+    if (toggle && isDub == null) {
+      final q = currentStream.quality.toLowerCase();
+      targetDub = !(q.contains('dub') || q.contains('english'));
+    }
+
+    _resolver.preferredServerType = targetDub ? ServerType.dub : ServerType.sub;
+    ref
+        .read(playerPrefsProvider.notifier)
+        .setDefaultServerType(_resolver.preferredServerType!);
+
+    VideoStream? targetStream;
+    if (targetDub) {
+      targetStream = state.streams.firstWhereOrNull((s) {
+        final sq = s.quality.toLowerCase();
+        return sq.contains('dub') || sq.contains('english');
+      });
+    } else {
+      // Prefer explicit "sub" / "japanese", fall back to anything non-dub
+      targetStream = state.streams.firstWhereOrNull((s) {
+        final sq = s.quality.toLowerCase();
+        return sq.contains('sub') || sq.contains('japanese');
+      });
+      targetStream ??= state.streams.firstWhereOrNull((s) {
+        final sq = s.quality.toLowerCase();
+        return !sq.contains('dub') && !sq.contains('english');
+      });
+    }
+
+    if (targetStream != null && targetStream.url != currentStream.url) {
+      await changeStream(targetStream);
+    }
+  }
+
+  // Switch stream mirror and parse available qualities
+  Future<void> changeStream(VideoStream newStream) async {
+    final engine = ref.read(videoEngineProvider);
+    final currentPos = engine.currentPosition;
+
+    state = state.copyWith(
+      isLoading: true,
+      activeStream: newStream,
+      subtitles: [...newStream.subtitles, SubtitleTrack.none],
+      activeSubtitle: newStream.subtitles.firstOrNull ?? SubtitleTrack.none,
+      error: null,
+    );
+
+    try {
+      final httpClient = ref.read(httpClientProvider);
+      final qualityResult = await _resolver.resolveQualities(
+        newStream,
+        httpClient,
+      );
+
+      state = state.copyWith(
+        qualities: qualityResult.list,
+        activeQuality: qualityResult.active,
+        isLoading: false,
+      );
+
+      await engine.initialize(
+        qualityResult.active,
+        subtitle: ref.read(subtitlePrefsProvider).useCustomSubtitle
+            ? null
+            : newStream.subtitles.firstOrNull,
+        startAt: currentPos,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Failed to switch stream: $e',
+      );
+    }
+  }
+
+  // Switch quality resolution while preserving current position
+  Future<void> changeQuality(VideoStream newQuality) async {
+    if (state.activeQuality?.quality == newQuality.quality &&
+        state.activeQuality?.url == newQuality.url) {
+      return;
+    }
+
+    _resolver.preferredQuality = newQuality.quality;
+    ref
+        .read(playerPrefsProvider.notifier)
+        .setDefaultQuality(newQuality.quality);
+
+    final engine = ref.read(videoEngineProvider);
+    final currentPos = engine.currentPosition;
+
+    state = state.copyWith(
+      activeQuality: newQuality,
+      isLoading: true,
+      error: null,
+    );
+
+    try {
+      final useCustomSub = ref.read(subtitlePrefsProvider).useCustomSubtitle;
+      await engine.initialize(
+        newQuality,
+        subtitle: useCustomSub || state.activeSubtitle?.url.isEmpty == true
+            ? null
+            : state.activeSubtitle,
+        startAt: currentPos,
+      );
+      state = state.copyWith(isLoading: false);
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Failed to switch quality: $e',
+      );
+    }
+  }
+
+  // Update active subtitle track and save language preference
+  Future<void> changeSubtitle(SubtitleTrack? newSubtitle) async {
+    if (newSubtitle != null && newSubtitle.url.isNotEmpty) {
+      _resolver.preferredSubtitleLang = newSubtitle.language;
+      ref
+          .read(playerPrefsProvider.notifier)
+          .setDefaultSubtitleLang(newSubtitle.language);
+    } else if (newSubtitle != null) {
+      _resolver.preferredSubtitleLang = 'Off';
+      ref.read(playerPrefsProvider.notifier).setDefaultSubtitleLang('Off');
+    }
+
+    state = state.copyWith(activeSubtitle: newSubtitle, error: null);
+    await _applyNativeSubtitle(newSubtitle);
+  }
+
+  // Update active audio track and save preference
+  Future<void> changeAudioTrack(AudioTrack track) async {
+    if (track.language != null && track.language!.isNotEmpty) {
+      _resolver.preferredAudioLang = track.language;
+      ref
+          .read(playerPrefsProvider.notifier)
+          .setDefaultAudioLang(track.language!);
+    } else if (track.id != 'auto' && track.id != 'no') {
+      _resolver.preferredAudioLang = track.label;
+      ref.read(playerPrefsProvider.notifier).setDefaultAudioLang(track.label);
+    } else if (track.id == 'auto') {
+      _resolver.preferredAudioLang = 'Auto';
+      ref.read(playerPrefsProvider.notifier).setDefaultAudioLang('Auto');
+    }
+    await ref.read(videoEngineProvider).setAudioTrack(track);
+  }
+
+  // Set native subtitle track (or clear it if using custom Flutter overlay)
+  Future<void> _applyNativeSubtitle(SubtitleTrack? subtitle) async {
+    final useCustom = ref.read(subtitlePrefsProvider).useCustomSubtitle;
+    try {
+      if (useCustom || subtitle?.url.isEmpty == true) {
+        await ref.read(videoEngineProvider).setSubtitle(null);
+      } else {
+        await ref.read(videoEngineProvider).setSubtitle(subtitle);
+      }
+    } catch (e) {
+      state = state.copyWith(error: 'Failed to switch subtitle: $e');
+    }
+  }
+
+  Future<void> changeSpeed(double speed) async {
+    state = state.copyWith(playbackSpeed: speed);
+    await ref.read(videoEngineProvider).setSpeed(speed);
+  }
+
+  Future<void> loadEpisode(
+    UnifiedEpisode newEpisode, {
+    bool force = false,
+  }) async {
+    _alreadyAutoSkipped.clear();
+    _lastAutoSkipArgs = null;
+    _progressTracker.resetThumbnail();
+    await _loadData(newEpisode, force: force);
+  }
+
+  // Skip to next/previous episode with re-entrancy protection
+  Future<void> skipEpisode({bool forward = true}) async {
+    if (_isSkipping) return;
+    if (_media == null || state.activeEpisode == null) return;
+
+    _isSkipping = true;
+    try {
+      final episodes = await ref.read(
+        episodesListProvider(
+          MediaArgs.fromMedia(_media!),
+        ).selectAsync((s) => s.episodes),
+      );
+
+      final currentIndex = _findEpisodeIndex(episodes, state.activeEpisode!);
+      if (currentIndex == -1) return;
+
+      final targetIndex = currentIndex + (forward ? 1 : -1);
+      if (targetIndex < 0 || targetIndex >= episodes.length) return;
+
+      await loadEpisode(episodes[targetIndex]);
+    } finally {
+      _isSkipping = false;
+    }
+  }
+
+  bool get hasNextEpisode {
+    if (_media == null || state.activeEpisode == null) return false;
+
+    final episodes = _getEpisodesList();
+    if (episodes != null) {
+      final idx = _findEpisodeIndex(episodes, state.activeEpisode!);
+      if (idx != -1) return idx < episodes.length - 1;
+    }
+
+    // Fall back to total episode count if episode list isn't loaded yet
+    final total = _media!.episodes;
+    if (total != null && total > 0) return state.activeEpisode!.number < total;
+
+    return true; // Assume yes if total is unknown
+  }
+
+  bool get hasPrevEpisode {
+    if (_media == null || state.activeEpisode == null) return false;
+
+    final episodes = _getEpisodesList();
+    if (episodes != null) {
+      final idx = _findEpisodeIndex(episodes, state.activeEpisode!);
+      if (idx != -1) return idx > 0;
+    }
+
+    return state.activeEpisode!.number > 1;
+  }
+
+  // Find episode by ID, or fallback to matching episode number (handles float numbers like 12.5)
+  int _findEpisodeIndex(List<UnifiedEpisode> episodes, UnifiedEpisode target) {
+    int index = episodes.indexWhere((e) => e.id == target.id);
+    if (index == -1) {
+      index = episodes.indexWhere(
+        (e) => (e.number - target.number).abs() < 0.01,
+      );
+    }
+    return index;
+  }
+
+  List<UnifiedEpisode>? _getEpisodesList() {
+    return ref
+        .read(episodesListProvider(MediaArgs.fromMedia(_media!)))
+        .value
+        ?.episodes;
+  }
+
+  // Listen to playback position and auto-skip op/ed/recap segments
+  void setupAutoSkipListener(AniSkipArgs? args) {
+    if (args == _lastAutoSkipArgs && _positionSubscription != null) return;
+    _lastAutoSkipArgs = args;
+
+    _positionSubscription?.close();
+
+    final prefs = ref.read(aniskipPrefsProvider);
+    final skips = ref.read(aniSkipProvider(args)).value ?? [];
+
+    _positionSubscription = ref.listen(
+      videoEngineStateProvider.select((s) => s.position),
+      (_, current) {
+        final seconds = current.inSeconds;
+
+        for (final skip in skips) {
+          if (prefs.mode(skip.type) != SkipMode.auto) continue;
+
+          final isInside = seconds >= skip.startTime && seconds < skip.endTime;
+          if (isInside && _alreadyAutoSkipped.add(skip.type)) {
+            ref
+                .read(videoEngineProvider)
+                .seekTo(Duration(seconds: skip.endTime.ceil()));
+          }
+        }
+      },
+    );
+  }
+
+  Future<({bool success, String message})> takeAndShareScreenshot() async {
+    ref.read(videoEngineProvider).pause();
+    return ScreenshotHelper.captureAndShare(
+      _screenshotController,
+      mediaTitle: _media?.title.availableTitle,
+    );
+  }
+
+  Future<void> captureExitThumbnail() async {
+    await _progressTracker.captureExitThumbnail(
+      media: _media,
+      activeEpisode: state.activeEpisode,
+      activeServer: state.activeServer,
+      sourceInfo: _source?.sourceInfo,
+    );
   }
 
   void _updateDiscordRpc() {
@@ -218,698 +665,6 @@ class PlayerController extends Notifier<PlayerState> {
             episodeNumber: activeEp.number.toInt(),
             timeStampMs: positionMs > 0 ? positionMs : null,
             durationMs: durationMs > 0 ? durationMs : null,
-          );
-    }
-  }
-
-  Future<void> _applyNativeSubtitle(SubtitleTrack? subtitle) async {
-    final prefs = ref.read(subtitlePrefsProvider);
-    try {
-      if (prefs.useCustomSubtitle || subtitle?.url.isEmpty == true) {
-        await ref.read(videoEngineProvider).setSubtitle(null);
-      } else {
-        await ref.read(videoEngineProvider).setSubtitle(subtitle);
-      }
-    } catch (e) {
-      state = state.copyWith(error: 'Failed to switch subtitle: $e');
-    }
-  }
-
-  Future<void> initialize(
-    PlayerMode mode, {
-    required ScreenshotController screenshot,
-  }) async {
-    _screenshot = screenshot;
-
-    if (mode is PlayerModeOnline) {
-      _source = ref.read(animeSourceProvider(mode.sourceInfo));
-      _media = mode.media;
-
-      await _loadData(mode.episode, startPosition: mode.startPosition);
-    } else if (mode is PlayerModeOffline) {
-      _source = null;
-      _media = null;
-      await _loadOfflineData(mode);
-    }
-  }
-
-  Future<void> _loadOfflineData(PlayerModeOffline mode) async {
-    state = state.copyWith(isLoading: true, error: null, activeEpisode: null);
-
-    try {
-      final activeStream = VideoStream(
-        url: mode.filePath,
-        quality: 'Local',
-        subtitles: [],
-      );
-
-      state = state.copyWith(
-        servers: [],
-        activeServer: null,
-        streams: [activeStream],
-        activeStream: activeStream,
-        qualities: [activeStream],
-        activeQuality: activeStream,
-        subtitles: [SubtitleTrack.none],
-        activeSubtitle: SubtitleTrack.none,
-        isLoading: false,
-      );
-
-      await ref
-          .read(videoEngineProvider)
-          .initialize(activeStream, subtitle: null, startAt: Duration.zero);
-    } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
-    }
-  }
-
-  Future<void> changeServer(VideoServer newServer) async {
-    final active = state.activeServer;
-    if (active != null &&
-        newServer.id == active.id &&
-        newServer.type == active.type) {
-      return;
-    }
-
-    _preferredServerId = newServer.id;
-    _preferredServerType = newServer.type;
-    ref.read(playerPrefsProvider.notifier).setDefaultServerType(newServer.type);
-
-    final currentPos = ref.read(videoEngineProvider).currentPosition;
-    await _loadData(
-      state.activeEpisode!,
-      server: newServer,
-      startPosition: currentPos,
-    );
-  }
-
-  Future<void> changeServerType({bool? isDub, bool toggle = true}) async {
-    ServerType targetType = isDub == true ? ServerType.dub : ServerType.sub;
-    if (toggle && isDub == null) {
-      targetType = state.activeServer?.type == ServerType.dub
-          ? ServerType.sub
-          : ServerType.dub;
-    }
-    final server = state.servers.firstWhereOrNull((s) => s.type == targetType);
-    if (server == null) return;
-    await changeServer(server);
-  }
-
-  Future<void> changeStreamType({bool? isDub, bool toggle = true}) async {
-    final currentStream = state.activeStream;
-    if (currentStream == null) return;
-
-    bool targetDub = isDub ?? false;
-    if (toggle && isDub == null) {
-      final q = currentStream.quality.toLowerCase();
-      final currentlyDub = q.contains('dub') || q.contains('english');
-      targetDub = !currentlyDub;
-    }
-
-    _preferredServerType = targetDub ? ServerType.dub : ServerType.sub;
-    ref
-        .read(playerPrefsProvider.notifier)
-        .setDefaultServerType(_preferredServerType!);
-
-    VideoStream? targetStream;
-    if (targetDub) {
-      targetStream = state.streams.firstWhereOrNull((s) {
-        final sq = s.quality.toLowerCase();
-        return sq.contains('dub') || sq.contains('english');
-      });
-    } else {
-      targetStream = state.streams.firstWhereOrNull((s) {
-        final sq = s.quality.toLowerCase();
-        return sq.contains('sub') || sq.contains('japanese');
-      });
-      targetStream ??= state.streams.firstWhereOrNull((s) {
-        final sq = s.quality.toLowerCase();
-        return !sq.contains('dub') && !sq.contains('english');
-      });
-    }
-
-    if (targetStream != null && targetStream.url != currentStream.url) {
-      await changeStream(targetStream);
-    }
-  }
-
-  Future<void> loadEpisode(
-    UnifiedEpisode newEpisode, {
-    bool force = false,
-  }) async {
-    _alreadyAutoSkipped.clear();
-    _cachedThumbnail = null;
-    _lastThumbnailTime = null;
-    _initialCaptureDone = false;
-    await _loadData(newEpisode, force: force);
-  }
-
-  Future<void> skipEpisode({bool forward = true}) async {
-    if (_media == null || state.activeEpisode == null) return;
-    final episodes = await ref.read(
-      episodesListProvider(
-        MediaArgs.fromMedia(_media!),
-      ).selectAsync((s) => s.episodes),
-    );
-
-    final activeEp = state.activeEpisode!;
-    int currentIndex = episodes.indexWhere((e) => e.id == activeEp.id);
-    if (currentIndex == -1) {
-      currentIndex = episodes.indexWhere(
-        (e) => (e.number - activeEp.number).abs() < 0.01,
-      );
-    }
-    if (currentIndex == -1) return;
-
-    final targetIndex = currentIndex + (forward ? 1 : -1);
-    if (targetIndex < 0 || targetIndex >= episodes.length) return;
-
-    await loadEpisode(episodes[targetIndex]);
-  }
-
-  bool get hasNextEpisode {
-    if (_media == null || state.activeEpisode == null) return false;
-    final episodesState = ref
-        .read(episodesListProvider(MediaArgs.fromMedia(_media!)))
-        .value;
-    if (episodesState != null) {
-      final episodes = episodesState.episodes;
-      final activeEp = state.activeEpisode!;
-      int currentIndex = episodes.indexWhere((e) => e.id == activeEp.id);
-      if (currentIndex == -1) {
-        currentIndex = episodes.indexWhere(
-          (e) => (e.number - activeEp.number).abs() < 0.01,
-        );
-      }
-      if (currentIndex != -1) {
-        return currentIndex < episodes.length - 1;
-      }
-    }
-
-    final total = _media!.episodes;
-    if (total != null && total > 0) {
-      return state.activeEpisode!.number < total;
-    }
-    return true; // Assume there is one if total is unknown, until proven otherwise
-  }
-
-  bool get hasPrevEpisode {
-    if (_media == null || state.activeEpisode == null) return false;
-    final episodesState = ref
-        .read(episodesListProvider(MediaArgs.fromMedia(_media!)))
-        .value;
-    if (episodesState != null) {
-      final episodes = episodesState.episodes;
-      final activeEp = state.activeEpisode!;
-      int currentIndex = episodes.indexWhere((e) => e.id == activeEp.id);
-      if (currentIndex == -1) {
-        currentIndex = episodes.indexWhere(
-          (e) => (e.number - activeEp.number).abs() < 0.01,
-        );
-      }
-      if (currentIndex != -1) {
-        return currentIndex > 0;
-      }
-    }
-    return state.activeEpisode!.number > 1;
-  }
-
-  bool _matchesQuality(String candidate, String target) {
-    final c = candidate.toLowerCase();
-    final t = target.toLowerCase();
-    if (c == t) return true;
-    if (t == 'auto') return c == 'auto';
-    if (c == 'auto') return false;
-
-    final cleanTarget = t.replaceAll('p', '').trim();
-    if (cleanTarget.isNotEmpty && c.contains(cleanTarget)) {
-      return true;
-    }
-    return c.contains(t) || t.contains(c);
-  }
-
-  Future<void> _loadData(
-    UnifiedEpisode episode, {
-    VideoServer? server,
-    Duration? startPosition,
-    bool force = false,
-  }) async {
-    if (_source == null) return;
-    if (state.activeEpisode?.id != episode.id) {
-      _alreadyAutoSkipped.clear();
-    }
-    state = state.copyWith(
-      isLoading: true,
-      error: null,
-      activeEpisode: episode,
-    );
-
-    try {
-      List<VideoServer> servers = state.servers;
-      if (force || (server == null || state.activeEpisode?.id != episode.id)) {
-        servers = await _source!.getServers(episode.id);
-        if (servers.isEmpty) throw Exception('No servers available.');
-      }
-
-      // Video Server Selection
-      VideoServer activeServer = servers.first;
-      if (server != null) {
-        activeServer = server;
-      } else {
-        // Priority 1: Exact match (Same ID and Same Type)
-        final exactMatch = servers.firstWhereOrNull(
-          (s) => s.id == _preferredServerId && s.type == _preferredServerType,
-        );
-
-        if (exactMatch != null) {
-          activeServer = exactMatch;
-        } else {
-          // Priority 2: Type match (ID didn't match, but we have the preferred type e.g., Dub)
-          final typeMatch = servers.firstWhereOrNull(
-            (s) => s.type == _preferredServerType,
-          );
-          if (typeMatch != null) {
-            activeServer = typeMatch;
-          }
-        }
-      }
-
-      final streams = await _source!.getSources(episode.id, activeServer);
-      if (streams.isEmpty) throw Exception('No streams available.');
-
-      // Video Stream (mirror) Selection
-      VideoStream activeStream = streams.first;
-
-      List<VideoStream> preferredTypeStreams = streams;
-      if (_preferredServerType != null) {
-        final isPrefDub = _preferredServerType == ServerType.dub;
-        final matchingStreams = streams.where((s) {
-          final sq = s.quality.toLowerCase();
-          final isDub = sq.contains('dub') || sq.contains('english');
-          return isPrefDub ? isDub : (!isDub);
-        }).toList();
-
-        if (matchingStreams.isNotEmpty) {
-          preferredTypeStreams = matchingStreams;
-          activeStream = matchingStreams.first;
-        }
-      }
-
-      if (_preferredQuality != null && _preferredQuality != 'Auto') {
-        final qualityMatch =
-            preferredTypeStreams.firstWhereOrNull(
-              (s) => _matchesQuality(s.quality, _preferredQuality!),
-            ) ??
-            streams.firstWhereOrNull(
-              (s) => _matchesQuality(s.quality, _preferredQuality!),
-            );
-        if (qualityMatch != null) activeStream = qualityMatch;
-      }
-
-      // Fetch qualities for the activeStream
-      final httpClient = ref.read(httpClientProvider);
-      final qualitiesList = <VideoStream>[
-        activeStream.copyWith(quality: 'Auto'),
-      ];
-
-      try {
-        final parsedQualities = await httpClient.splitM3U8(
-          activeStream.url,
-          headers: activeStream.headers,
-        );
-        for (final q in parsedQualities) {
-          qualitiesList.add(
-            VideoStream(
-              url: q.url,
-              headers: activeStream.headers,
-              quality: q.quality,
-              subtitles: activeStream.subtitles,
-            ),
-          );
-        }
-      } catch (_) {
-        // Fall back gracefully if parsing fails
-      }
-
-      // Select active quality from parsed list
-      VideoStream activeQuality = qualitiesList.first;
-      if (_preferredQuality != null && _preferredQuality != 'Auto') {
-        final qualityMatch = qualitiesList.firstWhereOrNull(
-          (s) => _matchesQuality(s.quality, _preferredQuality!),
-        );
-        if (qualityMatch != null) activeQuality = qualityMatch;
-      }
-
-      final subtitles = [SubtitleTrack.none, ...activeStream.subtitles];
-
-      // Subtitle Selection
-      SubtitleTrack? activeSubtitle = subtitles.first;
-      if (_preferredSubtitleLang != null &&
-          _preferredSubtitleLang != 'Off' &&
-          subtitles.isNotEmpty) {
-        final subMatch = subtitles.firstWhereOrNull(
-          (s) =>
-              s.language.toLowerCase().contains(
-                _preferredSubtitleLang!.toLowerCase(),
-              ) ||
-              _preferredSubtitleLang!.toLowerCase().contains(
-                s.language.toLowerCase(),
-              ),
-        );
-        if (subMatch != null) activeSubtitle = subMatch;
-      } else if (_preferredSubtitleLang == 'Off') {
-        activeSubtitle = SubtitleTrack.none;
-      }
-
-      state = state.copyWith(
-        servers: servers,
-        activeServer: activeServer,
-        streams: streams,
-        activeStream: activeStream,
-        qualities: qualitiesList,
-        activeQuality: activeQuality,
-        subtitles: subtitles,
-        activeSubtitle: activeSubtitle,
-        isLoading: false,
-      );
-
-      await ref
-          .read(videoEngineProvider)
-          .initialize(
-            activeQuality,
-            subtitle:
-                ref.read(subtitlePrefsProvider).useCustomSubtitle ||
-                    activeSubtitle.url.isEmpty == true
-                ? null
-                : activeSubtitle,
-            startAt: startPosition,
-          );
-
-      _startProgressTracker();
-      _updateDiscordRpc();
-    } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
-    }
-  }
-
-  Future<void> changeStream(VideoStream newStream) async {
-    final engine = ref.read(videoEngineProvider);
-    final currentPos = engine.currentPosition;
-
-    state = state.copyWith(
-      isLoading: true,
-      activeStream: newStream,
-      subtitles: [...newStream.subtitles, SubtitleTrack.none],
-      activeSubtitle: newStream.subtitles.firstOrNull ?? SubtitleTrack.none,
-      error: null,
-    );
-
-    try {
-      final httpClient = ref.read(httpClientProvider);
-      final newQualities = <VideoStream>[newStream.copyWith(quality: 'Auto')];
-
-      try {
-        final parsedQualities = await httpClient.splitM3U8(
-          newStream.url,
-          headers: newStream.headers,
-        );
-        for (final q in parsedQualities) {
-          newQualities.add(
-            VideoStream(
-              url: q.url,
-              headers: newStream.headers,
-              quality: q.quality,
-              subtitles: newStream.subtitles,
-            ),
-          );
-        }
-      } catch (_) {}
-
-      VideoStream activeQuality = newQualities.first;
-      if (_preferredQuality != null && _preferredQuality != 'Auto') {
-        final qualityMatch = newQualities.firstWhereOrNull(
-          (s) => _matchesQuality(s.quality, _preferredQuality!),
-        );
-        if (qualityMatch != null) activeQuality = qualityMatch;
-      }
-
-      state = state.copyWith(
-        qualities: newQualities,
-        activeQuality: activeQuality,
-        isLoading: false,
-      );
-
-      await engine.initialize(
-        activeQuality,
-        subtitle: ref.read(subtitlePrefsProvider).useCustomSubtitle
-            ? null
-            : newStream.subtitles.firstOrNull,
-        startAt: currentPos,
-      );
-    } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: 'Failed to switch stream: $e',
-      );
-    }
-  }
-
-  Future<void> changeQuality(VideoStream newQuality) async {
-    if (state.activeQuality?.quality == newQuality.quality &&
-        state.activeQuality?.url == newQuality.url) {
-      return;
-    }
-
-    _preferredQuality = newQuality.quality;
-    ref
-        .read(playerPrefsProvider.notifier)
-        .setDefaultQuality(newQuality.quality);
-
-    final engine = ref.read(videoEngineProvider);
-    final currentPos = engine.currentPosition;
-
-    state = state.copyWith(
-      activeQuality: newQuality,
-      isLoading: true,
-      error: null,
-    );
-
-    try {
-      await engine.initialize(
-        newQuality,
-        subtitle:
-            ref.read(subtitlePrefsProvider).useCustomSubtitle ||
-                state.activeSubtitle?.url.isEmpty == true
-            ? null
-            : state.activeSubtitle,
-        startAt: currentPos,
-      );
-      state = state.copyWith(isLoading: false);
-    } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: 'Failed to switch quality: $e',
-      );
-    }
-  }
-
-  Future<void> changeSubtitle(SubtitleTrack? newSubtitle) async {
-    if (newSubtitle != null && newSubtitle.url.isNotEmpty) {
-      _preferredSubtitleLang = newSubtitle.language;
-      ref
-          .read(playerPrefsProvider.notifier)
-          .setDefaultSubtitleLang(newSubtitle.language);
-    } else if (newSubtitle != null) {
-      _preferredSubtitleLang = 'Off';
-      ref.read(playerPrefsProvider.notifier).setDefaultSubtitleLang('Off');
-    }
-
-    state = state.copyWith(activeSubtitle: newSubtitle, error: null);
-    await _applyNativeSubtitle(newSubtitle);
-  }
-
-  Future<void> changeAudioTrack(AudioTrack track) async {
-    if (track.language != null && track.language!.isNotEmpty) {
-      _preferredAudioLang = track.language;
-      ref
-          .read(playerPrefsProvider.notifier)
-          .setDefaultAudioLang(track.language!);
-    } else if (track.id != 'auto' && track.id != 'no') {
-      _preferredAudioLang = track.label;
-      ref.read(playerPrefsProvider.notifier).setDefaultAudioLang(track.label);
-    } else if (track.id == 'auto') {
-      _preferredAudioLang = 'Auto';
-      ref.read(playerPrefsProvider.notifier).setDefaultAudioLang('Auto');
-    }
-    await ref.read(videoEngineProvider).setAudioTrack(track);
-  }
-
-  Future<void> changeSpeed(double speed) async {
-    state = state.copyWith(playbackSpeed: speed);
-    await ref.read(videoEngineProvider).setSpeed(speed);
-  }
-
-  void setupAutoSkipListener(AniSkipArgs? args) {
-    _positionSubscription?.close();
-
-    final prefs = ref.read(aniskipPrefsProvider);
-    final skips = ref.read(aniSkipProvider(args)).value ?? [];
-
-    _positionSubscription = ref.listen(
-      videoEngineStateProvider.select((s) => s.position),
-      (previous, current) {
-        final seconds = current.inSeconds;
-
-        for (final skip in skips) {
-          final mode = prefs.mode(skip.type);
-
-          if (mode != SkipMode.auto) continue;
-
-          final isInside = seconds >= skip.startTime && seconds < skip.endTime;
-
-          if (isInside) {
-            if (_alreadyAutoSkipped.add(skip.type)) {
-              ref
-                  .read(videoEngineProvider)
-                  .seekTo(Duration(seconds: skip.endTime.ceil()));
-            }
-          }
-        }
-      },
-    );
-  }
-
-  Future<void> _startProgressTracker() async {
-    _progressTimer?.cancel();
-    _progressTimer = Timer.periodic(
-      const Duration(seconds: 5),
-      (_) async => await _saveCurrentProgress(),
-    );
-  }
-
-  Future<String?> _captureThumbnail() async {
-    try {
-      final image = await _screenshot.capture(pixelRatio: 0.5);
-      if (image != null) {
-        _cachedThumbnail = base64Encode(image);
-        _lastThumbnailTime = DateTime.now();
-      }
-    } catch (_) {}
-    return _cachedThumbnail;
-  }
-
-  Future<({bool success, String message})> takeAndShareScreenshot() async {
-    try {
-      ref.read(videoEngineProvider).pause();
-      final image = await _screenshot.capture(pixelRatio: 1.5);
-      if (image == null) {
-        return (success: false, message: 'Failed to capture screenshot.');
-      }
-
-      if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
-        final now = DateTime.now();
-        final timestamp =
-            '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}_${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}${now.second.toString().padLeft(2, '0')}';
-        final defaultFileName = 'ShonenX_$timestamp.png';
-
-        final savePath = await FilePicker.platform.saveFile(
-          dialogTitle: 'Save Screenshot',
-          fileName: defaultFileName,
-          type: FileType.custom,
-          allowedExtensions: ['png'],
-        );
-
-        if (savePath == null) {
-          return (success: false, message: 'Save cancelled');
-        }
-
-        final file = File(savePath);
-        await file.writeAsBytes(image);
-
-        return (success: true, message: 'Screenshot saved to ${file.path}');
-      } else {
-        final tempDir = await getTemporaryDirectory();
-        final file = File(
-          '${tempDir.path}/screenshot_${DateTime.now().millisecondsSinceEpoch}.png',
-        );
-        await file.writeAsBytes(image);
-        await Share.shareXFiles(
-          [XFile(file.path)],
-          text: 'Screenshot from ${_media?.title.availableTitle ?? "ShonenX"}',
-        );
-        return (success: true, message: 'Screenshot captured');
-      }
-    } catch (e) {
-      return (success: false, message: 'Screenshot error: $e');
-    }
-  }
-
-  bool get _shouldCaptureThumbnail {
-    if (!_initialCaptureDone) return true;
-    if (_lastThumbnailTime == null) return true;
-    return DateTime.now().difference(_lastThumbnailTime!) >=
-        _thumbnailRefreshInterval;
-  }
-
-  Future<void> captureExitThumbnail() async {
-    await _captureThumbnail();
-    await _saveCurrentProgress(skipCapture: true);
-  }
-
-  Future<void> _saveCurrentProgress({bool skipCapture = false}) async {
-    if (!ref.mounted) {
-      _progressTimer?.cancel();
-      return;
-    }
-
-    if (state.activeServer == null) return;
-
-    final engine = ref.read(videoEngineProvider);
-    final position = engine.currentPosition;
-    final duration = engine.currentDuration;
-    if (position == Duration.zero || duration == Duration.zero) return;
-
-    if (_media == null) return;
-
-    // Capture thumbnail only when needed
-    if (!skipCapture && _shouldCaptureThumbnail) {
-      await _captureThumbnail();
-      _initialCaptureDone = true;
-    }
-
-    final thumbnail = _cachedThumbnail ?? '';
-
-    final entry = WatchHistoryEntry()
-      ..episodeNumber = state.activeEpisode?.number ?? 1
-      ..totalEpisodes = _media!.episodes
-      ..animeId = _media!.id
-      ..animeIdMal = _media!.idMal
-      ..animeTitle = _media!.title.availableTitle
-      ..episodeTitle = state.activeEpisode?.title
-      ..cover = _media!.cover
-      ..banner = _media!.banner
-      ..thumbnailUrl = thumbnail.isNotEmpty
-          ? thumbnail
-          : state.activeEpisode?.thumbnailUrl
-      ..positionInMilliseconds = position.inMilliseconds
-      ..durationInMilliseconds = duration.inMilliseconds
-      ..sourceId = _source?.sourceInfo.id ?? _media!.sourceId
-      ..sourceName = _source?.sourceInfo.name ?? _media!.sourceName
-      ..providerId = _media!.providerId != _media!.id
-          ? _media!.providerId
-          : null
-      ..lastUpdated = DateTime.now();
-
-    ref.read(watchHistoryRepositoryProvider).saveProgress(entry);
-
-    if (state.activeEpisode != null) {
-      ref
-          .read(syncEngineProvider)
-          .processPlayback(
-            media: _media!,
-            episodeNumber: state.activeEpisode!.number,
-            position: position,
-            duration: duration,
           );
     }
   }

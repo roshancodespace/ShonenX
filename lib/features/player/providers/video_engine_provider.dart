@@ -7,6 +7,7 @@ import 'package:shonenx/features/player/providers/media_kit_prefs_provider.dart'
 import 'package:shonenx/features/player/providers/player_prefs_provider.dart';
 import 'package:shonenx/shared/models/video_stream.dart';
 
+// Playback state of the active engine (position, buffering, aspect ratio, etc.).
 class EngineState {
   final Duration position;
   final Duration duration;
@@ -96,6 +97,7 @@ final videoEngineStateProvider =
       EngineStateNotifier.new,
     );
 
+// Selects and initializes the preferred video backend (MediaKit or native VideoPlayer)
 final videoEngineProvider = Provider.autoDispose<VideoEngine>((ref) {
   final playerType = ref.watch(playerPrefsProvider.select((s) => s.playerType));
 

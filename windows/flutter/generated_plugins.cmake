@@ -24,6 +24,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
 )
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST
+  flutter_discord_rpc
   flutter_local_notifications_windows
   jni
   libtorrent_flutter

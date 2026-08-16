@@ -127,11 +127,33 @@ jobs:
           git submodule update --init packages/anymex_extension_bridge
           git submodule update --init packages/commentum_client
 
+      - name: Override pubspec.yaml version
+        if: github.event_name == 'workflow_dispatch'
+        shell: bash
+        run: |
+          CLEAN_VER="${{ needs.resolve-release-tag.outputs.tag_name }}"
+          CLEAN_VER="${CLEAN_VER#v}" # Strip 'v' if provided
+          
+          # Extract existing build number
+          EXISTING_VER=$(grep '^version:' pubspec.yaml | awk '{print $2}')
+          if [[ "$EXISTING_VER" == *"+"* ]] && [[ "$CLEAN_VER" != *"+"* ]]; then
+            BUILD_NUM="+${EXISTING_VER#*+}"
+            CLEAN_VER="${CLEAN_VER}${BUILD_NUM}"
+          fi
+          
+          echo "Overriding pubspec.yaml version to: $CLEAN_VER"
+          sed -i -e "s/^version: .*/version: $CLEAN_VER/g" pubspec.yaml
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 21
           cache: "gradle"
+
+      - name: Setup Rust for Android
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android, armv7-linux-androideabi, x86_64-linux-android
 
       - uses: subosito/flutter-action@v2
         with:
@@ -185,10 +207,14 @@ jobs:
       image: archlinux:base-devel
 
     steps:
-      - name: Install system dependencies
+      - name: Install system dependencies & optimize Arch container
         run: |
-          pacman -Syu --noconfirm
-          pacman -S --noconfirm git jq zip unzip curl xz tar clang cmake ninja pkgconf gtk3 libsecret webkit2gtk-4.1 mpv alsa-lib
+          pacman -Syu --noconfirm git jq zip unzip curl xz tar clang cmake ninja pkgconf gtk3 libsecret webkit2gtk-4.1 wpewebkit libwpe wpebackend-fdo mpv alsa-lib rustup
+          pacman -Scc --noconfirm
+
+      - name: Setup Rust toolchain (Linux)
+        run: |
+          rustup default stable
 
       - name: Trust git directory
         run: git config --global --add safe.directory '*'
@@ -200,10 +226,27 @@ jobs:
           git submodule update --init packages/anymex_extension_bridge
           git submodule update --init packages/commentum_client
 
+      - name: Override pubspec.yaml version
+        if: github.event_name == 'workflow_dispatch'
+        shell: bash
+        run: |
+          CLEAN_VER="${{ needs.resolve-release-tag.outputs.tag_name }}"
+          CLEAN_VER="${CLEAN_VER#v}"
+          
+          # Extract existing build number
+          EXISTING_VER=$(grep '^version:' pubspec.yaml | awk '{print $2}')
+          if [[ "$EXISTING_VER" == *"+"* ]] && [[ "$CLEAN_VER" != *"+"* ]]; then
+            BUILD_NUM="+${EXISTING_VER#*+}"
+            CLEAN_VER="${CLEAN_VER}${BUILD_NUM}"
+          fi
+          
+          echo "Overriding pubspec.yaml version to: $CLEAN_VER"
+          sed -i -e "s/^version: .*/version: $CLEAN_VER/g" pubspec.yaml
+
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: 3.35.7
-          cache: true
+          cache: false
 
       - name: Create env file
         run: |
@@ -227,10 +270,10 @@ jobs:
         run: rm -rf build
 
       - name: Get Dependencies
-        run: find . -name "pubspec.lock" -type f -delete && flutter pub upgrade
+        run: find . -name "pubspec.lock" -type f -delete && flutter pub upgrade -v
 
       - name: Build Linux app
-        run: flutter build linux --release --dart-define-from-file=keys.json
+        run: flutter build linux --release -v --dart-define-from-file=keys.json
 
       - name: Upload Linux Artifacts
         uses: actions/upload-artifact@v4
@@ -250,6 +293,26 @@ jobs:
         run: |
           git submodule update --init packages/anymex_extension_bridge
           git submodule update --init packages/commentum_client
+
+      - name: Override pubspec.yaml version
+        if: github.event_name == 'workflow_dispatch'
+        shell: bash
+        run: |
+          CLEAN_VER="${{ needs.resolve-release-tag.outputs.tag_name }}"
+          CLEAN_VER="${CLEAN_VER#v}"
+          
+          # Extract existing build number
+          EXISTING_VER=$(grep '^version:' pubspec.yaml | awk '{print $2}')
+          if [[ "$EXISTING_VER" == *"+"* ]] && [[ "$CLEAN_VER" != *"+"* ]]; then
+            BUILD_NUM="+${EXISTING_VER#*+}"
+            CLEAN_VER="${CLEAN_VER}${BUILD_NUM}"
+          fi
+          
+          echo "Overriding pubspec.yaml version to: $CLEAN_VER"
+          sed -i -e "s/^version: .*/version: $CLEAN_VER/g" pubspec.yaml
+
+      - name: Setup Rust toolchain (Windows)
+        uses: dtolnay/rust-toolchain@stable
 
       - uses: subosito/flutter-action@v2
         with:

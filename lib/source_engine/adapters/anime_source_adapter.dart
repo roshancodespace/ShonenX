@@ -26,7 +26,9 @@ class AnimeSourceAdapter extends BaseSourceAdapter implements AnimeSource {
           .map(
             (e) => UnifiedEpisode(
               id: '${e.url!}|${e.episodeNumber}',
-              season: e.toMediaInfo()?.season,
+              season:
+                  e.toMediaInfo()?.season ??
+                  _parseSeasonFromScanlator(e.scanlator),
               title: e.name,
               number: double.tryParse(e.episodeNumber) ?? 0.0,
               scanlator: e.scanlator,
@@ -38,6 +40,18 @@ class AnimeSourceAdapter extends BaseSourceAdapter implements AnimeSource {
       methodLog.e('getEpisodes failed', e, st);
       return [];
     }
+  }
+
+  int? _parseSeasonFromScanlator(String? scanlator) {
+    if (scanlator == null || scanlator.isEmpty) return null;
+    final match = RegExp(
+      r'season\s*(\d+)',
+      caseSensitive: false,
+    ).firstMatch(scanlator);
+    if (match != null) {
+      return int.tryParse(match.group(1)!);
+    }
+    return null;
   }
 
   @override

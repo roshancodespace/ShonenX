@@ -2,12 +2,15 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/core/router/app_navigator.dart';
 
 import 'package:shonenx/core/utils/extensions.dart';
 import 'package:shonenx/features/discovery/domain/models/search_filter_options.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/discover/category_tab_feed.dart';
+import 'package:shonenx/features/discovery/presentation/widgets/discover/multi_source_search_feed.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/discover/paginated_media_grid.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/sheets/advanced_search_sheet.dart';
+import 'package:shonenx/features/discovery/providers/discovery_prefs_provider.dart';
 import 'package:shonenx/features/discovery/providers/metadata_tags_provider.dart';
 import 'package:shonenx/features/discovery/providers/search_provider.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
@@ -233,6 +236,10 @@ class _FilteredDiscoverScreenState
         _status != SearchStatusFilter.all ||
         _format != SearchFormatFilter.all;
 
+    final discoveryMode = ref.watch(
+      discoveryPrefsProvider.select((p) => p.mode),
+    );
+
     return AppScaffold(
       title: _pageTitle,
       subtitle: _pageSubtitle,
@@ -240,12 +247,28 @@ class _FilteredDiscoverScreenState
       body: Stack(
         children: [
           Positioned.fill(
-            child: PaginatedMediaGrid(
-              state: searchState,
-              scrollController: _scrollController,
-              isLoadingMore: _isLoadingMore,
-              onAutoLoad: _loadNextPage,
-            ),
+            child: discoveryMode == MetadataMode.source && _source == null
+                ? MultiSourceSearchFeed(
+                    type: widget.type,
+                    query: _query,
+                    genres: _genres,
+                    tags: _tags,
+                    onSourceSelect: (sourceId) {
+                      context.pushFilteredDiscover(
+                        query: _query,
+                        type: widget.type,
+                        genres: _genres,
+                        tags: _tags,
+                        source: sourceId,
+                      );
+                    },
+                  )
+                : PaginatedMediaGrid(
+                    state: searchState,
+                    scrollController: _scrollController,
+                    isLoadingMore: _isLoadingMore,
+                    onAutoLoad: _loadNextPage,
+                  ),
           ),
           Positioned(
             top: 10,

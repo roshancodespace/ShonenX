@@ -6,6 +6,7 @@ import 'package:shonenx/shared/models/unified_media.dart';
 
 import 'dynamic_genre_feed.dart';
 import 'dynamic_source_feed.dart';
+import 'multi_source_search_feed.dart';
 import 'paginated_media_grid.dart';
 
 class DiscoverTabFeed extends ConsumerStatefulWidget {
@@ -111,6 +112,20 @@ class _DiscoverTabFeedState extends ConsumerState<DiscoverTabFeed> {
       return DynamicGenreFeed(
         type: widget.type,
         onGenreSelect: widget.onGenreSelect,
+      );
+    }
+
+    final discoveryMode = ref.watch(
+      discoveryPrefsProvider.select((p) => p.mode),
+    );
+
+    if (discoveryMode == MetadataMode.source && widget.source == null) {
+      return MultiSourceSearchFeed(
+        type: widget.type,
+        query: widget.query,
+        genres: widget.genres,
+        tags: widget.tags,
+        onSourceSelect: widget.onSourceSelect,
       );
     }
 

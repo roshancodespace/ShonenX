@@ -282,7 +282,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
 
     AppBottomSheet.show(
       context: context,
-      title: 'Episode ${activeEpisode?.number ?? 1} Discussion',
+      title:
+          'Episode ${activeEpisode != null ? (activeEpisode.number % 1 == 0 ? activeEpisode.number.toInt() : activeEpisode.number) : 1} Discussion',
       contentPadding: EdgeInsets.zero,
       child: SizedBox(
         height: MediaQuery.of(context).size.height * 0.78,

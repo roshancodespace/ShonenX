@@ -89,7 +89,8 @@ class _CenterControlsState extends ConsumerState<CenterControls> {
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: IconButton.filled(
                       style: IconButton.styleFrom(
-                        backgroundColor: theme.colorScheme.primaryContainer,
+                        backgroundColor: theme.colorScheme.primaryContainer
+                            .withValues(alpha: 0.4),
                         foregroundColor: theme.colorScheme.onPrimaryContainer,
                       ),
                       onPressed: isPlaying

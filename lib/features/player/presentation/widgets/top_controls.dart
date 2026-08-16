@@ -32,6 +32,148 @@ class TopControls extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final mediaQuery = MediaQuery.of(context);
+    final isCompact = mediaQuery.size.width < 500;
+
+    final actionButtons = [
+      if (mode is PlayerModeOnline && playerState.qualities.length > 1) ...[
+        _buildQualityButton(
+          qualityText: playerState.activeQuality?.quality ?? 'Auto',
+          onTap: () {
+            AppBottomSheet.showSelector<VideoStream>(
+              context: context,
+              title: 'Select Quality',
+              items: playerState.qualities,
+              selectedValue: playerState.activeQuality,
+              itemLabel: (s) => s.quality,
+              onChanged: (v) {
+                controller.changeQuality(v);
+              },
+            );
+          },
+        ),
+        const SizedBox(width: 6),
+      ],
+      if (mode is PlayerModeOnline && onComments != null) ...[
+        _buildActionIcon(icon: Icons.comment_outlined, onTap: onComments!),
+        const SizedBox(width: 6),
+      ],
+      _buildActionIcon(
+        icon: switch (ref.watch(
+          videoEngineStateProvider.select((s) => s.fit),
+        )) {
+          BoxFit.contain => Icons.fit_screen_rounded,
+          BoxFit.cover => Icons.aspect_ratio_rounded,
+          _ => Icons.fullscreen_exit_rounded,
+        },
+        onTap: () {
+          ref.read(videoEngineStateProvider.notifier).cycleFit();
+          final newFit = ref.read(videoEngineStateProvider).fit;
+          final label = switch (newFit) {
+            BoxFit.contain => 'Fit Screen (Contain)',
+            BoxFit.cover => 'Fill Screen (Cover)',
+            _ => 'Stretch (Fill)',
+          };
+          ScaffoldMessenger.of(context).clearSnackBars();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Video Fit: $label'),
+              duration: const Duration(milliseconds: 1200),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        },
+      ),
+      const SizedBox(width: 6),
+      _buildActionIcon(
+        icon: Icons.keyboard_alt_outlined,
+        onTap: () => KeyboardShortcutsSheet.show(context),
+      ),
+      const SizedBox(width: 6),
+      _buildActionIcon(
+        icon: Icons.camera_alt_outlined,
+        onTap: () async {
+          final result = await ref
+              .read(playerControllerProvider.notifier)
+              .takeAndShareScreenshot();
+          if (context.mounted && result.message != 'Save cancelled') {
+            ScaffoldMessenger.of(context).clearSnackBars();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(result.message),
+                behavior: SnackBarBehavior.floating,
+                duration: const Duration(seconds: 3),
+              ),
+            );
+          }
+        },
+      ),
+      const SizedBox(width: 6),
+      _buildActionIcon(
+        icon: Icons.tune_rounded,
+        onTap: () => _showPlayerOptionsMenu(context),
+      ),
+      const SizedBox(width: 6),
+      if (engine.buildSettingsView(context) != null)
+        _buildActionIcon(
+          icon: Icons.video_settings_outlined,
+          onTap: () {
+            showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              useSafeArea: true,
+              builder: (context) => engine.buildSettingsView(context)!,
+            );
+          },
+        ),
+    ];
+
+    final titleColumn = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          mode is PlayerModeOnline
+              ? (mode as PlayerModeOnline).media.title.availableTitle
+              : (mode as PlayerModeOffline).title ?? 'Local Media',
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1,
+            shadows: [
+              Shadow(
+                offset: Offset(0, 1),
+                blurRadius: 4.0,
+                color: Colors.black54,
+              ),
+            ],
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: 2),
+        Text(
+          playerState.activeEpisode?.title ??
+              'Episode ${formatEpisodeNumber(playerState.activeEpisode?.number) ?? (mode is PlayerModeOffline ? 'Offline File' : 'N/A')}',
+          style: const TextStyle(
+            color: Colors.white70,
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            shadows: [
+              Shadow(
+                offset: Offset(0, 1),
+                blurRadius: 4.0,
+                color: Colors.black54,
+              ),
+            ],
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
+    );
+
     return AnimatedPositioned(
       duration: Durations.medium2,
       curve: Curves.fastEaseInToSlowEaseOut,
@@ -59,159 +201,35 @@ class TopControls extends ConsumerWidget {
               ],
             ),
           ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              _buildActionIcon(
-                icon: Icons.arrow_back_ios_new_rounded,
-                onTap: onBack,
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      mode is PlayerModeOnline
-                          ? (mode as PlayerModeOnline)
-                                .media
-                                .title
-                                .availableTitle
-                          : (mode as PlayerModeOffline).title ?? 'Local Media',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1,
-                        shadows: [
-                          Shadow(
-                            offset: Offset(0, 1),
-                            blurRadius: 4.0,
-                            color: Colors.black54,
-                          ),
-                        ],
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      playerState.activeEpisode?.title ??
-                          'Episode ${formatEpisodeNumber(playerState.activeEpisode?.number) ?? (mode is PlayerModeOffline ? 'Offline File' : 'N/A')}',
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        shadows: [
-                          Shadow(
-                            offset: Offset(0, 1),
-                            blurRadius: 4.0,
-                            color: Colors.black54,
-                          ),
-                        ],
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  _buildActionIcon(
+                    icon: Icons.arrow_back_ios_new_rounded,
+                    onTap: onBack,
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(child: titleColumn),
+                  if (!isCompact) ...[
+                    const SizedBox(width: 6),
+                    ...actionButtons,
                   ],
-                ),
+                ],
               ),
-              const SizedBox(width: 6),
-              if (mode is PlayerModeOnline &&
-                  playerState.qualities.length > 1) ...[
-                _buildQualityButton(
-                  qualityText: playerState.activeQuality?.quality ?? 'Auto',
-                  onTap: () {
-                    AppBottomSheet.showSelector<VideoStream>(
-                      context: context,
-                      title: 'Select Quality',
-                      items: playerState.qualities,
-                      selectedValue: playerState.activeQuality,
-                      itemLabel: (s) => s.quality,
-                      onChanged: (v) {
-                        controller.changeQuality(v);
-                      },
-                    );
-                  },
+              if (isCompact) ...[
+                const SizedBox(height: 12),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: actionButtons,
+                  ),
                 ),
-                const SizedBox(width: 6),
               ],
-              if (mode is PlayerModeOnline && onComments != null) ...[
-                _buildActionIcon(
-                  icon: Icons.comment_outlined,
-                  onTap: onComments!,
-                ),
-                const SizedBox(width: 6),
-              ],
-              _buildActionIcon(
-                icon: switch (ref.watch(
-                  videoEngineStateProvider.select((s) => s.fit),
-                )) {
-                  BoxFit.contain => Icons.fit_screen_rounded,
-                  BoxFit.cover => Icons.aspect_ratio_rounded,
-                  _ => Icons.fullscreen_exit_rounded,
-                },
-                onTap: () {
-                  ref.read(videoEngineStateProvider.notifier).cycleFit();
-                  final newFit = ref.read(videoEngineStateProvider).fit;
-                  final label = switch (newFit) {
-                    BoxFit.contain => 'Fit Screen (Contain)',
-                    BoxFit.cover => 'Fill Screen (Cover)',
-                    _ => 'Stretch (Fill)',
-                  };
-                  ScaffoldMessenger.of(context).clearSnackBars();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Video Fit: $label'),
-                      duration: const Duration(milliseconds: 1200),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(width: 6),
-              _buildActionIcon(
-                icon: Icons.keyboard_alt_outlined,
-                onTap: () => KeyboardShortcutsSheet.show(context),
-              ),
-              const SizedBox(width: 6),
-              _buildActionIcon(
-                icon: Icons.camera_alt_outlined,
-                onTap: () async {
-                  final result = await ref
-                      .read(playerControllerProvider.notifier)
-                      .takeAndShareScreenshot();
-                  if (context.mounted && result.message != 'Save cancelled') {
-                    ScaffoldMessenger.of(context).clearSnackBars();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(result.message),
-                        behavior: SnackBarBehavior.floating,
-                        duration: const Duration(seconds: 3),
-                      ),
-                    );
-                  }
-                },
-              ),
-              const SizedBox(width: 6),
-              _buildActionIcon(
-                icon: Icons.tune_rounded,
-                onTap: () => _showPlayerOptionsMenu(context),
-              ),
-              const SizedBox(width: 6),
-              if (engine.buildSettingsView(context) != null)
-                _buildActionIcon(
-                  icon: Icons.video_settings_outlined,
-                  onTap: () {
-                    showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      useSafeArea: true,
-                      builder: (context) => engine.buildSettingsView(context)!,
-                    );
-                  },
-                ),
             ],
           ),
         ),

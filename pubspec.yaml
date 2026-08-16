@@ -84,6 +84,8 @@ dependencies:
   palette_generator: ^0.3.3+7
   skeletonizer: ^2.1.3
   flutter_discord_rpc: ^1.1.0
+  rhttp: ^0.18.0
+  flutter_rust_bridge: ^2.12.0
 
 dependency_overrides:
   flutter_inappwebview:

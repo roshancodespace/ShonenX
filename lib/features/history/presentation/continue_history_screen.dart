@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:shonenx/core/router/app_navigator.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/continue/continue_media_mixin.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
+import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/cards/media_card.dart';
 import 'package:shonenx/features/history/providers/watch_history_provider.dart';
 import 'package:shonenx/features/history/providers/read_history_provider.dart';
@@ -212,7 +213,11 @@ class _ContinueHistoryScreenState extends ConsumerState<ContinueHistoryScreen> {
   @override
   Widget build(BuildContext context) {
     final isAnime = widget.type == MediaType.ANIME;
-    final style = ref.watch(uiPrefsProvider.select((s) => s.cardStyle));
+    final uiState = ref.watch(uiPrefsProvider);
+    final style = uiState.cardStyle;
+    final isWideMode = uiState.isMediaCardWide(style.name);
+    final scale = ref.watch(themePrefsProvider).uiScaleFactor;
+    final layout = style.getScaledLayout(scale, isWideMode: isWideMode);
     final theme = Theme.of(context);
 
     final AsyncValue<List<dynamic>> historyAsync;
@@ -283,8 +288,8 @@ class _ContinueHistoryScreenState extends ConsumerState<ContinueHistoryScreen> {
                     : GridView.builder(
                         padding: const EdgeInsets.all(10),
                         gridDelegate: SliverGridDelegateWithMinCrossAxisExtent(
-                          minCrossAxisExtent: style.layout.width,
-                          childAspectRatio: style.layout.aspectRatio,
+                          minCrossAxisExtent: layout.width,
+                          childAspectRatio: layout.aspectRatio,
                           crossAxisSpacing: 10,
                           mainAxisSpacing: 10,
                         ),

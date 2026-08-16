@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:rhttp/rhttp.dart' as rhttp;
 import 'package:shonenx/core/caching/cache_manager.dart';
 import 'package:shonenx/core/caching/domain/cache_entry.dart';
 
@@ -37,7 +38,17 @@ class HttpResponse {
 
 class HTTP {
   HTTP._internal({CacheManager? cacheManager})
-    : _client = HttpClient(),
+    : _client = rhttp.RhttpClient.createSync(
+        settings: const rhttp.ClientSettings(
+          throwOnStatusCode: false,
+          userAgent:
+              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          timeoutSettings: rhttp.TimeoutSettings(
+            timeout: Duration(seconds: 30),
+            connectTimeout: Duration(seconds: 30),
+          ),
+        ),
+      ),
       _cache = cacheManager;
 
   static HTTP? _instance;
@@ -46,7 +57,7 @@ class HTTP {
     return _instance ??= HTTP._internal(cacheManager: cacheManager);
   }
 
-  final HttpClient _client;
+  final rhttp.RhttpClient _client;
   final CacheManager? _cache;
 
   String _normalizeBody(String input) {
@@ -85,14 +96,14 @@ class HTTP {
   }
 
   Duration _getEffectiveCacheDuration(
-    HttpClientResponse res,
+    Map<String, String> lowerHeaders,
     Duration? cacheDuration,
   ) {
     if (cacheDuration != null && cacheDuration > Duration.zero) {
       return cacheDuration;
     }
 
-    final cacheControl = res.headers.value(HttpHeaders.cacheControlHeader);
+    final cacheControl = lowerHeaders[HttpHeaders.cacheControlHeader];
     if (cacheControl != null) {
       final match = RegExp(r'max-age=(\d+)').firstMatch(cacheControl);
       if (match != null) {
@@ -132,40 +143,81 @@ class HTTP {
       }
     }
 
-    final uri = Uri.parse(url).replace(queryParameters: queryParameters);
-    final req = await _client.openUrl(method, uri);
-
-    headers?.forEach(req.headers.set);
+    final requestHeaders = Map<String, String>.from(headers ?? {});
+    rhttp.HttpBody? rBody;
 
     if (body != null) {
-      final hasContentType =
-          headers?.keys.any((k) => k.toLowerCase() == 'content-type') ?? false;
+      final hasContentType = requestHeaders.keys.any(
+        (k) => k.toLowerCase() == 'content-type',
+      );
       if (!hasContentType) {
-        req.headers.set(HttpHeaders.contentTypeHeader, 'application/json');
+        requestHeaders['content-type'] = 'application/json';
       }
-      req.write(body is String ? body : jsonEncode(body));
+      rBody = rhttp.HttpBody.text(body is String ? body : jsonEncode(body));
     }
 
-    final res = await req.close().timeout(
-      const Duration(seconds: 30),
-      onTimeout: () => throw HttpException('Request timeout'),
+    rhttp.HttpMethod rMethod;
+    switch (method.toUpperCase()) {
+      case 'GET':
+        rMethod = rhttp.HttpMethod.get;
+        break;
+      case 'POST':
+        rMethod = rhttp.HttpMethod.post;
+        break;
+      case 'PUT':
+        rMethod = rhttp.HttpMethod.put;
+        break;
+      case 'PATCH':
+        rMethod = rhttp.HttpMethod.patch;
+        break;
+      case 'DELETE':
+        rMethod = rhttp.HttpMethod.delete;
+        break;
+      case 'HEAD':
+        rMethod = rhttp.HttpMethod.head;
+        break;
+      default:
+        rMethod = rhttp.HttpMethod.get;
+    }
+
+    rhttp.HttpBytesResponse res;
+    try {
+      res = await _client.requestBytes(
+        method: rMethod,
+        url: url,
+        headers: requestHeaders.isNotEmpty
+            ? rhttp.HttpHeaders.rawMap(requestHeaders)
+            : null,
+        query: queryParameters,
+        body: rBody,
+      );
+    } catch (e) {
+      if (e is rhttp.RhttpTimeoutException) {
+        throw HttpException('Request timeout');
+      }
+      rethrow;
+    }
+
+    final bodyBytes = res.body;
+    final lowerHeaders = res.headerMap.map(
+      (k, v) => MapEntry(k.toLowerCase(), v),
     );
 
-    final builder = BytesBuilder();
-    await for (final chunk in res) {
-      builder.add(chunk);
-    }
-    final bodyBytes = builder.toBytes();
+    final contentType = lowerHeaders['content-type'];
+    final responseHeaders = contentType == null
+        ? <String, String>{}
+        : {'content-type': contentType};
 
     final response = HttpResponse(
       res.statusCode,
       bodyBytes,
-      headers: res.headers.contentType == null
-          ? {}
-          : {'content-type': res.headers.contentType!.mimeType},
+      headers: responseHeaders,
     );
 
-    final effectiveTtl = _getEffectiveCacheDuration(res, cacheDuration);
+    final effectiveTtl = _getEffectiveCacheDuration(
+      lowerHeaders,
+      cacheDuration,
+    );
 
     if (effectiveTtl > Duration.zero &&
         _cache != null &&
@@ -179,8 +231,8 @@ class HTTP {
         CacheEntry()
           ..key = key
           ..bodyBytes = bodyBytes
-          ..etag = res.headers.value(HttpHeaders.etagHeader)
-          ..lastModified = res.headers.value(HttpHeaders.lastModifiedHeader),
+          ..etag = lowerHeaders[HttpHeaders.etagHeader]
+          ..lastModified = lowerHeaders[HttpHeaders.lastModifiedHeader],
         effectiveTtl,
       );
     }

@@ -131,6 +131,11 @@ public final class GeneratedPluginRegistrant {
       Log.e(TAG, "Error registering plugin permission_handler_android, com.baseflow.permissionhandler.PermissionHandlerPlugin", e);
     }
     try {
+      flutterEngine.getPlugins().add(new com.flutter_rust_bridge.rhttp.RhttpPlugin());
+    } catch (Exception e) {
+      Log.e(TAG, "Error registering plugin rhttp, com.flutter_rust_bridge.rhttp.RhttpPlugin", e);
+    }
+    try {
       flutterEngine.getPlugins().add(new com.aaassseee.screen_brightness_android.ScreenBrightnessAndroidPlugin());
     } catch (Exception e) {
       Log.e(TAG, "Error registering plugin screen_brightness_android, com.aaassseee.screen_brightness_android.ScreenBrightnessAndroidPlugin", e);

@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:anymex_extension_runtime_bridge/Settings/KvStore.dart';
 import 'package:anymex_extension_runtime_bridge/anymex_extension_runtime_bridge.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get/get.dart';
@@ -10,6 +9,7 @@ import 'package:path/path.dart' as p;
 import 'package:isar_community/isar.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:rhttp/rhttp.dart';
 import 'package:shonenx/core/caching/cache_manager.dart';
 import 'package:shonenx/core/caching/domain/cache_entry.dart';
 import 'package:shonenx/core/network/http_adapter.dart';
@@ -40,8 +40,10 @@ class AppInit {
 
     log.section('START');
 
-    if (!kIsWeb &&
-        (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
+    await Rhttp.init();
+    log.s('Rhttp initialized');
+
+    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
       await _initWindowManager();
       log.s('Window manager initialized');
     }

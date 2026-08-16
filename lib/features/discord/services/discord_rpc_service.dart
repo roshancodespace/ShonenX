@@ -18,6 +18,7 @@ class DiscordRpcService {
   final _log = AppLogger.scope(DiscordRpcService);
 
   bool _isDesktopInitialized = false;
+  bool _hasDesktopIpcFailed = false;
   WebSocket? _gatewaySocket;
   Timer? _heartbeatTimer;
   int? _heartbeatInterval;
@@ -71,14 +72,19 @@ class DiscordRpcService {
     try {
       if (isDesktopPlatform) {
         await initDesktopRpc();
-        if (_isDesktopInitialized) {
+        if (_isDesktopInitialized && !_hasDesktopIpcFailed) {
           _log.i('Connecting Desktop Discord RPC via IPC...');
-          FlutterDiscordRPC.instance.connect();
-          _isConnected = true;
-          if (_lastDesktopActivity != null) {
-            FlutterDiscordRPC.instance.setActivity(
-              activity: _lastDesktopActivity!,
-            );
+          try {
+            await FlutterDiscordRPC.instance.connect();
+            _isConnected = true;
+            if (_lastDesktopActivity != null) {
+              await FlutterDiscordRPC.instance.setActivity(
+                activity: _lastDesktopActivity!,
+              );
+            }
+          } catch (e, s) {
+            _hasDesktopIpcFailed = true;
+            _log.e('Failed to connect Desktop Discord RPC via IPC', e, s);
           }
         }
       }

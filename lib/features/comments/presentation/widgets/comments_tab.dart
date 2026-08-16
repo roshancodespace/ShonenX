@@ -9,6 +9,7 @@ import 'package:shonenx/features/comments/presentation/providers/comments_provid
 import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
 import 'package:shonenx/features/tracking/engine/remote_tracker.dart';
 import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
+import 'package:shonenx/features/tracking/providers/tracker_profile_provider.dart';
 import 'package:shonenx/features/comments/presentation/widgets/comment_composer.dart';
 import 'package:shonenx/features/comments/presentation/widgets/comment_item.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
@@ -495,6 +496,14 @@ class _CommentsTabWidgetState extends ConsumerState<CommentsTabWidget> {
   @override
   Widget build(BuildContext context) {
     final authService = ref.watch(commentumAuthServiceProvider);
+    final activeProvider = authService.activeProvider;
+    final trackerType = activeProvider != null
+        ? _mapProviderToTrackerType(activeProvider)
+        : null;
+    final currentUsername = trackerType != null
+        ? ref.watch(trackerProfileProvider)[trackerType]?.username
+        : null;
+
     final commentsAsync = ref.watch(commentsProvider(_args));
     final uiRoundness = ref.watch(
       themePrefsProvider.select((s) => s.uiRoundness),
@@ -692,6 +701,10 @@ class _CommentsTabWidgetState extends ConsumerState<CommentsTabWidget> {
                     index: index + 1,
                     child: CommentItem(
                       comment: comment,
+                      canDelete:
+                          authService.isLoggedIn &&
+                          currentUsername != null &&
+                          comment.username == currentUsername,
                       onReply: (c) => setState(() => _replyingTo = c),
                       onVote: (c, voteType) => ref
                           .read(commentsProvider(_args).notifier)

@@ -7,6 +7,7 @@ class CommentItem extends StatelessWidget {
   final void Function(Comment, int) onVote;
   final void Function(Comment) onDelete;
   final bool isReply;
+  final bool canDelete;
 
   const CommentItem({
     super.key,
@@ -15,6 +16,7 @@ class CommentItem extends StatelessWidget {
     required this.onVote,
     required this.onDelete,
     this.isReply = false,
+    this.canDelete = false,
   });
 
   @override
@@ -76,7 +78,9 @@ class CommentItem extends StatelessWidget {
                             Text(
                               '· ${comment.mediaProvider!.toUpperCase()}',
                               style: TextStyle(
-                                color: cs.onSurfaceVariant.withValues(alpha: 0.6),
+                                color: cs.onSurfaceVariant.withValues(
+                                  alpha: 0.6,
+                                ),
                                 fontWeight: FontWeight.w600,
                                 fontSize: 10,
                               ),
@@ -226,10 +230,11 @@ class CommentItem extends StatelessWidget {
                             value: 'report',
                             child: Text('Report'),
                           ),
-                          const PopupMenuItem(
-                            value: 'delete',
-                            child: Text('Delete'),
-                          ),
+                          if (canDelete)
+                            const PopupMenuItem(
+                              value: 'delete',
+                              child: Text('Delete'),
+                            ),
                         ],
                       ),
                     ),
@@ -262,6 +267,7 @@ class CommentItem extends StatelessWidget {
                                   onVote: onVote,
                                   onDelete: onDelete,
                                   isReply: true,
+                                  canDelete: canDelete,
                                 ),
                             ],
                           ),
@@ -294,7 +300,8 @@ class CommentItem extends StatelessWidget {
       return '$weeks ${weeks == 1 ? 'week' : 'weeks'} ago';
     }
     if (days > 0) return '$days ${days == 1 ? 'day' : 'days'} ago';
-    if (diff.inHours > 0) return '${diff.inHours} ${diff.inHours == 1 ? 'hr' : 'hrs'} ago';
+    if (diff.inHours > 0)
+      return '${diff.inHours} ${diff.inHours == 1 ? 'hr' : 'hrs'} ago';
     if (diff.inMinutes > 0) return '${diff.inMinutes} min ago';
     return 'just now';
   }

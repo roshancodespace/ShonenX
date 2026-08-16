@@ -335,45 +335,77 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     );
   }
 
-  List<Widget> _buildControlsLayer({
+  Widget _buildControlsLayer({
     required ThemeData theme,
     required VideoEngine engine,
     required PlayerState playerState,
     required PlayerController controller,
     required AniSkipArgs? aniSkipArgs,
   }) {
-    return [
-      TopControls(
-        showControls: _showControls,
-        engine: engine,
-        mode: widget.mode,
-        playerState: playerState,
-        controller: controller,
-        onBack: context.pop,
-        onComments: _showCommentsSheet,
+    final mediaQuery = MediaQuery.of(context);
+    final width = mediaQuery.size.width;
+
+    double scale = 1.0;
+    if (width > 1200) {
+      scale = 1.4;
+    } else if (width > 800) {
+      scale = 1.2;
+    }
+
+    final controls = Stack(
+      children: [
+        TopControls(
+          showControls: _showControls,
+          engine: engine,
+          mode: widget.mode,
+          playerState: playerState,
+          controller: controller,
+          onBack: context.pop,
+          onComments: _showCommentsSheet,
+        ),
+        CenterControls(
+          showControls: _showControls,
+          playerState: playerState,
+          controller: controller,
+          mediaTitle: _mediaTitle,
+          engine: engine,
+        ),
+        BottomControls(
+          aniskipArgs: aniSkipArgs,
+          showControls: _showControls,
+          engine: engine,
+          playerState: playerState,
+          controller: controller,
+          theme: theme,
+          mode: widget.mode,
+          isFullScreen: _isFullScreen,
+          onToggleFullScreen: _toggleFullScreen,
+          onShowEpisodePanel: _toggleEpisodePanel,
+          onToggleLockControls: () =>
+              setState(() => _lockControls = !_lockControls),
+        ),
+      ],
+    );
+
+    if (scale == 1.0) return controls;
+
+    return Center(
+      child: Transform.scale(
+        scale: scale,
+        child: MediaQuery(
+          data: mediaQuery.copyWith(
+            size: Size(width / scale, mediaQuery.size.height / scale),
+            padding: mediaQuery.padding / scale,
+            viewInsets: mediaQuery.viewInsets / scale,
+          ),
+          child: SizedBox(
+            width: width / scale,
+            height: mediaQuery.size.height / scale,
+            child: controls,
+          ),
+        ),
       ),
-      CenterControls(
-        showControls: _showControls,
-        playerState: playerState,
-        controller: controller,
-        mediaTitle: _mediaTitle,
-        engine: engine,
-      ),
-      BottomControls(
-        aniskipArgs: aniSkipArgs,
-        showControls: _showControls,
-        engine: engine,
-        playerState: playerState,
-        controller: controller,
-        theme: theme,
-        mode: widget.mode,
-        isFullScreen: _isFullScreen,
-        onToggleFullScreen: _toggleFullScreen,
-        onShowEpisodePanel: _toggleEpisodePanel,
-        onToggleLockControls: () =>
-            setState(() => _lockControls = !_lockControls),
-      ),
-    ];
+    );
   }
 
   @override
@@ -522,7 +554,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                 if (_lockControls)
                   _buildLockedOverlay()
                 else
-                  ..._buildControlsLayer(
+                  _buildControlsLayer(
                     theme: theme,
                     engine: engine,
                     playerState: playerState,

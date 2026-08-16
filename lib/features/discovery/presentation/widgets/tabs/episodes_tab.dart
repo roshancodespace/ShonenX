@@ -63,12 +63,14 @@ class EpisodesTabWidget extends ConsumerWidget {
 
     return Column(
       children: [
-        StaggeredFadeIn(index: 0, child: _EpisodesHeader(media: media)),
-        Container(
-          width: double.maxFinite,
-          height: 1,
-          color: cs.surfaceContainerHighest,
-        ),
+        if (media.sourceId == null) ...[
+          StaggeredFadeIn(index: 0, child: _EpisodesHeader(media: media)),
+          Container(
+            width: double.maxFinite,
+            height: 1,
+            color: cs.surfaceContainerHighest,
+          ),
+        ],
         Expanded(
           child: EpisodeListPanel(
             media: media,

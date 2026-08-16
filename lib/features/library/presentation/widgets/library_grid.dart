@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/router/app_navigator.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
+import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/cards/media_card.dart';
 import 'package:shonenx/features/library/providers/cloud_library_provider.dart';
 import 'package:shonenx/features/library/providers/library_view_provider.dart';
@@ -20,7 +21,11 @@ class LibraryGridWidget extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final viewState = ref.watch(libraryViewStateProvider);
     final dynamicLibrary = ref.watch(dynamicLibraryProvider);
-    final cardStyle = ref.watch(uiPrefsProvider.select((s) => s.cardStyle));
+    final uiState = ref.watch(uiPrefsProvider);
+    final cardStyle = uiState.cardStyle;
+    final isWideMode = uiState.isMediaCardWide(cardStyle.name);
+    final scale = ref.watch(themePrefsProvider).uiScaleFactor;
+    final layout = cardStyle.getScaledLayout(scale, isWideMode: isWideMode);
 
     return dynamicLibrary.when(
       loading: () => Skeletonizer(
@@ -30,8 +35,8 @@ class LibraryGridWidget extends ConsumerWidget {
           child: GridView.builder(
             padding: const EdgeInsets.only(bottom: 200),
             gridDelegate: SliverGridDelegateWithMinCrossAxisExtent(
-              minCrossAxisExtent: cardStyle.layout.width,
-              childAspectRatio: cardStyle.layout.aspectRatio,
+              minCrossAxisExtent: layout.width,
+              childAspectRatio: layout.aspectRatio,
               mainAxisSpacing: 10,
               crossAxisSpacing: 10,
             ),
@@ -119,8 +124,8 @@ class LibraryGridWidget extends ConsumerWidget {
               child: GridView.builder(
                 padding: const EdgeInsets.only(bottom: 200),
                 gridDelegate: SliverGridDelegateWithMinCrossAxisExtent(
-                  minCrossAxisExtent: cardStyle.layout.width,
-                  childAspectRatio: cardStyle.layout.aspectRatio,
+                  minCrossAxisExtent: layout.width,
+                  childAspectRatio: layout.aspectRatio,
                   mainAxisSpacing: 10,
                   crossAxisSpacing: 10,
                 ),

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/router/app_navigator.dart';
 import 'package:shonenx/core/utils/responsive.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
+import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/cards/media_card.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/source_engine/models/paginated_result.dart';
@@ -28,7 +29,11 @@ class PaginatedMediaGrid extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final style = ref.watch(uiPrefsProvider.select((s) => s.cardStyle));
+    final uiState = ref.watch(uiPrefsProvider);
+    final style = uiState.cardStyle;
+    final isWideMode = uiState.isMediaCardWide(style.name);
+    final scale = ref.watch(themePrefsProvider).uiScaleFactor;
+    final layout = style.getScaledLayout(scale, isWideMode: isWideMode);
 
     return state.when(
       loading: () => Skeletonizer(
@@ -42,8 +47,8 @@ class PaginatedMediaGrid extends ConsumerWidget {
             right: paddingHorizontal,
           ),
           gridDelegate: SliverGridDelegateWithMinCrossAxisExtent(
-            minCrossAxisExtent: style.layout.width,
-            childAspectRatio: style.layout.aspectRatio,
+            minCrossAxisExtent: layout.width,
+            childAspectRatio: layout.aspectRatio,
             crossAxisSpacing: 10,
             mainAxisSpacing: 10,
           ),
@@ -94,8 +99,8 @@ class PaginatedMediaGrid extends ConsumerWidget {
                 right: paddingHorizontal,
               ),
               gridDelegate: SliverGridDelegateWithMinCrossAxisExtent(
-                minCrossAxisExtent: style.layout.width,
-                childAspectRatio: style.layout.aspectRatio,
+                minCrossAxisExtent: layout.width,
+                childAspectRatio: layout.aspectRatio,
                 crossAxisSpacing: 10,
                 mainAxisSpacing: 10,
               ),

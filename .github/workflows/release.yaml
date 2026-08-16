@@ -132,9 +132,8 @@ jobs:
         shell: bash
         run: |
           CLEAN_VER="${{ needs.resolve-release-tag.outputs.tag_name }}"
-          CLEAN_VER="${CLEAN_VER#v}" # Strip 'v' if provided
+          CLEAN_VER="${CLEAN_VER#v}" 
           
-          # Extract existing build number
           EXISTING_VER=$(grep '^version:' pubspec.yaml | awk '{print $2}')
           if [[ "$EXISTING_VER" == *"+"* ]] && [[ "$CLEAN_VER" != *"+"* ]]; then
             BUILD_NUM="+${EXISTING_VER#*+}"
@@ -197,7 +196,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: android-apks
-          path: build/app/outputs/flutter-apk/*.apk
+          # Explicitly only upload APK files, no random build junk
+          path: build/app/outputs/flutter-apk/*-release.apk
 
   build-linux:
     needs: resolve-release-tag
@@ -213,8 +213,7 @@ jobs:
           pacman -Scc --noconfirm
 
       - name: Setup Rust toolchain (Linux)
-        run: |
-          rustup default stable
+        run: rustup default stable
 
       - name: Trust git directory
         run: git config --global --add safe.directory '*'
@@ -233,7 +232,6 @@ jobs:
           CLEAN_VER="${{ needs.resolve-release-tag.outputs.tag_name }}"
           CLEAN_VER="${CLEAN_VER#v}"
           
-          # Extract existing build number
           EXISTING_VER=$(grep '^version:' pubspec.yaml | awk '{print $2}')
           if [[ "$EXISTING_VER" == *"+"* ]] && [[ "$CLEAN_VER" != *"+"* ]]; then
             BUILD_NUM="+${EXISTING_VER#*+}"
@@ -275,11 +273,17 @@ jobs:
       - name: Build Linux app
         run: flutter build linux --release -v --dart-define-from-file=keys.json
 
+      - name: Zip Linux bundle
+        run: |
+          cd build/linux/x64/release/bundle
+          zip -r ../../../../../ShonenX-linux.zip .
+
       - name: Upload Linux Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: linux-bundle
-          path: build/linux/x64/release/bundle
+          # Upload only the finished zip file, NOT the raw directory
+          path: ShonenX-linux.zip
 
   build-windows:
     needs: resolve-release-tag
@@ -301,7 +305,6 @@ jobs:
           CLEAN_VER="${{ needs.resolve-release-tag.outputs.tag_name }}"
           CLEAN_VER="${CLEAN_VER#v}"
           
-          # Extract existing build number
           EXISTING_VER=$(grep '^version:' pubspec.yaml | awk '{print $2}')
           if [[ "$EXISTING_VER" == *"+"* ]] && [[ "$CLEAN_VER" != *"+"* ]]; then
             BUILD_NUM="+${EXISTING_VER#*+}"
@@ -356,12 +359,12 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: windows-installer
-          path: build/windows/x64/installer/Release
+          # Explicitly only upload the built .exe
+          path: build/windows/x64/installer/Release/*.exe
 
   create-release:
     needs: [resolve-release-tag, build-android, build-linux, build-windows]
     runs-on: ubuntu-latest
-
     if: always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled')
 
     steps:
@@ -369,28 +372,12 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Download Android artifacts
+      - name: Download all finalized artifacts
         uses: actions/download-artifact@v4
         with:
-          name: android-apks
-          path: artifacts/android
-
-      - name: Download Linux artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: linux-bundle
-          path: artifacts/linux
-
-      - name: Download Windows artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: windows-installer
-          path: artifacts/windows
-
-      - name: Zip Linux bundle
-        run: |
-          cd artifacts
-          zip -r ShonenX-linux.zip linux
+          path: release-artifacts
+          # This forces all downloaded files (.apk, .exe, .zip) into a single flat directory
+          merge-multiple: true
 
       - name: Generate Release Notes
         id: release_notes
@@ -416,9 +403,6 @@ jobs:
             COMMITS=$(git log --pretty=format:"- %s (%h)" -n 30)
             COMPARE_LINK=""
           fi
-
-          echo "Commits to format:"
-          echo "$COMMITS"
 
           NOTES=""
           if [ -n "$GEMINI_API_KEY" ]; then
@@ -446,37 +430,21 @@ jobs:
             }
 
             for MODEL in "gemini-2.5-flash" "gemini-3.5-flash" "gemini-2.5-pro" "gemini-1.5-flash"; do
-              echo "Trying Gemini model: $MODEL..."
               RESPONSE=$(call_gemini "$MODEL")
               NOTES=$(echo "$RESPONSE" | jq -r '.candidates[0].content.parts[0].text // empty')
-              if [ -n "$NOTES" ]; then
-                echo "Successfully generated release notes using $MODEL"
-                break
-              else
-                echo "Model $MODEL failed or returned empty. Response: $RESPONSE"
-              fi
+              if [ -n "$NOTES" ]; then break; fi
             done
-          else
-            echo "GEMINI_API_KEY secret is not set. Falling back to default commit list."
           fi
 
           if [ -z "$NOTES" ]; then
-            echo "Using fallback commit list for release notes."
-            NOTES="## What's Changed
-
-          $COMMITS"
+            NOTES="## What's Changed\n\n$COMMITS"
           fi
 
           if [ -n "$COMPARE_LINK" ]; then
-            NOTES="$NOTES
-
-          ---
-          **Full Changelog**: $COMPARE_LINK"
+            NOTES="$NOTES\n\n---\n**Full Changelog**: $COMPARE_LINK"
           fi
 
-          echo "$NOTES" > release_notes.md
-          echo "Generated release_notes.md:"
-          cat release_notes.md
+          echo -e "$NOTES" > release_notes.md
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -485,11 +453,8 @@ jobs:
           name: ${{ needs.resolve-release-tag.outputs.tag_name }}
           prerelease: ${{ needs.resolve-release-tag.outputs.is_prerelease == 'true' }}
           body_path: release_notes.md
-          files: |
-            artifacts/android/*.apk
-            artifacts/ShonenX-linux.zip
-            artifacts/windows/**/*.exe
-            artifacts/windows/**/*.msi
+          # Simply upload everything in our clean artifact folder
+          files: release-artifacts/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

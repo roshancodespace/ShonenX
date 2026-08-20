@@ -292,7 +292,7 @@ mixin MalMetadata on BaseTracker implements RemoteTracker {
   }
 
   @override
-  Future<TrackerFilterOptions> fetchFilterOptions() async {
+  Future<TrackerFilterOptions> fetchFilterOptions([MediaType? type]) async {
     return TrackerFilterOptions(
       genres: await fetchGenres(),
       tags: const [],

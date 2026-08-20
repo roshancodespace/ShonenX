@@ -14,7 +14,7 @@ abstract interface class RemoteTracker implements TrackingService {
 
   Future<TrackerProfile> fetchProfile();
 
-  Future<TrackerFilterOptions> fetchFilterOptions() async =>
+  Future<TrackerFilterOptions> fetchFilterOptions([MediaType? type]) async =>
       const TrackerFilterOptions();
 
   @Deprecated('Use fetchFilterOptions() instead')

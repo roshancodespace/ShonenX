@@ -210,7 +210,7 @@ mixin SimklMetadata on BaseTracker implements RemoteTracker {
   }
 
   @override
-  Future<TrackerFilterOptions> fetchFilterOptions() async =>
+  Future<TrackerFilterOptions> fetchFilterOptions([MediaType? type]) async =>
       TrackerFilterOptions.none;
 
   @override

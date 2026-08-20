@@ -65,7 +65,7 @@ final discoveryFiltersProvider = FutureProvider.autoDispose
         );
       } else {
         final tracker = ref.watch(metadataSourceProvider);
-        final options = await tracker.fetchFilterOptions();
+        final options = await tracker.fetchFilterOptions(args.type);
         return MetadataTagsState(options: options);
       }
     });

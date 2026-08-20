@@ -97,6 +97,9 @@ class BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
   final List<UnifiedEpisode> failedEpisodes = [];
   final Map<UnifiedEpisode, String> failureReasons = {};
 
+  bool isQueueingCancelled = false;
+  final List<int> queuedTaskIds = [];
+
   @override
   void initState() {
     super.initState();
@@ -260,6 +263,8 @@ class BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
       successCount = 0;
       failedEpisodes.clear();
       failureReasons.clear();
+      isQueueingCancelled = false;
+      queuedTaskIds.clear();
     }
 
     setState(() {
@@ -283,6 +288,8 @@ class BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
 
     while (currentIndex < total) {
       if (!mounted || currentStep != BatchStep.queueing) break;
+      if (isQueueingCancelled) break;
+
       final ep = sorted[currentIndex];
       final epNumStr = ep.number.toString().contains('.0')
           ? ep.number.toInt().toString()
@@ -398,6 +405,7 @@ class BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
             ..fileName = fileName;
 
           await ref.read(downloadManagerProvider.notifier).startDownload(task);
+          queuedTaskIds.add(task.id);
         }
         successCount++;
         currentIndex++;
@@ -407,6 +415,8 @@ class BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
         currentIndex++;
       }
     }
+
+    if (isQueueingCancelled) return;
 
     if (use1DM && oneDmUrls.isNotEmpty) {
       await OneDMService.instance.downloadBatch(
@@ -436,9 +446,61 @@ class BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 300),
-      child: _buildCurrentStep(),
+    final isQueueing = currentStep == BatchStep.queueing;
+    return PopScope(
+      canPop: !isQueueing,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (isQueueing) {
+          showCancelDialog(context);
+        }
+      },
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 300),
+        child: _buildCurrentStep(),
+      ),
+    );
+  }
+
+  void showCancelDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Text('Cancel Batch Download?'),
+          content: const Text(
+            'Do you want to stop queueing the remaining episodes? You can also optionally cancel the downloads that have already been started in this batch.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Continue'),
+            ),
+            TextButton(
+              onPressed: () {
+                isQueueingCancelled = true;
+                Navigator.of(ctx).pop();
+                Navigator.of(context).pop();
+              },
+              child: const Text('Stop Only'),
+            ),
+            FilledButton(
+              onPressed: () {
+                isQueueingCancelled = true;
+                for (final id in queuedTaskIds) {
+                  ref.read(downloadManagerProvider.notifier).cancelDownload(id);
+                }
+                Navigator.of(ctx).pop();
+                Navigator.of(context).pop();
+              },
+              style: FilledButton.styleFrom(
+                backgroundColor: Theme.of(ctx).colorScheme.error,
+              ),
+              child: const Text('Stop & Cancel Downloads'),
+            ),
+          ],
+        );
+      },
     );
   }
 

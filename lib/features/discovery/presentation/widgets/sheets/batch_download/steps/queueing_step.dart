@@ -40,6 +40,22 @@ class QueueingStep extends StatelessWidget {
             style: textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
             textAlign: TextAlign.center,
           ),
+          const SizedBox(height: 32),
+          TextButton.icon(
+            onPressed: () => state.showCancelDialog(context),
+            icon: const Icon(Icons.close_rounded, size: 18),
+            label: const Text(
+              'Cancel Queueing',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+            style: TextButton.styleFrom(
+              foregroundColor: cs.error,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+          ),
         ],
       ),
     );

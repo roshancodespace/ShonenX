@@ -182,8 +182,11 @@ class AppDialog extends StatelessWidget {
               if (actions != null && actions!.isNotEmpty) ...[
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 6, 20, 16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
+                  child: OverflowBar(
+                    alignment: MainAxisAlignment.end,
+                    spacing: 8,
+                    overflowSpacing: 8,
+                    overflowAlignment: OverflowBarAlignment.end,
                     children: actions!,
                   ),
                 ),

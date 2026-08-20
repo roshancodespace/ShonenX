@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:shonenx/shared/widgets/app_dialog.dart';
+
 import '../batch_download_sheet.dart';
 
 class SelectEpisodesStep extends StatelessWidget {
@@ -216,7 +218,9 @@ class SelectEpisodesStep extends StatelessWidget {
   }
 
   void _selectAll() {
-    state.updateState(() => state.selectedEpisodes = state.widget.episodes.toSet());
+    state.updateState(
+      () => state.selectedEpisodes = state.widget.episodes.toSet(),
+    );
   }
 
   void _selectUnwatched() {
@@ -246,7 +250,9 @@ class SelectEpisodesStep extends StatelessWidget {
       ..sort((a, b) => a.number.compareTo(b.number));
     if (sorted.isEmpty) return;
 
-    final unwatched = sorted.where((e) => e.number > state.widget.watchedProgress);
+    final unwatched = sorted.where(
+      (e) => e.number > state.widget.watchedProgress,
+    );
     final initialStart = unwatched.isNotEmpty
         ? unwatched.first.number
         : sorted.first.number;
@@ -263,19 +269,13 @@ class SelectEpisodesStep extends StatelessWidget {
           : initialEnd.toString(),
     );
 
-    showDialog(
+    AppDialog.show(
       context: context,
-      builder: (ctx) {
-        final cs = Theme.of(ctx).colorScheme;
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          title: const Text(
-            'Select Episode Range',
-            style: TextStyle(fontWeight: FontWeight.w700),
-          ),
-          content: Column(
+      title: 'Select Episode Range',
+      child: StatefulBuilder(
+        builder: (context, setState) {
+          final cs = Theme.of(context).colorScheme;
+          return Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -332,33 +332,33 @@ class SelectEpisodesStep extends StatelessWidget {
                 ],
               ),
             ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () {
-                final start =
-                    double.tryParse(startCtrl.text.trim()) ?? initialStart;
-                final end = double.tryParse(endCtrl.text.trim()) ?? initialEnd;
-                final minNum = start <= end ? start : end;
-                final maxNum = start <= end ? end : start;
+          );
+        },
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () {
+            final start =
+                double.tryParse(startCtrl.text.trim()) ?? initialStart;
+            final end = double.tryParse(endCtrl.text.trim()) ?? initialEnd;
+            final minNum = start <= end ? start : end;
+            final maxNum = start <= end ? end : start;
 
-                final matched = sorted
-                    .where((e) => e.number >= minNum && e.number <= maxNum)
-                    .toSet();
-                state.updateState(() {
-                  state.selectedEpisodes = matched;
-                });
-                Navigator.of(ctx).pop();
-              },
-              child: const Text('Apply Range'),
-            ),
-          ],
-        );
-      },
+            final matched = sorted
+                .where((e) => e.number >= minNum && e.number <= maxNum)
+                .toSet();
+            state.updateState(() {
+              state.selectedEpisodes = matched;
+            });
+            Navigator.of(context).pop();
+          },
+          child: const Text('Apply Range'),
+        ),
+      ],
     );
   }
 }

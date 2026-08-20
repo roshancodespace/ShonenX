@@ -18,15 +18,30 @@ class QueueingStep extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          SizedBox(
-            width: 52,
-            height: 52,
-            child: CircularProgressIndicator(
-              value: state.sortedSelected.isNotEmpty
-                  ? state.currentIndex / state.sortedSelected.length
-                  : null,
-              strokeWidth: 4,
-            ),
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              SizedBox(
+                width: 64,
+                height: 64,
+                child: CircularProgressIndicator(
+                  value: state.sortedSelected.isNotEmpty
+                      ? state.currentIndex / state.sortedSelected.length
+                      : null,
+                  strokeWidth: 5,
+                  backgroundColor: cs.surfaceContainerHighest,
+                  strokeCap: StrokeCap.round,
+                ),
+              ),
+              if (state.sortedSelected.isNotEmpty)
+                Text(
+                  '${((state.currentIndex / state.sortedSelected.length) * 100).toInt()}%',
+                  style: textTheme.labelSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: cs.primary,
+                  ),
+                ),
+            ],
           ),
           const SizedBox(height: 24),
           Text(

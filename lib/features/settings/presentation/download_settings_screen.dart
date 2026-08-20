@@ -8,6 +8,7 @@ import 'package:shonenx/features/downloads/providers/download_prefs_provider.dar
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
 import 'package:shonenx/shared/widgets/svg_icon.dart';
+import 'package:shonenx/shared/widgets/app_dialog.dart';
 
 class DownloadSettingsScreen extends ConsumerWidget {
   const DownloadSettingsScreen({super.key});
@@ -305,36 +306,32 @@ class DownloadSettingsScreen extends ConsumerWidget {
                                 ),
                                 tooltip: 'What is 1DM?',
                                 onPressed: () {
-                                  showDialog(
+                                  AppDialog.show(
                                     context: context,
-                                    builder: (ctx) => AlertDialog(
-                                      title: const Text('About 1DM Downloader'),
-                                      content: const Text(
-                                        '1DM (Internet Download Manager) is a popular third-party Android download manager app. '
-                                        'It supports up to 32 parallel download connections, background downloads, and smart error recovery.\n\n'
-                                        'If installed, ShonenX can send episode download streams directly to 1DM.',
-                                      ),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () => Navigator.pop(ctx),
-                                          child: const Text('Close'),
-                                        ),
-                                        FilledButton.icon(
-                                          icon: const Icon(
-                                            Icons.get_app_rounded,
-                                            size: 18,
-                                          ),
-                                          label: const Text(
-                                            'Get on Play Store',
-                                          ),
-                                          onPressed: () {
-                                            Navigator.pop(ctx);
-                                            OneDMService.instance
-                                                .launchPlayStore();
-                                          },
-                                        ),
-                                      ],
+                                    title: 'About 1DM Downloader',
+                                    child: const Text(
+                                      '1DM (Internet Download Manager) is a popular third-party Android download manager app. '
+                                      'It supports up to 32 parallel download connections, background downloads, and smart error recovery.\n\n'
+                                      'If installed, ShonenX can send episode download streams directly to 1DM.',
                                     ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(context),
+                                        child: const Text('Close'),
+                                      ),
+                                      FilledButton.icon(
+                                        icon: const Icon(
+                                          Icons.get_app_rounded,
+                                          size: 18,
+                                        ),
+                                        label: const Text('Get on Play Store'),
+                                        onPressed: () {
+                                          Navigator.pop(context);
+                                          OneDMService.instance
+                                              .launchPlayStore();
+                                        },
+                                      ),
+                                    ],
                                   );
                                 },
                               ),

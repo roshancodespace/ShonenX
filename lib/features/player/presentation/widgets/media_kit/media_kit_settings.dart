@@ -175,15 +175,13 @@ class MediaKitSettings extends ConsumerWidget {
                   ? 'Caution: Inject raw MPV options'
                   : 'Configured (${prefs.rawConfiguration.split("\n").length} overrides)',
               onTap: () {
-                showDialog(
+                RawConfigOverrideSheet.show(
                   context: context,
-                  builder: (_) => RawConfigOverrideSheet(
-                    title: 'MPV Raw Configuration',
-                    initialValue: prefs.rawConfiguration,
-                    hintText: 'e.g.\ndemuxer-max-bytes=100M\ncache=yes',
-                    onSave: (val) => prefsNotifier.updatePrefs(
-                      prefs.copyWith(rawConfiguration: val),
-                    ),
+                  title: 'MPV Raw Configuration',
+                  initialValue: prefs.rawConfiguration,
+                  hintText: 'e.g.\ndemuxer-max-bytes=100M\ncache=yes',
+                  onSave: (val) => prefsNotifier.updatePrefs(
+                    prefs.copyWith(rawConfiguration: val),
                   ),
                 );
               },

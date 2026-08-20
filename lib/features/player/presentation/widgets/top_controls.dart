@@ -183,55 +183,65 @@ class TopControls extends ConsumerWidget {
       child: AnimatedOpacity(
         duration: Durations.short4,
         opacity: showControls ? 1 : 0,
-        child: Container(
-          padding: const EdgeInsets.only(
-            bottom: 40,
-            top: 20,
-            left: 10,
-            right: 10,
-          ),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.bottomCenter,
-              end: Alignment.topCenter,
-              colors: [
-                Colors.transparent,
-                Colors.black.withValues(alpha: 0.3),
-                Colors.black,
-              ],
-            ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  _buildActionIcon(
-                    icon: Icons.arrow_back_ios_new_rounded,
-                    onTap: onBack,
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: IgnorePointer(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withValues(alpha: 0.3),
+                        Colors.black,
+                      ],
+                    ),
                   ),
-                  const SizedBox(width: 6),
-                  Expanded(child: titleColumn),
-                  if (!isCompact) ...[
-                    const SizedBox(width: 6),
-                    ...actionButtons,
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(
+                bottom: 40,
+                top: 20,
+                left: 10,
+                right: 10,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      _buildActionIcon(
+                        icon: Icons.arrow_back_ios_new_rounded,
+                        onTap: onBack,
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(child: titleColumn),
+                      if (!isCompact) ...[
+                        const SizedBox(width: 6),
+                        ...actionButtons,
+                      ],
+                    ],
+                  ),
+                  if (isCompact) ...[
+                    const SizedBox(height: 12),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: actionButtons,
+                      ),
+                    ),
                   ],
                 ],
               ),
-              if (isCompact) ...[
-                const SizedBox(height: 12),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: actionButtons,
-                  ),
-                ),
-              ],
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

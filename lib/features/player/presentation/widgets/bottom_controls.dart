@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/utils/formatting.dart';
+import 'package:shonenx/shared/widgets/marquee_text.dart';
 import 'package:shonenx/features/player/providers/player_prefs_provider.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/episodes_panel/episode_list_panel.dart';
@@ -139,7 +140,10 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
     final aniSkips = ref.watch(aniSkipProvider(widget.aniskipArgs));
 
     // Setup auto-skip listener once when playback begins
-    ref.listen(videoEngineStateProvider.select((s) => s.position), (prev, current) {
+    ref.listen(videoEngineStateProvider.select((s) => s.position), (
+      prev,
+      current,
+    ) {
       if (!_autoSkipSetup && current.inSeconds > 0) {
         _autoSkipSetup = true;
         widget.controller.setupAutoSkipListener(widget.aniskipArgs);
@@ -168,78 +172,94 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
       child: AnimatedOpacity(
         duration: Durations.short4,
         opacity: widget.showControls ? 1 : 0,
-        child: Container(
-          padding: EdgeInsets.only(
-            bottom: mediaQuery.padding.bottom + 12,
-            top: 40,
-          ),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Colors.transparent,
-                Colors.black.withValues(alpha: 0.3),
-                Colors.black,
-              ],
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  _buildSkipActionArea(
-                    theme: theme,
-                    aniSkips: aniSkips,
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: IgnorePointer(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withValues(alpha: 0.3),
+                        Colors.black,
+                      ],
+                    ),
                   ),
-                  const SizedBox(width: 10),
-                ],
-              ),
-
-              ProgressBar(
-                aniSkips: aniSkips.value ?? [],
-                engine: widget.engine,
-                draggingValue: _dragingValue,
-                onDragStart: (value) {
-                  setState(() => _dragingValue = value);
-                },
-                onChanged: (value) {
-                  setState(() => _dragingValue = value);
-                },
-                onDragEnd: (value) {
-                  widget.engine
-                      .seekTo(Duration(seconds: value.toInt()))
-                      .then((_) => setState(() => _dragingValue = null));
-                },
-              ),
-
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Wrap(
-                  spacing: 14,
-                  runSpacing: 10,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  alignment: WrapAlignment.spaceBetween,
-                  children: [
-                    _buildLeftControls(
-                      audioTracks: audioTracks,
-                      activeAudioTrack: activeAudioTrack,
-                      actualAudioCount: actualAudioCount,
-                    ),
-
-                    if (!isVeryCompact) _buildTimeDisplay(),
-
-                    _buildRightControls(
-                      theme: theme,
-                      isCompact: isCompact,
-                    ),
-                  ],
                 ),
               ),
-            ],
-          ),
+            ),
+            Padding(
+              padding: EdgeInsets.only(
+                bottom: mediaQuery.padding.bottom + 12,
+                top: 40,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(
+                      left: 16,
+                      right: 10,
+                      bottom: 0,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Expanded(
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: _buildLeftControls(
+                              audioTracks: audioTracks,
+                              activeAudioTrack: activeAudioTrack,
+                              actualAudioCount: actualAudioCount,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        _buildSkipActionArea(theme: theme, aniSkips: aniSkips),
+                      ],
+                    ),
+                  ),
+
+                  ProgressBar(
+                    aniSkips: aniSkips.value ?? [],
+                    engine: widget.engine,
+                    draggingValue: _dragingValue,
+                    onDragStart: (value) {
+                      setState(() => _dragingValue = value);
+                    },
+                    onChanged: (value) {
+                      setState(() => _dragingValue = value);
+                    },
+                    onDragEnd: (value) {
+                      widget.engine
+                          .seekTo(Duration(seconds: value.toInt()))
+                          .then((_) => setState(() => _dragingValue = null));
+                    },
+                  ),
+
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Wrap(
+                      spacing: 14,
+                      runSpacing: 10,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      alignment: WrapAlignment.spaceBetween,
+                      children: [
+                        if (!isVeryCompact) _buildTimeDisplay(),
+
+                        _buildRightControls(theme: theme, isCompact: isCompact),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -261,11 +281,9 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
         // ── Priority 1: AniSkip segment button ──────────────────────────
         final currentSkip = _findActiveSkip(skips, position);
 
-        if (currentSkip != null && prefs.mode(currentSkip.type) != SkipMode.off) {
-          return _buildSkipSegmentButton(
-            theme: theme,
-            skip: currentSkip,
-          );
+        if (currentSkip != null &&
+            prefs.mode(currentSkip.type) != SkipMode.off) {
+          return _buildSkipSegmentButton(theme: theme, skip: currentSkip);
         }
 
         // ── Priority 2: Auto-next / "Next Episode" button ───────────────
@@ -379,9 +397,7 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
       leading: const Icon(Icons.skip_next_rounded),
       displayText: label,
       onTap: () async {
-        await widget.engine.seekTo(
-          Duration(seconds: skip.endTime.ceil()),
-        );
+        await widget.engine.seekTo(Duration(seconds: skip.endTime.ceil()));
 
         // If this was an ending skip, enable cooldown to prevent the
         // auto-next from firing immediately (the seek lands near the end).
@@ -447,9 +463,7 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
       leading: const Icon(Icons.skip_next_rounded),
       displayText: '+${skipDuration}s',
       onTap: () async {
-        await widget.engine.seekRelative(
-          Duration(seconds: skipDuration),
-        );
+        await widget.engine.seekRelative(Duration(seconds: skipDuration));
       },
       theme: theme,
       defaultAccentColor: theme.colorScheme.onSecondary,
@@ -493,9 +507,7 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
                 context: context,
                 isScrollControlled: true,
                 backgroundColor: Colors.transparent,
-                constraints: const BoxConstraints(
-                  maxWidth: double.infinity,
-                ),
+                constraints: const BoxConstraints(maxWidth: double.infinity),
                 builder: (context) {
                   return const SubtitleSettingsSheet();
                 },
@@ -505,10 +517,8 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
               IconButton.filledTonal(
                 tooltip: 'Customize Subtitles',
                 style: IconButton.styleFrom(
-                  backgroundColor:
-                      widget.theme.colorScheme.primary,
-                  foregroundColor:
-                      widget.theme.colorScheme.onPrimary,
+                  backgroundColor: widget.theme.colorScheme.primary,
+                  foregroundColor: widget.theme.colorScheme.onPrimary,
                 ),
                 icon: const Icon(Icons.tune_rounded, size: 18),
                 onPressed: () {
@@ -520,8 +530,7 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
                     constraints: const BoxConstraints(
                       maxWidth: double.infinity,
                     ),
-                    builder: (context) =>
-                        const SubtitleSettingsSheet(),
+                    builder: (context) => const SubtitleSettingsSheet(),
                   );
                 },
               ),
@@ -530,12 +539,8 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
             withBadge: false,
             displayText: 'Subtitles',
             displayWidget: Badge(
-              label: Text(
-                (widget.playerState.subtitles.length - 1)
-                    .toString(),
-              ),
-              isLabelVisible:
-                  widget.playerState.subtitles.isNotEmpty,
+              label: Text((widget.playerState.subtitles.length - 1).toString()),
+              isLabelVisible: widget.playerState.subtitles.isNotEmpty,
               backgroundColor: widget.theme.colorScheme.primary,
               textColor: widget.theme.colorScheme.onPrimary,
               child:
@@ -543,8 +548,7 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
                       widget.playerState.activeSubtitle == null
                   ? Icon(
                       Icons.subtitles_off_outlined,
-                      color:
-                          widget.playerState.subtitles.isEmpty
+                      color: widget.playerState.subtitles.isEmpty
                           ? Colors.white54
                           : Colors.white,
                     )
@@ -571,14 +575,8 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
               backgroundColor: widget.theme.colorScheme.primary,
               textColor: widget.theme.colorScheme.onPrimary,
               child: activeAudioTrack?.id == 'no'
-                  ? const Icon(
-                      Icons.volume_off_outlined,
-                      color: Colors.white,
-                    )
-                  : const Icon(
-                      Icons.audiotrack_outlined,
-                      color: Colors.white,
-                    ),
+                  ? const Icon(Icons.volume_off_outlined, color: Colors.white)
+                  : const Icon(Icons.audiotrack_outlined, color: Colors.white),
             ),
           ),
         ],
@@ -586,16 +584,13 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
         // Episodes panel button
         if (widget.mode is PlayerModeOnline) ...[
           const SizedBox(width: 12),
-          _buildActionIcon(
-            Icons.format_list_bulleted_rounded,
-            () {
-              if (widget.onShowEpisodePanel != null) {
-                widget.onShowEpisodePanel!();
-              } else {
-                _showEpisodePanel(context);
-              }
-            },
-          ),
+          _buildActionIcon(Icons.format_list_bulleted_rounded, () {
+            if (widget.onShowEpisodePanel != null) {
+              widget.onShowEpisodePanel!();
+            } else {
+              _showEpisodePanel(context);
+            }
+          }),
         ],
       ],
     );
@@ -612,11 +607,27 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
           videoEngineStateProvider.select((s) => s.duration),
         );
 
-        return Text(
-          '${_formatDuration(position)} / ${_formatDuration(duration)}',
-          style: widget.theme.textTheme.labelMedium?.copyWith(
-            color: Colors.white,
-            fontWeight: FontWeight.w500,
+        return RichText(
+          text: TextSpan(
+            children: [
+              TextSpan(
+                text: _formatDuration(position),
+                style: widget.theme.textTheme.labelLarge?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              TextSpan(
+                text: ' / ${_formatDuration(duration)}',
+                style: widget.theme.textTheme.labelMedium?.copyWith(
+                  color: Colors.white70,
+                  fontWeight: FontWeight.w500,
+                  fontSize: 12,
+                ),
+              ),
+            ],
           ),
         );
       },
@@ -640,8 +651,7 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
             context: context,
             value: widget.playerState.activeServer,
             items: widget.playerState.servers,
-            itemLabel: (s) =>
-                '[ ${trimText(s.id, maxLength: 30)} ] ${s.name}',
+            itemLabel: (s) => '[ ${trimText(s.id, maxLength: 30)} ] ${s.name}',
             onChanged: (v) {
               widget.controller.changeServer(v);
             },
@@ -650,17 +660,12 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
               if (server == null) return 'Default';
               if (server.id.length <= 20) return server.id;
               final name = server.name;
-              return name.length > 30
-                  ? '${name.substring(0, 27)}...'
-                  : name;
+              return name.length > 30 ? '${name.substring(0, 27)}...' : name;
             })(),
             badgeBuilder: (s) {
               if (s.type == ServerType.unknown) return null;
               return Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 6,
-                  vertical: 2,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: s.type == ServerType.dub
                       ? theme.colorScheme.primary
@@ -697,8 +702,7 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
             onChanged: (v) {
               widget.controller.changeStream(v);
             },
-            displayText:
-                widget.playerState.activeStream?.quality ?? 'Auto',
+            displayText: widget.playerState.activeStream?.quality ?? 'Auto',
           ),
         ],
 
@@ -966,15 +970,20 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
                               horizontal: 5,
                               vertical: 10,
                             ),
-                      child: Text(
-                        displayText,
-                        style: TextStyle(
-                          color: isHighlighted
-                              ? const Color(0xFFBCAAE0)
-                              : Colors.white70,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.5,
+                      child: Container(
+                        constraints: BoxConstraints(
+                          maxWidth: MediaQuery.of(context).size.width * 0.45,
+                        ),
+                        child: MarqueeText(
+                          text: displayText,
+                          style: TextStyle(
+                            color: isHighlighted
+                                ? const Color(0xFFBCAAE0)
+                                : Colors.white70,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.5,
+                          ),
                         ),
                       ),
                     )

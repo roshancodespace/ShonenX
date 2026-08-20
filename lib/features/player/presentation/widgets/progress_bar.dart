@@ -34,7 +34,7 @@ class ProgressBar extends ConsumerWidget {
     final buffer = ref.watch(videoEngineStateProvider.select((s) => s.buffer));
 
     return SizedBox(
-      height: 40,
+      height: 36,
       child: Builder(
         builder: (context) {
           final pos = position.inMilliseconds / 1000.0;

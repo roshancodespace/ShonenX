@@ -20,6 +20,59 @@ enum MediaKitAudioChannel {
   }
 }
 
+enum MediaKitColorPreset {
+  default_('Default', 0, 0, 0, 0, 0),
+  vibrant('Vibrant', 5, 10, 30, 0, 0),
+  anime('Anime (Colorful)', 5, 5, 40, 0, 0),
+  film('Film (Cinematic)', -5, 20, -10, 10, 0),
+  cool('Cool (Bluish)', 0, 5, 10, 0, -5),
+  warm('Warm (Yellowish)', 0, 5, 10, 0, 5);
+
+  final String label;
+  final int brightness;
+  final int contrast;
+  final int saturation;
+  final int gamma;
+  final int hue;
+
+  const MediaKitColorPreset(
+    this.label,
+    this.brightness,
+    this.contrast,
+    this.saturation,
+    this.gamma,
+    this.hue,
+  );
+
+  static MediaKitColorPreset fromString(String? value) {
+    if (value == null) return MediaKitColorPreset.default_;
+    return MediaKitColorPreset.values.firstWhere(
+      (e) => e.name == value,
+      orElse: () => MediaKitColorPreset.default_,
+    );
+  }
+}
+
+enum MediaKitAudioNormalizePreset {
+  none('None', ''),
+  light('Light', 'acompressor=ratio=2:makeup=2'),
+  standard('Standard', 'acompressor=ratio=4:makeup=4'),
+  heavy('Heavy', 'acompressor=ratio=8:makeup=8');
+
+  final String label;
+  final String filter;
+
+  const MediaKitAudioNormalizePreset(this.label, this.filter);
+
+  static MediaKitAudioNormalizePreset fromString(String? value) {
+    if (value == null) return MediaKitAudioNormalizePreset.none;
+    return MediaKitAudioNormalizePreset.values.firstWhere(
+      (e) => e.name == value,
+      orElse: () => MediaKitAudioNormalizePreset.none,
+    );
+  }
+}
+
 class MediaKitPrefs {
   final bool enableHardwareAcceleration;
   final String hwdec;
@@ -29,6 +82,8 @@ class MediaKitPrefs {
   final Duration maxBuffer;
   final MediaKitAudioChannel audioChannel;
   final bool boostVolume;
+  final MediaKitAudioNormalizePreset audioNormalizePreset;
+  final MediaKitColorPreset colorPreset;
   final String rawConfiguration;
 
   const MediaKitPrefs({
@@ -40,6 +95,8 @@ class MediaKitPrefs {
     this.maxBuffer = const Duration(seconds: 30),
     this.audioChannel = MediaKitAudioChannel.stereo,
     this.boostVolume = false,
+    this.audioNormalizePreset = MediaKitAudioNormalizePreset.none,
+    this.colorPreset = MediaKitColorPreset.default_,
     this.rawConfiguration = '',
   });
 
@@ -52,6 +109,8 @@ class MediaKitPrefs {
     Duration? maxBuffer,
     MediaKitAudioChannel? audioChannel,
     bool? boostVolume,
+    MediaKitAudioNormalizePreset? audioNormalizePreset,
+    MediaKitColorPreset? colorPreset,
     String? rawConfiguration,
   }) {
     return MediaKitPrefs(
@@ -64,6 +123,8 @@ class MediaKitPrefs {
       maxBuffer: maxBuffer ?? this.maxBuffer,
       audioChannel: audioChannel ?? this.audioChannel,
       boostVolume: boostVolume ?? this.boostVolume,
+      audioNormalizePreset: audioNormalizePreset ?? this.audioNormalizePreset,
+      colorPreset: colorPreset ?? this.colorPreset,
       rawConfiguration: rawConfiguration ?? this.rawConfiguration,
     );
   }
@@ -80,6 +141,8 @@ class MediaKitPrefs {
             other.maxBuffer == maxBuffer &&
             other.audioChannel == audioChannel &&
             other.boostVolume == boostVolume &&
+            other.audioNormalizePreset == audioNormalizePreset &&
+            other.colorPreset == colorPreset &&
             other.rawConfiguration == rawConfiguration);
   }
 
@@ -93,6 +156,8 @@ class MediaKitPrefs {
     maxBuffer,
     audioChannel,
     boostVolume,
+    audioNormalizePreset,
+    colorPreset,
     rawConfiguration,
   );
 
@@ -107,6 +172,8 @@ class MediaKitPrefs {
         'maxBuffer: $maxBuffer, '
         'audioChannel: $audioChannel, '
         'boostVolume: $boostVolume, '
+        'audioNorm: $audioNormalizePreset, '
+        'colorPreset: $colorPreset, '
         'rawConfiguration: $rawConfiguration'
         ')';
   }
@@ -128,6 +195,18 @@ class MediaKitPrefs {
         map['audioChannel'] as String?,
       ),
       boostVolume: map['boostVolume'] ?? false,
+      audioNormalizePreset:
+          MediaKitAudioNormalizePreset.fromString(
+                map['audioNormalizePreset'] as String?,
+              ) ==
+              MediaKitAudioNormalizePreset.none
+          ? MediaKitAudioNormalizePreset.none
+          : MediaKitAudioNormalizePreset.fromString(
+              map['audioNormalizePreset'] as String?,
+            ),
+      colorPreset: MediaKitColorPreset.fromString(
+        map['colorPreset'] as String?,
+      ),
       rawConfiguration: map['rawConfiguration'] ?? '',
     );
   }
@@ -142,6 +221,8 @@ class MediaKitPrefs {
       'maxBufferMs': maxBuffer.inMilliseconds,
       'audioChannel': audioChannel.value,
       'boostVolume': boostVolume,
+      'audioNormalizePreset': audioNormalizePreset.name,
+      'colorPreset': colorPreset.name,
       'rawConfiguration': rawConfiguration,
     };
   }
@@ -151,4 +232,3 @@ class MediaKitPrefs {
 
   String toJson() => jsonEncode(toMap());
 }
-

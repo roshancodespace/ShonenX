@@ -36,52 +36,60 @@ class MediaKitEngine implements VideoEngine {
     final player = _player.platform;
     if (player is! NativePlayer) return;
 
+    Future<void> setPropSafe(String key, String value) async {
+      if (_disposed) return;
+      try {
+        await player.setProperty(key, value);
+      } catch (e) {
+        _log.w('Failed to set property $key=$value: $e');
+      }
+    }
+
+    await setPropSafe('audio-channels', prefs.audioChannel.value);
+    await setPropSafe('volume-max', '200');
+
     try {
-      await player.setProperty('audio-channels', prefs.audioChannel.value);
-      if (_disposed) return;
-      await player.setProperty('volume-max', '200');
-      if (_disposed) return;
       await _player.setVolume(prefs.boostVolume ? 140 : 100);
-      if (_disposed) return;
+    } catch (_) {}
 
-      await player.setProperty('cache', 'yes');
-      await player.setProperty('demuxer-seekable-cache', 'yes');
-      await player.setProperty(
-        'demuxer-max-bytes',
-        '154857600',
-      ); // 150MB buffer for smooth 4K/1080p
-      await player.setProperty(
-        'demuxer-max-back-bytes',
-        '52428800',
-      ); // 50MB back buffer
-      await player.setProperty(
-        'demuxer-lavf-probesize',
-        '5000000',
-      ); // 5MB probe size
-      await player.setProperty('demuxer-lavf-analyzeduration', '5000000');
+    if (prefs.audioNormalizePreset != MediaKitAudioNormalizePreset.none) {
+      await setPropSafe('af', prefs.audioNormalizePreset.filter);
+    } else {
+      await setPropSafe('af', '');
+    }
 
-      final readaheadSecs = prefs.maxBuffer.inSeconds < 60
-          ? '60'
-          : prefs.maxBuffer.inSeconds.toString();
-      await player.setProperty('cache-secs', readaheadSecs);
-      await player.setProperty('demuxer-readahead-secs', readaheadSecs);
+    await setPropSafe('cache', 'yes');
+    await setPropSafe('demuxer-seekable-cache', 'yes');
+    await setPropSafe('demuxer-max-bytes', '154857600');
+    await setPropSafe('demuxer-max-back-bytes', '52428800');
+    await setPropSafe('demuxer-lavf-probesize', '5000000');
+    await setPropSafe('demuxer-lavf-analyzeduration', '5000000');
 
-      if (prefs.rawConfiguration.isNotEmpty) {
-        for (final line in prefs.rawConfiguration.split('\n')) {
-          final trimmed = line.trim();
-          if (trimmed.isEmpty || trimmed.startsWith('#')) continue;
-          final index = trimmed.indexOf('=');
+    final readaheadSecs = prefs.maxBuffer.inSeconds < 60
+        ? '60'
+        : prefs.maxBuffer.inSeconds.toString();
+    await setPropSafe('cache-secs', readaheadSecs);
+    await setPropSafe('demuxer-readahead-secs', readaheadSecs);
 
-          if (index != -1) {
-            final key = trimmed.substring(0, index).trim();
-            final value = trimmed.substring(index + 1).trim();
+    await setPropSafe('brightness', prefs.colorPreset.brightness.toString());
+    await setPropSafe('contrast', prefs.colorPreset.contrast.toString());
+    await setPropSafe('saturation', prefs.colorPreset.saturation.toString());
+    await setPropSafe('gamma', prefs.colorPreset.gamma.toString());
+    await setPropSafe('hue', prefs.colorPreset.hue.toString());
 
-            await player.setProperty(key, value);
-          }
+    if (prefs.rawConfiguration.isNotEmpty) {
+      for (final line in prefs.rawConfiguration.split('\n')) {
+        final trimmed = line.trim();
+        if (trimmed.isEmpty || trimmed.startsWith('#')) continue;
+        final index = trimmed.indexOf('=');
+
+        if (index != -1) {
+          final key = trimmed.substring(0, index).trim();
+          final value = trimmed.substring(index + 1).trim();
+
+          await setPropSafe(key, value);
         }
       }
-    } catch (e, s) {
-      _log.e('Failed to apply raw configuration', e, s);
     }
   }
 

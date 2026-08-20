@@ -7,6 +7,7 @@ import 'package:shonenx/core/remote_config/models/remote_config.dart';
 import 'package:shonenx/core/remote_config/providers/remote_config_provider.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
 import 'package:shonenx/source_engine/providers/inbuilt_sources_provider.dart';
+import 'package:shonenx/shared/widgets/app_dialog.dart';
 
 class RemoteConfigEditorScreen extends ConsumerStatefulWidget {
   const RemoteConfigEditorScreen({super.key});
@@ -176,32 +177,28 @@ class _RemoteConfigEditorScreenState
       '  ',
     ).convert(newConfig.toJson());
 
-    showDialog(
+    AppDialog.show(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Generated Configuration'),
-          content: SingleChildScrollView(child: SelectableText(jsonString)),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Close'),
-            ),
-            FilledButton.icon(
-              onPressed: () async {
-                await Clipboard.setData(ClipboardData(text: jsonString));
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Copied to clipboard')),
-                  );
-                }
-              },
-              icon: const Icon(Icons.copy),
-              label: const Text('Copy'),
-            ),
-          ],
-        );
-      },
+      title: 'Generated Configuration',
+      child: SelectableText(jsonString),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Close'),
+        ),
+        FilledButton.icon(
+          onPressed: () async {
+            await Clipboard.setData(ClipboardData(text: jsonString));
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Copied to clipboard')),
+              );
+            }
+          },
+          icon: const Icon(Icons.copy),
+          label: const Text('Copy'),
+        ),
+      ],
     );
   }
 

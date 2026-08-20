@@ -17,6 +17,7 @@ import 'package:shonenx/shared/models/video_server.dart';
 import 'package:shonenx/shared/models/video_stream.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/shared/widgets/permission_sheet.dart';
+import 'package:shonenx/shared/widgets/app_dialog.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
 import 'package:shonenx/source_engine/source_engine_provider.dart';
 
@@ -463,44 +464,40 @@ class BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
   }
 
   void showCancelDialog(BuildContext context) {
-    showDialog(
+    AppDialog.show(
       context: context,
-      builder: (ctx) {
-        return AlertDialog(
-          title: const Text('Cancel Batch Download?'),
-          content: const Text(
-            'Do you want to stop queueing the remaining episodes? You can also optionally cancel the downloads that have already been started in this batch.',
+      title: 'Cancel Batch Download?',
+      child: const Text(
+        'Do you want to stop queueing the remaining episodes? You can also optionally cancel the downloads that have already been started in this batch.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Continue'),
+        ),
+        TextButton(
+          onPressed: () {
+            isQueueingCancelled = true;
+            Navigator.of(context).pop();
+            Navigator.of(context).pop();
+          },
+          child: const Text('Stop Only'),
+        ),
+        FilledButton(
+          onPressed: () {
+            isQueueingCancelled = true;
+            for (final id in queuedTaskIds) {
+              ref.read(downloadManagerProvider.notifier).cancelDownload(id);
+            }
+            Navigator.of(context).pop();
+            Navigator.of(context).pop();
+          },
+          style: FilledButton.styleFrom(
+            backgroundColor: Theme.of(context).colorScheme.error,
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Continue'),
-            ),
-            TextButton(
-              onPressed: () {
-                isQueueingCancelled = true;
-                Navigator.of(ctx).pop();
-                Navigator.of(context).pop();
-              },
-              child: const Text('Stop Only'),
-            ),
-            FilledButton(
-              onPressed: () {
-                isQueueingCancelled = true;
-                for (final id in queuedTaskIds) {
-                  ref.read(downloadManagerProvider.notifier).cancelDownload(id);
-                }
-                Navigator.of(ctx).pop();
-                Navigator.of(context).pop();
-              },
-              style: FilledButton.styleFrom(
-                backgroundColor: Theme.of(ctx).colorScheme.error,
-              ),
-              child: const Text('Stop & Cancel Downloads'),
-            ),
-          ],
-        );
-      },
+          child: const Text('Stop & Cancel Downloads'),
+        ),
+      ],
     );
   }
 

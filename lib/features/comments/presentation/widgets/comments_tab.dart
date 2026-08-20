@@ -16,6 +16,7 @@ import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/shared/widgets/staggered_fade_in.dart';
+import 'package:shonenx/shared/widgets/app_dialog.dart';
 
 class CommentsTabWidget extends ConsumerStatefulWidget {
   final UnifiedMedia media;
@@ -162,30 +163,28 @@ class _CommentsTabWidgetState extends ConsumerState<CommentsTabWidget> {
     CommentumAuthService authService,
     CommentumProvider provider,
   ) {
-    showDialog(
+    AppDialog.show(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Log Out'),
-        content: Text(
-          'Are you sure you want to log out of ${provider.displayName}?',
-        ),
-        actions: [
-          TextButton(onPressed: () => ctx.pop(), child: const Text('Cancel')),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(ctx).colorScheme.error,
-              foregroundColor: Theme.of(ctx).colorScheme.onError,
-            ),
-            onPressed: () async {
-              ctx.pop();
-              context.pop();
-              await authService.signOut(provider);
-              setState(() {});
-            },
-            child: const Text('Log Out'),
-          ),
-        ],
+      title: 'Log Out',
+      child: Text(
+        'Are you sure you want to log out of ${provider.displayName}?',
       ),
+      actions: [
+        TextButton(onPressed: () => context.pop(), child: const Text('Cancel')),
+        FilledButton(
+          style: FilledButton.styleFrom(
+            backgroundColor: Theme.of(context).colorScheme.error,
+            foregroundColor: Theme.of(context).colorScheme.onError,
+          ),
+          onPressed: () async {
+            context.pop();
+            context.pop();
+            await authService.signOut(provider);
+            setState(() {});
+          },
+          child: const Text('Log Out'),
+        ),
+      ],
     );
   }
 

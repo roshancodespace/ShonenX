@@ -73,152 +73,177 @@ class ChoosePreferenceStep extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 20),
-        Text(
-          'SELECT SERVER',
-          style: textTheme.labelSmall?.copyWith(
-            fontWeight: FontWeight.w800,
-            letterSpacing: 1.1,
-            color: cs.primary,
-          ),
-        ),
-        const SizedBox(height: 10),
-        if (state.serversError != null)
-          Text(
-            'Error loading servers: ${state.serversError}',
-            style: TextStyle(color: cs.error),
-          )
-        else if (state.availableServers == null)
-          const Center(
-            child: Padding(
-              padding: EdgeInsets.all(16),
-              child: CircularProgressIndicator(),
-            ),
-          )
-        else if (state.availableServers!.isEmpty)
-          const Text('No servers available.')
-        else if (state.availableServers!.length == 1)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: cs.primaryContainer.withValues(alpha: 0.35),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: cs.primary.withValues(alpha: 0.3)),
-            ),
-            child: Row(
+        Flexible(
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.info_outline_rounded, color: cs.primary, size: 18),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    'Only 1 server available: ${state.availableServers!.first.name} • ${state.availableServers!.first.type.displayName} (Auto-selected)',
-                    style: TextStyle(
-                      color: cs.onSurface,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                    ),
+                Text(
+                  'SELECT SERVER',
+                  style: textTheme.labelSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.1,
+                    color: cs.primary,
                   ),
                 ),
+                const SizedBox(height: 10),
+                if (state.serversError != null)
+                  Text(
+                    'Error loading servers: ${state.serversError}',
+                    style: TextStyle(color: cs.error),
+                  )
+                else if (state.availableServers == null)
+                  const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(16),
+                      child: CircularProgressIndicator(),
+                    ),
+                  )
+                else if (state.availableServers!.isEmpty)
+                  const Text('No servers available.')
+                else if (state.availableServers!.length == 1)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: cs.primaryContainer.withValues(alpha: 0.35),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: cs.primary.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline_rounded,
+                          color: cs.primary,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Only 1 server available: ${state.availableServers!.first.name} • ${state.availableServers!.first.type.displayName} (Auto-selected)',
+                            style: TextStyle(
+                              color: cs.onSurface,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: state.availableServers!.map((server) {
+                      final isSelected = state.selectedServer == server;
+                      return ChoiceChip(
+                        label: Text(
+                          '${server.name} • ${server.type.displayName}',
+                          style: TextStyle(
+                            fontWeight: isSelected
+                                ? FontWeight.w700
+                                : FontWeight.w500,
+                          ),
+                        ),
+                        selected: isSelected,
+                        showCheckmark: false,
+                        onSelected: (selected) {
+                          if (selected && state.referenceEpisode != null) {
+                            state.fetchStreamsForReference(
+                              state.referenceEpisode!,
+                              server,
+                            );
+                          }
+                        },
+                        selectedColor: cs.primaryContainer,
+                        backgroundColor: cs.surfaceContainerHighest.withValues(
+                          alpha: 0.4,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: BorderSide(
+                            color: isSelected ? cs.primary : Colors.transparent,
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                const SizedBox(height: 20),
+                Text(
+                  'SELECT VIDEO QUALITY',
+                  style: textTheme.labelSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.1,
+                    color: cs.primary,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                if (state.loadingStreams)
+                  const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(16),
+                      child: CircularProgressIndicator(),
+                    ),
+                  )
+                else if (state.streamsError != null)
+                  Text(
+                    'Error loading qualities: ${state.streamsError}',
+                    style: TextStyle(color: cs.error),
+                  )
+                else if (state.availableStreams == null ||
+                    state.availableStreams!.isEmpty)
+                  Text(
+                    'No stream links found for this server.',
+                    style: TextStyle(color: cs.onSurfaceVariant),
+                  )
+                else
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: state.availableStreams!.map((stream) {
+                      final isSelected = state.selectedStream == stream;
+                      return ChoiceChip(
+                        label: Text(
+                          stream.quality,
+                          style: TextStyle(
+                            fontWeight: isSelected
+                                ? FontWeight.w700
+                                : FontWeight.w500,
+                          ),
+                        ),
+                        selected: isSelected,
+                        showCheckmark: false,
+                        onSelected: (selected) {
+                          if (selected) {
+                            state.updateState(
+                              () => state.selectedStream = stream,
+                            );
+                          }
+                        },
+                        selectedColor: cs.primaryContainer,
+                        backgroundColor: cs.surfaceContainerHighest.withValues(
+                          alpha: 0.4,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: BorderSide(
+                            color: isSelected ? cs.primary : Colors.transparent,
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
               ],
             ),
-          )
-        else
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: state.availableServers!.map((server) {
-              final isSelected = state.selectedServer == server;
-              return ChoiceChip(
-                label: Text(
-                  '${server.name} • ${server.type.displayName}',
-                  style: TextStyle(
-                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                  ),
-                ),
-                selected: isSelected,
-                showCheckmark: false,
-                onSelected: (selected) {
-                  if (selected && state.referenceEpisode != null) {
-                    state.fetchStreamsForReference(
-                      state.referenceEpisode!,
-                      server,
-                    );
-                  }
-                },
-                selectedColor: cs.primaryContainer,
-                backgroundColor: cs.surfaceContainerHighest.withValues(
-                  alpha: 0.4,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(
-                    color: isSelected ? cs.primary : Colors.transparent,
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        const SizedBox(height: 20),
-        Text(
-          'SELECT VIDEO QUALITY',
-          style: textTheme.labelSmall?.copyWith(
-            fontWeight: FontWeight.w800,
-            letterSpacing: 1.1,
-            color: cs.primary,
           ),
         ),
-        const SizedBox(height: 10),
-        if (state.loadingStreams)
-          const Center(
-            child: Padding(
-              padding: EdgeInsets.all(16),
-              child: CircularProgressIndicator(),
-            ),
-          )
-        else if (state.streamsError != null)
-          Text(
-            'Error loading qualities: ${state.streamsError}',
-            style: TextStyle(color: cs.error),
-          )
-        else if (state.availableStreams == null ||
-            state.availableStreams!.isEmpty)
-          Text(
-            'No stream links found for this server.',
-            style: TextStyle(color: cs.onSurfaceVariant),
-          )
-        else
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: state.availableStreams!.map((stream) {
-              final isSelected = state.selectedStream == stream;
-              return ChoiceChip(
-                label: Text(
-                  stream.quality,
-                  style: TextStyle(
-                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                  ),
-                ),
-                selected: isSelected,
-                showCheckmark: false,
-                onSelected: (selected) {
-                  if (selected) {
-                    state.updateState(() => state.selectedStream = stream);
-                  }
-                },
-                selectedColor: cs.primaryContainer,
-                backgroundColor: cs.surfaceContainerHighest.withValues(
-                  alpha: 0.4,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(
-                    color: isSelected ? cs.primary : Colors.transparent,
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        const SizedBox(height: 28),
+        const SizedBox(height: 20),
         Builder(
           builder: (context) {
             final isOneDMInstalledAsync = state.ref.watch(

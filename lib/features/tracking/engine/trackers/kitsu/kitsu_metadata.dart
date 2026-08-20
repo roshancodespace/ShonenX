@@ -378,7 +378,7 @@ mixin KitsuMetadata on BaseTracker implements RemoteTracker {
   }
 
   @override
-  Future<TrackerFilterOptions> fetchFilterOptions() async {
+  Future<TrackerFilterOptions> fetchFilterOptions([MediaType? type]) async {
     final genres = await fetchGenres();
     return TrackerFilterOptions(
       genres: genres,

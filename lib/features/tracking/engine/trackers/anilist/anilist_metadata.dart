@@ -343,14 +343,35 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
   }
 
   @override
-  Future<TrackerFilterOptions> fetchFilterOptions() async {
+  Future<TrackerFilterOptions> fetchFilterOptions([MediaType? type]) async {
     final results = await Future.wait([fetchGenres(), fetchTags()]);
+
+    var formats = SearchFormatFilter.values;
+    if (type == MediaType.ANIME) {
+      formats = formats
+          .where(
+            (f) =>
+                f != SearchFormatFilter.manga &&
+                f != SearchFormatFilter.oneShot,
+          )
+          .toList();
+    } else if (type == MediaType.MANGA) {
+      formats = formats
+          .where(
+            (f) =>
+                f == SearchFormatFilter.manga ||
+                f == SearchFormatFilter.oneShot ||
+                f == SearchFormatFilter.all,
+          )
+          .toList();
+    }
+
     return TrackerFilterOptions(
       genres: results[0],
       tags: results[1],
       sorts: SearchSort.values,
       statuses: SearchStatusFilter.values,
-      formats: SearchFormatFilter.values,
+      formats: formats,
     );
   }
 

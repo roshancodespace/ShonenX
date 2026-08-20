@@ -78,6 +78,12 @@ class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen>
       initialIndex: initIndex,
     );
 
+    _tabController.addListener(() {
+      if (mounted && !_tabController.indexIsChanging) {
+        setState(() {});
+      }
+    });
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         _attachOverlay();
@@ -91,6 +97,11 @@ class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen>
     setState(() {
       _supportedMediaTypes = newTypes;
       _tabController = TabController(length: newTypes.length, vsync: this);
+      _tabController.addListener(() {
+        if (mounted && !_tabController.indexIsChanging) {
+          setState(() {});
+        }
+      });
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _attachOverlay();
@@ -190,18 +201,29 @@ class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen>
     _searchFocusNode.unfocus();
   }
 
-  void _openAdvancedSearch(BuildContext context) {
+  Future<void> _openAdvancedSearch(BuildContext context) async {
     final currentType =
         (_tabController.index >= 0 &&
             _tabController.index < _supportedMediaTypes.length)
         ? _supportedMediaTypes[_tabController.index]
         : MediaType.ANIME;
-    final filtersState = ref.read(
-      discoveryFiltersProvider((type: currentType, sourceId: widget.source)),
-    );
-    final hasFilters =
-        filtersState.value != null && filtersState.value!.options.hasAnyFilter;
+
+    MetadataTagsState? filtersState;
+    try {
+      filtersState = await ref.read(
+        discoveryFiltersProvider((
+          type: currentType,
+          sourceId: widget.source,
+        )).future,
+      );
+    } catch (_) {
+      return;
+    }
+
+    final hasFilters = filtersState?.options.hasAnyFilter == true;
     if (!hasFilters) return;
+
+    if (!context.mounted) return;
 
     showModalBottomSheet(
       context: context,

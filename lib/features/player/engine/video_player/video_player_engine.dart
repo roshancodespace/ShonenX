@@ -5,11 +5,14 @@ import 'package:shonenx/core/utils/http_x.dart';
 import 'package:shonenx/features/player/engine/video_engine.dart';
 import 'package:shonenx/shared/models/video_stream.dart';
 import 'package:video_player/video_player.dart';
+import 'package:shonenx/core/utils/app_logger.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/features/player/providers/video_engine_provider.dart';
 
 class VideoPlayerEngine implements VideoEngine {
+  static final _log = AppLogger.scope('VideoPlayerEngine');
+
   VideoPlayerController? _controller;
   final Ref ref;
 
@@ -29,6 +32,7 @@ class VideoPlayerEngine implements VideoEngine {
         .read(videoEngineStateProvider.notifier)
         .updateState(isBuffering: true, isPlaying: false);
 
+    _log.i('Initializing player with URL: ${stream.url}');
     _controller?.removeListener(_listener);
     await _controller?.dispose();
 
@@ -136,6 +140,7 @@ class VideoPlayerEngine implements VideoEngine {
 
   @override
   Future<void> changeQuality(VideoStream newStream) async {
+    _log.i('Changing quality to URL: ${newStream.url}');
     final currentPos = _controller?.value.position;
     await initialize(newStream, startAt: currentPos);
   }
@@ -144,9 +149,11 @@ class VideoPlayerEngine implements VideoEngine {
   Future<void> setSubtitle(SubtitleTrack? subtitle) async {
     if (_controller == null) return;
     if (subtitle == null || subtitle.url.isEmpty) {
+      _log.d('Disabling subtitle');
       await _controller!.setClosedCaptionFile(null);
       return;
     }
+    _log.d('Setting subtitle: ${subtitle.url}');
     try {
       final response = await _http.get(subtitle.url);
       if (response.statusCode == 200) {
@@ -160,7 +167,8 @@ class VideoPlayerEngine implements VideoEngine {
         }
         await _controller!.setClosedCaptionFile(Future.value(captionFile));
       }
-    } catch (_) {
+    } catch (e, s) {
+      _log.e('Failed to load subtitle', e, s);
       await _controller!.setClosedCaptionFile(null);
     }
   }
@@ -176,6 +184,7 @@ class VideoPlayerEngine implements VideoEngine {
 
   @override
   Future<void> dispose() async {
+    _log.i('Disposing engine');
     _controller?.removeListener(_listener);
     await _controller?.dispose();
     _controller = null;

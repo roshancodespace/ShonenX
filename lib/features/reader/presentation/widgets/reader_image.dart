@@ -32,6 +32,8 @@ class ReaderImage extends StatelessWidget {
       httpHeaders: headers,
       fit: fit,
       width: double.infinity,
+      memCacheWidth: 1400,
+      maxWidthDiskCache: 1800,
       progressIndicatorBuilder: (context, url, progress) => SizedBox(
         height: MediaQuery.of(context).size.height * 0.8,
         child: Center(

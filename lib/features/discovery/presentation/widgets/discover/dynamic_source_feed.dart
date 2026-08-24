@@ -20,7 +20,9 @@ class DynamicSourceFeed extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final prefs = ref.watch(discoveryPrefsProvider);
+    final activeSourceIds = ref.watch(
+      discoveryPrefsProvider.select((p) => p.activeSources),
+    );
     final sourcesAsync = type == MediaType.ANIME
         ? ref.watch(availableAnimeSourcesProvider)
         : ref.watch(availableMangaSourcesProvider);
@@ -28,7 +30,7 @@ class DynamicSourceFeed extends ConsumerWidget {
     return sourcesAsync.when(
       data: (allSources) {
         final active = allSources
-            .where((s) => prefs.activeSources.contains(s.id))
+            .where((s) => activeSourceIds.contains(s.id))
             .toList();
         if (active.isEmpty) {
           return Center(

@@ -27,6 +27,18 @@ class ReadHistoryRepository {
     });
   }
 
+  Future<void> deleteByMangaIds(List<String> mangaIds) async {
+    if (mangaIds.isEmpty) return;
+    await _isar.writeTxn(() async {
+      for (final mangaId in mangaIds) {
+        await _isar.readHistoryEntrys
+            .filter()
+            .mangaIdEqualTo(mangaId)
+            .deleteAll();
+      }
+    });
+  }
+
   Stream<List<ReadHistoryEntry>> readHistory({int limit = 10}) {
     return _isar.readHistoryEntrys
         .where()

@@ -29,8 +29,12 @@ class CacheManager {
         return;
       }
 
-      // OPTIMIZATION: Query all cache entries sorted by earliest expiry first, and prune entries until the Isar DB size drops below maxCacheSize. Runs on startup for performance.
-      final entries = await _isar.cacheEntrys.where().sortByExpiry().findAll();
+      // Query oldest expiring cache entries with batch limit to avoid excessive memory allocation
+      final entries = await _isar.cacheEntrys
+          .where()
+          .sortByExpiry()
+          .limit(100)
+          .findAll();
       final keysToDelete = <String>[];
       int bytesCleared = 0;
 

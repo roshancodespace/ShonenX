@@ -199,6 +199,9 @@ class _ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem>
           imageUrl: imageUrl,
           httpHeaders: headers.isEmpty ? null : headers,
           fit: BoxFit.cover,
+          memCacheWidth: 600,
+          memCacheHeight: 400,
+          maxWidthDiskCache: 800,
           errorWidget: (_, __, ___) => Container(
             color: cs.surfaceContainerHighest,
             child: Icon(Icons.broken_image_rounded, color: cs.onSurfaceVariant),

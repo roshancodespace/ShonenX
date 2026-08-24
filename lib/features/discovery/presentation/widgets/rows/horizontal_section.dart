@@ -23,7 +23,7 @@ class HorizontalSection<T> extends StatelessWidget {
     this.emptyText = 'No data found',
     this.onMoreTap,
     this.skeletonItemBuilder,
-    this.skeletonCount = 25,
+    this.skeletonCount = 6,
   });
 
   @override

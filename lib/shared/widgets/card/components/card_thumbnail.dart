@@ -75,12 +75,22 @@ class CardThumbnail extends StatelessWidget {
     }
 
     if (config.imageUrl != null && config.imageUrl!.isNotEmpty) {
+      final cacheW = (w.isFinite && w > 0 && w < 4000)
+          ? (w * 2.0).clamp(100.0, 800.0).toInt()
+          : 400;
+      final cacheH = (h.isFinite && h > 0 && h < 4000)
+          ? (h * 2.0).clamp(150.0, 1200.0).toInt()
+          : 600;
+
       Widget img = CachedNetworkImage(
         imageUrl: config.imageUrl!,
         httpHeaders: decodeUrlHeaders(config.imageUrl!),
         width: w,
         height: h,
         fit: BoxFit.cover,
+        memCacheWidth: cacheW,
+        memCacheHeight: cacheH,
+        maxWidthDiskCache: 800,
         fadeInDuration: const Duration(milliseconds: 220),
         placeholderFadeInDuration: const Duration(milliseconds: 120),
         errorWidget: (_, __, ___) => _buildFallback(cs, w, h),

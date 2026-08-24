@@ -44,9 +44,17 @@ class MediaCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final uiState = ref.watch(uiPrefsProvider);
-    final isWideMode = uiState.isMediaCardWide(style.name);
-    final scale = ref.watch(themePrefsProvider).uiScaleFactor;
+    final isWideMode = ref.watch(
+      uiPrefsProvider.select((s) => s.isMediaCardWide(style.name)),
+    );
+    final showRatings = ref.watch(
+      uiPrefsProvider.select((s) => s.showCardRatings),
+    );
+    final showYear = ref.watch(uiPrefsProvider.select((s) => s.showCardYear));
+    final showGenres = ref.watch(
+      uiPrefsProvider.select((s) => s.showCardGenres),
+    );
+    final scale = ref.watch(themePrefsProvider.select((s) => s.uiScaleFactor));
     final layout = style.getScaledLayout(scale, isWideMode: isWideMode);
 
     return RepaintBoundary(
@@ -77,11 +85,11 @@ class MediaCard extends ConsumerWidget {
               heroTag: tag,
               badgeText: format,
               topRightBadge: badge,
-              score: uiState.showCardRatings ? score : null,
+              score: showRatings ? score : null,
               subtitle: subtitle,
-              year: uiState.showCardYear ? year : null,
+              year: showYear ? year : null,
               status: status,
-              genres: uiState.showCardGenres ? genres : null,
+              genres: showGenres ? genres : null,
             ),
           );
 

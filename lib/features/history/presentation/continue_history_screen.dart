@@ -56,12 +56,10 @@ class _ContinueHistoryScreenState extends ConsumerState<ContinueHistoryScreen> {
       _isSelectionMode = false;
     });
 
-    for (final id in toDelete) {
-      if (isAnime) {
-        await ref.read(watchHistoryRepositoryProvider).deleteByAnimeId(id);
-      } else {
-        await ref.read(readHistoryRepositoryProvider).deleteByMangaId(id);
-      }
+    if (isAnime) {
+      await ref.read(watchHistoryRepositoryProvider).deleteByAnimeIds(toDelete);
+    } else {
+      await ref.read(readHistoryRepositoryProvider).deleteByMangaIds(toDelete);
     }
 
     if (mounted) {

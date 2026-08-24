@@ -36,8 +36,8 @@ final aniSkipProvider = FutureProvider.autoDispose
         return [];
       } else if (args.idMal == null) {
         throw Exception('idMal is null');
-      } else if (!args.episodeNumber.toString().contains('.0')) {
-        throw Exception('episodeNumber is in floating');
+      } else if (args.episodeNumber % 1 != 0) {
+        throw Exception('AniSkip only supports whole episode numbers');
       } else {
         return await service.getSkipTimes(
           types: prefs.enabledTypes(),

@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
-import 'package:shonenx/features/tracking/engine/contracts/tracking_service.dart';
+import 'package:shonenx/features/tracking/engine/tracking_service.dart';
 import 'package:shonenx/features/tracking/engine/trackers/index.dart';
 import 'package:shonenx/features/tracking/providers/tracker_profile_provider.dart';
 import 'package:shonenx/features/tracking/providers/tracking_prefs_provider.dart';

@@ -5,8 +5,8 @@ import 'dart:developer';
 import 'package:shonenx/core/network/http_client.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_category.dart';
 import 'package:shonenx/shared/providers/content_prefs_provider.dart';
-import 'package:shonenx/features/tracking/engine/contracts/base_tracker.dart';
-import 'package:shonenx/features/tracking/engine/contracts/remote_tracker.dart';
+import 'package:shonenx/features/tracking/engine/base_tracker.dart';
+import 'package:shonenx/features/tracking/engine/remote_tracker.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/source_engine/models/paginated_result.dart';
 

@@ -49,15 +49,15 @@ class _ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem>
   Future<void> _resumeEpisode() async {
     await handleResumeMedia(
       resolveAndPlay: () async {
-        final result = await ref
+        final mode = await ref
             .read(continueWatchingResolverProvider)
             .resolve(widget.entry);
         if (!mounted) return;
         context.pushDetails(
-          mediaType: result.mode.media.type,
-          media: result.mode.media,
+          mediaType: mode.media.type,
+          media: mode.media,
           initialTabIndex: 1,
-          autoPlayMode: result.mode,
+          autoPlayMode: mode,
         );
       },
       mediaType: MediaType.ANIME,

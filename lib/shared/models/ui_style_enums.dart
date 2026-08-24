@@ -1,4 +1,11 @@
-import 'package:shonenx/shared/models/component_layout.dart';
+class ComponentLayout {
+  final double width;
+  final double height;
+
+  const ComponentLayout({required this.width, required this.height});
+
+  double get aspectRatio => width / height;
+}
 
 class GlobalUI {
   static double uiScaleFactor = 1.0;

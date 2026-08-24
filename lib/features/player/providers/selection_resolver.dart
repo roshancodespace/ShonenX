@@ -1,9 +1,8 @@
-import 'package:shonenx/core/utils/extensions.dart';
+import 'package:collection/collection.dart';
 import 'package:shonenx/core/utils/http_x.dart';
 import 'package:shonenx/core/network/http_client.dart';
 import 'package:shonenx/shared/models/video_server.dart';
 import 'package:shonenx/shared/models/video_stream.dart';
-
 
 class SelectionResolver {
   String? preferredServerId;
@@ -42,7 +41,6 @@ class SelectionResolver {
     // Fallback: first server
     return servers.first;
   }
-
 
   VideoStream resolveStream(List<VideoStream> streams) {
     if (streams.isEmpty) return streams.first;
@@ -91,9 +89,7 @@ class SelectionResolver {
     VideoStream source,
     HTTP httpClient,
   ) async {
-    final qualitiesList = <VideoStream>[
-      source.copyWith(quality: 'Auto'),
-    ];
+    final qualitiesList = <VideoStream>[source.copyWith(quality: 'Auto')];
 
     // Try to parse individual qualities from the HLS manifest
     try {
@@ -127,7 +123,6 @@ class SelectionResolver {
     return (list: qualitiesList, active: activeQuality);
   }
 
-
   SubtitleTrack resolveSubtitle(List<SubtitleTrack> subtitles) {
     if (subtitles.isEmpty) return SubtitleTrack.none;
 
@@ -139,7 +134,9 @@ class SelectionResolver {
 
     final pref = preferredSubtitleLang!.toLowerCase();
     final match = subtitles.firstWhereOrNull(
-      (s) => s.language.toLowerCase().contains(pref) || pref.contains(s.language.toLowerCase()),
+      (s) =>
+          s.language.toLowerCase().contains(pref) ||
+          pref.contains(s.language.toLowerCase()),
     );
     return match ?? subtitles.first;
   }

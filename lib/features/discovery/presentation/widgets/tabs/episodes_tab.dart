@@ -27,7 +27,9 @@ import 'package:shonenx/features/comments/presentation/widgets/comments_tab.dart
 
 class EpisodesTabWidget extends ConsumerWidget {
   final UnifiedMedia media;
-  const EpisodesTabWidget({super.key, required this.media});
+  final bool isTv;
+
+  const EpisodesTabWidget({super.key, required this.media, this.isTv = false});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -63,7 +65,7 @@ class EpisodesTabWidget extends ConsumerWidget {
 
     return Column(
       children: [
-        if (media.sourceId == null) ...[
+        if (media.sourceId == null && !isTv) ...[
           StaggeredFadeIn(index: 0, child: _EpisodesHeader(media: media)),
           Container(
             width: double.maxFinite,
@@ -74,9 +76,10 @@ class EpisodesTabWidget extends ConsumerWidget {
         Expanded(
           child: EpisodeListPanel(
             media: media,
+            isTv: isTv,
             watchedProgress: watchedProgress,
             currentEpisodeNumber: currentEpisodeNumber,
-            useScrollController: false,
+            useScrollController: !isTv,
             onEpisodeTap: (UnifiedEpisode episode, SourceInfo sourceInfo) {
               if (media.type == MediaType.MANGA ||
                   media.type == MediaType.NOVEL) {
@@ -431,7 +434,7 @@ class _EpisodesHeader extends ConsumerWidget {
   }
 }
 
-class _HeaderButton extends StatelessWidget {
+class _HeaderButton extends StatefulWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
@@ -443,31 +446,82 @@ class _HeaderButton extends StatelessWidget {
   });
 
   @override
+  State<_HeaderButton> createState() => _HeaderButtonState();
+}
+
+class _HeaderButtonState extends State<_HeaderButton> {
+  final FocusNode _focusNode = FocusNode();
+  bool _isFocused = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode.addListener(() {
+      if (mounted) setState(() => _isFocused = _focusNode.hasFocus);
+    });
+  }
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    return Material(
-      color: cs.surfaceContainerHighest.withValues(alpha: 0.6),
-      borderRadius: BorderRadius.circular(16),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 16, color: cs.onSurfaceVariant),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: textTheme.labelMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: cs.onSurfaceVariant,
+    return FocusableActionDetector(
+      focusNode: _focusNode,
+      actions: {
+        ActivateIntent: CallbackAction<ActivateIntent>(
+          onInvoke: (_) {
+            widget.onTap();
+            return null;
+          },
+        ),
+      },
+      child: AnimatedScale(
+        scale: _isFocused ? 1.05 : 1.0,
+        duration: const Duration(milliseconds: 150),
+        child: Material(
+          color: _isFocused
+              ? cs.primary
+              : cs.surfaceContainerHighest.withValues(alpha: 0.6),
+          borderRadius: BorderRadius.circular(16),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            canRequestFocus: false,
+            onTap: widget.onTap,
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: _isFocused ? Colors.white : Colors.transparent,
+                  width: 1.5,
                 ),
               ),
-            ],
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    widget.icon,
+                    size: 16,
+                    color: _isFocused ? cs.onPrimary : cs.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    widget.label,
+                    style: textTheme.labelMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: _isFocused ? cs.onPrimary : cs.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ),

@@ -153,7 +153,10 @@ class WideMetadataColumn extends StatelessWidget {
                     TextStyle(color: effectiveTextColor),
               ),
             ),
-            if (config.topRightBadge != null) config.topRightBadge!,
+            if (config.topRightBadge != null) ...[
+              const SizedBox(width: 4),
+              Flexible(child: config.topRightBadge!),
+            ],
           ],
         ),
         if (formattedScore != null || metaText.isNotEmpty) ...[

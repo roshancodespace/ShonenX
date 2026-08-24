@@ -15,11 +15,19 @@ import 'package:shonenx/features/discovery/providers/discovery_feed_provider.dar
 class DynamicSourceFeed extends ConsumerWidget {
   final MediaType type;
   final ValueChanged<String>? onSourceSelect;
+  final EdgeInsetsGeometry? padding;
 
-  const DynamicSourceFeed({super.key, required this.type, this.onSourceSelect});
+  const DynamicSourceFeed({
+    super.key,
+    required this.type,
+    this.onSourceSelect,
+    this.padding,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final effectivePadding =
+        padding ?? const EdgeInsets.only(top: 60, bottom: 120);
     final activeSourceIds = ref.watch(
       discoveryPrefsProvider.select((p) => p.activeSources),
     );
@@ -65,7 +73,7 @@ class DynamicSourceFeed extends ConsumerWidget {
         }
 
         return ListView.builder(
-          padding: const EdgeInsets.only(top: 60, bottom: 120),
+          padding: effectivePadding,
           itemCount: active.length,
           itemBuilder: (context, index) {
             return Padding(

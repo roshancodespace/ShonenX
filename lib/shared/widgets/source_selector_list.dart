@@ -65,154 +65,193 @@ class SourceSelectorList extends ConsumerWidget {
         final sourceName = groupedNames[index];
         final sources = groupedSources[sourceName]!;
 
-        Widget buildSourceItem(
-          SourceInfo sourceInfo,
-          bool isSubItem,
-          String? parentIconUrl,
-        ) {
-          final selected = currentSource == sourceInfo;
-          final sourceImpl = mediaType.usesAnimeSources
-              ? ref.read(animeSourceProvider(sourceInfo))
-              : ref.read(mangaSourceProvider(sourceInfo));
+        return StatefulBuilder(
+          builder: (context, setState) {
+            bool isExpanded = false;
 
-          final iconUrlToUse = sourceInfo.iconUrl?.isNotEmpty == true
-              ? sourceInfo.iconUrl
-              : parentIconUrl;
+            Widget buildSourceItem({
+              required SourceInfo sourceInfo,
+              required bool isSubItem,
+              required String? parentIconUrl,
+              Widget? expandAction,
+            }) {
+              final selected = currentSource == sourceInfo;
+              final sourceImpl = mediaType.usesAnimeSources
+                  ? ref.read(animeSourceProvider(sourceInfo))
+                  : ref.read(mangaSourceProvider(sourceInfo));
 
-          return InkWell(
-            onTap: () => onSourceSelected(context, sourceInfo),
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(isSubItem ? 30 : 18, 8, 18, 8),
-              child: Row(
-                children: [
-                  (iconUrlToUse != null && iconUrlToUse.isNotEmpty)
-                      ? CachedNetworkImage(
-                          imageUrl: iconUrlToUse,
-                          width: isSubItem ? 30 : 40,
-                          height: isSubItem ? 30 : 40,
-                          fit: BoxFit.cover,
-                          errorWidget: (context, url, error) =>
-                              Icon(Icons.extension, size: isSubItem ? 30 : 40),
-                        )
-                      : Icon(Icons.extension, size: isSubItem ? 30 : 40),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+              final iconUrlToUse = sourceInfo.iconUrl?.isNotEmpty == true
+                  ? sourceInfo.iconUrl
+                  : parentIconUrl;
+
+              return Material(
+                type: MaterialType.transparency,
+                child: InkWell(
+                  onTap: () => onSourceSelected(context, sourceInfo),
+                  focusColor: cs.secondaryContainer.withValues(alpha: 0.5),
+                  hoverColor: cs.onSurface.withValues(alpha: 0.08),
+                  highlightColor: cs.onSurface.withValues(alpha: 0.12),
+                  child: Container(
+                    color: selected && isSubItem
+                        ? cs.primaryContainer.withValues(alpha: 0.15)
+                        : Colors.transparent,
+                    padding: EdgeInsets.fromLTRB(isSubItem ? 30 : 18, 8, 18, 8),
+                    child: Row(
                       children: [
-                        Text(
-                          isSubItem
-                              ? (sourceInfo.lang ?? sourceInfo.type.name)
-                                    .toUpperCase()
-                              : sourceInfo.name,
-                          style: textTheme.titleMedium?.copyWith(
-                            fontWeight: selected
-                                ? FontWeight.w700
-                                : FontWeight.w500,
-                            color: selected ? cs.primary : cs.onSurface,
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(6),
+                          child:
+                              (iconUrlToUse != null && iconUrlToUse.isNotEmpty)
+                              ? CachedNetworkImage(
+                                  imageUrl: iconUrlToUse,
+                                  width: isSubItem ? 32 : 44,
+                                  height: isSubItem ? 32 : 44,
+                                  fit: BoxFit.cover,
+                                  errorWidget: (context, url, error) => Icon(
+                                    Icons.extension,
+                                    size: isSubItem ? 32 : 44,
+                                  ),
+                                )
+                              : Icon(
+                                  Icons.extension,
+                                  size: isSubItem ? 32 : 44,
+                                ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                isSubItem
+                                    ? (sourceInfo.lang ?? sourceInfo.type.name)
+                                          .toUpperCase()
+                                    : sourceInfo.name,
+                                style: textTheme.titleMedium?.copyWith(
+                                  fontWeight: selected
+                                      ? FontWeight.w700
+                                      : FontWeight.w500,
+                                  color: selected ? cs.primary : cs.onSurface,
+                                ),
+                              ),
+                              if (!isSubItem) ...[
+                                const SizedBox(height: 2),
+                                Text(
+                                  '${sources.length} variants • ${(sourceInfo.lang ?? sourceInfo.type.name).toUpperCase()}',
+                                  style: textTheme.labelSmall?.copyWith(
+                                    color: cs.onSurfaceVariant.withValues(
+                                      alpha: 0.7,
+                                    ),
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
                         ),
-                        if (!isSubItem) ...[
-                          const SizedBox(height: 2),
-                          Text(
-                            '${sources.length} variants • ${(sourceInfo.lang ?? sourceInfo.type.name).toUpperCase()}',
-                            style: textTheme.labelSmall?.copyWith(
-                              color: cs.onSurfaceVariant.withValues(alpha: 0.7),
-                              letterSpacing: 0.5,
-                            ),
+                        FutureBuilder<List<SourceSetting>>(
+                          future: sourceImpl.getSettingsSchema(),
+                          builder: (context, snapshot) {
+                            final hasSettings =
+                                snapshot.hasData && snapshot.data!.isNotEmpty;
+                            if (!hasSettings) {
+                              return const SizedBox.shrink();
+                            }
+
+                            return IconButton(
+                              icon: const Icon(Icons.settings_outlined),
+                              color: cs.onSurfaceVariant,
+                              tooltip: 'Source Settings',
+                              onPressed: () {
+                                showModalBottomSheet(
+                                  context: context,
+                                  isScrollControlled: true,
+                                  backgroundColor: Colors.transparent,
+                                  builder: (context) => SourceSettingsSheet(
+                                    source: sourceInfo,
+                                    schema: snapshot.data!,
+                                  ),
+                                ).then((_) {
+                                  if (onSettingsClosed != null) {
+                                    onSettingsClosed!();
+                                  }
+                                });
+                              },
+                            );
+                          },
+                        ),
+                        if (selected && !isSubItem) ...[
+                          const SizedBox(width: 8),
+                          Icon(
+                            Icons.check_circle_rounded,
+                            color: cs.primary,
+                            size: 24,
                           ),
+                        ],
+                        if (expandAction != null) ...[
+                          const SizedBox(width: 4),
+                          expandAction,
                         ],
                       ],
                     ),
                   ),
-                  FutureBuilder<List<SourceSetting>>(
-                    future: sourceImpl.getSettingsSchema(),
-                    builder: (context, snapshot) {
-                      final hasSettings =
-                          snapshot.hasData && snapshot.data!.isNotEmpty;
-                      if (!hasSettings) {
-                        return const SizedBox.shrink();
-                      }
+                ),
+              );
+            }
 
-                      return IconButton(
-                        icon: const Icon(Icons.settings_outlined),
-                        color: cs.onSurfaceVariant,
-                        onPressed: () {
-                          showModalBottomSheet(
-                            context: context,
-                            isScrollControlled: true,
-                            backgroundColor: Colors.transparent,
-                            builder: (context) => SourceSettingsSheet(
-                              source: sourceInfo,
-                              schema: snapshot.data!,
-                            ),
-                          ).then((_) {
-                            if (onSettingsClosed != null) {
-                              onSettingsClosed!();
-                            }
-                          });
-                        },
-                      );
-                    },
-                  ),
-                  if (selected && !isSubItem) ...[
-                    const SizedBox(width: 8),
-                    Icon(Icons.check_rounded, color: cs.primary, size: 24),
-                  ],
-                ],
-              ),
-            ),
-          );
-        }
+            if (sources.length == 1) {
+              return buildSourceItem(
+                sourceInfo: sources.first,
+                isSubItem: false,
+                parentIconUrl: sources.first.iconUrl,
+              );
+            }
 
-        if (sources.length == 1) {
-          return buildSourceItem(sources.first, false, sources.first.iconUrl);
-        }
+            final hasSelectedVariant = sources.any((s) => s == currentSource);
+            final defaultVariant = sources.firstWhere((s) {
+              final l = s.lang?.toLowerCase();
+              return l == 'en' || l == 'english';
+            }, orElse: () => sources.first);
 
-        final hasSelectedVariant = sources.any((s) => s == currentSource);
-        final defaultVariant = sources.firstWhere((s) {
-          final l = s.lang?.toLowerCase();
-          return l == 'en' || l == 'english';
-        }, orElse: () => sources.first);
+            final activeVariant = hasSelectedVariant
+                ? currentSource!
+                : defaultVariant;
 
-        final activeVariant = hasSelectedVariant
-            ? currentSource!
-            : defaultVariant;
-
-        bool isExpanded = false;
-
-        return StatefulBuilder(
-          builder: (context, setState) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: buildSourceItem(
-                        activeVariant,
-                        false,
-                        sources.first.iconUrl,
-                      ),
-                    ),
-                    IconButton(
-                      icon: Icon(
-                        isExpanded ? Icons.expand_less : Icons.expand_more,
-                        color: cs.onSurfaceVariant,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          isExpanded = !isExpanded;
-                        });
-                      },
-                    ),
-                    const SizedBox(width: 8),
-                  ],
-                ),
-                if (isExpanded)
-                  ...sources.map(
-                    (s) => buildSourceItem(s, true, sources.first.iconUrl),
+                buildSourceItem(
+                  sourceInfo: activeVariant,
+                  isSubItem: false,
+                  parentIconUrl: sources.first.iconUrl,
+                  expandAction: IconButton(
+                    icon: Icon(Icons.expand_more, color: cs.onSurfaceVariant),
+                    tooltip: 'Expand variants',
+                    onPressed: () {
+                      setState(() {
+                        isExpanded = !isExpanded;
+                      });
+                    },
                   ),
+                ),
+                AnimatedCrossFade(
+                  firstChild: const SizedBox(width: double.infinity),
+                  secondChild: Column(
+                    children: sources
+                        .map(
+                          (s) => buildSourceItem(
+                            sourceInfo: s,
+                            isSubItem: true,
+                            parentIconUrl: sources.first.iconUrl,
+                          ),
+                        )
+                        .toList(),
+                  ),
+                  crossFadeState: isExpanded
+                      ? CrossFadeState.showSecond
+                      : CrossFadeState.showFirst,
+                  duration: const Duration(milliseconds: 200),
+                ),
               ],
             );
           },

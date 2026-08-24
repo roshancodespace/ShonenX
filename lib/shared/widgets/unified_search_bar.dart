@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 
 class UnifiedSearchBar extends StatefulWidget {
@@ -101,43 +102,45 @@ class _UnifiedSearchBarState extends State<UnifiedSearchBar> {
         final double targetWidth = widget.isExpanded
             ? (widget.expandedWidth ?? maxWidth)
             : widget.height;
+        final borderRadius = BorderRadius.circular(GlobalUI.uiRoundness * 1.5);
 
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(GlobalUI.uiRoundness * 1.5),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeOutCubic,
-              height: widget.height,
-              width: targetWidth,
-              padding: widget.isExpanded
-                  ? const EdgeInsets.symmetric(horizontal: 4)
-                  : EdgeInsets.zero,
-              margin: widget.margin,
-              decoration: BoxDecoration(
-                color: colorScheme.surfaceContainerLow.withValues(alpha: 0.7),
-                borderRadius: BorderRadius.circular(GlobalUI.uiRoundness * 1.3),
-                border: Border.all(
-                  color: isFocused
-                      ? colorScheme.primary
-                      : colorScheme.primary.withValues(alpha: 0.5),
-                  width: 2,
-                  strokeAlign: BorderSide.strokeAlignOutside,
+        return Padding(
+          padding: widget.margin,
+          child: ClipRRect(
+            borderRadius: borderRadius,
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOutCubic,
+                height: widget.height,
+                width: targetWidth,
+                padding: widget.isExpanded
+                    ? const EdgeInsets.symmetric(horizontal: 4)
+                    : EdgeInsets.zero,
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerLow.withValues(alpha: 0.7),
+                  borderRadius: borderRadius,
+                  border: Border.all(
+                    color: isFocused
+                        ? colorScheme.primary
+                        : colorScheme.outlineVariant.withValues(alpha: 0.35),
+                    width: isFocused ? 2.0 : 1.0,
+                  ),
                 ),
+                child: widget.isExpanded
+                    ? _buildExpandedContent(
+                        theme,
+                        textColor,
+                        iconColor,
+                        targetWidth,
+                      )
+                    : IconButton(
+                        padding: EdgeInsets.zero,
+                        icon: Icon(Icons.search_rounded, color: iconColor),
+                        onPressed: widget.onExpand,
+                      ),
               ),
-              child: widget.isExpanded
-                  ? _buildExpandedContent(
-                      theme,
-                      textColor,
-                      iconColor,
-                      targetWidth,
-                    )
-                  : IconButton(
-                      padding: EdgeInsets.zero,
-                      icon: Icon(Icons.search_rounded, color: iconColor),
-                      onPressed: widget.onExpand,
-                    ),
             ),
           ),
         );
@@ -176,26 +179,42 @@ class _UnifiedSearchBarState extends State<UnifiedSearchBar> {
         Expanded(
           child: Align(
             alignment: Alignment.centerLeft,
-            child: TextField(
-              controller: widget.controller,
-              focusNode: _effectiveFocusNode,
-              autofocus: widget.autofocus,
-              style: theme.textTheme.bodyMedium?.copyWith(color: textColor),
-              decoration: InputDecoration(
-                isCollapsed: true,
-                filled: true,
-                fillColor: Colors.transparent,
-                hoverColor: Colors.transparent,
-                hintText: widget.hintText,
-                hintStyle: theme.textTheme.bodyMedium?.copyWith(
-                  color: textColor.withValues(alpha: 0.6),
+            child: Focus(
+              onKeyEvent: (node, event) {
+                if (event is KeyDownEvent || event is KeyRepeatEvent) {
+                  if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+                    _effectiveFocusNode.focusInDirection(
+                      TraversalDirection.down,
+                    );
+                    return KeyEventResult.handled;
+                  } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+                    _effectiveFocusNode.focusInDirection(TraversalDirection.up);
+                    return KeyEventResult.handled;
+                  }
+                }
+                return KeyEventResult.ignored;
+              },
+              child: TextField(
+                controller: widget.controller,
+                focusNode: _effectiveFocusNode,
+                autofocus: widget.autofocus,
+                style: theme.textTheme.bodyMedium?.copyWith(color: textColor),
+                decoration: InputDecoration(
+                  isCollapsed: true,
+                  filled: true,
+                  fillColor: Colors.transparent,
+                  hoverColor: Colors.transparent,
+                  hintText: widget.hintText,
+                  hintStyle: theme.textTheme.bodyMedium?.copyWith(
+                    color: textColor.withValues(alpha: 0.6),
+                  ),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 8),
                 ),
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                textInputAction: TextInputAction.search,
+                onSubmitted: widget.onSubmitted,
+                onChanged: widget.onChanged,
               ),
-              textInputAction: TextInputAction.search,
-              onSubmitted: widget.onSubmitted,
-              onChanged: widget.onChanged,
             ),
           ),
         ),

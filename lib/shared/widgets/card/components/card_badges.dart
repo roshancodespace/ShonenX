@@ -31,8 +31,11 @@ class CardBadgeOverlay extends StatelessWidget {
       top: 8,
       left: 8,
       right: 8,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Wrap(
+        spacing: 4,
+        runSpacing: 4,
+        alignment: WrapAlignment.spaceBetween,
+        crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           if (showBadgeText)
             Container(
@@ -51,7 +54,6 @@ class CardBadgeOverlay extends StatelessWidget {
                 ),
               ),
             ),
-          const Spacer(),
           if (config.topRightBadge != null)
             config.topRightBadge!
           else if (hasScore && formattedScore != null)

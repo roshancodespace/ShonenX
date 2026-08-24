@@ -11,12 +11,20 @@ import 'package:skeletonizer/skeletonizer.dart';
 class DynamicGenreFeed extends ConsumerWidget {
   final MediaType type;
   final ValueChanged<String>? onGenreSelect;
+  final EdgeInsetsGeometry? padding;
 
-  const DynamicGenreFeed({super.key, required this.type, this.onGenreSelect});
+  const DynamicGenreFeed({
+    super.key,
+    required this.type,
+    this.onGenreSelect,
+    this.padding,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final genresState = ref.watch(discoveryFeedGenresProvider);
+    final effectivePadding =
+        padding ?? const EdgeInsets.only(top: 60, bottom: 200);
 
     return genresState.when(
       data: (genres) {
@@ -25,7 +33,7 @@ class DynamicGenreFeed extends ConsumerWidget {
         }
 
         return ListView.builder(
-          padding: const EdgeInsets.only(top: 60, bottom: 200),
+          padding: effectivePadding,
           itemCount: genres.length,
           itemBuilder: (context, index) {
             return Padding(

@@ -171,12 +171,19 @@ class _ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem>
     return SizedBox(
       width: layout.width,
       height: layout.height,
-      child: FittedBox(
-        fit: BoxFit.fill,
-        child: SizedBox(
-          width: baseLayout.width,
-          height: baseLayout.height,
-          child: normalizedCard,
+      child: RepaintBoundary(
+        child: AnimatedScale(
+          scale: isActive ? 1.04 : 1.0,
+          duration: const Duration(milliseconds: 140),
+          curve: Curves.easeOutCubic,
+          child: FittedBox(
+            fit: BoxFit.fill,
+            child: SizedBox(
+              width: baseLayout.width,
+              height: baseLayout.height,
+              child: normalizedCard,
+            ),
+          ),
         ),
       ),
     );

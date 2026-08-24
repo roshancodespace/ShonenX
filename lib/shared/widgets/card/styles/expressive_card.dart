@@ -34,7 +34,7 @@ class ExpressiveCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
           border: Border.all(
             color: config.isActive
-                ? cs.tertiary
+                ? cs.primary
                 : cs.outlineVariant.withValues(alpha: 0.28),
             width: config.isActive ? 2.5 : 1.0,
             strokeAlign: BorderSide.strokeAlignOutside,
@@ -122,7 +122,9 @@ class ExpressiveCard extends StatelessWidget {
         color: cs.surfaceContainerLow,
         borderRadius: BorderRadius.circular(GlobalUI.uiRoundness * 1.5),
         border: Border.all(
-          color: config.isActive ? cs.primary : Colors.transparent,
+          color: config.isActive
+              ? cs.primary
+              : cs.outlineVariant.withValues(alpha: 0.28),
           width: config.isActive ? 2.5 : 1.0,
           strokeAlign: BorderSide.strokeAlignOutside,
         ),

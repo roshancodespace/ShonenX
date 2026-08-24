@@ -22,6 +22,7 @@ import 'package:shonenx/app_init.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/features/extensions/presentation/widgets/runtime_setup_sheet.dart';
 import 'package:shonenx/features/extensions/providers/runtime_update_provider.dart';
+import 'package:shonenx/features/tv_mode/presentation/tv_shell.dart';
 
 final _navBreakpoints = ResponsiveBreakpoints.defaults.copyWith(
   heightNormal: 750,
@@ -249,6 +250,11 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
 
   @override
   Widget build(BuildContext context) {
+    final useNewUi = ref.watch(uiPrefsProvider.select((p) => p.useNewUi));
+    if (useNewUi) {
+      return TvShell(navigationShell: widget.navigationShell);
+    }
+
     return ResponsiveHandler(
       breakpoints: _navBreakpoints,
       builder: (context, r) {

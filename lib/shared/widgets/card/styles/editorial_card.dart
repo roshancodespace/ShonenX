@@ -30,7 +30,7 @@ class EditorialCard extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
         border: Border.all(
-          color: config.isActive ? cs.tertiary : Colors.transparent,
+          color: config.isActive ? cs.primary : Colors.transparent,
           width: config.isActive ? 2.5 : 1.0,
           strokeAlign: BorderSide.strokeAlignOutside,
         ),
@@ -118,7 +118,7 @@ class EditorialCard extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
         border: Border.all(
-          color: config.isActive ? cs.tertiary : Colors.transparent,
+          color: config.isActive ? cs.primary : Colors.transparent,
           width: config.isActive ? 2.5 : 1.0,
           strokeAlign: BorderSide.strokeAlignOutside,
         ),

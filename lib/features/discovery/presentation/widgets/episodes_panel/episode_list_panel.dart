@@ -18,6 +18,7 @@ import 'package:shonenx/features/history/providers/read_history_provider.dart';
 import 'package:shonenx/features/history/providers/watch_history_provider.dart';
 import 'package:shonenx/features/tracking/providers/media_tracking_provider.dart';
 import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
+import 'package:shonenx/features/tv_mode/presentation/widgets/tv_episode_list_panel.dart';
 
 export 'episode_tiles.dart';
 
@@ -35,6 +36,7 @@ class EpisodeListPanel extends ConsumerStatefulWidget {
   final double watchedProgress;
 
   final bool useScrollController;
+  final bool isTv;
 
   final void Function(UnifiedEpisode episode, SourceInfo sourceInfo)
   onEpisodeTap;
@@ -61,6 +63,7 @@ class EpisodeListPanel extends ConsumerStatefulWidget {
     this.episodeActionsBuilder,
     this.imageFadeDirection = EpisodeImageFadeDirection.left,
     this.useScrollController = true,
+    this.isTv = false,
     this.imageFadeStops,
     this.imageOpacity = 0.3,
     this.imageBlurSigma = 0,
@@ -491,29 +494,31 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        if (widget.media.type == MediaType.ANIME &&
-                            finalEpisodes.isNotEmpty)
-                          IconButton(
-                            onPressed: () => BatchDownloadSheet.show(
-                              context,
-                              finalEpisodes,
-                              widget.watchedProgress,
-                              state.source,
-                              widget.media,
+                        if (!widget.isTv) ...[
+                          if (widget.media.type == MediaType.ANIME &&
+                              finalEpisodes.isNotEmpty)
+                            IconButton(
+                              onPressed: () => BatchDownloadSheet.show(
+                                context,
+                                finalEpisodes,
+                                widget.watchedProgress,
+                                state.source,
+                                widget.media,
+                              ),
+                              icon: const Icon(
+                                Icons.download_for_offline_outlined,
+                              ),
+                              iconSize: 20,
+                              color: cs.primary,
+                              tooltip: 'Batch Download',
                             ),
-                            icon: const Icon(
-                              Icons.download_for_offline_outlined,
-                            ),
-                            iconSize: 20,
-                            color: cs.primary,
-                            tooltip: 'Batch Download',
+                          _ViewModeToggle(
+                            current: viewMode,
+                            onChanged: (m) => ref
+                                .read(uiPrefsProvider.notifier)
+                                .updateEpisodeViewMode(m),
                           ),
-                        _ViewModeToggle(
-                          current: viewMode,
-                          onChanged: (m) => ref
-                              .read(uiPrefsProvider.notifier)
-                              .updateEpisodeViewMode(m),
-                        ),
+                        ],
                         IconButton(
                           onPressed: () {
                             setState(() {
@@ -574,6 +579,18 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
     required Set<double> historyWatchedSet,
     int currentIndex = -1,
   }) {
+    if (widget.isTv) {
+      return TvEpisodeListPanel(
+        episodes: episodes,
+        media: widget.media,
+        source: source,
+        effectiveWatchedProgress: effectiveWatchedProgress,
+        historyWatchedSet: historyWatchedSet,
+        currentEpisodeNumber: widget.currentEpisodeNumber,
+        onEpisodeTap: widget.onEpisodeTap,
+      );
+    }
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final panelWidth = constraints.maxWidth;

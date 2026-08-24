@@ -29,6 +29,8 @@ import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
 import 'package:shonenx/features/tracking/providers/tracking_prefs_provider.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
+import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
+import 'package:shonenx/features/tv_mode/presentation/screens/tv_details_screen.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/shared/widgets/app_icon_button.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
@@ -163,6 +165,11 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen>
 
   @override
   Widget build(BuildContext context) {
+    final useNewUi = ref.watch(uiPrefsProvider.select((p) => p.useNewUi));
+    if (useNewUi) {
+      return TvDetailsScreen(media: widget.media, tag: widget.tag);
+    }
+
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
     final colorScheme = theme.colorScheme;

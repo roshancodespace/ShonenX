@@ -24,7 +24,7 @@ class WideBannerCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
         border: Border.all(
           color: config.isActive
-              ? cs.tertiary
+              ? cs.primary
               : cs.outlineVariant.withValues(alpha: 0.28),
           width: config.isActive ? 2.5 : 1.0,
           strokeAlign: BorderSide.strokeAlignOutside,

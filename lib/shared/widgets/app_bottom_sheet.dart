@@ -133,26 +133,30 @@ class AppBottomSheet extends StatelessWidget {
                               sheetContext,
                             ).colorScheme.onSurfaceVariant,
                           )),
-                title: Row(
-                  children: [
-                    Flexible(
-                      child: Text(
-                        itemLabel(item),
-                        style: TextStyle(
-                          fontWeight: isSelected
-                              ? FontWeight.bold
-                              : FontWeight.normal,
-                          color: isSelected
-                              ? Theme.of(sheetContext).colorScheme.primary
-                              : Theme.of(sheetContext).colorScheme.onSurface,
+                title: Builder(
+                  builder: (context) {
+                    final badge = badgeBuilder?.call(item);
+                    return Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            itemLabel(item),
+                            style: TextStyle(
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                              color: isSelected
+                                  ? Theme.of(sheetContext).colorScheme.primary
+                                  : Theme.of(
+                                      sheetContext,
+                                    ).colorScheme.onSurface,
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                    if (badgeBuilder != null) ...[
-                      const SizedBox(width: 8),
-                      badgeBuilder(item)!,
-                    ],
-                  ],
+                        if (badge != null) ...[const SizedBox(width: 8), badge],
+                      ],
+                    );
+                  },
                 ),
                 subtitle: subtitle != null
                     ? Text(

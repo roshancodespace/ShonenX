@@ -26,6 +26,20 @@ class UiSettingsScreen extends ConsumerWidget {
         padding: const EdgeInsets.only(bottom: 50),
         children: [
           SettingsSection(
+            title: 'Experimental',
+            children: [
+              SettingsSwitchTile(
+                icon: Icons.tv_rounded,
+                title: 'Experimental TV / New UI',
+                subtitle:
+                    'A cinematic, spatial interface built for D-pad, remote, and keyboard navigation',
+                value: prefs.useNewUi,
+                onChanged: (val) => notifier.setUseNewUi(val),
+              ),
+            ],
+          ),
+
+          SettingsSection(
             title: 'Appearance',
             children: [
               SettingsActionTile(

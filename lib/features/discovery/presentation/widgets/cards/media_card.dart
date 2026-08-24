@@ -57,7 +57,9 @@ class MediaCard extends ConsumerWidget {
     final scale = ref.watch(themePrefsProvider.select((s) => s.uiScaleFactor));
     final layout = style.getScaledLayout(scale, isWideMode: isWideMode);
 
-    return RepaintBoundary(
+    return SizedBox(
+      width: layout.width,
+      height: layout.height,
       child: FocusHoverDetector(
         onTap: onTap,
         onSecondaryTap: onSecondaryTap,
@@ -102,38 +104,17 @@ class MediaCard extends ConsumerWidget {
             child: child,
           );
 
-          return AnimatedScale(
-            scale: isActive ? 1.04 : 1.0,
-            duration: const Duration(milliseconds: 160),
-            curve: Curves.easeOutCubic,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 160),
+          return RepaintBoundary(
+            child: AnimatedScale(
+              scale: isActive ? 1.05 : 1.0,
+              duration: const Duration(milliseconds: 140),
               curve: Curves.easeOutCubic,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: isActive
-                    ? [
-                        BoxShadow(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.primary.withValues(alpha: 0.22),
-                          blurRadius: 14,
-                          spreadRadius: 1,
-                          offset: const Offset(0, 4),
-                        ),
-                      ]
-                    : [],
-              ),
-              child: SizedBox(
-                width: layout.width,
-                height: layout.height,
-                child: FittedBox(
-                  fit: BoxFit.contain,
-                  child: SizedBox(
-                    width: baseLayout.width,
-                    height: baseLayout.height,
-                    child: normalizedChild,
-                  ),
+              child: FittedBox(
+                fit: BoxFit.contain,
+                child: SizedBox(
+                  width: baseLayout.width,
+                  height: baseLayout.height,
+                  child: normalizedChild,
                 ),
               ),
             ),

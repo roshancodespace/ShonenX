@@ -30,7 +30,7 @@ class ClassicCard extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
         border: Border.all(
-          color: config.isActive ? cs.tertiary : Colors.transparent,
+          color: config.isActive ? cs.primary : Colors.transparent,
           width: config.isActive ? 2.5 : 1.0,
           strokeAlign: BorderSide.strokeAlignOutside,
         ),
@@ -40,11 +40,7 @@ class ClassicCard extends StatelessWidget {
         children: [
           Stack(
             children: [
-              CardThumbnail(
-                config: config,
-                width: config.width,
-                height: imgH,
-              ),
+              CardThumbnail(config: config, width: config.width, height: imgH),
               CardBadgeOverlay(config: config, styleName: 'classic'),
             ],
           ),
@@ -73,7 +69,8 @@ class ClassicCard extends StatelessWidget {
                     children: [
                       if (config.effectiveSubtitle != null)
                         Expanded(child: PortraitMetadataRow(config: config)),
-                      if (config.progressText != null || config.progress != null) ...[
+                      if (config.progressText != null ||
+                          config.progress != null) ...[
                         const SizedBox(width: 4),
                         Text(
                           config.progressText ??
@@ -106,7 +103,7 @@ class ClassicCard extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
         border: Border.all(
-          color: config.isActive ? cs.tertiary : Colors.transparent,
+          color: config.isActive ? cs.primary : Colors.transparent,
           width: config.isActive ? 2.5 : 1.0,
           strokeAlign: BorderSide.strokeAlignOutside,
         ),
@@ -126,10 +123,7 @@ class ClassicCard extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.symmetric(
-                vertical: 8,
-                horizontal: 4,
-              ),
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
               child: WideMetadataColumn(config: config),
             ),
           ),

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:shonenx/core/utils/image_headers.dart';
@@ -82,19 +83,41 @@ class CardThumbnail extends StatelessWidget {
           ? (h * 2.0).clamp(150.0, 1200.0).toInt()
           : 600;
 
-      Widget img = CachedNetworkImage(
-        imageUrl: config.imageUrl!,
-        httpHeaders: decodeUrlHeaders(config.imageUrl!),
-        width: w,
-        height: h,
-        fit: BoxFit.cover,
-        memCacheWidth: cacheW,
-        memCacheHeight: cacheH,
-        maxWidthDiskCache: 800,
-        fadeInDuration: const Duration(milliseconds: 220),
-        placeholderFadeInDuration: const Duration(milliseconds: 120),
-        errorWidget: (_, __, ___) => _buildFallback(cs, w, h),
-      );
+      final rawUrl = config.imageUrl!.trim();
+      Widget img;
+
+      if (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')) {
+        img = CachedNetworkImage(
+          imageUrl: rawUrl,
+          httpHeaders: decodeUrlHeaders(rawUrl),
+          width: w,
+          height: h,
+          fit: BoxFit.cover,
+          memCacheWidth: cacheW,
+          memCacheHeight: cacheH,
+          maxWidthDiskCache: 800,
+          fadeInDuration: const Duration(milliseconds: 220),
+          placeholderFadeInDuration: const Duration(milliseconds: 120),
+          errorWidget: (_, __, ___) => _buildFallback(cs, w, h),
+        );
+      } else {
+        try {
+          final base64String = rawUrl.contains(',')
+              ? rawUrl.split(',').last.trim()
+              : rawUrl;
+          img = Image.memory(
+            base64Decode(base64String),
+            width: w,
+            height: h,
+            fit: BoxFit.cover,
+            gaplessPlayback: true,
+            errorBuilder: (_, __, ___) => _buildFallback(cs, w, h),
+          );
+        } catch (_) {
+          img = _buildFallback(cs, w, h);
+        }
+      }
+
       if (config.heroTag != null && config.heroTag!.isNotEmpty) {
         img = Hero(tag: config.heroTag!, child: img);
       }

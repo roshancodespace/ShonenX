@@ -39,6 +39,7 @@ class UiPrefState {
   final bool showCardRatings;
   final bool showCardGenres;
   final bool showCardYear;
+  final bool useNewUi;
 
   const UiPrefState({
     this.cardStyle = MediaCardStyle.classic,
@@ -51,6 +52,7 @@ class UiPrefState {
     this.showCardRatings = true,
     this.showCardGenres = true,
     this.showCardYear = true,
+    this.useNewUi = false,
   });
 
   bool isWideCardMode(String key) => cardStyleWideModes[key] ?? false;
@@ -74,6 +76,7 @@ class UiPrefState {
     bool? showCardRatings,
     bool? showCardGenres,
     bool? showCardYear,
+    bool? useNewUi,
   }) {
     return UiPrefState(
       cardStyle: cardStyle ?? this.cardStyle,
@@ -87,6 +90,7 @@ class UiPrefState {
       showCardRatings: showCardRatings ?? this.showCardRatings,
       showCardGenres: showCardGenres ?? this.showCardGenres,
       showCardYear: showCardYear ?? this.showCardYear,
+      useNewUi: useNewUi ?? this.useNewUi,
     );
   }
 
@@ -101,6 +105,7 @@ class UiPrefState {
     'showCardRatings': showCardRatings,
     'showCardGenres': showCardGenres,
     'showCardYear': showCardYear,
+    'useNewUi': useNewUi,
   };
 
   factory UiPrefState.fromJson(Map<String, dynamic> json) {
@@ -137,12 +142,13 @@ class UiPrefState {
       showCardRatings: json['showCardRatings'] ?? true,
       showCardGenres: json['showCardGenres'] ?? true,
       showCardYear: json['showCardYear'] ?? true,
+      useNewUi: json['useNewUi'] ?? false,
     );
   }
 
   @override
   String toString() =>
-      'UiPrefState(cardStyle: $cardStyle, continueWatchingStyle: $continueWatchingStyle, continueReadingStyle: $continueReadingStyle, episodeViewMode: $episodeViewMode, navBarStyle: $navBarStyle, experimentalConfig: $experimentalConfig, cardStyleWideModes: $cardStyleWideModes, showCardRatings: $showCardRatings, showCardGenres: $showCardGenres, showCardYear: $showCardYear)';
+      'UiPrefState(cardStyle: $cardStyle, continueWatchingStyle: $continueWatchingStyle, continueReadingStyle: $continueReadingStyle, episodeViewMode: $episodeViewMode, navBarStyle: $navBarStyle, experimentalConfig: $experimentalConfig, cardStyleWideModes: $cardStyleWideModes, showCardRatings: $showCardRatings, showCardGenres: $showCardGenres, showCardYear: $showCardYear, useNewUi: $useNewUi)';
 
   @override
   bool operator ==(Object other) {
@@ -156,6 +162,7 @@ class UiPrefState {
         other.showCardRatings == showCardRatings &&
         other.showCardGenres == showCardGenres &&
         other.showCardYear == showCardYear &&
+        other.useNewUi == useNewUi &&
         mapEquals(other.experimentalConfig, experimentalConfig) &&
         mapEquals(other.cardStyleWideModes, cardStyleWideModes);
   }
@@ -172,6 +179,7 @@ class UiPrefState {
     showCardRatings,
     showCardGenres,
     showCardYear,
+    useNewUi,
   );
 }
 
@@ -191,6 +199,13 @@ class UiPrefsNotifier extends Notifier<UiPrefState> {
     }
     return const UiPrefState();
   }
+
+  void setUseNewUi(bool value) {
+    state = state.copyWith(useNewUi: value);
+    _saveDb();
+  }
+
+  void toggleNewUi() => setUseNewUi(!state.useNewUi);
 
   void updateCardStyle(MediaCardStyle style) {
     state = state.copyWith(cardStyle: style);

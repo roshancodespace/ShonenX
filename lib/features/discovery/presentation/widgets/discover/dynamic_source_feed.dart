@@ -7,32 +7,10 @@ import 'package:shonenx/features/discovery/presentation/widgets/rows/horizontal_
 import 'package:shonenx/features/discovery/providers/discovery_prefs_provider.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
-import 'package:shonenx/source_engine/source_engine_provider.dart';
 import 'package:shonenx/source_engine/source_registry.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
-final sourceDiscoverFeedProvider = FutureProvider.autoDispose
-    .family<List<UnifiedMedia>, ({SourceInfo info, MediaType type})>((
-      ref,
-      arg,
-    ) async {
-      ref.keepAlive();
-      if (arg.type == MediaType.ANIME) {
-        final source = ref.read(animeSourceProvider(arg.info));
-        try {
-          final trending = await source.getTrending();
-          if (trending.isNotEmpty) return trending;
-        } catch (_) {}
-        return await source.search('', arg.type, page: 1);
-      } else {
-        final source = ref.read(mangaSourceProvider(arg.info));
-        try {
-          final trending = await source.getTrending();
-          if (trending.isNotEmpty) return trending;
-        } catch (_) {}
-        return await source.search('', arg.type, page: 1);
-      }
-    });
+import 'package:shonenx/features/discovery/providers/discovery_feed_provider.dart';
 
 class DynamicSourceFeed extends ConsumerWidget {
   final MediaType type;

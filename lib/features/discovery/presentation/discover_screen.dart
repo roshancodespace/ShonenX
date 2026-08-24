@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
-import 'category_discover_screen.dart';
+import 'filtered_discover_screen.dart';
 import 'search_discover_screen.dart';
 
 class DiscoverScreen extends StatelessWidget {
@@ -26,7 +26,7 @@ class DiscoverScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (hasCategory) {
-      return CategoryDiscoverScreen(category: category!, type: type);
+      return FilteredDiscoverScreen(category: category!, type: type);
     }
 
     return SearchDiscoverScreen(

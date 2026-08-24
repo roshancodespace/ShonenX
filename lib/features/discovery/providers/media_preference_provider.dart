@@ -1,9 +1,9 @@
 // ignore_for_file: deprecated_member_use_from_same_package
 
+import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/shared/providers/database_provider.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
-import 'package:shonenx/core/utils/extensions.dart';
 import 'package:shonenx/features/discovery/domain/media_preference.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
 import 'package:shonenx/features/discovery/domain/media_args.dart';

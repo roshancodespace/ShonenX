@@ -10,7 +10,30 @@ import 'package:shonenx/shared/widgets/app_scaffold.dart';
 import 'package:shonenx/shared/widgets/svg_icon.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-final githubContributorsProvider = FutureProvider<List<Map<String, dynamic>>>((
+class GithubContributor {
+  final String login;
+  final String avatarUrl;
+  final String htmlUrl;
+  final int contributions;
+
+  const GithubContributor({
+    required this.login,
+    required this.avatarUrl,
+    required this.htmlUrl,
+    required this.contributions,
+  });
+
+  factory GithubContributor.fromJson(Map<String, dynamic> json) {
+    return GithubContributor(
+      login: json['login'] as String? ?? 'Unknown',
+      avatarUrl: json['avatar_url'] as String? ?? '',
+      htmlUrl: json['html_url'] as String? ?? '',
+      contributions: json['contributions'] as int? ?? 0,
+    );
+  }
+}
+
+final githubContributorsProvider = FutureProvider<List<GithubContributor>>((
   ref,
 ) async {
   final response = await HTTP().get(
@@ -22,8 +45,10 @@ final githubContributorsProvider = FutureProvider<List<Map<String, dynamic>>>((
   }
 
   final List<dynamic> data = jsonDecode(response.body);
-
-  return data.cast<Map<String, dynamic>>();
+  return data
+      .whereType<Map<String, dynamic>>()
+      .map(GithubContributor.fromJson)
+      .toList();
 });
 
 final _packageInfoProvider = FutureProvider<PackageInfo>((ref) async {
@@ -158,11 +183,8 @@ class AboutScreen extends ConsumerWidget {
                   const pinnedUsers = ['roshancodespace', 'Darkx-Dev'];
 
                   sorted.sort((a, b) {
-                    final aName = a['login'] as String;
-                    final bName = b['login'] as String;
-
-                    final aIndex = pinnedUsers.indexOf(aName);
-                    final bIndex = pinnedUsers.indexOf(bName);
+                    final aIndex = pinnedUsers.indexOf(a.login);
+                    final bIndex = pinnedUsers.indexOf(b.login);
 
                     if (aIndex != -1 && bIndex != -1) {
                       return aIndex.compareTo(bIndex);
@@ -170,19 +192,17 @@ class AboutScreen extends ConsumerWidget {
                     if (aIndex != -1) return -1;
                     if (bIndex != -1) return 1;
 
-                    return (b['contributions'] as int).compareTo(
-                      a['contributions'] as int,
-                    );
+                    return b.contributions.compareTo(a.contributions);
                   });
 
-                  String roleFor(String login) {
-                    switch (login) {
+                  String roleFor(GithubContributor c) {
+                    switch (c.login) {
                       case 'roshancodespace':
                         return 'Founder • Professional Bug Creator';
                       case 'Darkx-Dev':
                         return 'Co-Founder • Certified Chaos Engineer';
                       default:
-                        return '${contributors.firstWhere((e) => e['login'] == login)['contributions']} contributions';
+                        return '${c.contributions} contributions';
                     }
                   }
 
@@ -224,18 +244,16 @@ class AboutScreen extends ConsumerWidget {
                       ),
 
                       ...sorted.take(10).map((contributor) {
-                        final login = contributor['login'] as String;
-
                         return SettingsActionTile(
                           leading: buildAvatar(
-                            login,
-                            contributor['avatar_url'] as String,
+                            contributor.login,
+                            contributor.avatarUrl,
                             cs,
                           ),
-                          title: login,
-                          subtitle: roleFor(login),
+                          title: contributor.login,
+                          subtitle: roleFor(contributor),
                           onTap: () => launchUrl(
-                            Uri.parse(contributor['html_url'] as String),
+                            Uri.parse(contributor.htmlUrl),
                             mode: LaunchMode.externalApplication,
                           ),
                         );

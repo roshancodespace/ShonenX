@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get/get.dart';
 import 'package:shonenx/core/network/http_client.dart';
+import 'package:shonenx/core/updates/models/github_release.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/source_engine/source_registry.dart';
 import 'package:shonenx/features/extensions/providers/runtime_update_provider.dart';
@@ -78,9 +79,11 @@ class _RuntimeSetupSheetState extends ConsumerState<RuntimeSetupSheet> {
         throw Exception("Failed to parse releases");
       }
 
-      final releases = (response.json as List).cast<Map<String, dynamic>>();
+      final jsonList = (response.json as List)
+          .whereType<Map<String, dynamic>>();
+      final releases = jsonList.map(GitHubRelease.fromJson).toList();
 
-      final selected = await showModalBottomSheet<Map<String, dynamic>>(
+      final selected = await showModalBottomSheet<GitHubRelease>(
         context: context,
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
@@ -92,13 +95,17 @@ class _RuntimeSetupSheetState extends ConsumerState<RuntimeSetupSheet> {
               itemCount: releases.length,
               itemBuilder: (context, index) {
                 final release = releases[index];
-                final tagName = release['tag_name'] as String? ?? 'Unknown';
-                final name = release['name'] as String? ?? tagName;
-                final publishedAt = release['published_at'] as String? ?? '';
+                final name = release.name.isNotEmpty
+                    ? release.name
+                    : release.tagName;
+                final dateStr = release.publishedAt
+                    .toIso8601String()
+                    .split('T')
+                    .first;
 
                 return ListTile(
                   title: Text(name),
-                  subtitle: Text(publishedAt.split('T').first),
+                  subtitle: Text(dateStr),
                   trailing: const Icon(Icons.chevron_right_rounded),
                   onTap: () => Navigator.pop(context, release),
                 );
@@ -109,21 +116,19 @@ class _RuntimeSetupSheetState extends ConsumerState<RuntimeSetupSheet> {
       );
 
       if (selected != null && mounted) {
-        final tagName = selected['tag_name'] as String;
+        final tagName = selected.tagName;
         final isAndroid = Platform.isAndroid;
         final assetName = isAndroid
             ? 'anymex_runtime_host.apk'
             : 'anymex_desktop_runtime.jar';
 
-        final assets = selected['assets'] as List?;
-        final asset = assets?.firstWhere(
-          (a) => a['name'] == assetName,
-          orElse: () => null,
+        final asset = selected.assets.firstWhereOrNull(
+          (a) => a.name == assetName,
         );
 
-        final downloadUrl =
-            asset?['browser_download_url'] as String? ??
-            'https://github.com/RyanYuuki/AnymeXExtensionRuntimeBridge/releases/download/$tagName/$assetName';
+        final downloadUrl = (asset != null && asset.downloadUrl.isNotEmpty)
+            ? asset.downloadUrl
+            : 'https://github.com/RyanYuuki/AnymeXExtensionRuntimeBridge/releases/download/$tagName/$assetName';
 
         await _startSetup(
           force: true,

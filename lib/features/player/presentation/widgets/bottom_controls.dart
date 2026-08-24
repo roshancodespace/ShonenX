@@ -123,16 +123,6 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
     );
   }
 
-  String _formatDuration(Duration duration) {
-    String twoDigits(int n) => n.toString().padLeft(2, '0');
-    String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));
-    String twoDigitSeconds = twoDigits(duration.inSeconds.remainder(60));
-    if (duration.inHours > 0) {
-      return '${duration.inHours}:$twoDigitMinutes:$twoDigitSeconds';
-    }
-    return '$twoDigitMinutes:$twoDigitSeconds';
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -611,7 +601,7 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
           text: TextSpan(
             children: [
               TextSpan(
-                text: _formatDuration(position),
+                text: formatDuration(position),
                 style: widget.theme.textTheme.labelLarge?.copyWith(
                   color: Colors.white,
                   fontWeight: FontWeight.w700,
@@ -620,7 +610,7 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
                 ),
               ),
               TextSpan(
-                text: ' / ${_formatDuration(duration)}',
+                text: ' / ${formatDuration(duration)}',
                 style: widget.theme.textTheme.labelMedium?.copyWith(
                   color: Colors.white70,
                   fontWeight: FontWeight.w500,

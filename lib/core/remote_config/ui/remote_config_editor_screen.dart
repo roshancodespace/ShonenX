@@ -189,7 +189,7 @@ class _RemoteConfigEditorScreenState
         FilledButton.icon(
           onPressed: () async {
             await Clipboard.setData(ClipboardData(text: jsonString));
-            if (context.mounted) {
+            if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Copied to clipboard')),
               );
@@ -485,7 +485,7 @@ class _RemoteConfigEditorScreenState
           ],
         ),
         value: value,
-        activeColor: isDestructive ? theme.colorScheme.error : null,
+        activeTrackColor: isDestructive ? theme.colorScheme.error : null,
         onChanged: onChanged,
       ),
     );

@@ -156,8 +156,9 @@ class _TrackerProfileSheetState extends ConsumerState<TrackerProfileSheet> {
   }
 
   void _openWeb(String? url) {
-    if (url != null)
+    if (url != null) {
       launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+    }
   }
 
   void _showInfoDialog(BuildContext context) {
@@ -611,8 +612,9 @@ class _TrackerProfileSheetState extends ConsumerState<TrackerProfileSheet> {
                   final tracker = ref
                       .read(availableTrackersProvider)
                       .firstWhere((t) => t.type == widget.trackerType);
-                  if (tracker is RemoteTracker)
+                  if (tracker is RemoteTracker) {
                     ref.read(authTokensProvider.notifier).login(tracker);
+                  }
                 },
                 style: FilledButton.styleFrom(
                   minimumSize: const Size.fromHeight(48),

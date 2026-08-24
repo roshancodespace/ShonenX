@@ -68,10 +68,11 @@ class ScreenshotHelper {
     final file = File(
       '${tempDir.path}/screenshot_${DateTime.now().millisecondsSinceEpoch}.png',
     );
-    await file.writeAsBytes(image);
-    await Share.shareXFiles(
-      [XFile(file.path)],
-      text: 'Screenshot from ${mediaTitle ?? "ShonenX"}',
+    await SharePlus.instance.share(
+      ShareParams(
+        files: [XFile(file.path)],
+        text: 'Screenshot from ${mediaTitle ?? "ShonenX"}',
+      ),
     );
     return (success: true, message: 'Screenshot captured');
   }

@@ -91,8 +91,9 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
   void _handleTabChange() {
     if (_tabController.indexIsChanging) return;
     if (_tabController.index < 0 ||
-        _tabController.index >= _supportedMediaTypes.length)
+        _tabController.index >= _supportedMediaTypes.length) {
       return;
+    }
 
     final mediaType = _supportedMediaTypes[_tabController.index];
     ref.read(libraryViewStateProvider.notifier).setMediaType(mediaType);

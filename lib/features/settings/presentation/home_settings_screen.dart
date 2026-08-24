@@ -174,7 +174,10 @@ class HomeSettingsScreen extends ConsumerWidget {
                     showModalBottomSheet(
                       context: context,
                       useSafeArea: true,
-                      builder: (_) => _SectionOptionsSheet(section: section),
+                      builder: (_) => _SectionOptionsSheet(
+                        section: section,
+                        existingSections: homeSections,
+                      ),
                     );
                   },
                 );
@@ -197,7 +200,7 @@ class HomeSettingsScreen extends ConsumerWidget {
               context: context,
               isScrollControlled: true,
               useSafeArea: true,
-              builder: (_) => _AddSectionSheet(existingSections: homeSections),
+              builder: (_) => _SectionFormSheet(existingSections: homeSections),
             );
           },
           icon: const Icon(Icons.add_rounded),
@@ -211,8 +214,12 @@ class HomeSettingsScreen extends ConsumerWidget {
 
 class _SectionOptionsSheet extends ConsumerWidget {
   final HomeSection section;
+  final List<HomeSection> existingSections;
 
-  const _SectionOptionsSheet({required this.section});
+  const _SectionOptionsSheet({
+    required this.section,
+    required this.existingSections,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -231,7 +238,10 @@ class _SectionOptionsSheet extends ConsumerWidget {
                 context: context,
                 useSafeArea: true,
                 isScrollControlled: true,
-                builder: (_) => _EditSectionSheet(section: section),
+                builder: (_) => _SectionFormSheet(
+                  existingSections: existingSections,
+                  sectionToEdit: section,
+                ),
               );
             },
           ),
@@ -252,16 +262,17 @@ class _SectionOptionsSheet extends ConsumerWidget {
   }
 }
 
-class _EditSectionSheet extends ConsumerStatefulWidget {
-  final HomeSection section;
+class _SectionFormSheet extends ConsumerStatefulWidget {
+  final List<HomeSection> existingSections;
+  final HomeSection? sectionToEdit;
 
-  const _EditSectionSheet({required this.section});
+  const _SectionFormSheet({required this.existingSections, this.sectionToEdit});
 
   @override
-  ConsumerState<_EditSectionSheet> createState() => _EditSectionSheetState();
+  ConsumerState<_SectionFormSheet> createState() => _SectionFormSheetState();
 }
 
-class _EditSectionSheetState extends ConsumerState<_EditSectionSheet> {
+class _SectionFormSheetState extends ConsumerState<_SectionFormSheet> {
   late final TextEditingController _titleController;
   late HomeSectionType _selectedType;
   late MediaType _selectedMediaType;
@@ -270,16 +281,96 @@ class _EditSectionSheetState extends ConsumerState<_EditSectionSheet> {
   TrackerType? _targetTracker;
   bool _titleModified = false;
 
+  bool get _isEditing => widget.sectionToEdit != null;
+
+  List<TrackerCategory> get _availableCategories {
+    final isSourceMode = ref.watch(
+      discoveryPrefsProvider.select((p) => p.mode == MetadataMode.source),
+    );
+    final activeTracker = !isSourceMode
+        ? ref.watch(metadataSourceProvider)
+        : null;
+
+    if (isSourceMode) {
+      final hasDiscoverySection = widget.existingSections.any(
+        (s) =>
+            s.id != widget.sectionToEdit?.id &&
+            s.type == HomeSectionType.discovery &&
+            (s.targetMediaType ?? MediaType.ANIME) == _selectedMediaType,
+      );
+      if (hasDiscoverySection) return const [];
+      return const [TrackerCategory.trending];
+    }
+
+    final categories =
+        activeTracker?.supportedCategories ?? TrackerCategory.values;
+    if (_isEditing) return categories;
+
+    return categories.where((cat) {
+      return !widget.existingSections.any(
+        (s) =>
+            s.type == HomeSectionType.discovery &&
+            (s.trackerCategory ?? TrackerCategory.trending) == cat &&
+            (s.targetMediaType ?? MediaType.ANIME) == _selectedMediaType,
+      );
+    }).toList();
+  }
+
+  List<TrackedStatus> get _availableStatuses {
+    final statuses = TrackedStatus.values.where(
+      (e) => e != TrackedStatus.unknown,
+    );
+    if (_isEditing) return statuses.toList();
+
+    return statuses.where((e) {
+      return !widget.existingSections.any(
+        (s) =>
+            s.type == HomeSectionType.libraryStatus &&
+            s.libraryStatus == e &&
+            (s.targetMediaType ?? MediaType.ANIME) == _selectedMediaType,
+      );
+    }).toList();
+  }
+
+  bool get _isContinueMediaAvailable {
+    if (_isEditing) return true;
+    return !widget.existingSections.any(
+      (s) =>
+          s.type == HomeSectionType.continueMedia &&
+          (s.targetMediaType ?? MediaType.ANIME) == _selectedMediaType,
+    );
+  }
+
   @override
   void initState() {
     super.initState();
-    _titleController = TextEditingController(text: widget.section.title);
-    _selectedType = widget.section.type;
-    _selectedMediaType = widget.section.targetMediaType ?? MediaType.ANIME;
-    _selectedCategory =
-        widget.section.trackerCategory ?? TrackerCategory.trending;
-    _selectedStatus = widget.section.libraryStatus;
-    _targetTracker = widget.section.targetTracker;
+    final edit = widget.sectionToEdit;
+    if (edit != null) {
+      _titleController = TextEditingController(text: edit.title);
+      _selectedType = edit.type;
+      _selectedMediaType = edit.targetMediaType ?? MediaType.ANIME;
+      _selectedCategory = edit.trackerCategory ?? TrackerCategory.trending;
+      _selectedStatus = edit.libraryStatus;
+      _targetTracker = edit.targetTracker;
+      _titleModified = true;
+    } else {
+      _titleController = TextEditingController();
+      _selectedType = HomeSectionType.discovery;
+
+      final isSourceMode =
+          ref.read(discoveryPrefsProvider).mode == MetadataMode.source;
+      final activeTracker = !isSourceMode
+          ? ref.read(metadataSourceProvider)
+          : null;
+      final availableMediaTypes = isSourceMode
+          ? [MediaType.ANIME, MediaType.MANGA]
+          : (activeTracker?.supportedMediaTypes ?? MediaType.values);
+
+      _selectedMediaType = availableMediaTypes.isNotEmpty
+          ? availableMediaTypes.first
+          : MediaType.ANIME;
+      _updateFormState();
+    }
   }
 
   @override
@@ -288,14 +379,39 @@ class _EditSectionSheetState extends ConsumerState<_EditSectionSheet> {
     super.dispose();
   }
 
+  void _updateFormState() {
+    if (_selectedType == HomeSectionType.discovery) {
+      final availableCats = _availableCategories;
+      if (availableCats.isNotEmpty) {
+        if (_selectedCategory == null ||
+            !availableCats.contains(_selectedCategory)) {
+          _selectedCategory = availableCats.first;
+        }
+      } else {
+        _selectedCategory = null;
+      }
+    } else if (_selectedType == HomeSectionType.libraryStatus) {
+      final availableStats = _availableStatuses;
+      if (availableStats.isNotEmpty) {
+        if (_selectedStatus == null ||
+            !availableStats.contains(_selectedStatus)) {
+          _selectedStatus = availableStats.first;
+        }
+      } else {
+        _selectedStatus = null;
+      }
+    }
+    _updateAutoTitle();
+  }
+
   void _updateAutoTitle() {
     if (_titleModified) return;
 
     String newTitle = '';
     switch (_selectedType) {
       case HomeSectionType.discovery:
-        final categoryLabel = _selectedCategory?.label ?? 'Discovery';
-        newTitle = '$categoryLabel ${_selectedMediaType.displayName}';
+        final catLabel = _selectedCategory?.label ?? 'Discovery';
+        newTitle = '$catLabel ${_selectedMediaType.displayName}';
         break;
       case HomeSectionType.continueMedia:
         newTitle =
@@ -305,29 +421,47 @@ class _EditSectionSheetState extends ConsumerState<_EditSectionSheet> {
             : 'Continue Watching';
         break;
       case HomeSectionType.libraryStatus:
-        newTitle = 'My ${_selectedStatus?.displayName ?? 'Library'}';
+        newTitle = _selectedStatus != null
+            ? 'My ${_selectedStatus!.displayName}'
+            : '';
         break;
     }
     _titleController.text = newTitle;
   }
 
-  void _save() {
+  void _submit() {
     final title = _titleController.text.trim();
     if (title.isEmpty) return;
 
-    ref
-        .read(userHomeLayoutProvider.notifier)
-        .updateSection(
-          widget.section.copyWith(
-            title: title,
-            type: _selectedType,
-            targetMediaType: _selectedMediaType,
-            trackerCategory: _selectedCategory,
-            libraryStatus: _selectedStatus,
-            targetTracker: _targetTracker,
-            clearTargetTracker: _targetTracker == null,
-          ),
-        );
+    if (_isEditing) {
+      ref
+          .read(userHomeLayoutProvider.notifier)
+          .updateSection(
+            widget.sectionToEdit!.copyWith(
+              title: title,
+              type: _selectedType,
+              targetMediaType: _selectedMediaType,
+              trackerCategory: _selectedCategory,
+              libraryStatus: _selectedStatus,
+              targetTracker: _targetTracker,
+              clearTargetTracker: _targetTracker == null,
+            ),
+          );
+    } else {
+      ref
+          .read(userHomeLayoutProvider.notifier)
+          .addSection(
+            HomeSection(
+              id: DateTime.now().millisecondsSinceEpoch.toString(),
+              title: title,
+              type: _selectedType,
+              targetMediaType: _selectedMediaType,
+              trackerCategory: _selectedCategory,
+              libraryStatus: _selectedStatus,
+              targetTracker: _targetTracker,
+            ),
+          );
+    }
     context.pop();
   }
 
@@ -342,16 +476,105 @@ class _EditSectionSheetState extends ConsumerState<_EditSectionSheet> {
     final availableMediaTypes = isSourceMode
         ? [MediaType.ANIME, MediaType.MANGA]
         : (activeTracker?.supportedMediaTypes ?? MediaType.values);
-    final availableCategories = isSourceMode
-        ? [TrackerCategory.trending]
-        : (activeTracker?.supportedCategories ?? TrackerCategory.values);
+
+    final isDiscovery = _selectedType == HomeSectionType.discovery;
+    final isLibrary = _selectedType == HomeSectionType.libraryStatus;
+    final isContinue = _selectedType == HomeSectionType.continueMedia;
+
+    final availableCats = _availableCategories;
+    final availableStats = _availableStatuses;
+    final isContinueValid = _isContinueMediaAvailable;
+
+    final bool canSubmit =
+        _titleController.text.trim().isNotEmpty &&
+        (_isEditing ||
+            (isDiscovery && availableCats.isNotEmpty) ||
+            (isLibrary && availableStats.isNotEmpty) ||
+            (isContinue && isContinueValid));
 
     return AppBottomSheet(
-      title: 'Edit Section',
+      title: _isEditing ? 'Edit Section' : 'Add Section',
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (!_isEditing) ...[
+            DropdownButtonFormField<HomeSectionType>(
+              initialValue: _selectedType,
+              decoration: InputDecoration(
+                labelText: 'Section Type',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              items: [
+                DropdownMenuItem(
+                  value: HomeSectionType.discovery,
+                  child: Row(
+                    children: [
+                      const Icon(Icons.explore_outlined, size: 20),
+                      const SizedBox(width: 8),
+                      const Text('Discovery Feed'),
+                      if (availableCats.isEmpty)
+                        Text(
+                          ' (All added)',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.error,
+                            fontSize: 12,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                DropdownMenuItem(
+                  value: HomeSectionType.continueMedia,
+                  child: Row(
+                    children: [
+                      const Icon(Icons.play_circle_outline, size: 20),
+                      const SizedBox(width: 8),
+                      const Text('Continue Progress'),
+                      if (!isContinueValid)
+                        Text(
+                          ' (Already added)',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.error,
+                            fontSize: 12,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                DropdownMenuItem(
+                  value: HomeSectionType.libraryStatus,
+                  child: Row(
+                    children: [
+                      const Icon(Icons.collections_bookmark_outlined, size: 20),
+                      const SizedBox(width: 8),
+                      const Text('Library List'),
+                      if (availableStats.isEmpty)
+                        Text(
+                          ' (All added)',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.error,
+                            fontSize: 12,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+              onChanged: (val) {
+                if (val != null) {
+                  setState(() {
+                    _selectedType = val;
+                    _updateFormState();
+                  });
+                }
+              },
+            ),
+            const SizedBox(height: 16),
+          ],
+
           DropdownButtonFormField<MediaType>(
             initialValue: _selectedMediaType,
             decoration: InputDecoration(
@@ -369,7 +592,7 @@ class _EditSectionSheetState extends ConsumerState<_EditSectionSheet> {
               if (val != null) {
                 setState(() {
                   _selectedMediaType = val;
-                  _updateAutoTitle();
+                  _updateFormState();
                 });
               }
             },
@@ -391,7 +614,7 @@ class _EditSectionSheetState extends ConsumerState<_EditSectionSheet> {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              items: availableCategories
+              items: availableCats
                   .map(
                     (cat) =>
                         DropdownMenuItem(value: cat, child: Text(cat.label)),
@@ -420,8 +643,7 @@ class _EditSectionSheetState extends ConsumerState<_EditSectionSheet> {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              items: TrackedStatus.values
-                  .where((e) => e != TrackedStatus.unknown)
+              items: availableStats
                   .map(
                     (e) => DropdownMenuItem(
                       value: e,
@@ -477,455 +699,28 @@ class _EditSectionSheetState extends ConsumerState<_EditSectionSheet> {
                   : null,
             ),
             onChanged: (_) => setState(() => _titleModified = true),
-            onSubmitted: (_) => _save(),
+            onSubmitted: (_) => _submit(),
           ),
 
           const SizedBox(height: 16),
           SizedBox(
             height: 52,
             child: FilledButton(
-              onPressed: _titleController.text.trim().isNotEmpty ? _save : null,
+              onPressed: canSubmit ? _submit : null,
               style: FilledButton.styleFrom(
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
               ),
-              child: const Text(
-                'Save Changes',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              child: Text(
+                _isEditing ? 'Save Changes' : 'Add Section',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
               ),
             ),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _AddSectionSheet extends ConsumerStatefulWidget {
-  final List<HomeSection> existingSections;
-
-  const _AddSectionSheet({required this.existingSections});
-
-  @override
-  ConsumerState<_AddSectionSheet> createState() => _AddSectionSheetState();
-}
-
-class _AddSectionSheetState extends ConsumerState<_AddSectionSheet> {
-  late final TextEditingController _titleController;
-  HomeSectionType _selectedType = HomeSectionType.discovery;
-  MediaType _selectedMediaType = MediaType.ANIME;
-  TrackerCategory? _selectedCategory;
-  TrackedStatus? _selectedStatus;
-  TrackerType? _targetTracker;
-  bool _titleModified = false;
-
-  List<TrackerCategory> get _availableCategories {
-    final isSourceMode = ref.watch(
-      discoveryPrefsProvider.select((p) => p.mode == MetadataMode.source),
-    );
-    final activeTracker = !isSourceMode
-        ? ref.watch(metadataSourceProvider)
-        : null;
-
-    if (isSourceMode) {
-      final hasDiscoverySection = widget.existingSections.any(
-        (s) =>
-            s.type == HomeSectionType.discovery &&
-            (s.targetMediaType ?? MediaType.ANIME) == _selectedMediaType,
-      );
-      if (hasDiscoverySection) return const [];
-      return const [TrackerCategory.trending];
-    }
-
-    final categories =
-        activeTracker?.supportedCategories ?? TrackerCategory.values;
-    return categories.where((cat) {
-      return !widget.existingSections.any(
-        (s) =>
-            s.type == HomeSectionType.discovery &&
-            (s.trackerCategory ?? TrackerCategory.trending) == cat &&
-            (s.targetMediaType ?? MediaType.ANIME) == _selectedMediaType,
-      );
-    }).toList();
-  }
-
-  List<TrackedStatus> get _availableStatuses {
-    return TrackedStatus.values.where((e) {
-      if (e == TrackedStatus.unknown) return false;
-      return !widget.existingSections.any(
-        (s) =>
-            s.type == HomeSectionType.libraryStatus &&
-            s.libraryStatus == e &&
-            (s.targetMediaType ?? MediaType.ANIME) == _selectedMediaType,
-      );
-    }).toList();
-  }
-
-  bool get _isContinueMediaAvailable {
-    return !widget.existingSections.any(
-      (s) =>
-          s.type == HomeSectionType.continueMedia &&
-          (s.targetMediaType ?? MediaType.ANIME) == _selectedMediaType,
-    );
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _titleController = TextEditingController();
-
-    final isSourceMode =
-        ref.read(discoveryPrefsProvider).mode == MetadataMode.source;
-    final activeTracker = !isSourceMode
-        ? ref.read(metadataSourceProvider)
-        : null;
-    final availableMediaTypes = isSourceMode
-        ? [MediaType.ANIME, MediaType.MANGA]
-        : (activeTracker?.supportedMediaTypes ?? MediaType.values);
-
-    _selectedMediaType = availableMediaTypes.isNotEmpty
-        ? availableMediaTypes.first
-        : MediaType.ANIME;
-    _updateFormState();
-  }
-
-  void _updateFormState() {
-    if (_selectedType == HomeSectionType.discovery) {
-      final availableCats = _availableCategories;
-      if (availableCats.isNotEmpty) {
-        if (_selectedCategory == null ||
-            !availableCats.contains(_selectedCategory)) {
-          _selectedCategory = availableCats.first;
-        }
-      } else {
-        _selectedCategory = null;
-      }
-    } else if (_selectedType == HomeSectionType.libraryStatus) {
-      final availableStats = _availableStatuses;
-      if (availableStats.isNotEmpty) {
-        if (_selectedStatus == null ||
-            !availableStats.contains(_selectedStatus)) {
-          _selectedStatus = availableStats.first;
-        }
-      } else {
-        _selectedStatus = null;
-      }
-    }
-    _updateAutoTitle();
-  }
-
-  @override
-  void dispose() {
-    _titleController.dispose();
-    super.dispose();
-  }
-
-  void _updateAutoTitle() {
-    if (_titleModified) return;
-
-    String newTitle = '';
-    switch (_selectedType) {
-      case HomeSectionType.discovery:
-        final catLabel = _selectedCategory?.label ?? 'Discovery';
-        newTitle = '$catLabel ${_selectedMediaType.displayName}';
-        break;
-      case HomeSectionType.continueMedia:
-        newTitle =
-            (_selectedMediaType == MediaType.MANGA ||
-                _selectedMediaType == MediaType.NOVEL)
-            ? 'Continue Reading'
-            : 'Continue Watching';
-        break;
-      case HomeSectionType.libraryStatus:
-        newTitle = _selectedStatus != null
-            ? 'My ${_selectedStatus!.displayName}'
-            : '';
-        break;
-    }
-    _titleController.text = newTitle;
-  }
-
-  void _submit() {
-    final title = _titleController.text.trim();
-    if (title.isEmpty) return;
-
-    ref
-        .read(userHomeLayoutProvider.notifier)
-        .addSection(
-          HomeSection(
-            id: DateTime.now().millisecondsSinceEpoch.toString(),
-            title: title,
-            type: _selectedType,
-            targetMediaType: _selectedMediaType,
-            trackerCategory: _selectedCategory,
-            libraryStatus: _selectedStatus,
-            targetTracker: _targetTracker,
-          ),
-        );
-    context.pop();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isSourceMode = ref.watch(
-      discoveryPrefsProvider.select((p) => p.mode == MetadataMode.source),
-    );
-
-    final isDiscovery = _selectedType == HomeSectionType.discovery;
-    final isLibrary = _selectedType == HomeSectionType.libraryStatus;
-    final isContinue = _selectedType == HomeSectionType.continueMedia;
-
-    final availableCats = _availableCategories;
-    final availableStats = _availableStatuses;
-    final isContinueValid = _isContinueMediaAvailable;
-
-    final bool canAdd =
-        (isDiscovery && availableCats.isNotEmpty) ||
-        (isLibrary && availableStats.isNotEmpty) ||
-        (isContinue && isContinueValid);
-
-    return AppBottomSheet(
-      title: 'Add Section',
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          DropdownButtonFormField<HomeSectionType>(
-            initialValue: _selectedType,
-            decoration: InputDecoration(
-              labelText: 'Section Type',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            items: const [
-              DropdownMenuItem(
-                value: HomeSectionType.discovery,
-                child: Text('Discovery Category'),
-              ),
-              DropdownMenuItem(
-                value: HomeSectionType.continueMedia,
-                child: Text('Continue Media'),
-              ),
-              DropdownMenuItem(
-                value: HomeSectionType.libraryStatus,
-                child: Text('Custom Library List'),
-              ),
-            ],
-            onChanged: (val) {
-              if (val != null) {
-                setState(() {
-                  _selectedType = val;
-                  _updateFormState();
-                });
-              }
-            },
-          ),
-          const SizedBox(height: 16),
-
-          DropdownButtonFormField<MediaType>(
-            initialValue: _selectedMediaType,
-            decoration: InputDecoration(
-              labelText: 'Media Type',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            items:
-                (() {
-                      final isSourceMode =
-                          ref.watch(discoveryPrefsProvider).mode ==
-                          MetadataMode.source;
-                      final activeTracker = !isSourceMode
-                          ? ref.watch(metadataSourceProvider)
-                          : null;
-                      final availableMediaTypes = isSourceMode
-                          ? [MediaType.ANIME, MediaType.MANGA]
-                          : (activeTracker?.supportedMediaTypes ??
-                                MediaType.values);
-                      return availableMediaTypes;
-                    })()
-                    .map(
-                      (t) => DropdownMenuItem(
-                        value: t,
-                        child: Text(t.displayName),
-                      ),
-                    )
-                    .toList(),
-            onChanged: (val) {
-              if (val != null) {
-                setState(() {
-                  _selectedMediaType = val;
-                  _updateFormState();
-                });
-              }
-            },
-          ),
-          const SizedBox(height: 16),
-
-          if (isDiscovery) ...[
-            if (availableCats.isEmpty) ...[
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16.0),
-                child: Text(
-                  isSourceMode
-                      ? 'In Source Discovery Mode, only 1 discovery section per media type is supported.'
-                      : 'All discovery categories for ${_selectedMediaType.displayName} are already on your home screen.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ),
-            ] else ...[
-              DropdownButtonFormField<TrackerCategory>(
-                initialValue: _selectedCategory,
-                decoration: InputDecoration(
-                  labelText: 'Category',
-                  helperText: isSourceMode
-                      ? 'Categories are locked to Trending in Source Discovery Mode.'
-                      : null,
-                  helperStyle: isSourceMode
-                      ? TextStyle(color: Theme.of(context).colorScheme.tertiary)
-                      : null,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                items: availableCats
-                    .map(
-                      (cat) =>
-                          DropdownMenuItem(value: cat, child: Text(cat.label)),
-                    )
-                    .toList(),
-                onChanged: isSourceMode
-                    ? null
-                    : (val) {
-                        if (val != null) {
-                          setState(() {
-                            _selectedCategory = val;
-                            _updateAutoTitle();
-                          });
-                        }
-                      },
-              ),
-              const SizedBox(height: 16),
-            ],
-          ] else if (isContinue) ...[
-            if (!isContinueValid) ...[
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16.0),
-                child: Text(
-                  'Continue ${_selectedMediaType.displayName} section is already on your home screen.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ),
-            ],
-          ] else if (isLibrary) ...[
-            if (availableStats.isEmpty) ...[
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16.0),
-                child: Text(
-                  'All tracking lists for ${_selectedMediaType.displayName} are already on your home screen.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ),
-            ] else ...[
-              DropdownButtonFormField<TrackedStatus>(
-                initialValue: _selectedStatus,
-                decoration: InputDecoration(
-                  labelText: 'List to Display',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                items: availableStats
-                    .map(
-                      (e) => DropdownMenuItem(
-                        value: e,
-                        child: Text(e.getLabelForMedia(_selectedMediaType)),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (val) {
-                  setState(() {
-                    _selectedStatus = val;
-                    _updateAutoTitle();
-                  });
-                },
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<TrackerType?>(
-                initialValue: _targetTracker,
-                decoration: InputDecoration(
-                  labelText: 'Data Source',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                items: [
-                  const DropdownMenuItem(
-                    value: null,
-                    child: Text('Auto (Default)'),
-                  ),
-                  ...TrackerType.values.map(
-                    (t) =>
-                        DropdownMenuItem(value: t, child: Text(t.displayName)),
-                  ),
-                ],
-                onChanged: (val) => setState(() => _targetTracker = val),
-              ),
-              const SizedBox(height: 16),
-            ],
-          ],
-
-          if (canAdd) ...[
-            TextField(
-              controller: _titleController,
-              decoration: InputDecoration(
-                labelText: 'Section Title',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                suffixIcon: _titleController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear, size: 20),
-                        onPressed: () {
-                          _titleController.clear();
-                          setState(() => _titleModified = true);
-                        },
-                      )
-                    : null,
-              ),
-              onChanged: (_) => setState(() => _titleModified = true),
-              onSubmitted: (_) => _submit(),
-            ),
-            const SizedBox(height: 32),
-            SizedBox(
-              height: 52,
-              child: FilledButton(
-                onPressed: _titleController.text.trim().isNotEmpty
-                    ? _submit
-                    : null,
-                style: FilledButton.styleFrom(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-                child: const Text(
-                  'Add Section',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                ),
-              ),
-            ),
-          ],
         ],
       ),
     );

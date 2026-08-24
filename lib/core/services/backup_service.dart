@@ -231,10 +231,10 @@ class BackupService {
             'preferredSourceId': e.preferredSourceId,
             'preferredSourceName': e.preferredSourceName,
             'preferredSourceType': e.preferredSourceType,
-            'manualOverrideTitle': e.manualOverrideTitle,
-            'manualOverrideId': e.manualOverrideId,
-            'preferredAiringTracker': e.preferredAiringTracker,
-            'manualAiringTrackerId': e.manualAiringTrackerId,
+            'matchedMediaTitle': e.matchedMediaTitle,
+            'matchedMediaId': e.matchedMediaId,
+            'preferredTracker': e.preferredTracker,
+            'trackerMediaId': e.trackerMediaId,
           },
         )
         .toList();
@@ -347,10 +347,14 @@ class BackupService {
           ..preferredSourceId = m['preferredSourceId'] as String
           ..preferredSourceName = m['preferredSourceName'] as String
           ..preferredSourceType = m['preferredSourceType'] as String
-          ..manualOverrideTitle = m['manualOverrideTitle'] as String?
-          ..manualOverrideId = m['manualOverrideId'] as String?
-          ..preferredAiringTracker = m['preferredAiringTracker'] as String?
-          ..manualAiringTrackerId = m['manualAiringTrackerId'] as String?;
+          ..matchedMediaTitle =
+              (m['matchedMediaTitle'] ?? m['manualOverrideTitle']) as String?
+          ..matchedMediaId =
+              (m['matchedMediaId'] ?? m['manualOverrideId']) as String?
+          ..preferredTracker =
+              (m['preferredTracker'] ?? m['preferredAiringTracker']) as String?
+          ..trackerMediaId =
+              (m['trackerMediaId'] ?? m['manualAiringTrackerId']) as String?;
         await _isar.mediaPreferences.put(pref);
       }
     });

@@ -184,6 +184,6 @@ class _ImportPreviewScreenState extends ConsumerState<ImportPreviewScreen> {
     ];
     final h = d.hour % 12 == 0 ? 12 : d.hour % 12;
     final p = d.hour < 12 ? 'AM' : 'PM';
-    return '${m[d.month - 1]} ${d.day}, ${d.year} ${h}:${d.minute.toString().padLeft(2, '0')} $p';
+    return '${m[d.month - 1]} ${d.day}, ${d.year} $h:${d.minute.toString().padLeft(2, '0')} $p';
   }
 }

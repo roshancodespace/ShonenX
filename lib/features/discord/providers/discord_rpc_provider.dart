@@ -106,11 +106,11 @@ class DiscordRpcNotifier extends Notifier<DiscordRpcState>
   }
 
   @override
-  void didChangeAppLifecycleState(AppLifecycleState appState) {
-    if (!state.isEnabled) return;
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (!this.state.isEnabled) return;
     final discordState = ref.read(discordProvider);
 
-    if (appState == AppLifecycleState.resumed && !_rpcService.isConnected) {
+    if (state == AppLifecycleState.resumed && !_rpcService.isConnected) {
       _log.i('App resumed, reconnecting Discord RPC');
       _connect(discordState.token);
     }

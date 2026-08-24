@@ -97,12 +97,15 @@ extension AppNavigator on BuildContext {
     if (genres != null && genres.isNotEmpty) queryParams['genres'] = genres;
     if (tags != null && tags.isNotEmpty) queryParams['tags'] = tags;
     if (category != null) queryParams['category'] = category;
-    if (sort != null && sort != SearchSort.popularity)
+    if (sort != null && sort != SearchSort.popularity) {
       queryParams['sort'] = sort.name;
-    if (status != null && status != SearchStatusFilter.all)
+    }
+    if (status != null && status != SearchStatusFilter.all) {
       queryParams['status'] = status.name;
-    if (format != null && format != SearchFormatFilter.all)
+    }
+    if (format != null && format != SearchFormatFilter.all) {
       queryParams['format'] = format.name;
+    }
 
     // If filters/category are present, push to results screen so Back pops it
     final hasFilters =
@@ -143,12 +146,15 @@ extension AppNavigator on BuildContext {
     if (tags != null && tags.isNotEmpty) queryParams['tags'] = tags;
     if (category != null) queryParams['category'] = category;
     if (title != null) queryParams['title'] = title;
-    if (sort != null && sort != SearchSort.popularity)
+    if (sort != null && sort != SearchSort.popularity) {
       queryParams['sort'] = sort.name;
-    if (status != null && status != SearchStatusFilter.all)
+    }
+    if (status != null && status != SearchStatusFilter.all) {
       queryParams['status'] = status.name;
-    if (format != null && format != SearchFormatFilter.all)
+    }
+    if (format != null && format != SearchFormatFilter.all) {
       queryParams['format'] = format.name;
+    }
 
     final uri = Uri(
       path: '/discover/results',

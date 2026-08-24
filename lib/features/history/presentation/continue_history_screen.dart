@@ -128,6 +128,7 @@ class _ContinueHistoryScreenState extends ConsumerState<ContinueHistoryScreen> {
               style: TextStyle(color: Colors.red),
             ),
             onTap: () async {
+              final messenger = ScaffoldMessenger.of(this.context);
               Navigator.pop(context);
               if (isAnime) {
                 await ref
@@ -139,7 +140,7 @@ class _ContinueHistoryScreenState extends ConsumerState<ContinueHistoryScreen> {
                     .deleteByMangaId(id);
               }
               if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
+                messenger.showSnackBar(
                   const SnackBar(content: Text('Removed from history')),
                 );
               }

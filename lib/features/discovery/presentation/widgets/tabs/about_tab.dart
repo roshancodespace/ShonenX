@@ -901,7 +901,7 @@ class _AiringBanner extends ConsumerWidget {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
-                          'Subscribed to ${itemText} $episodeNum. You will be notified when it drops.',
+                          'Subscribed to $itemText $episodeNum. You will be notified when it drops.',
                         ),
                       ),
                     );

@@ -257,7 +257,6 @@ class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen>
 
   @override
   Widget build(BuildContext context) {
-    Theme.of(context);
     final currentType =
         (_tabController.index >= 0 &&
             _tabController.index < _supportedMediaTypes.length)

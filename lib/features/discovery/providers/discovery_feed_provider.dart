@@ -1,8 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shonenx/shared/providers/content_prefs_provider.dart';
+import 'package:shonenx/features/discovery/providers/metadata_tags_provider.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
+import 'package:shonenx/shared/providers/content_prefs_provider.dart';
+import 'package:shonenx/source_engine/models/source_info.dart';
 import 'package:shonenx/source_engine/source_engine_provider.dart';
-import 'metadata_tags_provider.dart';
 
 /// Provides a random selection of genres for the discovery feed
 final discoveryFeedGenresProvider = FutureProvider.autoDispose<List<String>>((
@@ -35,8 +36,27 @@ final genreFeedProvider = FutureProvider.autoDispose
         type: arg.type,
         genres: [arg.genre],
         adultMode: adultMode,
-        cacheDuration: Duration(hours: 6),
+        cacheDuration: const Duration(hours: 6),
       );
 
       return result.items;
+    });
+
+/// Provides media items for a specific source row in the source discovery feed
+final sourceDiscoverFeedProvider = FutureProvider.autoDispose
+    .family<List<UnifiedMedia>, ({SourceInfo info, MediaType type})>((
+      ref,
+      arg,
+    ) async {
+      ref.keepAlive();
+      final source = arg.type == MediaType.ANIME
+          ? ref.read(animeSourceProvider(arg.info))
+          : ref.read(mangaSourceProvider(arg.info));
+
+      try {
+        final trending = await source.getTrending();
+        if (trending.isNotEmpty) return trending;
+      } catch (_) {}
+
+      return await source.search('', arg.type, page: 1);
     });

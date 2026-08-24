@@ -1,14 +1,19 @@
+import 'package:collection/collection.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/features/discovery/domain/models/search_filter_options.dart';
-import 'package:shonenx/shared/providers/content_prefs_provider.dart';
 import 'package:shonenx/features/discovery/providers/discovery_prefs_provider.dart';
+import 'package:shonenx/features/tracking/domain/models/tracker_category.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
+import 'package:shonenx/shared/providers/content_prefs_provider.dart';
+import 'package:shonenx/source_engine/models/paginated_result.dart';
 import 'package:shonenx/source_engine/source_engine_provider.dart';
 import 'package:shonenx/source_engine/utils/media_type_extensions.dart';
-import 'package:shonenx/source_engine/models/paginated_result.dart';
 
+@immutable
 class SearchArgs {
   final String query;
+  final String? category;
   final MediaType type;
   final List<String> genres;
   final List<String> tags;
@@ -18,8 +23,9 @@ class SearchArgs {
   final SearchFormatFilter format;
 
   const SearchArgs({
-    required this.query,
-    required this.type,
+    this.query = '',
+    this.category,
+    this.type = MediaType.ANIME,
     this.genres = const [],
     this.tags = const [],
     this.source,
@@ -28,9 +34,46 @@ class SearchArgs {
     this.format = SearchFormatFilter.all,
   });
 
+  bool get isEmpty =>
+      query.isEmpty &&
+      (category == null || category!.isEmpty) &&
+      genres.isEmpty &&
+      tags.isEmpty &&
+      source == null &&
+      sort == SearchSort.popularity &&
+      status == SearchStatusFilter.all &&
+      format == SearchFormatFilter.all;
+
+  SearchArgs copyWith({
+    String? query,
+    String? category,
+    bool clearCategory = false,
+    MediaType? type,
+    List<String>? genres,
+    List<String>? tags,
+    String? source,
+    bool clearSource = false,
+    SearchSort? sort,
+    SearchStatusFilter? status,
+    SearchFormatFilter? format,
+  }) {
+    return SearchArgs(
+      query: query ?? this.query,
+      category: clearCategory ? null : (category ?? this.category),
+      type: type ?? this.type,
+      genres: genres ?? this.genres,
+      tags: tags ?? this.tags,
+      source: clearSource ? null : (source ?? this.source),
+      sort: sort ?? this.sort,
+      status: status ?? this.status,
+      format: format ?? this.format,
+    );
+  }
+
   @override
   int get hashCode => Object.hash(
     query,
+    category,
     type,
     source,
     sort,
@@ -45,26 +88,15 @@ class SearchArgs {
     if (identical(this, other)) return true;
     if (other is! SearchArgs) return false;
 
-    if (query != other.query ||
-        type != other.type ||
-        source != other.source ||
-        sort != other.sort ||
-        status != other.status ||
-        format != other.format) {
-      return false;
-    }
-
-    if (genres.length != other.genres.length) return false;
-    for (int i = 0; i < genres.length; i++) {
-      if (genres[i] != other.genres[i]) return false;
-    }
-
-    if (tags.length != other.tags.length) return false;
-    for (int i = 0; i < tags.length; i++) {
-      if (tags[i] != other.tags[i]) return false;
-    }
-
-    return true;
+    return query == other.query &&
+        category == other.category &&
+        type == other.type &&
+        source == other.source &&
+        sort == other.sort &&
+        status == other.status &&
+        format == other.format &&
+        const ListEquality().equals(genres, other.genres) &&
+        const ListEquality().equals(tags, other.tags);
   }
 }
 
@@ -85,21 +117,19 @@ class SearchNotifier extends AsyncNotifier<PaginatedResult<UnifiedMedia>?> {
   Future<PaginatedResult<UnifiedMedia>?> build() async {
     _currentPage = 1;
     _isFetchingNextPage = false;
-    if (arg.query.isEmpty &&
-        arg.genres.isEmpty &&
-        arg.tags.isEmpty &&
-        arg.source == null &&
-        arg.sort == SearchSort.popularity &&
-        arg.status == SearchStatusFilter.all &&
-        arg.format == SearchFormatFilter.all) {
-      return null;
-    }
+    if (arg.isEmpty) return null;
     return _fetchPage(1);
   }
 
   Future<PaginatedResult<UnifiedMedia>> _fetchPage(int page) async {
     final prefs = ref.read(discoveryPrefsProvider);
 
+    // If this is a category browse request (e.g. Popular, Top Rated, Trending, or source feed)
+    if (arg.category != null && arg.category!.isNotEmpty) {
+      return _fetchCategoryPage(page, prefs);
+    }
+
+    // Standard search / browse request
     if (prefs.mode == MetadataMode.tracker) {
       final engine = ref.read(metadataSourceProvider);
       final adultMode = ref.read(contentPrefsProvider).adultContentMode;
@@ -115,35 +145,67 @@ class SearchNotifier extends AsyncNotifier<PaginatedResult<UnifiedMedia>?> {
         format: arg.format,
       );
     } else {
+      return _fetchSourceSearchPage(page, prefs);
+    }
+  }
+
+  Future<PaginatedResult<UnifiedMedia>> _fetchCategoryPage(
+    int page,
+    DiscoveryPrefs prefs,
+  ) async {
+    final category = arg.category!;
+
+    if (prefs.mode == MetadataMode.tracker) {
+      final engine = ref.read(metadataSourceProvider);
+      final adultMode = ref.read(contentPrefsProvider).adultContentMode;
+      final matchedCategory = TrackerCategory.tryFromId(category);
+
+      if (matchedCategory != null) {
+        return await engine.getCategoryItems(
+          matchedCategory,
+          type: arg.type,
+          page: page,
+          cacheDuration: const Duration(hours: 6),
+          adultMode: adultMode,
+        );
+      } else {
+        return await engine.search(
+          '',
+          type: arg.type,
+          page: page,
+          genres: [category],
+          adultMode: adultMode,
+          cacheDuration: const Duration(hours: 6),
+        );
+      }
+    } else {
       final allSources = await ref.read(
         arg.type.availableSourcesProvider.future,
       );
+      if (!ref.mounted) {
+        return const PaginatedResult(items: [], hasNextPage: false);
+      }
+
       final activeSources = allSources
-          .where(
-            (s) => (arg.source != null
-                ? s.id == arg.source
-                : prefs.activeSources.contains(s.id)),
-          )
+          .where((s) => prefs.activeSources.contains(s.id))
           .toList();
 
       if (activeSources.isEmpty) {
         return const PaginatedResult(items: [], hasNextPage: false);
       }
 
-      // If viewing a specific source without query/genres/tags, try trending first
-      if (arg.source != null &&
-          arg.query.isEmpty &&
-          arg.genres.isEmpty &&
-          arg.tags.isEmpty &&
-          activeSources.length == 1) {
-        final info = activeSources.first;
+      // Check if this is a "More" tap on a trending feed generated by home_feed_provider
+      final mediaTypeName = arg.type.displayName;
+      final targetSourceInfo = activeSources.firstWhereOrNull((s) {
+        final expectedTitle = '${s.name} ($mediaTypeName)';
+        return expectedTitle == category;
+      });
+
+      if (targetSourceInfo != null) {
         try {
-          final source =
-              (arg.type == MediaType.ANIME ||
-                  arg.type == MediaType.MOVIE ||
-                  arg.type == MediaType.TV)
-              ? ref.read(animeSourceProvider(info))
-              : ref.read(mangaSourceProvider(info));
+          final source = arg.type.usesAnimeSources
+              ? ref.read(animeSourceProvider(targetSourceInfo))
+              : ref.read(mangaSourceProvider(targetSourceInfo));
           List<UnifiedMedia> items = [];
           try {
             items = await source.getTrending(page: page);
@@ -151,7 +213,6 @@ class SearchNotifier extends AsyncNotifier<PaginatedResult<UnifiedMedia>?> {
           if (items.isEmpty) {
             items = await source.search('', arg.type, page: page);
           }
-          items = _applySourceFilters(items);
           return PaginatedResult(
             items: items,
             hasNextPage: items.isNotEmpty && items.length >= 8,
@@ -161,35 +222,102 @@ class SearchNotifier extends AsyncNotifier<PaginatedResult<UnifiedMedia>?> {
         }
       }
 
+      // Fallback: Perform an actual text search across all active sources
       final futures = activeSources.map((info) async {
         try {
-          final source =
-              (arg.type == MediaType.ANIME ||
-                  arg.type == MediaType.MOVIE ||
-                  arg.type == MediaType.TV)
+          final source = arg.type.usesAnimeSources
               ? ref.read(animeSourceProvider(info))
               : ref.read(mangaSourceProvider(info));
-          return await source.search(
-            arg.query,
-            arg.type,
-            page: page,
-            genres: arg.genres,
-            tags: arg.tags,
-          );
+          return await source.search(category, arg.type, page: page);
         } catch (_) {
           return <UnifiedMedia>[];
         }
       });
 
       final results = await Future.wait(futures);
-      var merged = results.expand((list) => list).toList();
-      merged = _applySourceFilters(merged);
+      final merged = results.expand((list) => list).toList();
 
       return PaginatedResult(
         items: merged,
         hasNextPage: merged.isNotEmpty && merged.length >= 8,
       );
     }
+  }
+
+  Future<PaginatedResult<UnifiedMedia>> _fetchSourceSearchPage(
+    int page,
+    DiscoveryPrefs prefs,
+  ) async {
+    final allSources = await ref.read(arg.type.availableSourcesProvider.future);
+    if (!ref.mounted) {
+      return const PaginatedResult(items: [], hasNextPage: false);
+    }
+
+    final activeSources = allSources
+        .where(
+          (s) => (arg.source != null
+              ? s.id == arg.source
+              : prefs.activeSources.contains(s.id)),
+        )
+        .toList();
+
+    if (activeSources.isEmpty) {
+      return const PaginatedResult(items: [], hasNextPage: false);
+    }
+
+    // If viewing a specific source without query/genres/tags, try trending first
+    if (arg.source != null &&
+        arg.query.isEmpty &&
+        arg.genres.isEmpty &&
+        arg.tags.isEmpty &&
+        activeSources.length == 1) {
+      final info = activeSources.first;
+      try {
+        final source = arg.type.usesAnimeSources
+            ? ref.read(animeSourceProvider(info))
+            : ref.read(mangaSourceProvider(info));
+        List<UnifiedMedia> items = [];
+        try {
+          items = await source.getTrending(page: page);
+        } catch (_) {}
+        if (items.isEmpty) {
+          items = await source.search('', arg.type, page: page);
+        }
+        items = _applySourceFilters(items);
+        return PaginatedResult(
+          items: items,
+          hasNextPage: items.isNotEmpty && items.length >= 8,
+        );
+      } catch (_) {
+        return const PaginatedResult(items: [], hasNextPage: false);
+      }
+    }
+
+    final futures = activeSources.map((info) async {
+      try {
+        final source = arg.type.usesAnimeSources
+            ? ref.read(animeSourceProvider(info))
+            : ref.read(mangaSourceProvider(info));
+        return await source.search(
+          arg.query,
+          arg.type,
+          page: page,
+          genres: arg.genres,
+          tags: arg.tags,
+        );
+      } catch (_) {
+        return <UnifiedMedia>[];
+      }
+    });
+
+    final results = await Future.wait(futures);
+    var merged = results.expand((list) => list).toList();
+    merged = _applySourceFilters(merged);
+
+    return PaginatedResult(
+      items: merged,
+      hasNextPage: merged.isNotEmpty && merged.length >= 8,
+    );
   }
 
   List<UnifiedMedia> _applySourceFilters(List<UnifiedMedia> items) {
@@ -222,7 +350,9 @@ class SearchNotifier extends AsyncNotifier<PaginatedResult<UnifiedMedia>?> {
           case SearchFormatFilter.movie:
             return fmt.contains('MOVIE');
           case SearchFormatFilter.ova:
-            return fmt.contains('OVA') || fmt.contains('ONA') || fmt.contains('SPECIAL');
+            return fmt.contains('OVA') ||
+                fmt.contains('ONA') ||
+                fmt.contains('SPECIAL');
           case SearchFormatFilter.manga:
             return fmt.contains('MANGA');
           case SearchFormatFilter.oneShot:
@@ -236,10 +366,18 @@ class SearchNotifier extends AsyncNotifier<PaginatedResult<UnifiedMedia>?> {
     // Apply Client Sort
     switch (arg.sort) {
       case SearchSort.alphabeticalAZ:
-        filtered.sort((a, b) => a.title.availableTitle.toLowerCase().compareTo(b.title.availableTitle.toLowerCase()));
+        filtered.sort(
+          (a, b) => a.title.availableTitle.toLowerCase().compareTo(
+            b.title.availableTitle.toLowerCase(),
+          ),
+        );
         break;
       case SearchSort.alphabeticalZA:
-        filtered.sort((a, b) => b.title.availableTitle.toLowerCase().compareTo(a.title.availableTitle.toLowerCase()));
+        filtered.sort(
+          (a, b) => b.title.availableTitle.toLowerCase().compareTo(
+            a.title.availableTitle.toLowerCase(),
+          ),
+        );
         break;
       case SearchSort.newest:
         filtered.sort((a, b) => (b.season ?? '').compareTo(a.season ?? ''));
@@ -265,6 +403,7 @@ class SearchNotifier extends AsyncNotifier<PaginatedResult<UnifiedMedia>?> {
 
     try {
       final newPageResult = await _fetchPage(_currentPage);
+      if (!ref.mounted) return;
       final newItems = newPageResult.items;
       final hasNext = newPageResult.hasNextPage && newItems.isNotEmpty;
       state = AsyncData(
@@ -274,6 +413,7 @@ class SearchNotifier extends AsyncNotifier<PaginatedResult<UnifiedMedia>?> {
         ),
       );
     } catch (e, _) {
+      if (!ref.mounted) return;
       _currentPage--;
       state = AsyncData(
         PaginatedResult(items: currentData.items, hasNextPage: false),

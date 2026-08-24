@@ -1,12 +1,10 @@
 import 'dart:async';
 
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/router/app_navigator.dart';
-
-import 'package:shonenx/core/utils/extensions.dart';
 import 'package:shonenx/features/discovery/domain/models/search_filter_options.dart';
-import 'package:shonenx/features/discovery/presentation/widgets/discover/category_tab_feed.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/discover/multi_source_search_feed.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/discover/paginated_media_grid.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/sheets/advanced_search_sheet.dart';
@@ -55,38 +53,27 @@ class _FilteredDiscoverScreenState
   late final ScrollController _scrollController;
   Timer? _debounceTimer;
 
-  late String _query;
-  late List<String> _genres;
-  late List<String> _tags;
-  late String? _source;
-  late SearchSort _sort;
-  late SearchStatusFilter _status;
-  late SearchFormatFilter _format;
+  late SearchArgs _args;
   bool _isLoadingMore = false;
-
-  SearchArgs get _searchArgs => SearchArgs(
-    query: _query,
-    type: widget.type,
-    genres: _genres,
-    tags: _tags,
-    source: _source,
-    sort: _sort,
-    status: _status,
-    format: _format,
-  );
 
   @override
   void initState() {
     super.initState();
-    _query = widget.initialQuery?.trim() ?? '';
-    _searchController = TextEditingController(text: _query)
+    final initialQuery = widget.initialQuery?.trim() ?? '';
+    _args = SearchArgs(
+      query: initialQuery,
+      category: widget.category,
+      type: widget.type,
+      genres: widget.initialGenres,
+      tags: widget.initialTags,
+      source: widget.source,
+      sort: widget.initialSort,
+      status: widget.initialStatus,
+      format: widget.initialFormat,
+    );
+
+    _searchController = TextEditingController(text: initialQuery)
       ..addListener(_onSearchTextChanged);
-    _genres = List.from(widget.initialGenres);
-    _tags = List.from(widget.initialTags);
-    _source = widget.source;
-    _sort = widget.initialSort;
-    _status = widget.initialStatus;
-    _format = widget.initialFormat;
     _scrollController = ScrollController()..addListener(_handleScroll);
   }
 
@@ -103,9 +90,13 @@ class _FilteredDiscoverScreenState
   void _onSearchTextChanged() {
     _debounceTimer?.cancel();
     final text = _searchController.text.trim();
-    if (text != _query) {
+    if (text != _args.query) {
       _debounceTimer = Timer(const Duration(milliseconds: 500), () {
-        if (mounted) setState(() => _query = text);
+        if (mounted) {
+          setState(() {
+            _args = _args.copyWith(query: text);
+          });
+        }
       });
     }
   }
@@ -124,12 +115,12 @@ class _FilteredDiscoverScreenState
 
   Future<void> _loadNextPage() async {
     if (_isLoadingMore) return;
-    final state = ref.read(searchProvider(_searchArgs));
+    final state = ref.read(searchProvider(_args));
     if (state.value?.hasNextPage != true) return;
 
     setState(() => _isLoadingMore = true);
     try {
-      await ref.read(searchProvider(_searchArgs).notifier).loadNextPage();
+      await ref.read(searchProvider(_args).notifier).loadNextPage();
     } finally {
       if (mounted) setState(() => _isLoadingMore = false);
     }
@@ -144,23 +135,26 @@ class _FilteredDiscoverScreenState
       constraints: const BoxConstraints(maxWidth: 800),
       builder: (context) {
         return AdvancedSearchSheet(
-          initialQuery: _query,
-          type: widget.type,
-          initialGenres: _genres,
-          initialTags: _tags,
-          sourceId: _source,
-          initialSort: _sort,
-          initialStatus: _status,
-          initialFormat: _format,
+          initialQuery: _args.query,
+          type: _args.type,
+          initialGenres: _args.genres,
+          initialTags: _args.tags,
+          sourceId: _args.source,
+          initialSort: _args.sort,
+          initialStatus: _args.status,
+          initialFormat: _args.format,
           onApply: (query, genres, tags, sort, status, format) {
             setState(() {
-              _query = query.trim();
-              _searchController.text = _query;
-              _genres = genres;
-              _tags = tags;
-              _sort = sort;
-              _status = status;
-              _format = format;
+              final trimmedQuery = query.trim();
+              _searchController.text = trimmedQuery;
+              _args = _args.copyWith(
+                query: trimmedQuery,
+                genres: genres,
+                tags: tags,
+                sort: sort,
+                status: status,
+                format: format,
+              );
             });
           },
         );
@@ -170,71 +164,55 @@ class _FilteredDiscoverScreenState
 
   String get _pageTitle {
     if (widget.customTitle != null) return widget.customTitle!;
-    if (widget.category != null && widget.category!.isNotEmpty) {
-      return widget.category!;
+    if (_args.category != null && _args.category!.isNotEmpty) {
+      return _args.category!;
     }
-    if (_source != null && _source!.isNotEmpty) {
+    if (_args.source != null && _args.source!.isNotEmpty) {
       final allAnimeSources =
           ref.watch(availableAnimeSourcesProvider).value ?? [];
       final allMangaSources =
           ref.watch(availableMangaSourcesProvider).value ?? [];
       final allSources = [...allAnimeSources, ...allMangaSources];
-      final sourceObj = allSources.firstWhereOrNull((s) => s.id == _source);
+      final sourceObj = allSources.firstWhereOrNull(
+        (s) => s.id == _args.source,
+      );
       return sourceObj?.name ??
-          (_source![0].toUpperCase() + _source!.substring(1));
+          (_args.source![0].toUpperCase() + _args.source!.substring(1));
     }
-    if (_genres.isNotEmpty) return _genres.join(', ');
-    if (_tags.isNotEmpty) return _tags.join(', ');
-    if (_query.isNotEmpty) return 'Search: "$_query"';
+    if (_args.genres.isNotEmpty) return _args.genres.join(', ');
+    if (_args.tags.isNotEmpty) return _args.tags.join(', ');
+    if (_args.query.isNotEmpty) return 'Search: "${_args.query}"';
     return 'Results';
   }
 
   String get _pageSubtitle {
-    final typeName = widget.type.name.toLowerCase();
-    if (widget.category != null && widget.category!.isNotEmpty) {
-      return 'Browsing $typeName ${widget.category}';
+    final typeName = _args.type.name.toLowerCase();
+    if (_args.category != null && _args.category!.isNotEmpty) {
+      return 'Browsing $typeName ${_args.category}';
     }
-    if (_source != null && _source!.isNotEmpty) {
+    if (_args.source != null && _args.source!.isNotEmpty) {
       return 'Browsing $typeName catalog';
     }
-    if (_genres.isNotEmpty && _tags.isNotEmpty) return _tags.join(', ');
-    if (_genres.isNotEmpty) return 'Filtered by genre';
-    if (_tags.isNotEmpty) return 'Filtered by tag';
+    if (_args.genres.isNotEmpty && _args.tags.isNotEmpty) {
+      return _args.tags.join(', ');
+    }
+    if (_args.genres.isNotEmpty) return 'Filtered by genre';
+    if (_args.tags.isNotEmpty) return 'Filtered by tag';
     return 'Browse catalog';
   }
 
   @override
   Widget build(BuildContext context) {
-    if (widget.category != null &&
-        widget.category!.isNotEmpty &&
-        _query.isEmpty &&
-        _genres.isEmpty &&
-        _tags.isEmpty &&
-        _source == null &&
-        _sort == SearchSort.popularity &&
-        _status == SearchStatusFilter.all &&
-        _format == SearchFormatFilter.all) {
-      return AppScaffold(
-        title: _pageTitle,
-        subtitle: _pageSubtitle,
-        showBackButton: true,
-        body: Padding(
-          padding: const EdgeInsets.all(10),
-          child: CategoryTabFeed(type: widget.type, category: widget.category!),
-        ),
-      );
-    }
-
-    final searchState = ref.watch(searchProvider(_searchArgs));
+    final searchState = ref.watch(searchProvider(_args));
     final filtersState = ref.watch(
-      discoveryFiltersProvider((type: widget.type, sourceId: _source)),
+      discoveryFiltersProvider((type: _args.type, sourceId: _args.source)),
     );
     final hasFilters =
         (filtersState.value != null &&
             filtersState.value!.options.hasAnyFilter) ||
-        _sort != SearchSort.popularity ||
-        _status != SearchStatusFilter.all ||
-        _format != SearchFormatFilter.all;
+        _args.sort != SearchSort.popularity ||
+        _args.status != SearchStatusFilter.all ||
+        _args.format != SearchFormatFilter.all;
 
     final discoveryMode = ref.watch(
       discoveryPrefsProvider.select((p) => p.mode),
@@ -247,18 +225,18 @@ class _FilteredDiscoverScreenState
       body: Stack(
         children: [
           Positioned.fill(
-            child: discoveryMode == MetadataMode.source && _source == null
+            child: discoveryMode == MetadataMode.source && _args.source == null
                 ? MultiSourceSearchFeed(
-                    type: widget.type,
-                    query: _query,
-                    genres: _genres,
-                    tags: _tags,
+                    type: _args.type,
+                    query: _args.query,
+                    genres: _args.genres,
+                    tags: _args.tags,
                     onSourceSelect: (sourceId) {
                       context.pushFilteredDiscover(
-                        query: _query,
-                        type: widget.type,
-                        genres: _genres,
-                        tags: _tags,
+                        query: _args.query,
+                        type: _args.type,
+                        genres: _args.genres,
+                        tags: _args.tags,
                         source: sourceId,
                       );
                     },
@@ -279,13 +257,15 @@ class _FilteredDiscoverScreenState
               onBackPressed: () {
                 if (_searchController.text.isNotEmpty) {
                   _searchController.clear();
-                  setState(() => _query = '');
+                  setState(() => _args = _args.copyWith(query: ''));
                 } else {
                   Navigator.of(context).maybePop();
                 }
               },
               onClearPressed: () => _searchController.clear(),
-              onSubmitted: (text) => setState(() => _query = text.trim()),
+              onSubmitted: (text) => setState(() {
+                _args = _args.copyWith(query: text.trim());
+              }),
               hasFilters: hasFilters,
               onFilterPressed: () => _openAdvancedSearch(context),
             ),

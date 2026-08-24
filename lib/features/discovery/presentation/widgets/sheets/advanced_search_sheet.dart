@@ -132,6 +132,67 @@ class _AdvancedSearchSheetState extends ConsumerState<AdvancedSearchSheet> {
     );
   }
 
+  Widget _buildChoiceChip({
+    required String label,
+    required bool selected,
+    required ValueChanged<bool> onSelected,
+    required ThemeData theme,
+    required ColorScheme colorScheme,
+  }) {
+    return ChoiceChip(
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      visualDensity: VisualDensity.compact,
+      label: Text(label),
+      selected: selected,
+      onSelected: onSelected,
+      backgroundColor: colorScheme.surfaceContainerHigh.withValues(alpha: 0.5),
+      selectedColor: colorScheme.primaryContainer,
+      labelStyle: theme.textTheme.labelMedium?.copyWith(
+        color: selected
+            ? colorScheme.onPrimaryContainer
+            : colorScheme.onSurfaceVariant,
+        fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+      ),
+      side: BorderSide(
+        color: selected
+            ? colorScheme.primary
+            : colorScheme.outline.withValues(alpha: 0.2),
+      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    );
+  }
+
+  Widget _buildFilterChip({
+    required String label,
+    required bool selected,
+    required ValueChanged<bool> onSelected,
+    required ThemeData theme,
+    required ColorScheme colorScheme,
+  }) {
+    return FilterChip(
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      visualDensity: VisualDensity.compact,
+      label: Text(label),
+      selected: selected,
+      onSelected: onSelected,
+      backgroundColor: colorScheme.surfaceContainerHigh.withValues(alpha: 0.5),
+      selectedColor: colorScheme.primaryContainer,
+      checkmarkColor: colorScheme.onPrimaryContainer,
+      labelStyle: theme.textTheme.labelMedium?.copyWith(
+        color: selected
+            ? colorScheme.onPrimaryContainer
+            : colorScheme.onSurfaceVariant,
+        fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+      ),
+      side: BorderSide(
+        color: selected
+            ? colorScheme.primary
+            : colorScheme.outline.withValues(alpha: 0.2),
+      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -215,38 +276,13 @@ class _AdvancedSearchSheetState extends ConsumerState<AdvancedSearchSheet> {
                               spacing: 6,
                               runSpacing: 6,
                               children: options.sorts.map((sortOpt) {
-                                final isSelected = _selectedSort == sortOpt;
-                                return ChoiceChip(
-                                  materialTapTargetSize:
-                                      MaterialTapTargetSize.shrinkWrap,
-                                  visualDensity: VisualDensity.compact,
-                                  label: Text(sortOpt.label),
-                                  selected: isSelected,
+                                return _buildChoiceChip(
+                                  label: sortOpt.label,
+                                  selected: _selectedSort == sortOpt,
                                   onSelected: (_) =>
                                       setState(() => _selectedSort = sortOpt),
-                                  backgroundColor: colorScheme
-                                      .surfaceContainerHigh
-                                      .withValues(alpha: 0.5),
-                                  selectedColor: colorScheme.primaryContainer,
-                                  labelStyle: theme.textTheme.labelMedium
-                                      ?.copyWith(
-                                        color: isSelected
-                                            ? colorScheme.onPrimaryContainer
-                                            : colorScheme.onSurfaceVariant,
-                                        fontWeight: isSelected
-                                            ? FontWeight.bold
-                                            : FontWeight.normal,
-                                      ),
-                                  side: BorderSide(
-                                    color: isSelected
-                                        ? colorScheme.primary
-                                        : colorScheme.outline.withValues(
-                                            alpha: 0.2,
-                                          ),
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
+                                  theme: theme,
+                                  colorScheme: colorScheme,
                                 );
                               }).toList(),
                             ),
@@ -260,39 +296,14 @@ class _AdvancedSearchSheetState extends ConsumerState<AdvancedSearchSheet> {
                               spacing: 6,
                               runSpacing: 6,
                               children: options.statuses.map((statusOpt) {
-                                final isSelected = _selectedStatus == statusOpt;
-                                return ChoiceChip(
-                                  materialTapTargetSize:
-                                      MaterialTapTargetSize.shrinkWrap,
-                                  visualDensity: VisualDensity.compact,
-                                  label: Text(statusOpt.label),
-                                  selected: isSelected,
+                                return _buildChoiceChip(
+                                  label: statusOpt.label,
+                                  selected: _selectedStatus == statusOpt,
                                   onSelected: (_) => setState(
                                     () => _selectedStatus = statusOpt,
                                   ),
-                                  backgroundColor: colorScheme
-                                      .surfaceContainerHigh
-                                      .withValues(alpha: 0.5),
-                                  selectedColor: colorScheme.primaryContainer,
-                                  labelStyle: theme.textTheme.labelMedium
-                                      ?.copyWith(
-                                        color: isSelected
-                                            ? colorScheme.onPrimaryContainer
-                                            : colorScheme.onSurfaceVariant,
-                                        fontWeight: isSelected
-                                            ? FontWeight.bold
-                                            : FontWeight.normal,
-                                      ),
-                                  side: BorderSide(
-                                    color: isSelected
-                                        ? colorScheme.primary
-                                        : colorScheme.outline.withValues(
-                                            alpha: 0.2,
-                                          ),
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
+                                  theme: theme,
+                                  colorScheme: colorScheme,
                                 );
                               }).toList(),
                             ),
@@ -306,38 +317,13 @@ class _AdvancedSearchSheetState extends ConsumerState<AdvancedSearchSheet> {
                               spacing: 6,
                               runSpacing: 6,
                               children: options.formats.map((fmtOpt) {
-                                final isSelected = _selectedFormat == fmtOpt;
-                                return ChoiceChip(
-                                  materialTapTargetSize:
-                                      MaterialTapTargetSize.shrinkWrap,
-                                  visualDensity: VisualDensity.compact,
-                                  label: Text(fmtOpt.label),
-                                  selected: isSelected,
+                                return _buildChoiceChip(
+                                  label: fmtOpt.label,
+                                  selected: _selectedFormat == fmtOpt,
                                   onSelected: (_) =>
                                       setState(() => _selectedFormat = fmtOpt),
-                                  backgroundColor: colorScheme
-                                      .surfaceContainerHigh
-                                      .withValues(alpha: 0.5),
-                                  selectedColor: colorScheme.primaryContainer,
-                                  labelStyle: theme.textTheme.labelMedium
-                                      ?.copyWith(
-                                        color: isSelected
-                                            ? colorScheme.onPrimaryContainer
-                                            : colorScheme.onSurfaceVariant,
-                                        fontWeight: isSelected
-                                            ? FontWeight.bold
-                                            : FontWeight.normal,
-                                      ),
-                                  side: BorderSide(
-                                    color: isSelected
-                                        ? colorScheme.primary
-                                        : colorScheme.outline.withValues(
-                                            alpha: 0.2,
-                                          ),
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
+                                  theme: theme,
+                                  colorScheme: colorScheme,
                                 );
                               }).toList(),
                             ),
@@ -350,40 +336,12 @@ class _AdvancedSearchSheetState extends ConsumerState<AdvancedSearchSheet> {
                               runSpacing: 6,
                               children: data.genres
                                   .map(
-                                    (g) => FilterChip(
-                                      materialTapTargetSize:
-                                          MaterialTapTargetSize.shrinkWrap,
-                                      visualDensity: VisualDensity.compact,
-                                      label: Text(g),
+                                    (g) => _buildFilterChip(
+                                      label: g,
                                       selected: _selectedGenres.contains(g),
                                       onSelected: (_) => _toggleGenre(g),
-                                      backgroundColor: colorScheme
-                                          .surfaceContainerHigh
-                                          .withValues(alpha: 0.5),
-                                      selectedColor:
-                                          colorScheme.primaryContainer,
-                                      checkmarkColor:
-                                          colorScheme.onPrimaryContainer,
-                                      labelStyle: theme.textTheme.labelMedium
-                                          ?.copyWith(
-                                            color: _selectedGenres.contains(g)
-                                                ? colorScheme.onPrimaryContainer
-                                                : colorScheme.onSurfaceVariant,
-                                            fontWeight:
-                                                _selectedGenres.contains(g)
-                                                ? FontWeight.bold
-                                                : FontWeight.normal,
-                                          ),
-                                      side: BorderSide(
-                                        color: _selectedGenres.contains(g)
-                                            ? colorScheme.primary
-                                            : colorScheme.outline.withValues(
-                                                alpha: 0.2,
-                                              ),
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(16),
-                                      ),
+                                      theme: theme,
+                                      colorScheme: colorScheme,
                                     ),
                                   )
                                   .toList(),
@@ -401,19 +359,18 @@ class _AdvancedSearchSheetState extends ConsumerState<AdvancedSearchSheet> {
                                       (t) => InputChip(
                                         materialTapTargetSize:
                                             MaterialTapTargetSize.shrinkWrap,
+                                        visualDensity: VisualDensity.compact,
                                         label: Text(t),
                                         onDeleted: () => _removeTag(t),
+                                        deleteIconColor: colorScheme.primary,
                                         backgroundColor:
-                                            colorScheme.secondaryContainer,
+                                            colorScheme.primaryContainer,
                                         labelStyle: theme.textTheme.labelMedium
                                             ?.copyWith(
                                               color: colorScheme
-                                                  .onSecondaryContainer,
+                                                  .onPrimaryContainer,
                                               fontWeight: FontWeight.bold,
                                             ),
-                                        deleteIconColor:
-                                            colorScheme.onSecondaryContainer,
-                                        side: BorderSide.none,
                                         shape: RoundedRectangleBorder(
                                           borderRadius: BorderRadius.circular(
                                             16,
@@ -425,42 +382,61 @@ class _AdvancedSearchSheetState extends ConsumerState<AdvancedSearchSheet> {
                               ),
                               const SizedBox(height: 8),
                             ],
-                            UnifiedSearchBar(
+                            TextField(
                               controller: _tagQueryController,
-                              onBackPressed: () {
-                                _tagQueryController.clear();
-                                setState(() {});
-                              },
-                              onClearPressed: () {
-                                _tagQueryController.clear();
-                                setState(() {});
-                              },
-                              autofocus: false,
-                              hintText: 'Search tags to add...',
-                              leading: const Icon(Icons.tag_rounded),
+                              decoration: InputDecoration(
+                                hintText: 'Type to filter & add tags...',
+                                prefixIcon: const Icon(
+                                  Icons.tag_rounded,
+                                  size: 20,
+                                ),
+                                suffixIcon: _tagQueryController.text.isNotEmpty
+                                    ? IconButton(
+                                        icon: const Icon(Icons.clear, size: 16),
+                                        onPressed: () =>
+                                            _tagQueryController.clear(),
+                                      )
+                                    : null,
+                                isDense: true,
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 10,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
                             ),
                             if (filteredTags.isNotEmpty) ...[
-                              const SizedBox(height: 8),
-                              Material(
-                                elevation: 2,
-                                borderRadius: BorderRadius.circular(12),
-                                clipBehavior: Clip.antiAlias,
-                                child: Column(
-                                  children: filteredTags
-                                      .map(
-                                        (t) => ListTile(
-                                          title: Text(t),
-                                          trailing: Icon(
-                                            Icons.add_circle_outline_rounded,
-                                            color: colorScheme.primary,
-                                            size: 20,
+                              const SizedBox(height: 6),
+                              Wrap(
+                                spacing: 6,
+                                runSpacing: 6,
+                                children: filteredTags
+                                    .map(
+                                      (t) => ActionChip(
+                                        materialTapTargetSize:
+                                            MaterialTapTargetSize.shrinkWrap,
+                                        visualDensity: VisualDensity.compact,
+                                        avatar: const Icon(Icons.add, size: 14),
+                                        label: Text(t),
+                                        onPressed: () => _addTag(t),
+                                        backgroundColor: colorScheme
+                                            .surfaceContainerHigh
+                                            .withValues(alpha: 0.5),
+                                        labelStyle: theme.textTheme.labelMedium
+                                            ?.copyWith(
+                                              color:
+                                                  colorScheme.onSurfaceVariant,
+                                            ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            16,
                                           ),
-                                          onTap: () => _addTag(t),
-                                          dense: true,
                                         ),
-                                      )
-                                      .toList(),
-                                ),
+                                      ),
+                                    )
+                                    .toList(),
                               ),
                             ],
                             const SizedBox(height: 12),
@@ -474,23 +450,14 @@ class _AdvancedSearchSheetState extends ConsumerState<AdvancedSearchSheet> {
             ),
           ),
           const SizedBox(height: 16),
-          FilledButton(
+          FilledButton.icon(
             onPressed: _submit,
+            icon: const Icon(Icons.search_rounded),
+            label: const Text('Apply Filters'),
             style: FilledButton.styleFrom(
-              backgroundColor: colorScheme.primary,
-              foregroundColor: colorScheme.onPrimary,
-              padding: const EdgeInsets.symmetric(vertical: 14),
+              padding: const EdgeInsets.symmetric(vertical: 12),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
-              ),
-              elevation: 2,
-              shadowColor: colorScheme.primary.withValues(alpha: 0.3),
-            ),
-            child: Text(
-              'Apply Filters',
-              style: theme.textTheme.titleMedium?.copyWith(
-                color: colorScheme.onPrimary,
-                fontWeight: FontWeight.bold,
+                borderRadius: BorderRadius.circular(12),
               ),
             ),
           ),

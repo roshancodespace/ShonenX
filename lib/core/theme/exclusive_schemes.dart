@@ -16,6 +16,48 @@ class ExclusiveSchemeData {
 }
 
 const Map<String, ExclusiveSchemeData> exclusiveSchemes = {
+  'netflix': ExclusiveSchemeData(
+    name: 'Netflix',
+    description: 'Iconic cinematic red and pitch-black elegance',
+    light: FlexSchemeColor(
+      primary: Color(0xFFE50914),
+      primaryContainer: Color(0xFFFFD9D9),
+      secondary: Color(0xFF221F1F),
+      secondaryContainer: Color(0xFFE5E5E5),
+      tertiary: Color(0xFFB81D24),
+      tertiaryContainer: Color(0xFFFFCDD2),
+    ),
+    dark: FlexSchemeColor(
+      primary: Color(0xFFE50914),
+      primaryContainer: Color(0xFF4D0005),
+      secondary: Color(0xFFF5F5F1),
+      secondaryContainer: Color(0xFF221F1F),
+      tertiary: Color(0xFFFF333A),
+      tertiaryContainer: Color(0xFF6B0B0F),
+    ),
+  ),
+
+  'crunchyroll': ExclusiveSchemeData(
+    name: 'Crunchyroll',
+    description: 'Signature anime orange with sleek obsidian tones',
+    light: FlexSchemeColor(
+      primary: Color(0xFFF47521),
+      primaryContainer: Color(0xFFFFE8D6),
+      secondary: Color(0xFF23252B),
+      secondaryContainer: Color(0xFFEAEBED),
+      tertiary: Color(0xFFFAB818),
+      tertiaryContainer: Color(0xFFFFF3CD),
+    ),
+    dark: FlexSchemeColor(
+      primary: Color(0xFFFF640A),
+      primaryContainer: Color(0xFF5A2000),
+      secondary: Color(0xFFFAB818),
+      secondaryContainer: Color(0xFF23252B),
+      tertiary: Color(0xFFFF9E57),
+      tertiaryContainer: Color(0xFF381400),
+    ),
+  ),
+
   'midnight_tokyo': ExclusiveSchemeData(
     name: 'Midnight Tokyo',
     description: 'Neon-lit streets at night',

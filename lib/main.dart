@@ -73,11 +73,11 @@ void main(List<String> args) async {
     log.i('App starting');
     log.i('Args: $args');
 
-    final init = await AppInit().init();
-    log.i('AppInit completed');
-
-    final sharedPreference = await SharedPreferences.getInstance();
-    log.i('SharedPreferences ready');
+    final (init, sharedPreference) = await (
+      AppInit().init(),
+      SharedPreferences.getInstance(),
+    ).wait;
+    log.i('AppInit and SharedPreferences ready');
 
     Uri? startupUri;
 

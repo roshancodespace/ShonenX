@@ -78,7 +78,7 @@ class _HeaderButton extends StatelessWidget {
 }
 
 class HomeScreen extends ConsumerWidget {
-  HomeScreen({super.key});
+  const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -283,46 +283,6 @@ class HomeScreen extends ConsumerWidget {
       ),
     );
   }
-
-  final categorySectionFeedProvider =
-      FutureProvider.family<List<UnifiedMedia>, (TrackerCategory, MediaType)>((
-        ref,
-        arg,
-      ) async {
-        final category = arg.$1;
-        final mediaType = arg.$2;
-        final mode = ref.watch(discoveryPrefsProvider.select((p) => p.mode));
-
-        if (mode == MetadataMode.tracker) {
-          final tracker = ref.watch(metadataSourceProvider);
-          final adultMode = ref.watch(contentPrefsProvider).adultContentMode;
-          final result = await tracker.getCategoryItems(
-            category,
-            type: mediaType,
-            adultMode: adultMode,
-            cacheDuration: const Duration(hours: 12),
-          );
-          return result.items;
-        } else {
-          final allSources = mediaType == MediaType.ANIME
-              ? await ref.watch(availableAnimeSourcesProvider.future)
-              : await ref.watch(availableMangaSourcesProvider.future);
-          final prefs = ref.watch(discoveryPrefsProvider);
-          final activeSources = allSources
-              .where((s) => prefs.activeSources.contains(s.id))
-              .toList();
-          if (activeSources.isEmpty) return const [];
-          final sourceInfo = activeSources.first;
-          final source = mediaType == MediaType.ANIME
-              ? ref.read(animeSourceProvider(sourceInfo))
-              : ref.read(mangaSourceProvider(sourceInfo));
-          var items = await source.getTrending();
-          if (items.isEmpty) {
-            items = await source.search('', mediaType);
-          }
-          return items;
-        }
-      });
 
   Widget _buildSectionWidget(
     BuildContext context,
@@ -573,3 +533,45 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 }
+
+final categorySectionFeedProvider =
+    FutureProvider.family<List<UnifiedMedia>, (TrackerCategory, MediaType)>((
+      ref,
+      arg,
+    ) async {
+      final category = arg.$1;
+      final mediaType = arg.$2;
+      final mode = ref.watch(discoveryPrefsProvider.select((p) => p.mode));
+
+      if (mode == MetadataMode.tracker) {
+        final tracker = ref.watch(metadataSourceProvider);
+        final adultMode = ref.watch(contentPrefsProvider).adultContentMode;
+        final result = await tracker.getCategoryItems(
+          category,
+          type: mediaType,
+          adultMode: adultMode,
+          cacheDuration: const Duration(hours: 12),
+        );
+        return result.items;
+      } else {
+        final allSources = mediaType == MediaType.ANIME
+            ? await ref.watch(availableAnimeSourcesProvider.future)
+            : await ref.watch(availableMangaSourcesProvider.future);
+        final activeSources = ref.watch(
+          discoveryPrefsProvider.select((p) => p.activeSources),
+        );
+        final filteredSources = allSources
+            .where((s) => activeSources.contains(s.id))
+            .toList();
+        if (filteredSources.isEmpty) return const [];
+        final sourceInfo = filteredSources.first;
+        final source = mediaType == MediaType.ANIME
+            ? ref.read(animeSourceProvider(sourceInfo))
+            : ref.read(mangaSourceProvider(sourceInfo));
+        var items = await source.getTrending();
+        if (items.isEmpty) {
+          items = await source.search('', mediaType);
+        }
+        return items;
+      }
+    });

@@ -29,6 +29,18 @@ class WatchHistoryRepository {
     });
   }
 
+  Future<void> deleteByAnimeIds(List<String> animeIds) async {
+    if (animeIds.isEmpty) return;
+    await _isar.writeTxn(() async {
+      for (final animeId in animeIds) {
+        await _isar.watchHistoryEntrys
+            .filter()
+            .animeIdEqualTo(animeId)
+            .deleteAll();
+      }
+    });
+  }
+
   Stream<List<WatchHistoryEntry>> watchHistory({int limit = 10}) {
     return _isar.watchHistoryEntrys
         .where()

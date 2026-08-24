@@ -29,10 +29,11 @@ class PaginatedMediaGrid extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final uiState = ref.watch(uiPrefsProvider);
-    final style = uiState.cardStyle;
-    final isWideMode = uiState.isMediaCardWide(style.name);
-    final scale = ref.watch(themePrefsProvider).uiScaleFactor;
+    final style = ref.watch(uiPrefsProvider.select((s) => s.cardStyle));
+    final isWideMode = ref.watch(
+      uiPrefsProvider.select((s) => s.isMediaCardWide(style.name)),
+    );
+    final scale = ref.watch(themePrefsProvider.select((s) => s.uiScaleFactor));
     final layout = style.getScaledLayout(scale, isWideMode: isWideMode);
 
     return state.when(

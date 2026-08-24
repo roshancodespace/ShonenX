@@ -514,12 +514,13 @@ class _DownloadedFilesTabState extends ConsumerState<_DownloadedFilesTab> {
                         foregroundColor: colors.onError,
                       ),
                       onPressed: () async {
+                        final messenger = ScaffoldMessenger.of(context);
                         Navigator.pop(context);
                         try {
                           await onDelete();
                         } catch (e) {
                           if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
+                            messenger.showSnackBar(
                               SnackBar(content: Text('Failed to delete: $e')),
                             );
                           }

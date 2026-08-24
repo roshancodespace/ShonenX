@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/router/app_navigator.dart';
+import 'package:shonenx/core/utils/formatting.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/core/utils/image_headers.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/continue/continue_media_mixin.dart';
@@ -147,7 +148,10 @@ class _ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem>
           ? (widget.entry.episodeTitle ?? 'Continue watching')
           : subtitleText,
       progress: widget.progress,
-      progressText: _formatTimeRemaining(),
+      progressText: formatTimeRemaining(
+        widget.entry.durationInMilliseconds -
+            widget.entry.positionInMilliseconds,
+      ),
       badgeText: 'EP ${widget.entry.episodeNumber.toInt()}',
       thumbnailBuilder: (context, cs) =>
           _buildThumbnail(widget.entry.thumbnailUrl, cs),
@@ -176,16 +180,6 @@ class _ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem>
         ),
       ),
     );
-  }
-
-  String _formatTimeRemaining() {
-    final remainingMs =
-        widget.entry.durationInMilliseconds -
-        widget.entry.positionInMilliseconds;
-    if (remainingMs <= 0) return 'Watched';
-
-    final remainingMins = (remainingMs / 60000).ceil();
-    return '$remainingMins min left';
   }
 
   Widget _buildThumbnail(String? thumbnail, ColorScheme cs) {

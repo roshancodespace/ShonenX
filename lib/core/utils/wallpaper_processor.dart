@@ -51,7 +51,7 @@ class WallpaperProcessor {
         maximumColorCount: 16,
         size: const Size(110, 110),
       );
-      imageColorSeed = palette.dominantColor?.color.value;
+      imageColorSeed = palette.dominantColor?.color.toARGB32();
     } catch (e) {
       debugPrint('Error generating palette: $e');
     }

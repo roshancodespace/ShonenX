@@ -5,7 +5,6 @@ import 'package:shonenx/features/discovery/providers/episodes_provider.dart';
 import 'package:shonenx/features/discovery/providers/media_preference_provider.dart';
 import 'package:shonenx/features/history/domain/models/read_history_entry.dart';
 import 'package:shonenx/features/reader/domain/reader_mode.dart';
-import 'package:shonenx/shared/models/unified_episode.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/source_engine/source_registry.dart';
 
@@ -48,31 +47,24 @@ class ContinueReadingResolver {
         ? rawOverride
         : null;
 
-    UnifiedEpisode? chapter;
+    final chaptersFuture = overrideId != null
+        ? ref.read(
+            sourceEpisodesProvider((
+              providerId: overrideId,
+              sourceId: sourceInfo.id,
+              type: MediaType.MANGA,
+            )).future,
+          )
+        : ref.read(
+            episodesListProvider(
+              MediaArgs(mediaTitle: entry.mangaTitle, type: MediaType.MANGA),
+            ).future,
+          );
 
-    if (overrideId != null) {
-      final args = (
-        providerId: overrideId,
-        sourceId: sourceInfo.id,
-        type: MediaType.MANGA,
-      );
-
-      final episodesState = await ref.read(sourceEpisodesProvider(args).future);
-
-      chapter = episodesState.episodes.firstWhereOrNull(
-        (e) => e.number == entry.chapterNumber,
-      );
-    } else {
-      final episodesState = await ref.read(
-        episodesListProvider(
-          MediaArgs(mediaTitle: entry.mangaTitle, type: MediaType.MANGA),
-        ).future,
-      );
-
-      chapter = episodesState.episodes.firstWhereOrNull(
-        (e) => e.number == entry.chapterNumber,
-      );
-    }
+    final chaptersState = await chaptersFuture;
+    final chapter = chaptersState.episodes.firstWhereOrNull(
+      (e) => e.number == entry.chapterNumber,
+    );
 
     if (chapter == null) {
       throw Exception('Chapter not found.');

@@ -201,7 +201,6 @@ class _CfSolverScreenState extends State<CfSolverScreen> {
                 javaScriptEnabled: true,
                 domStorageEnabled: true,
                 thirdPartyCookiesEnabled: true,
-                clearCache: true,
                 isTextInteractionEnabled: true,
                 sharedCookiesEnabled: true,
                 allowContentAccess: true,

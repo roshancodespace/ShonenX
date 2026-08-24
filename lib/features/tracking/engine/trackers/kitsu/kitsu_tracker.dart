@@ -311,8 +311,9 @@ class KitsuTracker extends BaseTracker
         final attr = <String, dynamic>{};
         if (status != null) attr['status'] = _toKitsuStatus(status);
         if (progress != null) attr['progress'] = progress.toInt();
-        if (score != null && score > 0)
+        if (score != null && score > 0) {
           attr['ratingTwenty'] = (score * 2.0).round();
+        }
 
         if (attr.isEmpty) return;
 

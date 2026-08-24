@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,6 +6,7 @@ import 'package:shonenx/features/discovery/domain/media_args.dart';
 import 'package:shonenx/features/discovery/providers/media_preference_provider.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
+import 'package:shonenx/shared/widgets/manual_match_list.dart';
 
 import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
 import 'package:shonenx/features/tracking/engine/remote_tracker.dart';
@@ -144,52 +144,13 @@ class _ManualTrackerMatchSheetState
             onSubmitted: _search,
           ),
           const SizedBox(height: 16),
-          if (_results != null && _results!.isEmpty && !_isLoading)
-            const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Center(child: Text('No matches found')),
+          Flexible(
+            child: ManualMatchList(
+              results: _results,
+              isLoading: _isLoading,
+              onMatchSelected: _onSelect,
             ),
-
-          if (_results != null && _results!.isNotEmpty)
-            Flexible(
-              child: ListView.separated(
-                shrinkWrap: true,
-                itemCount: _results!.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 8),
-                itemBuilder: (context, index) {
-                  final result = _results![index];
-
-                  return ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: result.cover != null
-                        ? ClipRRect(
-                            borderRadius: BorderRadius.circular(6),
-                            child: CachedNetworkImage(
-                              imageUrl: result.cover!,
-                              width: 40,
-                              height: 60,
-                              fit: BoxFit.cover,
-                            ),
-                          )
-                        : const SizedBox(
-                            width: 40,
-                            height: 60,
-                            child: Icon(Icons.movie_creation_outlined),
-                          ),
-                    title: Text(
-                      result.title.availableTitle,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                    trailing: FilledButton.tonal(
-                      onPressed: () => _onSelect(result),
-                      child: const Text('Match'),
-                    ),
-                  );
-                },
-              ),
-            ),
+          ),
         ],
       ),
     );

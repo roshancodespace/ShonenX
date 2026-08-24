@@ -68,15 +68,21 @@ class GitHubRelease {
       try {
         final deviceInfo = DeviceInfoPlugin();
         final androidInfo = await deviceInfo.androidInfo;
-        final supportedAbis = androidInfo.supportedAbis.map((e) => e.toLowerCase()).toList();
+        final supportedAbis = androidInfo.supportedAbis
+            .map((e) => e.toLowerCase())
+            .toList();
 
         for (final abi in supportedAbis) {
           String searchKey = abi;
           if (abi.contains('arm64')) {
             searchKey = 'arm64';
-          } else if (abi.contains('armeabi-v7a') || abi.contains('v7a')) searchKey = 'v7a';
-          else if (abi.contains('x86_64')) searchKey = 'x86_64';
-          else if (abi.contains('x86')) searchKey = 'x86';
+          } else if (abi.contains('armeabi-v7a') || abi.contains('v7a')) {
+            searchKey = 'v7a';
+          } else if (abi.contains('x86_64')) {
+            searchKey = 'x86_64';
+          } else if (abi.contains('x86')) {
+            searchKey = 'x86';
+          }
 
           for (final a in assets) {
             final name = a.name.toLowerCase();
@@ -88,7 +94,11 @@ class GitHubRelease {
 
         for (final a in assets) {
           final name = a.name.toLowerCase();
-          if (name.endsWith('.apk') && (name.contains('universal') || (!name.contains('arm64') && !name.contains('v7a') && !name.contains('x86')))) {
+          if (name.endsWith('.apk') &&
+              (name.contains('universal') ||
+                  (!name.contains('arm64') &&
+                      !name.contains('v7a') &&
+                      !name.contains('x86')))) {
             return a;
           }
         }
@@ -154,7 +164,9 @@ class GitHubRelease {
     return GitHubRelease(
       id: json['id'] as int? ?? 0,
       tagName: json['tag_name'] as String? ?? '',
-      name: json['name'] as String? ?? (json['tag_name'] as String? ?? 'New Release'),
+      name:
+          json['name'] as String? ??
+          (json['tag_name'] as String? ?? 'New Release'),
       body: json['body'] as String? ?? 'No release notes provided.',
       prerelease: json['prerelease'] as bool? ?? false,
       draft: json['draft'] as bool? ?? false,

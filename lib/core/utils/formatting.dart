@@ -115,3 +115,22 @@ String? formatEpisodeNumber(num? value) {
 
   return value.toStringAsFixed(1);
 }
+
+String formatDuration(Duration duration, {bool padHours = false}) {
+  String twoDigits(int n) => n.toString().padLeft(2, '0');
+  final minutes = twoDigits(duration.inMinutes.remainder(60));
+  final seconds = twoDigits(duration.inSeconds.remainder(60));
+  if (duration.inHours > 0 || padHours) {
+    final hours = padHours
+        ? twoDigits(duration.inHours)
+        : duration.inHours.toString();
+    return '$hours:$minutes:$seconds';
+  }
+  return '$minutes:$seconds';
+}
+
+String formatTimeRemaining(int remainingMs) {
+  if (remainingMs <= 0) return 'Watched';
+  final remainingMins = (remainingMs / 60000).ceil();
+  return '$remainingMins min left';
+}

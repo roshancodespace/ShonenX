@@ -168,8 +168,8 @@ class AppInit {
                 ..preferredSourceId = old.preferredSourceId
                 ..preferredSourceName = old.preferredSourceName
                 ..preferredSourceType = old.preferredSourceType
-                ..manualOverrideId = old.manualOverrideId
-                ..manualOverrideTitle = old.manualOverrideTitle,
+                ..matchedMediaId = old.manualOverrideId
+                ..matchedMediaTitle = old.manualOverrideTitle,
             )
             .toList();
 

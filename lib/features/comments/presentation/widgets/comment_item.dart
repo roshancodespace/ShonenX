@@ -300,8 +300,9 @@ class CommentItem extends StatelessWidget {
       return '$weeks ${weeks == 1 ? 'week' : 'weeks'} ago';
     }
     if (days > 0) return '$days ${days == 1 ? 'day' : 'days'} ago';
-    if (diff.inHours > 0)
+    if (diff.inHours > 0) {
       return '${diff.inHours} ${diff.inHours == 1 ? 'hr' : 'hrs'} ago';
+    }
     if (diff.inMinutes > 0) return '${diff.inMinutes} min ago';
     return 'just now';
   }

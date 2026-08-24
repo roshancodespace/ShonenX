@@ -18,7 +18,7 @@ class _CleanupItem {
   final String subtitle;
   final DownloadTask? task;
   final FileSystemEntity? entity;
-  bool selected;
+  bool selected = true;
 
   _CleanupItem({
     required this.id,
@@ -26,7 +26,6 @@ class _CleanupItem {
     required this.subtitle,
     this.task,
     this.entity,
-    this.selected = true,
   });
 }
 

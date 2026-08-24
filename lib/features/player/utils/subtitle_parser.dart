@@ -19,7 +19,6 @@ class SubtitleParser {
     String url, {
     Map<String, String>? headers,
   }) async {
-    print(url);
     try {
       final response = await http.get(Uri.parse(url), headers: headers);
       if (response.statusCode == 200) {

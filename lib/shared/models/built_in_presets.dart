@@ -121,7 +121,7 @@ class BuiltInPresets {
       previewColors: [0xFFA3E635, 0xFF3F6212, 0xFF111827],
       themeMode: ThemeMode.dark,
       flexScheme: FlexScheme.custom,
-      themeVariant: AppThemeVariant.tonalSpot,
+      themeVariant: AppThemeVariant.classic,
       colorSeed: 0xFFA3E635,
       blendLevel: 10,
       useGradients: true,

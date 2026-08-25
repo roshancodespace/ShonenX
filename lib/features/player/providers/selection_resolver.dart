@@ -4,6 +4,39 @@ import 'package:shonenx/core/network/http_client.dart';
 import 'package:shonenx/shared/models/video_server.dart';
 import 'package:shonenx/shared/models/video_stream.dart';
 
+const Map<String, List<String>> _languageAliases = {
+  'en': ['en', 'eng', 'english'],
+  'ja': ['ja', 'jpn', 'japanese', 'nihongo'],
+  'es': ['es', 'spa', 'spanish', 'espanol', 'español', 'castilian', 'latin'],
+  'fr': ['fr', 'fre', 'fra', 'french', 'francais', 'français'],
+  'de': ['de', 'ger', 'deu', 'german', 'deutsch'],
+  'pt': ['pt', 'por', 'portuguese', 'portugues', 'português', 'brazilian'],
+  'it': ['it', 'ita', 'italian', 'italiano'],
+  'ru': ['ru', 'rus', 'russian', 'russkiy'],
+  'ar': ['ar', 'ara', 'arabic'],
+  'hi': ['hi', 'hin', 'hindi'],
+  'id': ['id', 'ind', 'indonesian', 'bahasa'],
+  'tr': ['tr', 'tur', 'turkish', 'turkce', 'türkçe'],
+  'vi': ['vi', 'vie', 'vietnamese', 'tieng viet', 'tiếng việt'],
+  'th': ['th', 'tha', 'thai'],
+  'pl': ['pl', 'pol', 'polish', 'polski'],
+  'zh': ['zh', 'chi', 'zho', 'chinese', 'mandarin', 'cantonese'],
+  'ko': ['ko', 'kor', 'korean', 'hangul'],
+  'nl': ['nl', 'dut', 'nld', 'dutch', 'nederlands'],
+  'fil': ['fil', 'tgl', 'tagalog', 'filipino'],
+  'ms': ['ms', 'may', 'msa', 'malay'],
+  'sv': ['sv', 'swe', 'swedish', 'svenska'],
+  'uk': ['uk', 'ukr', 'ukrainian'],
+  'ro': ['ro', 'rum', 'ron', 'romanian'],
+  'el': ['el', 'gre', 'ell', 'greek'],
+  'hu': ['hu', 'hun', 'hungarian'],
+  'cs': ['cs', 'cze', 'ces', 'czech'],
+  'da': ['da', 'dan', 'danish'],
+  'fi': ['fi', 'fin', 'finnish'],
+  'no': ['no', 'nor', 'norwegian'],
+  'he': ['he', 'heb', 'hebrew'],
+};
+
 class SelectionResolver {
   String? preferredServerId;
   ServerType? preferredServerType;
@@ -60,12 +93,8 @@ class SelectionResolver {
     // Step 2: match quality within the preferred type, then fall back to all
     if (preferredQuality != null && preferredQuality != 'Auto') {
       final match =
-          preferredTypeStreams.firstWhereOrNull(
-            (s) => matchesQuality(s.quality, preferredQuality!),
-          ) ??
-          streams.firstWhereOrNull(
-            (s) => matchesQuality(s.quality, preferredQuality!),
-          );
+          resolveBestQuality(preferredTypeStreams, preferredQuality!) ??
+          resolveBestQuality(streams, preferredQuality!);
       if (match != null) activeStream = match;
     }
 
@@ -107,36 +136,101 @@ class SelectionResolver {
           ),
         );
       }
-    } catch (_) {
-      // Non-HLS streams or network errors — fall back to just "Auto"
-    }
+    } catch (_) {}
 
     // Pick the preferred quality from the parsed list
     VideoStream activeQuality = qualitiesList.first;
     if (preferredQuality != null && preferredQuality != 'Auto') {
-      final match = qualitiesList.firstWhereOrNull(
-        (s) => matchesQuality(s.quality, preferredQuality!),
-      );
+      final match = resolveBestQuality(qualitiesList, preferredQuality!);
       if (match != null) activeQuality = match;
     }
 
     return (list: qualitiesList, active: activeQuality);
   }
 
+  VideoStream? resolveBestQuality(List<VideoStream> streams, String target) {
+    if (streams.isEmpty) return null;
+    if (target.toLowerCase() == 'auto') {
+      return streams.firstWhereOrNull(
+            (s) => s.quality.toLowerCase() == 'auto',
+          ) ??
+          streams.first;
+    }
+
+    // 1. Exact or direct string match
+    final exactMatch = streams.firstWhereOrNull(
+      (s) => matchesQuality(s.quality, target),
+    );
+    if (exactMatch != null) return exactMatch;
+
+    // 2. Numeric resolution proximity match
+    final targetRes = parseResolution(target);
+    if (targetRes == null) return null;
+
+    final candidates = <VideoStream, int>{};
+    for (final s in streams) {
+      if (s.quality.toLowerCase() == 'auto') continue;
+      final res = parseResolution(s.quality);
+      if (res != null) {
+        candidates[s] = res;
+      }
+    }
+
+    if (candidates.isEmpty) return null;
+
+    // Prefer closest available quality at or below the target resolution
+    final atOrBelow = candidates.entries
+        .where((e) => e.value <= targetRes)
+        .toList();
+    if (atOrBelow.isNotEmpty) {
+      atOrBelow.sort((a, b) => b.value.compareTo(a.value));
+      return atOrBelow.first.key;
+    }
+
+    // If all available qualities are higher, pick the closest higher resolution
+    final sortedByDistance = candidates.entries.toList()
+      ..sort(
+        (a, b) =>
+            (a.value - targetRes).abs().compareTo((b.value - targetRes).abs()),
+      );
+    return sortedByDistance.first.key;
+  }
+
+  int? parseResolution(String q) {
+    final clean = q.toLowerCase().replaceAll(' ', '');
+    if (clean.contains('4k') ||
+        clean.contains('2160') ||
+        clean.contains('uhd')) {
+      return 2160;
+    }
+    if (clean.contains('2k') ||
+        clean.contains('1440') ||
+        clean.contains('qhd')) {
+      return 1440;
+    }
+    if (clean.contains('1080') || clean.contains('fhd')) return 1080;
+    if (clean.contains('720') || clean.contains('hd')) return 720;
+    if (clean.contains('480') || clean.contains('sd')) return 480;
+    if (clean.contains('360')) return 360;
+    if (clean.contains('240')) return 240;
+
+    final digits = RegExp(r'(\d{3,4})').firstMatch(clean);
+    if (digits != null) return int.tryParse(digits.group(1)!);
+    return null;
+  }
+
   SubtitleTrack resolveSubtitle(List<SubtitleTrack> subtitles) {
     if (subtitles.isEmpty) return SubtitleTrack.none;
 
-    // User explicitly disabled subtitles
-    if (preferredSubtitleLang == 'Off') return SubtitleTrack.none;
+    if (preferredSubtitleLang == 'Off' ||
+        preferredSubtitleLang?.toLowerCase() == 'none') {
+      return SubtitleTrack.none;
+    }
 
-    // No preference set — return first (usually "Off")
     if (preferredSubtitleLang == null) return subtitles.first;
 
-    final pref = preferredSubtitleLang!.toLowerCase();
     final match = subtitles.firstWhereOrNull(
-      (s) =>
-          s.language.toLowerCase().contains(pref) ||
-          pref.contains(s.language.toLowerCase()),
+      (s) => matchesLanguage(s.language, preferredSubtitleLang!),
     );
     return match ?? subtitles.first;
   }
@@ -147,13 +241,10 @@ class SelectionResolver {
     if (preferredAudioLang == 'Auto') return AudioTrack.auto;
     if (preferredAudioLang == null) return null;
 
-    final pref = preferredAudioLang!.toLowerCase();
     return tracks.firstWhereOrNull(
       (t) =>
-          (t.language?.toLowerCase().contains(pref) == true) ||
-          t.label.toLowerCase().contains(pref) ||
-          pref.contains(t.language?.toLowerCase() ?? '---') ||
-          pref.contains(t.label.toLowerCase()),
+          matchesLanguage(t.language ?? '', preferredAudioLang!) ||
+          matchesLanguage(t.label, preferredAudioLang!),
     );
   }
 
@@ -174,5 +265,22 @@ class SelectionResolver {
 
     // Bidirectional substring match as final fallback
     return c.contains(t) || t.contains(c);
+  }
+
+  bool matchesLanguage(String candidate, String target) {
+    final c = candidate.toLowerCase().trim();
+    final t = target.toLowerCase().trim();
+
+    if (c.isEmpty || t.isEmpty) return false;
+    if (c == t) return true;
+    if (c.contains(t) || t.contains(c)) return true;
+
+    for (final group in _languageAliases.values) {
+      final matchesC = group.any((alias) => c == alias || c.contains(alias));
+      final matchesT = group.any((alias) => t == alias || t.contains(alias));
+      if (matchesC && matchesT) return true;
+    }
+
+    return false;
   }
 }

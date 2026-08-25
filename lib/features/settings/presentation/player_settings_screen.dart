@@ -9,6 +9,7 @@ import 'package:shonenx/features/settings/presentation/widgets/gesture_settings_
 import 'package:shonenx/features/settings/presentation/widgets/subtitle_settings_sheet.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
 import 'package:shonenx/shared/models/video_server.dart';
+import 'package:shonenx/shared/widgets/app_dialog.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
 
 class PlayerSettingsScreen extends ConsumerWidget {
@@ -111,89 +112,106 @@ class PlayerSettingsScreen extends ConsumerWidget {
               SettingsDropdownTile<String>(
                 icon: Icons.high_quality_rounded,
                 title: 'Default Video Quality',
-                value:
-                    {
-                      'Auto',
-                      '1080p',
-                      '720p',
-                      '480p',
-                      '360p',
-                      playerPrefs.defaultQuality,
-                    }.contains(playerPrefs.defaultQuality)
+                value: _kQualityOptions.containsKey(playerPrefs.defaultQuality)
                     ? playerPrefs.defaultQuality
-                    : '1080p',
-                items:
-                    {
-                          'Auto',
-                          '1080p',
-                          '720p',
-                          '480p',
-                          '360p',
-                          playerPrefs.defaultQuality,
-                        }
-                        .map((q) => DropdownMenuItem(value: q, child: Text(q)))
-                        .toList(),
+                    : playerPrefs.defaultQuality,
+                items: [
+                  ..._kQualityOptions.entries.map(
+                    (e) => DropdownMenuItem(value: e.key, child: Text(e.value)),
+                  ),
+                  if (!_kQualityOptions.containsKey(playerPrefs.defaultQuality))
+                    DropdownMenuItem(
+                      value: playerPrefs.defaultQuality,
+                      child: Text(playerPrefs.defaultQuality),
+                    ),
+                  const DropdownMenuItem(
+                    value: '__custom__',
+                    child: Text('Custom...'),
+                  ),
+                ],
                 onChanged: (val) {
-                  if (val != null) prefsNotifier.setDefaultQuality(val);
+                  if (val == '__custom__') {
+                    _showCustomInputDialog(
+                      context,
+                      title: 'Custom Video Quality',
+                      hint: 'e.g. 4K, 2160p, 1440p, 1080p',
+                      initialValue: playerPrefs.defaultQuality,
+                      onSubmitted: (q) => prefsNotifier.setDefaultQuality(q),
+                    );
+                  } else if (val != null) {
+                    prefsNotifier.setDefaultQuality(val);
+                  }
                 },
               ),
               SettingsDropdownTile<String>(
                 icon: Icons.audiotrack_rounded,
                 title: 'Default Audio Language',
                 value: playerPrefs.defaultAudioLang,
-                items: {'eng', 'jpn', 'Auto', playerPrefs.defaultAudioLang}
-                    .map(
-                      (a) => DropdownMenuItem(
-                        value: a,
-                        child: Text(
-                          a == 'eng'
-                              ? 'English (eng)'
-                              : a == 'jpn'
-                              ? 'Japanese (jpn)'
-                              : a == 'Auto'
-                              ? 'Auto'
-                              : a.toUpperCase(),
-                        ),
-                      ),
-                    )
-                    .toList(),
+                items: [
+                  ..._kAudioLangOptions.entries.map(
+                    (e) => DropdownMenuItem(value: e.key, child: Text(e.value)),
+                  ),
+                  if (!_kAudioLangOptions.containsKey(
+                    playerPrefs.defaultAudioLang,
+                  ))
+                    DropdownMenuItem(
+                      value: playerPrefs.defaultAudioLang,
+                      child: Text(playerPrefs.defaultAudioLang.toUpperCase()),
+                    ),
+                  const DropdownMenuItem(
+                    value: '__custom__',
+                    child: Text('Custom...'),
+                  ),
+                ],
                 onChanged: (val) {
-                  if (val != null) prefsNotifier.setDefaultAudioLang(val);
+                  if (val == '__custom__') {
+                    _showCustomInputDialog(
+                      context,
+                      title: 'Custom Audio Language',
+                      hint: 'e.g. jpn, eng, spa, de',
+                      initialValue: playerPrefs.defaultAudioLang,
+                      onSubmitted: (l) => prefsNotifier.setDefaultAudioLang(l),
+                    );
+                  } else if (val != null) {
+                    prefsNotifier.setDefaultAudioLang(val);
+                  }
                 },
               ),
               SettingsDropdownTile<String>(
                 icon: Icons.subtitles_rounded,
                 title: 'Default Subtitle Language',
                 value: playerPrefs.defaultSubtitleLang,
-                items:
-                    {
-                          'eng',
-                          'Off',
-                          'spa',
-                          'fre',
-                          'ger',
-                          'por',
-                          'ita',
-                          'rus',
-                          'ara',
-                          'hin',
-                          playerPrefs.defaultSubtitleLang,
-                        }
-                        .map(
-                          (s) => DropdownMenuItem(
-                            value: s,
-                            child: Text(
-                              s == 'eng'
-                                  ? 'English (eng)'
-                                  : s == 'Off'
-                                  ? 'Off'
-                                  : s.toUpperCase(),
-                            ),
-                          ),
-                        )
-                        .toList(),
+                items: [
+                  ..._kSubtitleLangOptions.entries.map(
+                    (e) => DropdownMenuItem(value: e.key, child: Text(e.value)),
+                  ),
+                  if (!_kSubtitleLangOptions.containsKey(
+                    playerPrefs.defaultSubtitleLang,
+                  ))
+                    DropdownMenuItem(
+                      value: playerPrefs.defaultSubtitleLang,
+                      child: Text(
+                        playerPrefs.defaultSubtitleLang.toUpperCase(),
+                      ),
+                    ),
+                  const DropdownMenuItem(
+                    value: '__custom__',
+                    child: Text('Custom...'),
+                  ),
+                ],
                 onChanged: (val) {
-                  if (val != null) prefsNotifier.setDefaultSubtitleLang(val);
+                  if (val == '__custom__') {
+                    _showCustomInputDialog(
+                      context,
+                      title: 'Custom Subtitle Language',
+                      hint: 'e.g. eng, spa, ger, ja',
+                      initialValue: playerPrefs.defaultSubtitleLang,
+                      onSubmitted: (l) =>
+                          prefsNotifier.setDefaultSubtitleLang(l),
+                    );
+                  } else if (val != null) {
+                    prefsNotifier.setDefaultSubtitleLang(val);
+                  }
                 },
               ),
             ],
@@ -337,6 +355,52 @@ class PlayerSettingsScreen extends ConsumerWidget {
     );
   }
 
+  Future<void> _showCustomInputDialog(
+    BuildContext context, {
+    required String title,
+    required String hint,
+    required String initialValue,
+    required ValueChanged<String> onSubmitted,
+  }) async {
+    final controller = TextEditingController(text: initialValue);
+    await AppDialog.show(
+      context: context,
+      title: title,
+      maxWidth: 420,
+      child: TextField(
+        controller: controller,
+        autofocus: true,
+        decoration: InputDecoration(
+          hintText: hint,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+        onSubmitted: (val) {
+          final trimmed = val.trim();
+          if (trimmed.isNotEmpty) {
+            onSubmitted(trimmed);
+            Navigator.of(context).pop();
+          }
+        },
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () {
+            final trimmed = controller.text.trim();
+            if (trimmed.isNotEmpty) {
+              onSubmitted(trimmed);
+              Navigator.of(context).pop();
+            }
+          },
+          child: const Text('Save'),
+        ),
+      ],
+    );
+  }
+
   IconData _icon(SkipType type) {
     switch (type) {
       case SkipType.opening:
@@ -359,3 +423,54 @@ class PlayerSettingsScreen extends ConsumerWidget {
     );
   }
 }
+
+const Map<String, String> _kQualityOptions = {
+  'Auto': 'Auto',
+  '4K': '4K',
+  '1440p': '1440p',
+  '1080p': '1080p',
+  '720p': '720p',
+  '480p': '480p',
+  '360p': '360p',
+  '240p': '240p',
+};
+
+const Map<String, String> _kAudioLangOptions = {
+  'Auto': 'Auto',
+  'eng': 'ENG',
+  'jpn': 'JPN',
+  'spa': 'SPA',
+  'fre': 'FRE',
+  'ger': 'GER',
+  'por': 'POR',
+  'ita': 'ITA',
+  'rus': 'RUS',
+  'ara': 'ARA',
+  'hin': 'HIN',
+  'ind': 'IND',
+  'tur': 'TUR',
+  'vie': 'VIE',
+  'tha': 'THA',
+  'chi': 'CHI',
+  'kor': 'KOR',
+};
+
+const Map<String, String> _kSubtitleLangOptions = {
+  'eng': 'ENG',
+  'Off': 'OFF',
+  'spa': 'SPA',
+  'fre': 'FRE',
+  'ger': 'GER',
+  'por': 'POR',
+  'ita': 'ITA',
+  'rus': 'RUS',
+  'ara': 'ARA',
+  'hin': 'HIN',
+  'ind': 'IND',
+  'tur': 'TUR',
+  'vie': 'VIE',
+  'tha': 'THA',
+  'pol': 'POL',
+  'chi': 'CHI',
+  'kor': 'KOR',
+};

@@ -362,6 +362,7 @@ class SettingsDropdownTile<T> extends StatelessWidget {
   final T value;
   final List<DropdownMenuItem<T>> items;
   final ValueChanged<T?>? onChanged;
+  final DropdownButtonBuilder? selectedItemBuilder;
 
   const SettingsDropdownTile({
     super.key,
@@ -370,6 +371,7 @@ class SettingsDropdownTile<T> extends StatelessWidget {
     required this.value,
     required this.items,
     this.onChanged,
+    this.selectedItemBuilder,
   });
 
   @override
@@ -385,7 +387,10 @@ class SettingsDropdownTile<T> extends StatelessWidget {
           value: value,
           items: items,
           onChanged: onChanged,
+          isDense: true,
+          alignment: AlignmentDirectional.centerEnd,
           borderRadius: BorderRadius.circular(12),
+          selectedItemBuilder: selectedItemBuilder,
         ),
       ),
     );

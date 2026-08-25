@@ -105,17 +105,9 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
     setState(() {
       _isRetrying = true;
     });
-    ref.invalidate(matchedMediaProvider(matchArgs));
-    ref.invalidate(episodesListProvider(matchArgs));
-    if (widget.media.sourceId != null) {
-      ref.invalidate(
-        sourceEpisodesProvider((
-          providerId: widget.media.providerId ?? widget.media.id,
-          sourceId: widget.media.sourceId!,
-          type: widget.media.type,
-        )),
-      );
-    }
+    ref.invalidate(matchedMediaProvider);
+    ref.invalidate(episodesListProvider);
+    ref.invalidate(sourceEpisodesProvider);
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) {
         setState(() {
@@ -610,8 +602,15 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
           _hasAutoScrolled = true;
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (!mounted) return;
-            if (!_scrollController.hasClients) return;
-            final maxExt = _scrollController.position.maxScrollExtent;
+            final activeScrollController = widget.useScrollController
+                ? _scrollController
+                : (PrimaryScrollController.maybeOf(context) ??
+                      _scrollController);
+
+            if (!activeScrollController.hasClients) return;
+            final position = activeScrollController.positions.lastOrNull;
+            if (position == null) return;
+            final maxExt = position.maxScrollExtent;
             if (maxExt <= 0) return;
 
             double offset;
@@ -666,30 +665,23 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
                 offset = boxPad + row * (boxSize + boxSpacing);
             }
 
-            final activeScrollController = widget.useScrollController
-                ? _scrollController
-                : PrimaryScrollController.of(context);
+            final targetOffset = offset.clamp(0.0, maxExt);
+            final delta = (targetOffset - position.pixels).abs();
 
-            if (activeScrollController.hasClients) {
-              final targetOffset = offset.clamp(0.0, maxExt);
-              final delta = (targetOffset - activeScrollController.offset)
-                  .abs();
-
-              if (delta > 200) {
-                final preOffset = (targetOffset - 60.0).clamp(0.0, maxExt);
-                activeScrollController.jumpTo(preOffset);
-                activeScrollController.animateTo(
-                  targetOffset,
-                  duration: const Duration(milliseconds: 150),
-                  curve: Curves.easeOut,
-                );
-              } else if (delta > 0) {
-                activeScrollController.animateTo(
-                  targetOffset,
-                  duration: const Duration(milliseconds: 200),
-                  curve: Curves.easeOut,
-                );
-              }
+            if (delta > 200) {
+              final preOffset = (targetOffset - 60.0).clamp(0.0, maxExt);
+              position.jumpTo(preOffset);
+              position.animateTo(
+                targetOffset,
+                duration: const Duration(milliseconds: 150),
+                curve: Curves.easeOut,
+              );
+            } else if (delta > 0) {
+              position.animateTo(
+                targetOffset,
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeOut,
+              );
             }
           });
         }

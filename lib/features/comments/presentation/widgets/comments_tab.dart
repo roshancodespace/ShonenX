@@ -17,6 +17,7 @@ import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/shared/widgets/staggered_fade_in.dart';
 import 'package:shonenx/shared/widgets/app_dialog.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 class CommentsTabWidget extends ConsumerStatefulWidget {
   final UnifiedMedia media;
@@ -599,7 +600,7 @@ class _CommentsTabWidgetState extends ConsumerState<CommentsTabWidget> {
           ),
         Expanded(
           child: commentsAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => _buildCommentsSkeleton(context, cs),
             error: (err, stack) => Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
@@ -869,6 +870,108 @@ class _CommentsTabWidgetState extends ConsumerState<CommentsTabWidget> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildCommentsSkeleton(BuildContext context, ColorScheme cs) {
+    return Skeletonizer(
+      enabled: true,
+      child: ListView.separated(
+        physics: const NeverScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        itemCount: 6,
+        separatorBuilder: (context, index) => Divider(
+          height: 1,
+          indent: 68,
+          color: cs.outlineVariant.withValues(alpha: 0.15),
+        ),
+        itemBuilder: (context, index) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                CircleAvatar(
+                  radius: 16,
+                  backgroundColor: cs.surfaceContainerHighest,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Placeholder User',
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13.5,
+                                ),
+                          ),
+                          Text(
+                            '2 hours ago',
+                            style: TextStyle(
+                              color: cs.onSurfaceVariant.withValues(alpha: 0.6),
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        index.isEven
+                            ? 'This is a sample comment text that spans two lines to represent real discussion content.'
+                            : 'Short comment discussion text here.',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontSize: 13.5,
+                          height: 1.35,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: cs.surfaceContainerLow,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.arrow_upward_rounded, size: 14),
+                                SizedBox(width: 4),
+                                Text('12', style: TextStyle(fontSize: 11)),
+                                SizedBox(width: 8),
+                                Icon(Icons.arrow_downward_rounded, size: 14),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.chat_bubble_outline_rounded, size: 13),
+                              SizedBox(width: 4),
+                              Text('Reply', style: TextStyle(fontSize: 11)),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }

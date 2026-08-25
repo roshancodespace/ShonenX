@@ -10,6 +10,8 @@ import 'package:shonenx/features/auth/providers/auth_provider.dart';
 import 'package:shonenx/features/comments/presentation/widgets/comments_tab.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/tabs/about_tab.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/tabs/episodes_tab.dart';
+import 'package:shonenx/features/discovery/providers/episodes_provider.dart';
+import 'package:shonenx/features/discovery/providers/matched_media_provider.dart';
 import 'package:shonenx/features/discord/providers/discord_rpc_provider.dart';
 import 'package:shonenx/features/discovery/providers/details_provider.dart';
 import 'package:shonenx/features/downloads/domain/models/download_task.dart';
@@ -93,11 +95,18 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen>
       }
       if (shouldTrigger) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          _showCommentsSheet(context, widget.media);
+          _refreshEpisodes(widget.media);
         });
       }
     }
     return false;
+  }
+
+  void _refreshEpisodes(UnifiedMedia media) {
+    HapticFeedback.mediumImpact();
+    ref.invalidate(matchedMediaProvider);
+    ref.invalidate(episodesListProvider);
+    ref.invalidate(sourceEpisodesProvider);
   }
 
   late final DiscordRpcNotifier _rpcNotifier;
@@ -577,9 +586,7 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen>
                               ),
                             ),
                             Icon(
-                              _pullProgress >= 1.0
-                                  ? Icons.forum_rounded
-                                  : Icons.chat_bubble_outline_rounded,
+                              Icons.refresh_rounded,
                               color: _pullProgress >= 1.0
                                   ? theme.colorScheme.primary
                                   : theme.colorScheme.onSurface,

@@ -35,7 +35,14 @@ class TrackerManagerSheet extends ConsumerWidget {
           ...activeTrackers.map((tracker) {
             final type = tracker.type;
             final isRemote = tracker is RemoteTracker;
-            final isLinked = isRemote ? trackerLinks.containsKey(type) : true;
+            final resolvedId =
+                trackerLinks[type]?.trackingId ??
+                resolveTrackingIdFromMedia(
+                  trackerType: type,
+                  media: media,
+                  links: trackerLinks,
+                );
+            final isLinked = isRemote ? resolvedId != null : true;
             final isAuthenticated = type.isAuthenticated(ref) || !isRemote;
 
             if (isLinked) {
@@ -246,11 +253,7 @@ class _LinkedTrackerRow extends ConsumerWidget {
                             if (isLocal) {
                               ref.invalidate(
                                 mediaTrackingProvider(
-                                  TrackingQuery(
-                                    tracker.type,
-                                    media.id,
-                                    media.type,
-                                  ),
+                                  TrackingQuery(tracker.type, media),
                                 ),
                               );
                             }
@@ -289,7 +292,7 @@ class _LinkedTrackerRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final trackingState = ref.watch(
-      mediaTrackingProvider(TrackingQuery(tracker.type, media.id, media.type)),
+      mediaTrackingProvider(TrackingQuery(tracker.type, media)),
     );
 
     final theme = Theme.of(context);
@@ -330,9 +333,7 @@ class _LinkedTrackerRow extends ConsumerWidget {
             icon: Icons.refresh_rounded,
             onTap: () {
               ref.invalidate(
-                mediaTrackingProvider(
-                  TrackingQuery(tracker.type, media.id, media.type),
-                ),
+                mediaTrackingProvider(TrackingQuery(tracker.type, media)),
               );
             },
           ),

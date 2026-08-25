@@ -135,9 +135,7 @@ class _TvEpisodeShelfState extends ConsumerState<TvEpisodeShelf> {
 
     final primaryTracker = ref.watch(primaryTrackerProvider);
     final trackingState = ref.watch(
-      mediaTrackingProvider(
-        TrackingQuery(primaryTracker.type, widget.media.id, widget.media.type),
-      ),
+      mediaTrackingProvider(TrackingQuery(primaryTracker.type, widget.media)),
     );
     final trackedProgress = trackingState.value?.progress.toDouble() ?? 0;
 

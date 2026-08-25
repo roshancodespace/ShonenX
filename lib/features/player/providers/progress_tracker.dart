@@ -131,6 +131,7 @@ class ProgressTracker {
       ..totalEpisodes = media.episodes
       ..animeId = media.id
       ..animeIdMal = media.idMal
+      ..externalIds = media.externalIds
       ..animeTitle = media.title.availableTitle
       ..episodeTitle = activeEpisode?.title
       ..cover = media.cover

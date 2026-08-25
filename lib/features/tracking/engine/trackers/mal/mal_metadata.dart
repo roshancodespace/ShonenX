@@ -499,11 +499,14 @@ mixin MalMetadata on BaseTracker implements RemoteTracker {
           ? ((json['average_episode_duration'] as num) / 60).round()
           : null;
 
+      final malId = json['id']?.toString();
+
       return UnifiedMedia(
-        id: json['id']?.toString() ?? '',
-        idMal: json['id']?.toString(),
+        id: malId ?? '',
+        idMal: malId,
+        externalIds: MediaExternalIds(mal: malId),
         type: type,
-        providerId: json['id']?.toString() ?? '',
+        providerId: malId ?? '',
         title: title,
         format: format,
         score: scoreVal,

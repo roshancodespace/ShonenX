@@ -284,10 +284,26 @@ mixin SimklMetadata on BaseTracker implements RemoteTracker {
         ? 'https://simkl.in/fanart/${banner}_medium.webp'
         : null;
 
+    final ids = json['ids'] as Map<String, dynamic>?;
+    final idMal = ids?['mal']?.toString();
+    final idAnilist = ids?['anilist']?.toString();
+    final idTmdb = ids?['tmdb']?.toString();
+    final idKitsu = ids?['kitsu']?.toString();
+
+    final externalIds = MediaExternalIds(
+      simkl: id,
+      mal: idMal,
+      anilist: idAnilist,
+      tmdb: idTmdb,
+      kitsu: idKitsu,
+    );
+
     return UnifiedMedia(
       id: id,
       providerId: id,
       type: type,
+      idMal: idMal,
+      externalIds: externalIds,
       title: title,
       cover: cover,
       banner: bannerUrl,

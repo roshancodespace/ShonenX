@@ -14,12 +14,14 @@ import 'package:shonenx/features/history/providers/read_history_provider.dart';
 import 'package:shonenx/features/history/providers/watch_history_provider.dart';
 import 'package:shonenx/features/player/domain/player_mode.dart';
 import 'package:shonenx/features/reader/domain/reader_mode.dart';
+import 'package:shonenx/features/tracking/domain/isar_tracker_link.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
 import 'package:shonenx/features/tracking/engine/remote_tracker.dart';
 import 'package:shonenx/features/tracking/presentation/widgets/tracker_manager_sheet.dart';
 import 'package:shonenx/features/tracking/providers/media_tracking_provider.dart';
 import 'package:shonenx/features/tracking/providers/tracker_link_provider.dart';
 import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
+import 'package:shonenx/features/tracking/providers/tracking_prefs_provider.dart';
 import 'package:shonenx/features/tv_mode/presentation/tv_scale.dart';
 import 'package:shonenx/features/tv_mode/presentation/widgets/tv_episode_shelf.dart';
 import 'package:shonenx/features/tv_mode/presentation/widgets/tv_smart_image.dart';
@@ -42,6 +44,42 @@ class TvDetailsScreen extends ConsumerStatefulWidget {
 }
 
 class _TvDetailsScreenState extends ConsumerState<TvDetailsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _autoLinkPrimaryTracker();
+    });
+  }
+
+  Future<void> _autoLinkPrimaryTracker() async {
+    final prefs = ref.read(trackingPrefsProvider);
+    if (!prefs.autoTrackPrimary) return;
+
+    final primaryType = prefs.primaryTracker;
+    if (primaryType == TrackerType.local) return;
+
+    final media = widget.media;
+    final trackingId = resolveTrackingIdFromMedia(
+      trackerType: primaryType,
+      media: media,
+    );
+
+    if (trackingId == null || trackingId.isEmpty) return;
+
+    final linksMap = await ref.read(trackerLinkProvider(media.id).future);
+    if (linksMap.containsKey(primaryType)) return;
+
+    final mapping = TrackerMapping()
+      ..trackerId = primaryType.id
+      ..trackingId = trackingId
+      ..trackingTitle = media.title.availableTitle;
+
+    ref
+        .read(trackerLinkProvider(media.id).notifier)
+        .saveLink(primaryType, mapping);
+  }
+
   void _openSourceSelector(
     BuildContext context,
     UnifiedMedia media,
@@ -112,9 +150,7 @@ class _TvDetailsScreenState extends ConsumerState<TvDetailsScreen> {
         : episodes.first);
 
     if (media.type == MediaType.MANGA || media.type == MediaType.NOVEL) {
-      final historyEntry = readHistoryEntries
-          .where((e) => e.chapterNumber == targetEpisode.number)
-          .firstOrNull;
+      final historyEntry = readHistoryEntries.firstOrNull;
 
       final startPos =
           (historyEntry != null &&
@@ -175,13 +211,19 @@ class _TvDetailsScreenState extends ConsumerState<TvDetailsScreen> {
 
     final primaryTracker = ref.watch(primaryTrackerProvider);
     final trackingState = ref.watch(
-      mediaTrackingProvider(
-        TrackingQuery(primaryTracker.type, media.id, media.type),
-      ),
+      mediaTrackingProvider(TrackingQuery(primaryTracker.type, media)),
     );
     final trackerLinksAsync = ref.watch(trackerLinkProvider(media.id));
     final trackerLinks = trackerLinksAsync.value ?? {};
-    final isTrackerLinked = trackerLinks.containsKey(primaryTracker.type);
+    final trackingId =
+        trackerLinks[primaryTracker.type]?.trackingId ??
+        resolveTrackingIdFromMedia(
+          trackerType: primaryTracker.type,
+          media: media,
+          links: trackerLinks,
+        );
+    final isTrackerLinked =
+        trackingId != null || primaryTracker.type == TrackerType.local;
     final isAuthenticated = primaryTracker.type.isAuthenticated(ref);
     final listItem = trackingState.value;
 
@@ -191,7 +233,7 @@ class _TvDetailsScreenState extends ConsumerState<TvDetailsScreen> {
     if (!isAuthenticated && primaryTracker is RemoteTracker) {
       trackingLabel = 'Login to ${primaryTracker.type.displayName}';
       trackingIcon = Icons.login_rounded;
-    } else if (isTrackerLinked || primaryTracker.type == TrackerType.local) {
+    } else if (isTrackerLinked) {
       if (listItem != null) {
         final epPrefix = media.type == MediaType.MANGA ? 'Ch' : 'Ep';
         final statusLabel = listItem.status.getLabelForMedia(media.type);

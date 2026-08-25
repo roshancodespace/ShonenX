@@ -49,9 +49,7 @@ class EpisodesTabWidget extends ConsumerWidget {
 
     final primaryTracker = ref.watch(primaryTrackerProvider);
     final trackingState = ref.watch(
-      mediaTrackingProvider(
-        TrackingQuery(primaryTracker.type, media.id, media.type),
-      ),
+      mediaTrackingProvider(TrackingQuery(primaryTracker.type, media)),
     );
     final watchedProgress = trackingState.value?.progress.toDouble() ?? 0;
 

@@ -22,7 +22,6 @@ import 'package:shonenx/shared/models/video_server.dart';
 import 'package:shonenx/shared/models/video_stream.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 
-// Bottom controls overlay: progress bar, skip buttons, subtitles/audio pickers, etc.
 class BottomControls extends ConsumerStatefulWidget {
   final bool showControls;
   final Function onToggleLockControls;
@@ -60,15 +59,6 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
   bool _isFullScreen = false;
   bool _isPortrait = false;
 
-  // Prevent auto-next from triggering multiple times per episode
-  bool _hasTriggeredAutoNext = false;
-
-  // Cooldown after skipping ending to prevent instant auto-next trigger
-  bool _endingSkipCooldown = false;
-
-  // Ensures auto-skip listener is set up only once per episode
-  bool _autoSkipSetup = false;
-
   @override
   void initState() {
     super.initState();
@@ -76,18 +66,6 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
       windowManager.isFullScreen().then((val) {
         if (mounted) setState(() => _isFullScreen = val);
       });
-    }
-  }
-
-  @override
-  void didUpdateWidget(covariant BottomControls oldWidget) {
-    super.didUpdateWidget(oldWidget);
-
-    if (oldWidget.playerState.activeEpisode?.id !=
-        widget.playerState.activeEpisode?.id) {
-      _hasTriggeredAutoNext = false;
-      _endingSkipCooldown = false;
-      _autoSkipSetup = false;
     }
   }
 
@@ -128,17 +106,6 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
     final theme = Theme.of(context);
     final mediaQuery = MediaQuery.of(context);
     final aniSkips = ref.watch(aniSkipProvider(widget.aniskipArgs));
-
-    // Setup auto-skip listener once when playback begins
-    ref.listen(videoEngineStateProvider.select((s) => s.position), (
-      prev,
-      current,
-    ) {
-      if (!_autoSkipSetup && current.inSeconds > 0) {
-        _autoSkipSetup = true;
-        widget.controller.setupAutoSkipListener(widget.aniskipArgs);
-      }
-    });
 
     final isCompact = mediaQuery.size.width < 450;
     final isVeryCompact = mediaQuery.size.width < 350;
@@ -255,7 +222,6 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
     );
   }
 
-  // Renders skip button (AniSkip segment, Next Episode, or +Ns quick skip)
   Widget _buildSkipActionArea({
     required ThemeData theme,
     required AsyncValue<List<AniSkipStamp>> aniSkips,
@@ -276,7 +242,6 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
           return _buildSkipSegmentButton(theme: theme, skip: currentSkip);
         }
 
-        // ── Priority 2: Auto-next / "Next Episode" button ───────────────
         final playerPrefs = ref.watch(playerPrefsProvider);
         final duration = aniRef.watch(
           videoEngineStateProvider.select((s) => s.duration),
@@ -296,7 +261,6 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
           );
         }
 
-        // ── Priority 3: Quick skip button (+Ns) ─────────────────────────
         if (playerPrefs.showSkipButton && playerPrefs.skipDuration > 0) {
           return _buildQuickSkipButton(
             theme: theme,
@@ -309,8 +273,6 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
     );
   }
 
-  /// Finds the AniSkip segment the playback position is currently inside.
-  /// Returns null if not inside any segment.
   AniSkipStamp? _findActiveSkip(List<AniSkipStamp> skips, Duration position) {
     final seconds = position.inSeconds;
     for (final skip in skips) {
@@ -321,10 +283,6 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
     return null;
   }
 
-  /// Checks if we're near enough to the end to show/trigger auto-next.
-  ///
-  /// Returns the progress value (0.0 to 1.0) if near end, null otherwise.
-  /// Also handles triggering auto-next when progress reaches 100%.
   double? _checkAutoNext({
     required Duration position,
     required Duration duration,
@@ -332,12 +290,6 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
   }) {
     final remaining = duration.inSeconds - position.inSeconds;
 
-    // Don't show auto-next if:
-    // - No next episode exists
-    // - Duration is too short (< 60s) to be a real episode
-    // - Position is too early (< 30s) — avoids false triggers at start
-    // - Not near the end yet
-    // - Currently in a loading state (episode transition in progress)
     final isNearEnd =
         widget.controller.hasNextEpisode &&
         duration.inSeconds >= 60 &&
@@ -354,23 +306,9 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
               .clamp(0.0, 1.0)
         : 1.0;
 
-    // Trigger auto-next when progress is complete
-    if (playerPrefs.autoNext &&
-        !_hasTriggeredAutoNext &&
-        !_endingSkipCooldown &&
-        (progress >= 1.0 || remaining <= 0)) {
-      _hasTriggeredAutoNext = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        widget.controller.skipEpisode();
-      });
-    }
-
     return progress;
   }
 
-  // ── Skip Segment Button ─────────────────────────────────────────────────
-
-  /// "Skip Opening" / "Skip Ending" / "Skip Recap" button.
   Widget _buildSkipSegmentButton({
     required ThemeData theme,
     required AniSkipStamp skip,
@@ -388,16 +326,8 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
       displayText: label,
       onTap: () async {
         await widget.engine.seekTo(Duration(seconds: skip.endTime.ceil()));
-
-        // If this was an ending skip, enable cooldown to prevent the
-        // auto-next from firing immediately (the seek lands near the end).
         if (skip.type == SkipType.ending || skip.type == SkipType.mixedEnding) {
-          _endingSkipCooldown = true;
-          // Clear cooldown after 3 seconds — gives the user time to see
-          // the "Next Episode" button and decide manually.
-          Future.delayed(const Duration(seconds: 3), () {
-            if (mounted) setState(() => _endingSkipCooldown = false);
-          });
+          widget.controller.triggerEndingSkipCooldown();
         }
       },
       theme: theme,
@@ -406,9 +336,6 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
     );
   }
 
-  // ── Next Episode Button ─────────────────────────────────────────────────
-
-  /// "Next Episode" button with circular progress indicator.
   Widget _buildNextEpisodeButton({
     required ThemeData theme,
     required double progress,
@@ -418,7 +345,7 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
       leading: Stack(
         alignment: Alignment.center,
         children: [
-          if (playerPrefs.autoNext && !_endingSkipCooldown)
+          if (playerPrefs.autoNext)
             SizedBox(
               width: 24,
               height: 24,
@@ -433,7 +360,6 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
       ),
       displayText: 'Next Episode',
       onTap: () async {
-        _hasTriggeredAutoNext = true;
         await widget.controller.skipEpisode();
       },
       theme: theme,
@@ -442,9 +368,6 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
     );
   }
 
-  // ── Quick Skip Button ───────────────────────────────────────────────────
-
-  /// "+85s" (or whatever the configured skip duration is) quick-skip button.
   Widget _buildQuickSkipButton({
     required ThemeData theme,
     required int skipDuration,
@@ -461,11 +384,6 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
     );
   }
 
-  // ══════════════════════════════════════════════════════════════════════════
-  // Bottom Controls Row — Left, Center, Right
-  // ══════════════════════════════════════════════════════════════════════════
-
-  /// Left side: lock, subtitles, audio, episodes list.
   Widget _buildLeftControls({
     required List<AudioTrack> audioTracks,
     required AudioTrack? activeAudioTrack,
@@ -586,7 +504,6 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
     );
   }
 
-  /// Center: current position / total duration.
   Widget _buildTimeDisplay() {
     return Consumer(
       builder: (context, ref, child) {
@@ -624,7 +541,6 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
     );
   }
 
-  /// Right side: sub/dub toggle, server picker, stream picker, fullscreen.
   Widget _buildRightControls({
     required ThemeData theme,
     required bool isCompact,
@@ -632,10 +548,8 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Sub/Dub toggle button
         _buildSubDubToggle(theme: theme),
 
-        // Server picker (hidden on compact screens)
         if (widget.playerState.servers.length > 1 && !isCompact) ...[
           _buildBottomSheetTrigger<VideoServer>(
             context: context,
@@ -681,7 +595,6 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
           ),
         ],
 
-        // Stream (mirror) picker (hidden on compact screens)
         if (widget.playerState.streams.length > 1 && !isCompact) ...[
           const SizedBox(width: 14),
           _buildBottomSheetTrigger<VideoStream>(
@@ -696,7 +609,6 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
           ),
         ],
 
-        // Orientation toggle (mobile only)
         if (Platform.isAndroid || Platform.isIOS) ...[
           const SizedBox(width: 14),
           _buildActionIcon(
@@ -707,7 +619,6 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
           ),
         ],
 
-        // Fullscreen toggle (desktop only)
         if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) ...[
           const SizedBox(width: 14),
           _buildActionIcon(
@@ -721,13 +632,6 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
     );
   }
 
-  // ── Sub/Dub Toggle ──────────────────────────────────────────────────────
-
-  /// Builds the SUB/DUB toggle button if both types are available.
-  ///
-  /// Detects whether the source uses server-level toggling (separate servers
-  /// for sub/dub) or stream-level toggling (streams with "dub"/"english"
-  /// in the quality label) and calls the appropriate controller method.
   Widget _buildSubDubToggle({required ThemeData theme}) {
     // Check if the source has separate sub and dub servers
     final hasServerToggle =
@@ -780,7 +684,6 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
     );
   }
 
-  // Fallback episode drawer
   void _showEpisodePanel(BuildContext context) {
     showGeneralDialog(
       context: context,

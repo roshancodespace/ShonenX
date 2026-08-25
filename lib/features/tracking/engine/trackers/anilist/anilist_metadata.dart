@@ -537,12 +537,16 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
           .where((c) => c.name.isNotEmpty)
           .toList();
 
+      final anilistId = json['id']?.toString();
+      final malId = json['idMal']?.toString();
+
       return UnifiedMedia(
-        id: json['id']?.toString() ?? '',
-        idMal: json['idMal']?.toString(),
+        id: anilistId ?? '',
+        idMal: malId,
+        externalIds: MediaExternalIds(anilist: anilistId, mal: malId),
         type: type,
         airingAt: airingAt,
-        providerId: json['id']?.toString() ?? '',
+        providerId: anilistId ?? '',
         title: title,
         format: json['format'],
         score: score,

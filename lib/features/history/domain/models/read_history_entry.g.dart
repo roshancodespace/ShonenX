@@ -29,44 +29,49 @@ const ReadHistoryEntrySchema = CollectionSchema(
       type: IsarType.string,
     ),
     r'cover': PropertySchema(id: 3, name: r'cover', type: IsarType.string),
-    r'lastUpdated': PropertySchema(
+    r'externalIdsJson': PropertySchema(
       id: 4,
+      name: r'externalIdsJson',
+      type: IsarType.string,
+    ),
+    r'lastUpdated': PropertySchema(
+      id: 5,
       name: r'lastUpdated',
       type: IsarType.dateTime,
     ),
-    r'mangaId': PropertySchema(id: 5, name: r'mangaId', type: IsarType.string),
+    r'mangaId': PropertySchema(id: 6, name: r'mangaId', type: IsarType.string),
     r'mangaIdMal': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'mangaIdMal',
       type: IsarType.string,
     ),
     r'mangaTitle': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'mangaTitle',
       type: IsarType.string,
     ),
     r'positionPage': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'positionPage',
       type: IsarType.long,
     ),
     r'providerId': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'providerId',
       type: IsarType.string,
     ),
     r'sourceId': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'sourceId',
       type: IsarType.string,
     ),
     r'sourceName': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'sourceName',
       type: IsarType.string,
     ),
     r'totalPages': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'totalPages',
       type: IsarType.long,
     ),
@@ -78,12 +83,17 @@ const ReadHistoryEntrySchema = CollectionSchema(
   deserializeProp: _readHistoryEntryDeserializeProp,
   idName: r'id',
   indexes: {
-    r'chapterNumber': IndexSchema(
-      id: -7659654328869413098,
-      name: r'chapterNumber',
+    r'mangaId_chapterNumber': IndexSchema(
+      id: -3766087112059566449,
+      name: r'mangaId_chapterNumber',
       unique: true,
       replace: true,
       properties: [
+        IndexPropertySchema(
+          name: r'mangaId',
+          type: IndexType.hash,
+          caseSensitive: true,
+        ),
         IndexPropertySchema(
           name: r'chapterNumber',
           type: IndexType.value,
@@ -138,6 +148,12 @@ int _readHistoryEntryEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
+  {
+    final value = object.externalIdsJson;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   bytesCount += 3 + object.mangaId.length * 3;
   {
     final value = object.mangaIdMal;
@@ -177,15 +193,16 @@ void _readHistoryEntrySerialize(
   writer.writeDouble(offsets[1], object.chapterNumber);
   writer.writeString(offsets[2], object.chapterTitle);
   writer.writeString(offsets[3], object.cover);
-  writer.writeDateTime(offsets[4], object.lastUpdated);
-  writer.writeString(offsets[5], object.mangaId);
-  writer.writeString(offsets[6], object.mangaIdMal);
-  writer.writeString(offsets[7], object.mangaTitle);
-  writer.writeLong(offsets[8], object.positionPage);
-  writer.writeString(offsets[9], object.providerId);
-  writer.writeString(offsets[10], object.sourceId);
-  writer.writeString(offsets[11], object.sourceName);
-  writer.writeLong(offsets[12], object.totalPages);
+  writer.writeString(offsets[4], object.externalIdsJson);
+  writer.writeDateTime(offsets[5], object.lastUpdated);
+  writer.writeString(offsets[6], object.mangaId);
+  writer.writeString(offsets[7], object.mangaIdMal);
+  writer.writeString(offsets[8], object.mangaTitle);
+  writer.writeLong(offsets[9], object.positionPage);
+  writer.writeString(offsets[10], object.providerId);
+  writer.writeString(offsets[11], object.sourceId);
+  writer.writeString(offsets[12], object.sourceName);
+  writer.writeLong(offsets[13], object.totalPages);
 }
 
 ReadHistoryEntry _readHistoryEntryDeserialize(
@@ -199,16 +216,17 @@ ReadHistoryEntry _readHistoryEntryDeserialize(
   object.chapterNumber = reader.readDouble(offsets[1]);
   object.chapterTitle = reader.readStringOrNull(offsets[2]);
   object.cover = reader.readStringOrNull(offsets[3]);
+  object.externalIdsJson = reader.readStringOrNull(offsets[4]);
   object.id = id;
-  object.lastUpdated = reader.readDateTime(offsets[4]);
-  object.mangaId = reader.readString(offsets[5]);
-  object.mangaIdMal = reader.readStringOrNull(offsets[6]);
-  object.mangaTitle = reader.readString(offsets[7]);
-  object.positionPage = reader.readLong(offsets[8]);
-  object.providerId = reader.readStringOrNull(offsets[9]);
-  object.sourceId = reader.readStringOrNull(offsets[10]);
-  object.sourceName = reader.readStringOrNull(offsets[11]);
-  object.totalPages = reader.readLong(offsets[12]);
+  object.lastUpdated = reader.readDateTime(offsets[5]);
+  object.mangaId = reader.readString(offsets[6]);
+  object.mangaIdMal = reader.readStringOrNull(offsets[7]);
+  object.mangaTitle = reader.readString(offsets[8]);
+  object.positionPage = reader.readLong(offsets[9]);
+  object.providerId = reader.readStringOrNull(offsets[10]);
+  object.sourceId = reader.readStringOrNull(offsets[11]);
+  object.sourceName = reader.readStringOrNull(offsets[12]);
+  object.totalPages = reader.readLong(offsets[13]);
   return object;
 }
 
@@ -228,22 +246,24 @@ P _readHistoryEntryDeserializeProp<P>(
     case 3:
       return (reader.readStringOrNull(offset)) as P;
     case 4:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 5:
-      return (reader.readString(offset)) as P;
+      return (reader.readDateTime(offset)) as P;
     case 6:
-      return (reader.readStringOrNull(offset)) as P;
-    case 7:
       return (reader.readString(offset)) as P;
-    case 8:
-      return (reader.readLong(offset)) as P;
-    case 9:
+    case 7:
       return (reader.readStringOrNull(offset)) as P;
+    case 8:
+      return (reader.readString(offset)) as P;
+    case 9:
+      return (reader.readLong(offset)) as P;
     case 10:
       return (reader.readStringOrNull(offset)) as P;
     case 11:
       return (reader.readStringOrNull(offset)) as P;
     case 12:
+      return (reader.readStringOrNull(offset)) as P;
+    case 13:
       return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -267,63 +287,132 @@ void _readHistoryEntryAttach(
 }
 
 extension ReadHistoryEntryByIndex on IsarCollection<ReadHistoryEntry> {
-  Future<ReadHistoryEntry?> getByChapterNumber(double chapterNumber) {
-    return getByIndex(r'chapterNumber', [chapterNumber]);
+  Future<ReadHistoryEntry?> getByMangaIdChapterNumber(
+    String mangaId,
+    double chapterNumber,
+  ) {
+    return getByIndex(r'mangaId_chapterNumber', [mangaId, chapterNumber]);
   }
 
-  ReadHistoryEntry? getByChapterNumberSync(double chapterNumber) {
-    return getByIndexSync(r'chapterNumber', [chapterNumber]);
+  ReadHistoryEntry? getByMangaIdChapterNumberSync(
+    String mangaId,
+    double chapterNumber,
+  ) {
+    return getByIndexSync(r'mangaId_chapterNumber', [mangaId, chapterNumber]);
   }
 
-  Future<bool> deleteByChapterNumber(double chapterNumber) {
-    return deleteByIndex(r'chapterNumber', [chapterNumber]);
+  Future<bool> deleteByMangaIdChapterNumber(
+    String mangaId,
+    double chapterNumber,
+  ) {
+    return deleteByIndex(r'mangaId_chapterNumber', [mangaId, chapterNumber]);
   }
 
-  bool deleteByChapterNumberSync(double chapterNumber) {
-    return deleteByIndexSync(r'chapterNumber', [chapterNumber]);
+  bool deleteByMangaIdChapterNumberSync(String mangaId, double chapterNumber) {
+    return deleteByIndexSync(r'mangaId_chapterNumber', [
+      mangaId,
+      chapterNumber,
+    ]);
   }
 
-  Future<List<ReadHistoryEntry?>> getAllByChapterNumber(
+  Future<List<ReadHistoryEntry?>> getAllByMangaIdChapterNumber(
+    List<String> mangaIdValues,
     List<double> chapterNumberValues,
   ) {
-    final values = chapterNumberValues.map((e) => [e]).toList();
-    return getAllByIndex(r'chapterNumber', values);
+    final len = mangaIdValues.length;
+    assert(
+      chapterNumberValues.length == len,
+      'All index values must have the same length',
+    );
+    final values = <List<dynamic>>[];
+    for (var i = 0; i < len; i++) {
+      values.add([mangaIdValues[i], chapterNumberValues[i]]);
+    }
+
+    return getAllByIndex(r'mangaId_chapterNumber', values);
   }
 
-  List<ReadHistoryEntry?> getAllByChapterNumberSync(
+  List<ReadHistoryEntry?> getAllByMangaIdChapterNumberSync(
+    List<String> mangaIdValues,
     List<double> chapterNumberValues,
   ) {
-    final values = chapterNumberValues.map((e) => [e]).toList();
-    return getAllByIndexSync(r'chapterNumber', values);
+    final len = mangaIdValues.length;
+    assert(
+      chapterNumberValues.length == len,
+      'All index values must have the same length',
+    );
+    final values = <List<dynamic>>[];
+    for (var i = 0; i < len; i++) {
+      values.add([mangaIdValues[i], chapterNumberValues[i]]);
+    }
+
+    return getAllByIndexSync(r'mangaId_chapterNumber', values);
   }
 
-  Future<int> deleteAllByChapterNumber(List<double> chapterNumberValues) {
-    final values = chapterNumberValues.map((e) => [e]).toList();
-    return deleteAllByIndex(r'chapterNumber', values);
+  Future<int> deleteAllByMangaIdChapterNumber(
+    List<String> mangaIdValues,
+    List<double> chapterNumberValues,
+  ) {
+    final len = mangaIdValues.length;
+    assert(
+      chapterNumberValues.length == len,
+      'All index values must have the same length',
+    );
+    final values = <List<dynamic>>[];
+    for (var i = 0; i < len; i++) {
+      values.add([mangaIdValues[i], chapterNumberValues[i]]);
+    }
+
+    return deleteAllByIndex(r'mangaId_chapterNumber', values);
   }
 
-  int deleteAllByChapterNumberSync(List<double> chapterNumberValues) {
-    final values = chapterNumberValues.map((e) => [e]).toList();
-    return deleteAllByIndexSync(r'chapterNumber', values);
+  int deleteAllByMangaIdChapterNumberSync(
+    List<String> mangaIdValues,
+    List<double> chapterNumberValues,
+  ) {
+    final len = mangaIdValues.length;
+    assert(
+      chapterNumberValues.length == len,
+      'All index values must have the same length',
+    );
+    final values = <List<dynamic>>[];
+    for (var i = 0; i < len; i++) {
+      values.add([mangaIdValues[i], chapterNumberValues[i]]);
+    }
+
+    return deleteAllByIndexSync(r'mangaId_chapterNumber', values);
   }
 
-  Future<Id> putByChapterNumber(ReadHistoryEntry object) {
-    return putByIndex(r'chapterNumber', object);
+  Future<Id> putByMangaIdChapterNumber(ReadHistoryEntry object) {
+    return putByIndex(r'mangaId_chapterNumber', object);
   }
 
-  Id putByChapterNumberSync(ReadHistoryEntry object, {bool saveLinks = true}) {
-    return putByIndexSync(r'chapterNumber', object, saveLinks: saveLinks);
+  Id putByMangaIdChapterNumberSync(
+    ReadHistoryEntry object, {
+    bool saveLinks = true,
+  }) {
+    return putByIndexSync(
+      r'mangaId_chapterNumber',
+      object,
+      saveLinks: saveLinks,
+    );
   }
 
-  Future<List<Id>> putAllByChapterNumber(List<ReadHistoryEntry> objects) {
-    return putAllByIndex(r'chapterNumber', objects);
+  Future<List<Id>> putAllByMangaIdChapterNumber(
+    List<ReadHistoryEntry> objects,
+  ) {
+    return putAllByIndex(r'mangaId_chapterNumber', objects);
   }
 
-  List<Id> putAllByChapterNumberSync(
+  List<Id> putAllByMangaIdChapterNumberSync(
     List<ReadHistoryEntry> objects, {
     bool saveLinks = true,
   }) {
-    return putAllByIndexSync(r'chapterNumber', objects, saveLinks: saveLinks);
+    return putAllByIndexSync(
+      r'mangaId_chapterNumber',
+      objects,
+      saveLinks: saveLinks,
+    );
   }
 }
 
@@ -332,15 +421,6 @@ extension ReadHistoryEntryQueryWhereSort
   QueryBuilder<ReadHistoryEntry, ReadHistoryEntry, QAfterWhere> anyId() {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(const IdWhereClause.any());
-    });
-  }
-
-  QueryBuilder<ReadHistoryEntry, ReadHistoryEntry, QAfterWhere>
-  anyChapterNumber() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(
-        const IndexWhereClause.any(indexName: r'chapterNumber'),
-      );
     });
   }
 
@@ -424,34 +504,34 @@ extension ReadHistoryEntryQueryWhere
   }
 
   QueryBuilder<ReadHistoryEntry, ReadHistoryEntry, QAfterWhereClause>
-  chapterNumberEqualTo(double chapterNumber) {
+  mangaIdEqualToAnyChapterNumber(String mangaId) {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
         IndexWhereClause.equalTo(
-          indexName: r'chapterNumber',
-          value: [chapterNumber],
+          indexName: r'mangaId_chapterNumber',
+          value: [mangaId],
         ),
       );
     });
   }
 
   QueryBuilder<ReadHistoryEntry, ReadHistoryEntry, QAfterWhereClause>
-  chapterNumberNotEqualTo(double chapterNumber) {
+  mangaIdNotEqualToAnyChapterNumber(String mangaId) {
     return QueryBuilder.apply(this, (query) {
       if (query.whereSort == Sort.asc) {
         return query
             .addWhereClause(
               IndexWhereClause.between(
-                indexName: r'chapterNumber',
+                indexName: r'mangaId_chapterNumber',
                 lower: [],
-                upper: [chapterNumber],
+                upper: [mangaId],
                 includeUpper: false,
               ),
             )
             .addWhereClause(
               IndexWhereClause.between(
-                indexName: r'chapterNumber',
-                lower: [chapterNumber],
+                indexName: r'mangaId_chapterNumber',
+                lower: [mangaId],
                 includeLower: false,
                 upper: [],
               ),
@@ -460,17 +540,17 @@ extension ReadHistoryEntryQueryWhere
         return query
             .addWhereClause(
               IndexWhereClause.between(
-                indexName: r'chapterNumber',
-                lower: [chapterNumber],
+                indexName: r'mangaId_chapterNumber',
+                lower: [mangaId],
                 includeLower: false,
                 upper: [],
               ),
             )
             .addWhereClause(
               IndexWhereClause.between(
-                indexName: r'chapterNumber',
+                indexName: r'mangaId_chapterNumber',
                 lower: [],
-                upper: [chapterNumber],
+                upper: [mangaId],
                 includeUpper: false,
               ),
             );
@@ -479,27 +559,90 @@ extension ReadHistoryEntryQueryWhere
   }
 
   QueryBuilder<ReadHistoryEntry, ReadHistoryEntry, QAfterWhereClause>
-  chapterNumberGreaterThan(double chapterNumber, {bool include = false}) {
+  mangaIdChapterNumberEqualTo(String mangaId, double chapterNumber) {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
-        IndexWhereClause.between(
-          indexName: r'chapterNumber',
-          lower: [chapterNumber],
-          includeLower: include,
-          upper: [],
+        IndexWhereClause.equalTo(
+          indexName: r'mangaId_chapterNumber',
+          value: [mangaId, chapterNumber],
         ),
       );
     });
   }
 
   QueryBuilder<ReadHistoryEntry, ReadHistoryEntry, QAfterWhereClause>
-  chapterNumberLessThan(double chapterNumber, {bool include = false}) {
+  mangaIdEqualToChapterNumberNotEqualTo(String mangaId, double chapterNumber) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(
+              IndexWhereClause.between(
+                indexName: r'mangaId_chapterNumber',
+                lower: [mangaId],
+                upper: [mangaId, chapterNumber],
+                includeUpper: false,
+              ),
+            )
+            .addWhereClause(
+              IndexWhereClause.between(
+                indexName: r'mangaId_chapterNumber',
+                lower: [mangaId, chapterNumber],
+                includeLower: false,
+                upper: [mangaId],
+              ),
+            );
+      } else {
+        return query
+            .addWhereClause(
+              IndexWhereClause.between(
+                indexName: r'mangaId_chapterNumber',
+                lower: [mangaId, chapterNumber],
+                includeLower: false,
+                upper: [mangaId],
+              ),
+            )
+            .addWhereClause(
+              IndexWhereClause.between(
+                indexName: r'mangaId_chapterNumber',
+                lower: [mangaId],
+                upper: [mangaId, chapterNumber],
+                includeUpper: false,
+              ),
+            );
+      }
+    });
+  }
+
+  QueryBuilder<ReadHistoryEntry, ReadHistoryEntry, QAfterWhereClause>
+  mangaIdEqualToChapterNumberGreaterThan(
+    String mangaId,
+    double chapterNumber, {
+    bool include = false,
+  }) {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
         IndexWhereClause.between(
-          indexName: r'chapterNumber',
-          lower: [],
-          upper: [chapterNumber],
+          indexName: r'mangaId_chapterNumber',
+          lower: [mangaId, chapterNumber],
+          includeLower: include,
+          upper: [mangaId],
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<ReadHistoryEntry, ReadHistoryEntry, QAfterWhereClause>
+  mangaIdEqualToChapterNumberLessThan(
+    String mangaId,
+    double chapterNumber, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        IndexWhereClause.between(
+          indexName: r'mangaId_chapterNumber',
+          lower: [mangaId],
+          upper: [mangaId, chapterNumber],
           includeUpper: include,
         ),
       );
@@ -507,7 +650,8 @@ extension ReadHistoryEntryQueryWhere
   }
 
   QueryBuilder<ReadHistoryEntry, ReadHistoryEntry, QAfterWhereClause>
-  chapterNumberBetween(
+  mangaIdEqualToChapterNumberBetween(
+    String mangaId,
     double lowerChapterNumber,
     double upperChapterNumber, {
     bool includeLower = true,
@@ -516,10 +660,10 @@ extension ReadHistoryEntryQueryWhere
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
         IndexWhereClause.between(
-          indexName: r'chapterNumber',
-          lower: [lowerChapterNumber],
+          indexName: r'mangaId_chapterNumber',
+          lower: [mangaId, lowerChapterNumber],
           includeLower: includeLower,
-          upper: [upperChapterNumber],
+          upper: [mangaId, upperChapterNumber],
           includeUpper: includeUpper,
         ),
       );
@@ -1180,6 +1324,165 @@ extension ReadHistoryEntryQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
         FilterCondition.greaterThan(property: r'cover', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<ReadHistoryEntry, ReadHistoryEntry, QAfterFilterCondition>
+  externalIdsJsonIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'externalIdsJson'),
+      );
+    });
+  }
+
+  QueryBuilder<ReadHistoryEntry, ReadHistoryEntry, QAfterFilterCondition>
+  externalIdsJsonIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'externalIdsJson'),
+      );
+    });
+  }
+
+  QueryBuilder<ReadHistoryEntry, ReadHistoryEntry, QAfterFilterCondition>
+  externalIdsJsonEqualTo(String? value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'externalIdsJson',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<ReadHistoryEntry, ReadHistoryEntry, QAfterFilterCondition>
+  externalIdsJsonGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'externalIdsJson',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<ReadHistoryEntry, ReadHistoryEntry, QAfterFilterCondition>
+  externalIdsJsonLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'externalIdsJson',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<ReadHistoryEntry, ReadHistoryEntry, QAfterFilterCondition>
+  externalIdsJsonBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'externalIdsJson',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<ReadHistoryEntry, ReadHistoryEntry, QAfterFilterCondition>
+  externalIdsJsonStartsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'externalIdsJson',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<ReadHistoryEntry, ReadHistoryEntry, QAfterFilterCondition>
+  externalIdsJsonEndsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'externalIdsJson',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<ReadHistoryEntry, ReadHistoryEntry, QAfterFilterCondition>
+  externalIdsJsonContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'externalIdsJson',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<ReadHistoryEntry, ReadHistoryEntry, QAfterFilterCondition>
+  externalIdsJsonMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'externalIdsJson',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<ReadHistoryEntry, ReadHistoryEntry, QAfterFilterCondition>
+  externalIdsJsonIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'externalIdsJson', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<ReadHistoryEntry, ReadHistoryEntry, QAfterFilterCondition>
+  externalIdsJsonIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'externalIdsJson', value: ''),
       );
     });
   }
@@ -2387,6 +2690,20 @@ extension ReadHistoryEntryQuerySortBy
   }
 
   QueryBuilder<ReadHistoryEntry, ReadHistoryEntry, QAfterSortBy>
+  sortByExternalIdsJson() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'externalIdsJson', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ReadHistoryEntry, ReadHistoryEntry, QAfterSortBy>
+  sortByExternalIdsJsonDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'externalIdsJson', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ReadHistoryEntry, ReadHistoryEntry, QAfterSortBy>
   sortByLastUpdated() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'lastUpdated', Sort.asc);
@@ -2570,6 +2887,20 @@ extension ReadHistoryEntryQuerySortThenBy
     });
   }
 
+  QueryBuilder<ReadHistoryEntry, ReadHistoryEntry, QAfterSortBy>
+  thenByExternalIdsJson() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'externalIdsJson', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ReadHistoryEntry, ReadHistoryEntry, QAfterSortBy>
+  thenByExternalIdsJsonDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'externalIdsJson', Sort.desc);
+    });
+  }
+
   QueryBuilder<ReadHistoryEntry, ReadHistoryEntry, QAfterSortBy> thenById() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'id', Sort.asc);
@@ -2743,6 +3074,16 @@ extension ReadHistoryEntryQueryWhereDistinct
   }
 
   QueryBuilder<ReadHistoryEntry, ReadHistoryEntry, QDistinct>
+  distinctByExternalIdsJson({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(
+        r'externalIdsJson',
+        caseSensitive: caseSensitive,
+      );
+    });
+  }
+
+  QueryBuilder<ReadHistoryEntry, ReadHistoryEntry, QDistinct>
   distinctByLastUpdated() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'lastUpdated');
@@ -2837,6 +3178,13 @@ extension ReadHistoryEntryQueryProperty
   QueryBuilder<ReadHistoryEntry, String?, QQueryOperations> coverProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'cover');
+    });
+  }
+
+  QueryBuilder<ReadHistoryEntry, String?, QQueryOperations>
+  externalIdsJsonProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'externalIdsJson');
     });
   }
 

@@ -1,15 +1,23 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/features/player/data/aniskip_resolver.dart';
 import 'package:shonenx/features/player/data/aniskip_service.dart';
 import 'package:shonenx/features/player/domain/aniskip_prefs.dart';
 import 'package:shonenx/features/player/providers/aniskip_prefs_provider.dart';
+import 'package:shonenx/shared/models/unified_media.dart';
+
+final aniSkipServiceProvider = Provider<AniSkipService>((ref) {
+  return AniSkipService();
+});
 
 class AniSkipArgs {
+  final UnifiedMedia? media;
   final int? idMal;
   final double episodeNumber;
   final int episodeLength;
 
   const AniSkipArgs({
-    required this.idMal,
+    this.media,
+    this.idMal,
     required this.episodeNumber,
     required this.episodeLength,
   });
@@ -20,30 +28,44 @@ class AniSkipArgs {
       other is AniSkipArgs &&
           runtimeType == other.runtimeType &&
           idMal == other.idMal &&
+          media?.id == other.media?.id &&
           episodeNumber == other.episodeNumber &&
           episodeLength == other.episodeLength;
 
   @override
   int get hashCode =>
-      idMal.hashCode ^ episodeNumber.hashCode ^ episodeLength.hashCode;
+      Object.hash(idMal, media?.id, episodeNumber, episodeLength);
 }
 
 final aniSkipProvider = FutureProvider.autoDispose
     .family<List<AniSkipStamp>, AniSkipArgs?>((ref, args) async {
-      final prefs = ref.read(aniskipPrefsProvider);
-      final service = AniSkipService();
-      if (args == null) {
+      if (args == null ||
+          args.episodeLength < 50 ||
+          args.episodeNumber % 1 != 0) {
         return [];
-      } else if (args.idMal == null) {
-        throw Exception('idMal is null');
-      } else if (args.episodeNumber % 1 != 0) {
-        throw Exception('AniSkip only supports whole episode numbers');
-      } else {
-        return await service.getSkipTimes(
-          types: prefs.enabledTypes(),
-          idMal: args.idMal!,
-          episodeNumber: args.episodeNumber.toInt(),
-          episodeLength: args.episodeLength,
-        );
       }
+
+      final prefs = ref.read(aniskipPrefsProvider);
+      final enabledTypes = prefs.enabledTypes();
+      if (enabledTypes.isEmpty) {
+        return [];
+      }
+
+      final resolver = ref.read(aniSkipResolverProvider);
+      final malId = await resolver.resolveMalId(
+        media: args.media,
+        idMal: args.idMal,
+      );
+
+      if (malId == null) {
+        return [];
+      }
+
+      final service = ref.read(aniSkipServiceProvider);
+      return await service.getSkipTimes(
+        types: enabledTypes,
+        idMal: malId,
+        episodeNumber: args.episodeNumber.toInt(),
+        episodeLength: args.episodeLength,
+      );
     });

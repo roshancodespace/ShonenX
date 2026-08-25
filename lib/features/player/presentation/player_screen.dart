@@ -59,17 +59,12 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     return (widget.mode as PlayerModeOffline).title ?? 'Local Media';
   }
 
-  /// Constructs [AniSkipArgs] from the current mode, or returns null
-  /// for offline mode / media without a MAL ID.
+  /// Constructs [AniSkipArgs] from the current mode, or returns null for offline mode.
   AniSkipArgs? _getAniSkipArgs(VideoEngine engine) {
     if (widget.mode is PlayerModeOnline) {
       final onlineMode = widget.mode as PlayerModeOnline;
-      final idMalStr = onlineMode.media.idMal;
-      if (idMalStr == null || idMalStr.isEmpty) return null;
-      final malId = int.tryParse(idMalStr);
-      if (malId == null) return null;
       return AniSkipArgs(
-        idMal: malId,
+        media: onlineMode.media,
         episodeNumber: onlineMode.episode.number,
         episodeLength: engine.currentDuration.inSeconds,
       );

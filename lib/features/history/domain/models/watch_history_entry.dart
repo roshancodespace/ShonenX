@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:isar_community/isar.dart';
+import 'package:shonenx/shared/models/unified_media.dart';
 
 part 'watch_history_entry.g.dart';
 
@@ -6,28 +8,51 @@ part 'watch_history_entry.g.dart';
 class WatchHistoryEntry {
   Id id = Isar.autoIncrement;
 
-  @Index(unique: true, replace: true)
-  late double episodeNumber;
-
+  @Index(unique: true, replace: true, composite: [CompositeIndex('episodeNumber')])
   late String animeId;
-  late String? animeIdMal;
+
+  double episodeNumber = 1.0;
+
+  String? animeIdMal;
   late String animeTitle;
   String? episodeTitle;
   String? cover;
   String? banner;
 
-  late String? thumbnailUrl;
-  late int? totalEpisodes;
+  String? thumbnailUrl;
+  int? totalEpisodes;
 
-  late int positionInMilliseconds;
-  late int durationInMilliseconds;
+  int positionInMilliseconds = 0;
+  int durationInMilliseconds = 0;
 
   String? sourceId;
   String? sourceName;
   String? providerId;
 
+  String? externalIdsJson;
+
+  @ignore
+  MediaExternalIds get externalIds {
+    if (externalIdsJson != null && externalIdsJson!.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(externalIdsJson!) as Map<String, dynamic>;
+        return MediaExternalIds.fromMap(decoded);
+      } catch (_) {}
+    }
+    if (animeIdMal != null && animeIdMal!.isNotEmpty) {
+      return MediaExternalIds(mal: animeIdMal);
+    }
+    return const MediaExternalIds();
+  }
+
+  set externalIds(MediaExternalIds ids) {
+    animeIdMal = ids.mal;
+    final map = ids.toMap();
+    externalIdsJson = map.isNotEmpty ? jsonEncode(map) : null;
+  }
+
   @Index()
-  late DateTime lastUpdated;
+  DateTime lastUpdated = DateTime.now();
 
   Map<String, dynamic> toBackupMap() => {
     'episodeNumber': episodeNumber,
@@ -44,6 +69,7 @@ class WatchHistoryEntry {
     'sourceId': sourceId,
     'sourceName': sourceName,
     'providerId': providerId,
+    'externalIdsJson': externalIdsJson,
     'lastUpdated': lastUpdated.toIso8601String(),
   };
 
@@ -62,5 +88,7 @@ class WatchHistoryEntry {
     ..sourceId = m['sourceId'] as String?
     ..sourceName = m['sourceName'] as String?
     ..providerId = m['providerId'] as String?
+    ..externalIdsJson = m['externalIdsJson'] as String?
     ..lastUpdated = DateTime.tryParse(m['lastUpdated'] as String? ?? '') ?? DateTime.now();
 }
+

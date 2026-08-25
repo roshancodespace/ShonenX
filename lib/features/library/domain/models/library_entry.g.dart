@@ -29,28 +29,33 @@ const LibraryEntrySchema = CollectionSchema(
       name: r'episodesWatched',
       type: IsarType.long,
     ),
-    r'format': PropertySchema(id: 4, name: r'format', type: IsarType.string),
+    r'externalIdsJson': PropertySchema(
+      id: 4,
+      name: r'externalIdsJson',
+      type: IsarType.string,
+    ),
+    r'format': PropertySchema(id: 5, name: r'format', type: IsarType.string),
     r'providerId': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'providerId',
       type: IsarType.string,
     ),
-    r'score': PropertySchema(id: 6, name: r'score', type: IsarType.double),
+    r'score': PropertySchema(id: 7, name: r'score', type: IsarType.double),
     r'sourceId': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'sourceId',
       type: IsarType.string,
     ),
     r'sourceType': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'sourceType',
       type: IsarType.string,
     ),
-    r'status': PropertySchema(id: 9, name: r'status', type: IsarType.string),
-    r'title': PropertySchema(id: 10, name: r'title', type: IsarType.string),
-    r'type': PropertySchema(id: 11, name: r'type', type: IsarType.string),
+    r'status': PropertySchema(id: 10, name: r'status', type: IsarType.string),
+    r'title': PropertySchema(id: 11, name: r'title', type: IsarType.string),
+    r'type': PropertySchema(id: 12, name: r'type', type: IsarType.string),
     r'updatedAt': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'updatedAt',
       type: IsarType.dateTime,
     ),
@@ -111,6 +116,12 @@ int _libraryEntryEstimateSize(
   var bytesCount = offsets.last;
   bytesCount += 3 + object.cover.length * 3;
   {
+    final value = object.externalIdsJson;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
     final value = object.format;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
@@ -155,15 +166,16 @@ void _libraryEntrySerialize(
   writer.writeString(offsets[1], object.cover);
   writer.writeLong(offsets[2], object.episodes);
   writer.writeLong(offsets[3], object.episodesWatched);
-  writer.writeString(offsets[4], object.format);
-  writer.writeString(offsets[5], object.providerId);
-  writer.writeDouble(offsets[6], object.score);
-  writer.writeString(offsets[7], object.sourceId);
-  writer.writeString(offsets[8], object.sourceType);
-  writer.writeString(offsets[9], object.status);
-  writer.writeString(offsets[10], object.title);
-  writer.writeString(offsets[11], object.type);
-  writer.writeDateTime(offsets[12], object.updatedAt);
+  writer.writeString(offsets[4], object.externalIdsJson);
+  writer.writeString(offsets[5], object.format);
+  writer.writeString(offsets[6], object.providerId);
+  writer.writeDouble(offsets[7], object.score);
+  writer.writeString(offsets[8], object.sourceId);
+  writer.writeString(offsets[9], object.sourceType);
+  writer.writeString(offsets[10], object.status);
+  writer.writeString(offsets[11], object.title);
+  writer.writeString(offsets[12], object.type);
+  writer.writeDateTime(offsets[13], object.updatedAt);
 }
 
 LibraryEntry _libraryEntryDeserialize(
@@ -177,16 +189,17 @@ LibraryEntry _libraryEntryDeserialize(
   object.cover = reader.readString(offsets[1]);
   object.episodes = reader.readLongOrNull(offsets[2]);
   object.episodesWatched = reader.readLong(offsets[3]);
-  object.format = reader.readStringOrNull(offsets[4]);
+  object.externalIdsJson = reader.readStringOrNull(offsets[4]);
+  object.format = reader.readStringOrNull(offsets[5]);
   object.id = id;
-  object.providerId = reader.readString(offsets[5]);
-  object.score = reader.readDoubleOrNull(offsets[6]);
-  object.sourceId = reader.readStringOrNull(offsets[7]);
-  object.sourceType = reader.readStringOrNull(offsets[8]);
-  object.status = reader.readStringOrNull(offsets[9]);
-  object.title = reader.readString(offsets[10]);
-  object.type = reader.readStringOrNull(offsets[11]);
-  object.updatedAt = reader.readDateTime(offsets[12]);
+  object.providerId = reader.readString(offsets[6]);
+  object.score = reader.readDoubleOrNull(offsets[7]);
+  object.sourceId = reader.readStringOrNull(offsets[8]);
+  object.sourceType = reader.readStringOrNull(offsets[9]);
+  object.status = reader.readStringOrNull(offsets[10]);
+  object.title = reader.readString(offsets[11]);
+  object.type = reader.readStringOrNull(offsets[12]);
+  object.updatedAt = reader.readDateTime(offsets[13]);
   return object;
 }
 
@@ -208,20 +221,22 @@ P _libraryEntryDeserializeProp<P>(
     case 4:
       return (reader.readStringOrNull(offset)) as P;
     case 5:
-      return (reader.readString(offset)) as P;
-    case 6:
-      return (reader.readDoubleOrNull(offset)) as P;
-    case 7:
       return (reader.readStringOrNull(offset)) as P;
+    case 6:
+      return (reader.readString(offset)) as P;
+    case 7:
+      return (reader.readDoubleOrNull(offset)) as P;
     case 8:
       return (reader.readStringOrNull(offset)) as P;
     case 9:
       return (reader.readStringOrNull(offset)) as P;
     case 10:
-      return (reader.readString(offset)) as P;
-    case 11:
       return (reader.readStringOrNull(offset)) as P;
+    case 11:
+      return (reader.readString(offset)) as P;
     case 12:
+      return (reader.readStringOrNull(offset)) as P;
+    case 13:
       return (reader.readDateTime(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -949,6 +964,165 @@ extension LibraryEntryQueryFilter
           upper: upper,
           includeUpper: includeUpper,
         ),
+      );
+    });
+  }
+
+  QueryBuilder<LibraryEntry, LibraryEntry, QAfterFilterCondition>
+  externalIdsJsonIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'externalIdsJson'),
+      );
+    });
+  }
+
+  QueryBuilder<LibraryEntry, LibraryEntry, QAfterFilterCondition>
+  externalIdsJsonIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'externalIdsJson'),
+      );
+    });
+  }
+
+  QueryBuilder<LibraryEntry, LibraryEntry, QAfterFilterCondition>
+  externalIdsJsonEqualTo(String? value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'externalIdsJson',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<LibraryEntry, LibraryEntry, QAfterFilterCondition>
+  externalIdsJsonGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'externalIdsJson',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<LibraryEntry, LibraryEntry, QAfterFilterCondition>
+  externalIdsJsonLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'externalIdsJson',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<LibraryEntry, LibraryEntry, QAfterFilterCondition>
+  externalIdsJsonBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'externalIdsJson',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<LibraryEntry, LibraryEntry, QAfterFilterCondition>
+  externalIdsJsonStartsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'externalIdsJson',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<LibraryEntry, LibraryEntry, QAfterFilterCondition>
+  externalIdsJsonEndsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'externalIdsJson',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<LibraryEntry, LibraryEntry, QAfterFilterCondition>
+  externalIdsJsonContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'externalIdsJson',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<LibraryEntry, LibraryEntry, QAfterFilterCondition>
+  externalIdsJsonMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'externalIdsJson',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<LibraryEntry, LibraryEntry, QAfterFilterCondition>
+  externalIdsJsonIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'externalIdsJson', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<LibraryEntry, LibraryEntry, QAfterFilterCondition>
+  externalIdsJsonIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'externalIdsJson', value: ''),
       );
     });
   }
@@ -2313,6 +2487,20 @@ extension LibraryEntryQuerySortBy
     });
   }
 
+  QueryBuilder<LibraryEntry, LibraryEntry, QAfterSortBy>
+  sortByExternalIdsJson() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'externalIdsJson', Sort.asc);
+    });
+  }
+
+  QueryBuilder<LibraryEntry, LibraryEntry, QAfterSortBy>
+  sortByExternalIdsJsonDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'externalIdsJson', Sort.desc);
+    });
+  }
+
   QueryBuilder<LibraryEntry, LibraryEntry, QAfterSortBy> sortByFormat() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'format', Sort.asc);
@@ -2476,6 +2664,20 @@ extension LibraryEntryQuerySortThenBy
     });
   }
 
+  QueryBuilder<LibraryEntry, LibraryEntry, QAfterSortBy>
+  thenByExternalIdsJson() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'externalIdsJson', Sort.asc);
+    });
+  }
+
+  QueryBuilder<LibraryEntry, LibraryEntry, QAfterSortBy>
+  thenByExternalIdsJsonDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'externalIdsJson', Sort.desc);
+    });
+  }
+
   QueryBuilder<LibraryEntry, LibraryEntry, QAfterSortBy> thenByFormat() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'format', Sort.asc);
@@ -2628,6 +2830,16 @@ extension LibraryEntryQueryWhereDistinct
     });
   }
 
+  QueryBuilder<LibraryEntry, LibraryEntry, QDistinct>
+  distinctByExternalIdsJson({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(
+        r'externalIdsJson',
+        caseSensitive: caseSensitive,
+      );
+    });
+  }
+
   QueryBuilder<LibraryEntry, LibraryEntry, QDistinct> distinctByFormat({
     bool caseSensitive = true,
   }) {
@@ -2726,6 +2938,13 @@ extension LibraryEntryQueryProperty
   QueryBuilder<LibraryEntry, int, QQueryOperations> episodesWatchedProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'episodesWatched');
+    });
+  }
+
+  QueryBuilder<LibraryEntry, String?, QQueryOperations>
+  externalIdsJsonProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'externalIdsJson');
     });
   }
 

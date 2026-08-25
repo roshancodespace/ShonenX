@@ -106,10 +106,10 @@ class PlayerController extends Notifier<PlayerState> {
   // Prevents multiple skip triggers during episode loading transitions
   bool _isSkipping = false;
 
-  // Cache last skip args to avoid setting up duplicate listeners on every tick
-  AniSkipArgs? _lastAutoSkipArgs;
+  // Ending skip cooldown prevents instant auto-next when an ending is skipped
+  bool _endingSkipCooldown = false;
+  Timer? _endingSkipCooldownTimer;
 
-  ProviderSubscription<Duration>? _positionSubscription;
   bool _isDisposed = false;
 
   @override
@@ -129,7 +129,7 @@ class PlayerController extends Notifier<PlayerState> {
 
     ref.onDispose(() {
       _isDisposed = true;
-      _positionSubscription?.close();
+      _endingSkipCooldownTimer?.cancel();
       _progressTracker.cancel();
     });
 
@@ -161,7 +161,76 @@ class PlayerController extends Notifier<PlayerState> {
       if (!_isDisposed && prev != current) _updateDiscordRpc();
     });
 
+    // Handles auto-skip & auto-next episode
+    ref.listen(
+      videoEngineStateProvider.select((s) => (s.position, s.duration)),
+      (prev, next) {
+        if (!_isDisposed) {
+          _onPlaybackProgress(next.$1, next.$2);
+        }
+      },
+    );
+
     return const PlayerState();
+  }
+
+  void triggerEndingSkipCooldown() {
+    _endingSkipCooldown = true;
+    _endingSkipCooldownTimer?.cancel();
+    _endingSkipCooldownTimer = Timer(const Duration(seconds: 3), () {
+      _endingSkipCooldown = false;
+    });
+  }
+
+  void _onPlaybackProgress(Duration position, Duration duration) {
+    if (_media == null || state.activeEpisode == null) return;
+    if (duration.inSeconds < 30 || position.inSeconds <= 0) return;
+
+    final seconds = position.inSeconds;
+
+    // 1. Auto-Skip (Opening, Ending, Recap)
+    if (duration.inSeconds >= 50) {
+      final aniskipArgs = AniSkipArgs(
+        media: _media,
+        episodeNumber: state.activeEpisode!.number,
+        episodeLength: duration.inSeconds,
+      );
+
+      final skips = ref.read(aniSkipProvider(aniskipArgs)).value ?? [];
+      if (skips.isNotEmpty) {
+        final prefs = ref.read(aniskipPrefsProvider);
+        for (final skip in skips) {
+          if (prefs.mode(skip.type) != SkipMode.auto) continue;
+
+          final isInside = seconds >= skip.startTime && seconds < skip.endTime;
+          if (isInside && _alreadyAutoSkipped.add(skip.type)) {
+            ref
+                .read(videoEngineProvider)
+                .seekTo(Duration(seconds: skip.endTime.ceil()));
+
+            if (skip.type == SkipType.ending ||
+                skip.type == SkipType.mixedEnding) {
+              triggerEndingSkipCooldown();
+            }
+          }
+        }
+      }
+    }
+
+    // 2. Auto-Next Episode Trigger
+    final playerPrefs = ref.read(playerPrefsProvider);
+    if (playerPrefs.autoNext &&
+        hasNextEpisode &&
+        duration.inSeconds >= 60 &&
+        position.inSeconds > 30 &&
+        !state.isLoading &&
+        !_isSkipping &&
+        !_endingSkipCooldown) {
+      final remaining = duration.inSeconds - position.inSeconds;
+      if (remaining <= 0 || position.inSeconds >= duration.inSeconds) {
+        skipEpisode();
+      }
+    }
   }
 
   Future<void> initialize(
@@ -184,7 +253,20 @@ class PlayerController extends Notifier<PlayerState> {
 
   /// Loads a local file for offline playback (no servers, no quality picker).
   Future<void> _loadOfflineData(PlayerModeOffline mode) async {
-    state = state.copyWith(isLoading: true, error: null, activeEpisode: null);
+    ref.read(videoEngineProvider).pause();
+    state = state.copyWith(
+      isLoading: true,
+      error: null,
+      activeEpisode: null,
+      servers: [],
+      activeServer: null,
+      streams: [],
+      activeStream: null,
+      qualities: [],
+      activeQuality: null,
+      subtitles: [],
+      activeSubtitle: null,
+    );
 
     try {
       final localStream = VideoStream(
@@ -194,8 +276,6 @@ class PlayerController extends Notifier<PlayerState> {
       );
 
       state = state.copyWith(
-        servers: [],
-        activeServer: null,
         streams: [localStream],
         activeStream: localStream,
         qualities: [localStream],
@@ -213,8 +293,6 @@ class PlayerController extends Notifier<PlayerState> {
     }
   }
 
-  // Loads episode media streams (servers -> streams -> quality manifest -> subtitles)
-  // and initializes the video engine using remembered user preferences.
   Future<void> _loadData(
     UnifiedEpisode episode, {
     VideoServer? server,
@@ -223,20 +301,32 @@ class PlayerController extends Notifier<PlayerState> {
   }) async {
     if (_source == null) return;
 
-    if (state.activeEpisode?.id != episode.id) {
+    final isNewEpisode = state.activeEpisode?.id != episode.id;
+
+    if (isNewEpisode) {
       _alreadyAutoSkipped.clear();
+      _progressTracker.resetThumbnail();
+      ref.read(videoEngineProvider).pause();
     }
 
     state = state.copyWith(
       isLoading: true,
       error: null,
       activeEpisode: episode,
+      servers: isNewEpisode ? [] : state.servers,
+      activeServer: isNewEpisode ? null : state.activeServer,
+      streams: isNewEpisode ? [] : state.streams,
+      activeStream: isNewEpisode ? null : state.activeStream,
+      qualities: isNewEpisode ? [] : state.qualities,
+      activeQuality: isNewEpisode ? null : state.activeQuality,
+      subtitles: isNewEpisode ? [] : state.subtitles,
+      activeSubtitle: isNewEpisode ? null : state.activeSubtitle,
     );
 
     try {
       // Step 1: Fetch available video servers for this episode
       List<VideoServer> servers = state.servers;
-      if (force || server == null || state.activeEpisode?.id != episode.id) {
+      if (force || server == null || isNewEpisode) {
         servers = await _source!.getServers(episode.id);
         if (servers.isEmpty) throw Exception('No servers available.');
       }
@@ -514,7 +604,8 @@ class PlayerController extends Notifier<PlayerState> {
     bool force = false,
   }) async {
     _alreadyAutoSkipped.clear();
-    _lastAutoSkipArgs = null;
+    _endingSkipCooldown = false;
+    _endingSkipCooldownTimer?.cancel();
     _progressTracker.resetThumbnail();
     await _loadData(newEpisode, force: force);
   }
@@ -588,35 +679,6 @@ class PlayerController extends Notifier<PlayerState> {
         .read(episodesListProvider(MediaArgs.fromMedia(_media!)))
         .value
         ?.episodes;
-  }
-
-  // Listen to playback position and auto-skip op/ed/recap segments
-  void setupAutoSkipListener(AniSkipArgs? args) {
-    if (args == _lastAutoSkipArgs && _positionSubscription != null) return;
-    _lastAutoSkipArgs = args;
-
-    _positionSubscription?.close();
-
-    final prefs = ref.read(aniskipPrefsProvider);
-    final skips = ref.read(aniSkipProvider(args)).value ?? [];
-
-    _positionSubscription = ref.listen(
-      videoEngineStateProvider.select((s) => s.position),
-      (_, current) {
-        final seconds = current.inSeconds;
-
-        for (final skip in skips) {
-          if (prefs.mode(skip.type) != SkipMode.auto) continue;
-
-          final isInside = seconds >= skip.startTime && seconds < skip.endTime;
-          if (isInside && _alreadyAutoSkipped.add(skip.type)) {
-            ref
-                .read(videoEngineProvider)
-                .seekTo(Duration(seconds: skip.endTime.ceil()));
-          }
-        }
-      },
-    );
   }
 
   Future<({bool success, String message})> takeAndShareScreenshot() async {

@@ -121,6 +121,8 @@ class ReaderNotifier extends Notifier<ReaderState> {
     final entry = ReadHistoryEntry()
       ..chapterNumber = arg.episode.number
       ..mangaId = arg.media.id
+      ..mangaIdMal = arg.media.idMal
+      ..externalIds = arg.media.externalIds
       ..mangaTitle = arg.media.title.availableTitle
       ..cover = arg.media.cover
       ..banner = arg.media.banner

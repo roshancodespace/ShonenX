@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:isar_community/isar.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 
@@ -26,11 +27,30 @@ class LibraryEntry {
   String? sourceType;
   String? sourceId;
 
+  String? externalIdsJson;
+
+  @ignore
+  MediaExternalIds get externalIds {
+    if (externalIdsJson != null && externalIdsJson!.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(externalIdsJson!) as Map<String, dynamic>;
+        return MediaExternalIds.fromMap(decoded);
+      } catch (_) {}
+    }
+    return const MediaExternalIds();
+  }
+
+  set externalIds(MediaExternalIds ids) {
+    final map = ids.toMap();
+    externalIdsJson = map.isNotEmpty ? jsonEncode(map) : null;
+  }
+
   UnifiedMedia toUnifiedMedia() {
     return UnifiedMedia(
       id: providerId,
       type: MediaType.values.firstWhere((e) => e.id == type),
       providerId: providerId,
+      externalIds: externalIds,
       cover: cover,
       title: MediaTitle(english: title),
       format: format,
@@ -53,6 +73,7 @@ class LibraryEntry {
     'updatedAt': updatedAt.toIso8601String(),
     'sourceType': sourceType,
     'sourceId': sourceId,
+    'externalIdsJson': externalIdsJson,
   };
 
   static LibraryEntry fromBackupMap(Map<String, dynamic> m) => LibraryEntry()
@@ -70,5 +91,6 @@ class LibraryEntry {
     ..updatedAt =
         DateTime.tryParse(m['updatedAt'] as String? ?? '') ?? DateTime.now()
     ..sourceType = m['sourceType'] as String?
-    ..sourceId = m['sourceId'] as String?;
+    ..sourceId = m['sourceId'] as String?
+    ..externalIdsJson = m['externalIdsJson'] as String?;
 }

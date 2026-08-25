@@ -52,22 +52,24 @@ class _EditTrackerSheetState extends ConsumerState<EditTrackerSheet> {
         throw Exception('Not authenticated');
       }
 
+      final effectiveTrackingId =
+          widget.trackingId ??
+          resolveTrackingIdFromMedia(
+            trackerType: widget.tracker.type,
+            media: widget.media,
+          ) ??
+          widget.media.id;
+
       await widget.tracker.updateListItem(
         media: widget.media,
-        trackingId: widget.trackingId ?? widget.media.id,
+        trackingId: effectiveTrackingId,
         status: _status,
         progress: _progress,
         score: _score,
       );
 
       ref.invalidate(
-        mediaTrackingProvider(
-          TrackingQuery(
-            widget.tracker.type,
-            widget.media.id,
-            widget.media.type,
-          ),
-        ),
+        mediaTrackingProvider(TrackingQuery(widget.tracker.type, widget.media)),
       );
 
       ref.invalidate(cloudLibraryProvider);

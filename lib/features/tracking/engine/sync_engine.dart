@@ -43,10 +43,7 @@ class SyncEngine {
 
       log.i('Threshold hit → syncing');
 
-      await syncEpisodeProgress(
-        media: media,
-        episodeNumber: episodeNumber,
-      );
+      await syncEpisodeProgress(media: media, episodeNumber: episodeNumber);
     }
   }
 
@@ -73,10 +70,7 @@ class SyncEngine {
 
       log.i('Threshold hit → syncing');
 
-      await syncEpisodeProgress(
-        media: media,
-        episodeNumber: chapterNumber,
-      );
+      await syncEpisodeProgress(media: media, episodeNumber: chapterNumber);
     }
   }
 
@@ -94,9 +88,7 @@ class SyncEngine {
     }
 
     final allTrackers = ref.read(availableTrackersProvider);
-    final linkedIds = await ref.read(
-      trackerLinkProvider(media.id).future,
-    );
+    final linkedIds = await ref.read(trackerLinkProvider(media.id).future);
 
     List<Future<void>> syncTasks = [];
 
@@ -115,7 +107,7 @@ class SyncEngine {
       }
 
       if (actualTrackingId != null) {
-        final query = TrackingQuery(tracker.type, media.id, media.type);
+        final query = TrackingQuery(tracker.type, media);
 
         TrackedListItem? currentData;
 

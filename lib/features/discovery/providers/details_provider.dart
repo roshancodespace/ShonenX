@@ -42,7 +42,9 @@ final detailsProvider = FutureProvider.autoDispose
       if (args.sourceId != null &&
           args.sourceId != 'kitsu' &&
           args.sourceId != 'anilist' &&
-          (args.sourceId != 'mal' || args.sourceId != 'myanimelist')) {
+          args.sourceId != 'mal' &&
+          args.sourceId != 'myanimelist' &&
+          args.sourceId != 'simkl') {
         final allSources = await ref.watch(
           args.type.availableSourcesProvider.future,
         );

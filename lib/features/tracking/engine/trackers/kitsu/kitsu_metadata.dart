@@ -617,10 +617,13 @@ mixin KitsuMetadata on BaseTracker implements RemoteTracker {
         }
       }
 
+      final kitsuId = json['id']?.toString() ?? '';
+
       return UnifiedMedia(
-        id: json['id']?.toString() ?? '',
-        providerId: json['id']?.toString() ?? '',
+        id: kitsuId,
+        providerId: kitsuId,
         idMal: idMal,
+        externalIds: MediaExternalIds(kitsu: kitsuId, mal: idMal),
         title: title,
         type: type,
         cover: cover,

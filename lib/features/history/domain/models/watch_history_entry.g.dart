@@ -45,38 +45,43 @@ const WatchHistoryEntrySchema = CollectionSchema(
       name: r'episodeTitle',
       type: IsarType.string,
     ),
-    r'lastUpdated': PropertySchema(
+    r'externalIdsJson': PropertySchema(
       id: 8,
+      name: r'externalIdsJson',
+      type: IsarType.string,
+    ),
+    r'lastUpdated': PropertySchema(
+      id: 9,
       name: r'lastUpdated',
       type: IsarType.dateTime,
     ),
     r'positionInMilliseconds': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'positionInMilliseconds',
       type: IsarType.long,
     ),
     r'providerId': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'providerId',
       type: IsarType.string,
     ),
     r'sourceId': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'sourceId',
       type: IsarType.string,
     ),
     r'sourceName': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'sourceName',
       type: IsarType.string,
     ),
     r'thumbnailUrl': PropertySchema(
-      id: 13,
+      id: 14,
       name: r'thumbnailUrl',
       type: IsarType.string,
     ),
     r'totalEpisodes': PropertySchema(
-      id: 14,
+      id: 15,
       name: r'totalEpisodes',
       type: IsarType.long,
     ),
@@ -88,12 +93,17 @@ const WatchHistoryEntrySchema = CollectionSchema(
   deserializeProp: _watchHistoryEntryDeserializeProp,
   idName: r'id',
   indexes: {
-    r'episodeNumber': IndexSchema(
-      id: -6373633370226080297,
-      name: r'episodeNumber',
+    r'animeId_episodeNumber': IndexSchema(
+      id: -4776885200784750167,
+      name: r'animeId_episodeNumber',
       unique: true,
       replace: true,
       properties: [
+        IndexPropertySchema(
+          name: r'animeId',
+          type: IndexType.hash,
+          caseSensitive: true,
+        ),
         IndexPropertySchema(
           name: r'episodeNumber',
           type: IndexType.value,
@@ -157,6 +167,12 @@ int _watchHistoryEntryEstimateSize(
     }
   }
   {
+    final value = object.externalIdsJson;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
     final value = object.providerId;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
@@ -197,13 +213,14 @@ void _watchHistoryEntrySerialize(
   writer.writeLong(offsets[5], object.durationInMilliseconds);
   writer.writeDouble(offsets[6], object.episodeNumber);
   writer.writeString(offsets[7], object.episodeTitle);
-  writer.writeDateTime(offsets[8], object.lastUpdated);
-  writer.writeLong(offsets[9], object.positionInMilliseconds);
-  writer.writeString(offsets[10], object.providerId);
-  writer.writeString(offsets[11], object.sourceId);
-  writer.writeString(offsets[12], object.sourceName);
-  writer.writeString(offsets[13], object.thumbnailUrl);
-  writer.writeLong(offsets[14], object.totalEpisodes);
+  writer.writeString(offsets[8], object.externalIdsJson);
+  writer.writeDateTime(offsets[9], object.lastUpdated);
+  writer.writeLong(offsets[10], object.positionInMilliseconds);
+  writer.writeString(offsets[11], object.providerId);
+  writer.writeString(offsets[12], object.sourceId);
+  writer.writeString(offsets[13], object.sourceName);
+  writer.writeString(offsets[14], object.thumbnailUrl);
+  writer.writeLong(offsets[15], object.totalEpisodes);
 }
 
 WatchHistoryEntry _watchHistoryEntryDeserialize(
@@ -221,14 +238,15 @@ WatchHistoryEntry _watchHistoryEntryDeserialize(
   object.durationInMilliseconds = reader.readLong(offsets[5]);
   object.episodeNumber = reader.readDouble(offsets[6]);
   object.episodeTitle = reader.readStringOrNull(offsets[7]);
+  object.externalIdsJson = reader.readStringOrNull(offsets[8]);
   object.id = id;
-  object.lastUpdated = reader.readDateTime(offsets[8]);
-  object.positionInMilliseconds = reader.readLong(offsets[9]);
-  object.providerId = reader.readStringOrNull(offsets[10]);
-  object.sourceId = reader.readStringOrNull(offsets[11]);
-  object.sourceName = reader.readStringOrNull(offsets[12]);
-  object.thumbnailUrl = reader.readStringOrNull(offsets[13]);
-  object.totalEpisodes = reader.readLongOrNull(offsets[14]);
+  object.lastUpdated = reader.readDateTime(offsets[9]);
+  object.positionInMilliseconds = reader.readLong(offsets[10]);
+  object.providerId = reader.readStringOrNull(offsets[11]);
+  object.sourceId = reader.readStringOrNull(offsets[12]);
+  object.sourceName = reader.readStringOrNull(offsets[13]);
+  object.thumbnailUrl = reader.readStringOrNull(offsets[14]);
+  object.totalEpisodes = reader.readLongOrNull(offsets[15]);
   return object;
 }
 
@@ -256,11 +274,11 @@ P _watchHistoryEntryDeserializeProp<P>(
     case 7:
       return (reader.readStringOrNull(offset)) as P;
     case 8:
-      return (reader.readDateTime(offset)) as P;
-    case 9:
-      return (reader.readLong(offset)) as P;
-    case 10:
       return (reader.readStringOrNull(offset)) as P;
+    case 9:
+      return (reader.readDateTime(offset)) as P;
+    case 10:
+      return (reader.readLong(offset)) as P;
     case 11:
       return (reader.readStringOrNull(offset)) as P;
     case 12:
@@ -268,6 +286,8 @@ P _watchHistoryEntryDeserializeProp<P>(
     case 13:
       return (reader.readStringOrNull(offset)) as P;
     case 14:
+      return (reader.readStringOrNull(offset)) as P;
+    case 15:
       return (reader.readLongOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -293,63 +313,132 @@ void _watchHistoryEntryAttach(
 }
 
 extension WatchHistoryEntryByIndex on IsarCollection<WatchHistoryEntry> {
-  Future<WatchHistoryEntry?> getByEpisodeNumber(double episodeNumber) {
-    return getByIndex(r'episodeNumber', [episodeNumber]);
+  Future<WatchHistoryEntry?> getByAnimeIdEpisodeNumber(
+    String animeId,
+    double episodeNumber,
+  ) {
+    return getByIndex(r'animeId_episodeNumber', [animeId, episodeNumber]);
   }
 
-  WatchHistoryEntry? getByEpisodeNumberSync(double episodeNumber) {
-    return getByIndexSync(r'episodeNumber', [episodeNumber]);
+  WatchHistoryEntry? getByAnimeIdEpisodeNumberSync(
+    String animeId,
+    double episodeNumber,
+  ) {
+    return getByIndexSync(r'animeId_episodeNumber', [animeId, episodeNumber]);
   }
 
-  Future<bool> deleteByEpisodeNumber(double episodeNumber) {
-    return deleteByIndex(r'episodeNumber', [episodeNumber]);
+  Future<bool> deleteByAnimeIdEpisodeNumber(
+    String animeId,
+    double episodeNumber,
+  ) {
+    return deleteByIndex(r'animeId_episodeNumber', [animeId, episodeNumber]);
   }
 
-  bool deleteByEpisodeNumberSync(double episodeNumber) {
-    return deleteByIndexSync(r'episodeNumber', [episodeNumber]);
+  bool deleteByAnimeIdEpisodeNumberSync(String animeId, double episodeNumber) {
+    return deleteByIndexSync(r'animeId_episodeNumber', [
+      animeId,
+      episodeNumber,
+    ]);
   }
 
-  Future<List<WatchHistoryEntry?>> getAllByEpisodeNumber(
+  Future<List<WatchHistoryEntry?>> getAllByAnimeIdEpisodeNumber(
+    List<String> animeIdValues,
     List<double> episodeNumberValues,
   ) {
-    final values = episodeNumberValues.map((e) => [e]).toList();
-    return getAllByIndex(r'episodeNumber', values);
+    final len = animeIdValues.length;
+    assert(
+      episodeNumberValues.length == len,
+      'All index values must have the same length',
+    );
+    final values = <List<dynamic>>[];
+    for (var i = 0; i < len; i++) {
+      values.add([animeIdValues[i], episodeNumberValues[i]]);
+    }
+
+    return getAllByIndex(r'animeId_episodeNumber', values);
   }
 
-  List<WatchHistoryEntry?> getAllByEpisodeNumberSync(
+  List<WatchHistoryEntry?> getAllByAnimeIdEpisodeNumberSync(
+    List<String> animeIdValues,
     List<double> episodeNumberValues,
   ) {
-    final values = episodeNumberValues.map((e) => [e]).toList();
-    return getAllByIndexSync(r'episodeNumber', values);
+    final len = animeIdValues.length;
+    assert(
+      episodeNumberValues.length == len,
+      'All index values must have the same length',
+    );
+    final values = <List<dynamic>>[];
+    for (var i = 0; i < len; i++) {
+      values.add([animeIdValues[i], episodeNumberValues[i]]);
+    }
+
+    return getAllByIndexSync(r'animeId_episodeNumber', values);
   }
 
-  Future<int> deleteAllByEpisodeNumber(List<double> episodeNumberValues) {
-    final values = episodeNumberValues.map((e) => [e]).toList();
-    return deleteAllByIndex(r'episodeNumber', values);
+  Future<int> deleteAllByAnimeIdEpisodeNumber(
+    List<String> animeIdValues,
+    List<double> episodeNumberValues,
+  ) {
+    final len = animeIdValues.length;
+    assert(
+      episodeNumberValues.length == len,
+      'All index values must have the same length',
+    );
+    final values = <List<dynamic>>[];
+    for (var i = 0; i < len; i++) {
+      values.add([animeIdValues[i], episodeNumberValues[i]]);
+    }
+
+    return deleteAllByIndex(r'animeId_episodeNumber', values);
   }
 
-  int deleteAllByEpisodeNumberSync(List<double> episodeNumberValues) {
-    final values = episodeNumberValues.map((e) => [e]).toList();
-    return deleteAllByIndexSync(r'episodeNumber', values);
+  int deleteAllByAnimeIdEpisodeNumberSync(
+    List<String> animeIdValues,
+    List<double> episodeNumberValues,
+  ) {
+    final len = animeIdValues.length;
+    assert(
+      episodeNumberValues.length == len,
+      'All index values must have the same length',
+    );
+    final values = <List<dynamic>>[];
+    for (var i = 0; i < len; i++) {
+      values.add([animeIdValues[i], episodeNumberValues[i]]);
+    }
+
+    return deleteAllByIndexSync(r'animeId_episodeNumber', values);
   }
 
-  Future<Id> putByEpisodeNumber(WatchHistoryEntry object) {
-    return putByIndex(r'episodeNumber', object);
+  Future<Id> putByAnimeIdEpisodeNumber(WatchHistoryEntry object) {
+    return putByIndex(r'animeId_episodeNumber', object);
   }
 
-  Id putByEpisodeNumberSync(WatchHistoryEntry object, {bool saveLinks = true}) {
-    return putByIndexSync(r'episodeNumber', object, saveLinks: saveLinks);
+  Id putByAnimeIdEpisodeNumberSync(
+    WatchHistoryEntry object, {
+    bool saveLinks = true,
+  }) {
+    return putByIndexSync(
+      r'animeId_episodeNumber',
+      object,
+      saveLinks: saveLinks,
+    );
   }
 
-  Future<List<Id>> putAllByEpisodeNumber(List<WatchHistoryEntry> objects) {
-    return putAllByIndex(r'episodeNumber', objects);
+  Future<List<Id>> putAllByAnimeIdEpisodeNumber(
+    List<WatchHistoryEntry> objects,
+  ) {
+    return putAllByIndex(r'animeId_episodeNumber', objects);
   }
 
-  List<Id> putAllByEpisodeNumberSync(
+  List<Id> putAllByAnimeIdEpisodeNumberSync(
     List<WatchHistoryEntry> objects, {
     bool saveLinks = true,
   }) {
-    return putAllByIndexSync(r'episodeNumber', objects, saveLinks: saveLinks);
+    return putAllByIndexSync(
+      r'animeId_episodeNumber',
+      objects,
+      saveLinks: saveLinks,
+    );
   }
 }
 
@@ -358,15 +447,6 @@ extension WatchHistoryEntryQueryWhereSort
   QueryBuilder<WatchHistoryEntry, WatchHistoryEntry, QAfterWhere> anyId() {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(const IdWhereClause.any());
-    });
-  }
-
-  QueryBuilder<WatchHistoryEntry, WatchHistoryEntry, QAfterWhere>
-  anyEpisodeNumber() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(
-        const IndexWhereClause.any(indexName: r'episodeNumber'),
-      );
     });
   }
 
@@ -450,34 +530,34 @@ extension WatchHistoryEntryQueryWhere
   }
 
   QueryBuilder<WatchHistoryEntry, WatchHistoryEntry, QAfterWhereClause>
-  episodeNumberEqualTo(double episodeNumber) {
+  animeIdEqualToAnyEpisodeNumber(String animeId) {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
         IndexWhereClause.equalTo(
-          indexName: r'episodeNumber',
-          value: [episodeNumber],
+          indexName: r'animeId_episodeNumber',
+          value: [animeId],
         ),
       );
     });
   }
 
   QueryBuilder<WatchHistoryEntry, WatchHistoryEntry, QAfterWhereClause>
-  episodeNumberNotEqualTo(double episodeNumber) {
+  animeIdNotEqualToAnyEpisodeNumber(String animeId) {
     return QueryBuilder.apply(this, (query) {
       if (query.whereSort == Sort.asc) {
         return query
             .addWhereClause(
               IndexWhereClause.between(
-                indexName: r'episodeNumber',
+                indexName: r'animeId_episodeNumber',
                 lower: [],
-                upper: [episodeNumber],
+                upper: [animeId],
                 includeUpper: false,
               ),
             )
             .addWhereClause(
               IndexWhereClause.between(
-                indexName: r'episodeNumber',
-                lower: [episodeNumber],
+                indexName: r'animeId_episodeNumber',
+                lower: [animeId],
                 includeLower: false,
                 upper: [],
               ),
@@ -486,17 +566,17 @@ extension WatchHistoryEntryQueryWhere
         return query
             .addWhereClause(
               IndexWhereClause.between(
-                indexName: r'episodeNumber',
-                lower: [episodeNumber],
+                indexName: r'animeId_episodeNumber',
+                lower: [animeId],
                 includeLower: false,
                 upper: [],
               ),
             )
             .addWhereClause(
               IndexWhereClause.between(
-                indexName: r'episodeNumber',
+                indexName: r'animeId_episodeNumber',
                 lower: [],
-                upper: [episodeNumber],
+                upper: [animeId],
                 includeUpper: false,
               ),
             );
@@ -505,27 +585,90 @@ extension WatchHistoryEntryQueryWhere
   }
 
   QueryBuilder<WatchHistoryEntry, WatchHistoryEntry, QAfterWhereClause>
-  episodeNumberGreaterThan(double episodeNumber, {bool include = false}) {
+  animeIdEpisodeNumberEqualTo(String animeId, double episodeNumber) {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
-        IndexWhereClause.between(
-          indexName: r'episodeNumber',
-          lower: [episodeNumber],
-          includeLower: include,
-          upper: [],
+        IndexWhereClause.equalTo(
+          indexName: r'animeId_episodeNumber',
+          value: [animeId, episodeNumber],
         ),
       );
     });
   }
 
   QueryBuilder<WatchHistoryEntry, WatchHistoryEntry, QAfterWhereClause>
-  episodeNumberLessThan(double episodeNumber, {bool include = false}) {
+  animeIdEqualToEpisodeNumberNotEqualTo(String animeId, double episodeNumber) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(
+              IndexWhereClause.between(
+                indexName: r'animeId_episodeNumber',
+                lower: [animeId],
+                upper: [animeId, episodeNumber],
+                includeUpper: false,
+              ),
+            )
+            .addWhereClause(
+              IndexWhereClause.between(
+                indexName: r'animeId_episodeNumber',
+                lower: [animeId, episodeNumber],
+                includeLower: false,
+                upper: [animeId],
+              ),
+            );
+      } else {
+        return query
+            .addWhereClause(
+              IndexWhereClause.between(
+                indexName: r'animeId_episodeNumber',
+                lower: [animeId, episodeNumber],
+                includeLower: false,
+                upper: [animeId],
+              ),
+            )
+            .addWhereClause(
+              IndexWhereClause.between(
+                indexName: r'animeId_episodeNumber',
+                lower: [animeId],
+                upper: [animeId, episodeNumber],
+                includeUpper: false,
+              ),
+            );
+      }
+    });
+  }
+
+  QueryBuilder<WatchHistoryEntry, WatchHistoryEntry, QAfterWhereClause>
+  animeIdEqualToEpisodeNumberGreaterThan(
+    String animeId,
+    double episodeNumber, {
+    bool include = false,
+  }) {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
         IndexWhereClause.between(
-          indexName: r'episodeNumber',
-          lower: [],
-          upper: [episodeNumber],
+          indexName: r'animeId_episodeNumber',
+          lower: [animeId, episodeNumber],
+          includeLower: include,
+          upper: [animeId],
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<WatchHistoryEntry, WatchHistoryEntry, QAfterWhereClause>
+  animeIdEqualToEpisodeNumberLessThan(
+    String animeId,
+    double episodeNumber, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        IndexWhereClause.between(
+          indexName: r'animeId_episodeNumber',
+          lower: [animeId],
+          upper: [animeId, episodeNumber],
           includeUpper: include,
         ),
       );
@@ -533,7 +676,8 @@ extension WatchHistoryEntryQueryWhere
   }
 
   QueryBuilder<WatchHistoryEntry, WatchHistoryEntry, QAfterWhereClause>
-  episodeNumberBetween(
+  animeIdEqualToEpisodeNumberBetween(
+    String animeId,
     double lowerEpisodeNumber,
     double upperEpisodeNumber, {
     bool includeLower = true,
@@ -542,10 +686,10 @@ extension WatchHistoryEntryQueryWhere
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
         IndexWhereClause.between(
-          indexName: r'episodeNumber',
-          lower: [lowerEpisodeNumber],
+          indexName: r'animeId_episodeNumber',
+          lower: [animeId, lowerEpisodeNumber],
           includeLower: includeLower,
-          upper: [upperEpisodeNumber],
+          upper: [animeId, upperEpisodeNumber],
           includeUpper: includeUpper,
         ),
       );
@@ -1710,6 +1854,165 @@ extension WatchHistoryEntryQueryFilter
   }
 
   QueryBuilder<WatchHistoryEntry, WatchHistoryEntry, QAfterFilterCondition>
+  externalIdsJsonIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'externalIdsJson'),
+      );
+    });
+  }
+
+  QueryBuilder<WatchHistoryEntry, WatchHistoryEntry, QAfterFilterCondition>
+  externalIdsJsonIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'externalIdsJson'),
+      );
+    });
+  }
+
+  QueryBuilder<WatchHistoryEntry, WatchHistoryEntry, QAfterFilterCondition>
+  externalIdsJsonEqualTo(String? value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'externalIdsJson',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<WatchHistoryEntry, WatchHistoryEntry, QAfterFilterCondition>
+  externalIdsJsonGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'externalIdsJson',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<WatchHistoryEntry, WatchHistoryEntry, QAfterFilterCondition>
+  externalIdsJsonLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'externalIdsJson',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<WatchHistoryEntry, WatchHistoryEntry, QAfterFilterCondition>
+  externalIdsJsonBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'externalIdsJson',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<WatchHistoryEntry, WatchHistoryEntry, QAfterFilterCondition>
+  externalIdsJsonStartsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'externalIdsJson',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<WatchHistoryEntry, WatchHistoryEntry, QAfterFilterCondition>
+  externalIdsJsonEndsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'externalIdsJson',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<WatchHistoryEntry, WatchHistoryEntry, QAfterFilterCondition>
+  externalIdsJsonContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'externalIdsJson',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<WatchHistoryEntry, WatchHistoryEntry, QAfterFilterCondition>
+  externalIdsJsonMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'externalIdsJson',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<WatchHistoryEntry, WatchHistoryEntry, QAfterFilterCondition>
+  externalIdsJsonIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'externalIdsJson', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<WatchHistoryEntry, WatchHistoryEntry, QAfterFilterCondition>
+  externalIdsJsonIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'externalIdsJson', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<WatchHistoryEntry, WatchHistoryEntry, QAfterFilterCondition>
   idEqualTo(Id value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
@@ -2708,6 +3011,20 @@ extension WatchHistoryEntryQuerySortBy
   }
 
   QueryBuilder<WatchHistoryEntry, WatchHistoryEntry, QAfterSortBy>
+  sortByExternalIdsJson() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'externalIdsJson', Sort.asc);
+    });
+  }
+
+  QueryBuilder<WatchHistoryEntry, WatchHistoryEntry, QAfterSortBy>
+  sortByExternalIdsJsonDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'externalIdsJson', Sort.desc);
+    });
+  }
+
+  QueryBuilder<WatchHistoryEntry, WatchHistoryEntry, QAfterSortBy>
   sortByLastUpdated() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'lastUpdated', Sort.asc);
@@ -2920,6 +3237,20 @@ extension WatchHistoryEntryQuerySortThenBy
     });
   }
 
+  QueryBuilder<WatchHistoryEntry, WatchHistoryEntry, QAfterSortBy>
+  thenByExternalIdsJson() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'externalIdsJson', Sort.asc);
+    });
+  }
+
+  QueryBuilder<WatchHistoryEntry, WatchHistoryEntry, QAfterSortBy>
+  thenByExternalIdsJsonDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'externalIdsJson', Sort.desc);
+    });
+  }
+
   QueryBuilder<WatchHistoryEntry, WatchHistoryEntry, QAfterSortBy> thenById() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'id', Sort.asc);
@@ -3091,6 +3422,16 @@ extension WatchHistoryEntryQueryWhereDistinct
   }
 
   QueryBuilder<WatchHistoryEntry, WatchHistoryEntry, QDistinct>
+  distinctByExternalIdsJson({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(
+        r'externalIdsJson',
+        caseSensitive: caseSensitive,
+      );
+    });
+  }
+
+  QueryBuilder<WatchHistoryEntry, WatchHistoryEntry, QDistinct>
   distinctByLastUpdated() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'lastUpdated');
@@ -3198,6 +3539,13 @@ extension WatchHistoryEntryQueryProperty
   episodeTitleProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'episodeTitle');
+    });
+  }
+
+  QueryBuilder<WatchHistoryEntry, String?, QQueryOperations>
+  externalIdsJsonProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'externalIdsJson');
     });
   }
 

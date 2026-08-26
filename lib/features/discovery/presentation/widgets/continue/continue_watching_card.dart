@@ -177,7 +177,7 @@ class _ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem>
           duration: const Duration(milliseconds: 140),
           curve: Curves.easeOutCubic,
           child: FittedBox(
-            fit: BoxFit.fill,
+            fit: BoxFit.contain,
             child: SizedBox(
               width: baseLayout.width,
               height: baseLayout.height,
@@ -207,7 +207,6 @@ class _ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem>
           httpHeaders: headers.isEmpty ? null : headers,
           fit: BoxFit.cover,
           memCacheWidth: 600,
-          memCacheHeight: 400,
           maxWidthDiskCache: 800,
           errorWidget: (_, __, ___) => Container(
             color: cs.surfaceContainerHighest,

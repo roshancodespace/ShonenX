@@ -1437,7 +1437,6 @@ class _TvEpisodeCardState extends State<_TvEpisodeCard> {
                               imageUrl: thumbUrl,
                               fit: BoxFit.cover,
                               memCacheWidth: 600,
-                              memCacheHeight: 350,
                             )
                           else
                             Container(color: cs.surfaceContainerHighest),

@@ -62,12 +62,16 @@ class CardThumbnail extends StatelessWidget {
     required double h,
     required double r,
   }) {
+    final finalW = (w.isFinite && w > 0) ? w : double.infinity;
+    final finalH = (h.isFinite && h > 0) ? h : double.infinity;
+
     if (config.thumbnailBuilder != null) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(r),
+        clipBehavior: Clip.antiAlias,
         child: SizedBox(
-          width: w,
-          height: h,
+          width: finalW,
+          height: finalH,
           child: Builder(
             builder: (context) => config.thumbnailBuilder!(context, cs),
           ),
@@ -77,10 +81,7 @@ class CardThumbnail extends StatelessWidget {
 
     if (config.imageUrl != null && config.imageUrl!.isNotEmpty) {
       final cacheW = (w.isFinite && w > 0 && w < 4000)
-          ? (w * 2.0).clamp(100.0, 800.0).toInt()
-          : 400;
-      final cacheH = (h.isFinite && h > 0 && h < 4000)
-          ? (h * 2.0).clamp(150.0, 1200.0).toInt()
+          ? (w * 2.5).clamp(150.0, 1000.0).toInt()
           : 600;
 
       final rawUrl = config.imageUrl!.trim();
@@ -90,15 +91,16 @@ class CardThumbnail extends StatelessWidget {
         img = CachedNetworkImage(
           imageUrl: rawUrl,
           httpHeaders: decodeUrlHeaders(rawUrl),
-          width: w,
-          height: h,
+          width: finalW,
+          height: finalH,
           fit: BoxFit.cover,
+          alignment: Alignment.center,
           memCacheWidth: cacheW,
-          memCacheHeight: cacheH,
           maxWidthDiskCache: 800,
           fadeInDuration: const Duration(milliseconds: 220),
           placeholderFadeInDuration: const Duration(milliseconds: 120),
-          errorWidget: (_, __, ___) => _buildFallback(cs, w, h),
+          placeholder: (_, __) => _buildPlaceholder(cs, finalW, finalH),
+          errorWidget: (_, __, ___) => _buildFallback(cs, finalW, finalH),
         );
       } else {
         try {
@@ -107,26 +109,40 @@ class CardThumbnail extends StatelessWidget {
               : rawUrl;
           img = Image.memory(
             base64Decode(base64String),
-            width: w,
-            height: h,
+            width: finalW,
+            height: finalH,
             fit: BoxFit.cover,
+            alignment: Alignment.center,
             gaplessPlayback: true,
-            errorBuilder: (_, __, ___) => _buildFallback(cs, w, h),
+            errorBuilder: (_, __, ___) => _buildFallback(cs, finalW, finalH),
           );
         } catch (_) {
-          img = _buildFallback(cs, w, h);
+          img = _buildFallback(cs, finalW, finalH);
         }
       }
 
       if (config.heroTag != null && config.heroTag!.isNotEmpty) {
         img = Hero(tag: config.heroTag!, child: img);
       }
-      return ClipRRect(borderRadius: BorderRadius.circular(r), child: img);
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(r),
+        clipBehavior: Clip.antiAlias,
+        child: SizedBox(width: finalW, height: finalH, child: img),
+      );
     }
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(r),
-      child: _buildFallback(cs, w, h),
+      clipBehavior: Clip.antiAlias,
+      child: _buildFallback(cs, finalW, finalH),
+    );
+  }
+
+  Widget _buildPlaceholder(ColorScheme cs, double w, double h) {
+    return Container(
+      width: w,
+      height: h,
+      color: cs.surfaceContainerHighest.withValues(alpha: 0.35),
     );
   }
 

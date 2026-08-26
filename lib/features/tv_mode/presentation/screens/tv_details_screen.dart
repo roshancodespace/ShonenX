@@ -386,7 +386,6 @@ class _TvDetailsScreenState extends ConsumerState<TvDetailsScreen> {
                             imageUrl: poster,
                             fit: BoxFit.cover,
                             memCacheWidth: 400,
-                            memCacheHeight: 600,
                           ),
                         ),
                       ),

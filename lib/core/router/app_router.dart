@@ -49,6 +49,9 @@ final rootNavigatorKey = GlobalKey<NavigatorState>();
 final _homeNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'home');
 final _libraryNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'library');
 final _searchNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'search');
+final _downloadsNavigatorKey = GlobalKey<NavigatorState>(
+  debugLabel: 'downloads',
+);
 
 final startupUriProvider = Provider<Uri?>((ref) => null);
 
@@ -197,6 +200,15 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
+          StatefulShellBranch(
+            navigatorKey: _downloadsNavigatorKey,
+            routes: [
+              GoRoute(
+                path: '/downloads',
+                builder: (context, state) => const DownloadsScreen(),
+              ),
+            ],
+          ),
         ],
       ),
       GoRoute(
@@ -212,9 +224,15 @@ final routerProvider = Provider<GoRouter>((ref) {
           final genres = state.uri.queryParametersAll['genres'] ?? [];
           final tags = state.uri.queryParametersAll['tags'] ?? [];
           final category = state.uri.queryParameters['category'];
-          final sortParam = SearchSort.tryFromId(state.uri.queryParameters['sort']);
-          final statusParam = SearchStatusFilter.tryFromId(state.uri.queryParameters['status']);
-          final formatParam = SearchFormatFilter.tryFromId(state.uri.queryParameters['format']);
+          final sortParam = SearchSort.tryFromId(
+            state.uri.queryParameters['sort'],
+          );
+          final statusParam = SearchStatusFilter.tryFromId(
+            state.uri.queryParameters['status'],
+          );
+          final formatParam = SearchFormatFilter.tryFromId(
+            state.uri.queryParameters['format'],
+          );
 
           return FilteredDiscoverScreen(
             initialQuery: query,
@@ -273,10 +291,6 @@ final routerProvider = Provider<GoRouter>((ref) {
           final mode = state.extra as ReaderModeOnline;
           return ReaderScreen(key: ValueKey(mode.episode.id), mode: mode);
         },
-      ),
-      GoRoute(
-        path: '/downloads',
-        builder: (context, state) => const DownloadsScreen(),
       ),
       GoRoute(
         path: '/settings',

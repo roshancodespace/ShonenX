@@ -465,6 +465,7 @@ class _BottomNavBar extends ConsumerWidget {
                     iconSize: iconSize,
                     padding: hPad,
                     navBarStyle: navBarStyle,
+                    navigationShell: navigationShell,
                   ),
                 ],
               ),
@@ -611,6 +612,7 @@ class _DownloadButton extends ConsumerWidget {
   final double iconSize;
   final double padding;
   final NavBarStyle navBarStyle;
+  final StatefulNavigationShell navigationShell;
 
   const _DownloadButton({
     required this.colorScheme,
@@ -618,11 +620,13 @@ class _DownloadButton extends ConsumerWidget {
     required this.iconSize,
     required this.padding,
     required this.navBarStyle,
+    required this.navigationShell,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cs = colorScheme;
+    final active = navigationShell.currentIndex == 3;
     final tasks = ref.watch(downloadTasksProvider).value ?? [];
     final activeTasks = tasks
         .where(
@@ -643,23 +647,34 @@ class _DownloadButton extends ConsumerWidget {
       }
     }
 
+    final buttonRadius =
+        (navBarStyle == NavBarStyle.material ||
+            navBarStyle == NavBarStyle.minimal)
+        ? size / 2
+        : GlobalUI.uiRoundness;
+
     // Background blur config
     final double? blurAmount = switch (navBarStyle) {
       NavBarStyle.classic => 14.0,
       NavBarStyle.frosted => 24.0,
+      NavBarStyle.minimal => 12.0,
       _ => null,
     };
 
     // Decoration matching the main Nav bar
     final btnDecoration = switch (navBarStyle) {
       NavBarStyle.classic => BoxDecoration(
-        color: cs.surface.withValues(alpha: 0.75),
-        borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
-        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.45)),
+        color: active ? cs.primary : cs.surface.withValues(alpha: 0.75),
+        borderRadius: BorderRadius.circular(buttonRadius),
+        border: Border.all(
+          color: active
+              ? cs.primary
+              : cs.outlineVariant.withValues(alpha: 0.45),
+        ),
       ),
       NavBarStyle.minimal => BoxDecoration(
         color: cs.surface.withValues(alpha: 0.95),
-        borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
+        borderRadius: BorderRadius.circular(buttonRadius),
         border: Border.all(
           color: cs.outlineVariant.withValues(alpha: 0.2),
           width: 0.8,
@@ -673,26 +688,33 @@ class _DownloadButton extends ConsumerWidget {
         ],
       ),
       NavBarStyle.frosted => BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
+        color: active
+            ? Colors.white.withValues(alpha: 0.18)
+            : Colors.white.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(buttonRadius),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.15),
-          width: 0.8,
+          color: Colors.white.withValues(alpha: active ? 0.3 : 0.15),
+          width: active ? 0.5 : 0.8,
         ),
       ),
       NavBarStyle.material => BoxDecoration(
-        color: cs.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(999),
+        color: active ? cs.secondaryContainer : cs.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(buttonRadius),
       ),
     };
 
     final Color iconColor = switch (navBarStyle) {
-      NavBarStyle.frosted => Colors.white,
-      NavBarStyle.minimal => cs.primary,
-      _ => cs.onSurface,
+      NavBarStyle.material =>
+        active ? cs.onSecondaryContainer : cs.onSurfaceVariant,
+      NavBarStyle.frosted => active ? Colors.white : Colors.white54,
+      NavBarStyle.minimal =>
+        active ? cs.primary : cs.onSurfaceVariant.withValues(alpha: 0.5),
+      _ => active ? cs.onPrimary : cs.onSurfaceVariant,
     };
 
-    final content = Container(
+    final content = AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOutCubic,
       width: size,
       height: size,
       decoration: btnDecoration,
@@ -700,47 +722,68 @@ class _DownloadButton extends ConsumerWidget {
         padding: EdgeInsets.zero,
         icon: Badge(
           isLabelVisible: hasActive,
+          backgroundColor: cs.primary,
+          textColor: cs.onPrimary,
           label: AnimatedSwitcher(
             duration: const Duration(milliseconds: 200),
             child: Text('$count', key: ValueKey(count)),
           ),
-          child: Stack(
-            alignment: Alignment.center,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              AnimatedOpacity(
-                opacity: hasActive ? 1.0 : 0.0,
-                duration: const Duration(milliseconds: 300),
-                child: SizedBox(
-                  width: iconSize + 8,
-                  height: iconSize + 8,
-                  child: CircularProgressIndicator(
-                    value: progress,
-                    strokeWidth: 2.5,
+              Stack(
+                alignment: Alignment.center,
+                children: [
+                  AnimatedOpacity(
+                    opacity: hasActive ? 1.0 : 0.0,
+                    duration: const Duration(milliseconds: 300),
+                    child: SizedBox(
+                      width: iconSize + 8,
+                      height: iconSize + 8,
+                      child: CircularProgressIndicator(
+                        value: progress,
+                        strokeWidth: 2.5,
+                        color: active && navBarStyle == NavBarStyle.classic
+                            ? cs.onPrimary
+                            : cs.primary,
+                      ),
+                    ),
+                  ),
+                  AnimatedScale(
+                    scale: hasActive ? 1.1 : (active ? 1.15 : 1.0),
+                    duration: const Duration(milliseconds: 350),
+                    curve: Curves.easeOutBack,
+                    child: Icon(
+                      Icons.download_outlined,
+                      color: iconColor,
+                      size: iconSize,
+                    ),
+                  ),
+                ],
+              ),
+              if (navBarStyle == NavBarStyle.minimal && active) ...[
+                const SizedBox(height: 3),
+                Container(
+                  width: 5,
+                  height: 5,
+                  decoration: BoxDecoration(
                     color: cs.primary,
+                    shape: BoxShape.circle,
                   ),
                 ),
-              ),
-              AnimatedScale(
-                scale: hasActive ? 1.1 : 1.0,
-                duration: const Duration(milliseconds: 350),
-                curve: Curves.easeOutBack,
-                child: Icon(
-                  Icons.download_outlined,
-                  color: iconColor,
-                  size: iconSize,
-                ),
-              ),
+              ],
             ],
           ),
         ),
-        onPressed: () => context.pushDownloads(),
+        onPressed: () => navigationShell.goBranch(
+          3,
+          initialLocation: 3 == navigationShell.currentIndex,
+        ),
       ),
     );
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(
-        navBarStyle == NavBarStyle.material ? 999.0 : GlobalUI.uiRoundness,
-      ),
+      borderRadius: BorderRadius.circular(buttonRadius),
       child: blurAmount != null
           ? BackdropFilter(
               filter: ImageFilter.blur(sigmaX: blurAmount, sigmaY: blurAmount),
@@ -892,6 +935,7 @@ class _SideNavBar extends ConsumerWidget {
                   heightTier: h,
                   hideLabel: hideDownloadLabel,
                   navBarStyle: navBarStyle,
+                  navigationShell: navigationShell,
                 ),
               ),
             ),
@@ -1063,21 +1107,9 @@ class _PillContent extends StatelessWidget {
       _ => cs.onPrimary,
     };
 
-    final resolvedColor = active
-        ? activeIconColor
-        : (isDownload
-              ? (navBarStyle == NavBarStyle.frosted
-                    ? Colors.white
-                    : cs.onSurface)
-              : inactiveIconColor);
+    final resolvedColor = active ? activeIconColor : inactiveIconColor;
 
-    final resolvedTextColor = active
-        ? activeTextColor
-        : (isDownload
-              ? (navBarStyle == NavBarStyle.frosted
-                    ? Colors.white
-                    : cs.onSurface)
-              : inactiveIconColor);
+    final resolvedTextColor = active ? activeTextColor : inactiveIconColor;
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -1125,16 +1157,19 @@ class _TallDownloadPillContent extends ConsumerWidget {
   final HeightTier heightTier;
   final bool hideLabel;
   final NavBarStyle navBarStyle;
+  final StatefulNavigationShell navigationShell;
 
   const _TallDownloadPillContent({
     required this.cs,
     required this.heightTier,
     required this.hideLabel,
     required this.navBarStyle,
+    required this.navigationShell,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final active = navigationShell.currentIndex == 3;
     final tasks = ref.watch(downloadTasksProvider).value ?? [];
     final count = tasks
         .where(
@@ -1144,11 +1179,40 @@ class _TallDownloadPillContent extends ConsumerWidget {
         )
         .length;
 
+    final activeItemRadius = navBarStyle == NavBarStyle.material
+        ? 999.0
+        : GlobalUI.uiRoundness;
+
+    final itemDecoration = switch (navBarStyle) {
+      NavBarStyle.classic => BoxDecoration(
+        color: active ? cs.primary : Colors.transparent,
+        borderRadius: BorderRadius.circular(activeItemRadius),
+      ),
+      NavBarStyle.minimal => const BoxDecoration(color: Colors.transparent),
+      NavBarStyle.frosted => BoxDecoration(
+        color: active
+            ? Colors.white.withValues(alpha: 0.12)
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(activeItemRadius),
+        border: active
+            ? Border.all(color: Colors.white.withValues(alpha: 0.1), width: 0.5)
+            : null,
+      ),
+      NavBarStyle.material => BoxDecoration(
+        color: active ? cs.secondaryContainer : Colors.transparent,
+        borderRadius: BorderRadius.circular(activeItemRadius),
+      ),
+    };
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
-        onTap: () => context.pushDownloads(),
+        borderRadius: BorderRadius.circular(activeItemRadius),
+        focusColor: cs.primary.withValues(alpha: 0.2),
+        onTap: () => navigationShell.goBranch(
+          3,
+          initialLocation: 3 == navigationShell.currentIndex,
+        ),
         child: Badge(
           isLabelVisible: count > 0,
           backgroundColor: cs.primary,
@@ -1157,15 +1221,21 @@ class _TallDownloadPillContent extends ConsumerWidget {
             duration: const Duration(milliseconds: 200),
             child: Text('$count', key: ValueKey(count)),
           ),
-          child: _PillContent(
-            icon: Icons.download_outlined,
-            label: 'DOWNLOAD',
-            active: false,
-            isDownload: true,
-            cs: cs,
-            heightTier: heightTier,
-            forceHideLabel: hideLabel,
-            navBarStyle: navBarStyle,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 350),
+            curve: Curves.easeOutCubic,
+            width: double.infinity,
+            decoration: itemDecoration,
+            child: _PillContent(
+              icon: Icons.download_outlined,
+              label: 'DOWNLOAD',
+              active: active,
+              isDownload: true,
+              cs: cs,
+              heightTier: heightTier,
+              forceHideLabel: hideLabel,
+              navBarStyle: navBarStyle,
+            ),
           ),
         ),
       ),

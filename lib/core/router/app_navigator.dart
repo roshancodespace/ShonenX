@@ -188,6 +188,7 @@ extension AppNavigator on BuildContext {
 
   // Downloads
   void pushDownloads() => push('/downloads');
+  void goDownloads() => go('/downloads');
 
   // History / Continue
   void pushContinueHistory(MediaType type) => push('/continue/${type.id}');

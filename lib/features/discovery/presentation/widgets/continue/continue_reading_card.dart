@@ -168,7 +168,7 @@ class _ContinueReadingItemState extends ConsumerState<ContinueReadingItem>
           duration: const Duration(milliseconds: 140),
           curve: Curves.easeOutCubic,
           child: FittedBox(
-            fit: BoxFit.fill,
+            fit: BoxFit.contain,
             child: SizedBox(
               width: baseLayout.width,
               height: baseLayout.height,

@@ -5,6 +5,7 @@ import 'package:volume_controller/volume_controller.dart';
 import 'package:shonenx/features/player/engine/video_engine.dart';
 import 'package:shonenx/features/player/providers/player_controller.dart';
 import 'package:shonenx/features/player/providers/video_engine_provider.dart';
+import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 
 class PlayerKeyboardListener extends ConsumerStatefulWidget {
   final Widget child;
@@ -51,11 +52,32 @@ class _PlayerKeyboardListenerState
     }
 
     final isPlaying = ref.read(videoEngineStateProvider).isPlaying;
+    final isTvMode = ref.read(uiPrefsProvider.select((p) => p.useNewUi));
     final key = event.logicalKey;
 
-    if (key == LogicalKeyboardKey.space || key == LogicalKeyboardKey.keyK) {
+    if (isTvMode && event is KeyDownEvent) {
+      widget.onUserInteraction();
+    }
+
+    if (key == LogicalKeyboardKey.space ||
+        key == LogicalKeyboardKey.keyK ||
+        key == LogicalKeyboardKey.mediaPlayPause ||
+        key == LogicalKeyboardKey.select ||
+        key == LogicalKeyboardKey.gameButtonA) {
       if (event is KeyDownEvent) {
         isPlaying ? widget.engine.pause() : widget.engine.play();
+        widget.onUserInteraction();
+      }
+      return KeyEventResult.handled;
+    } else if (key == LogicalKeyboardKey.mediaPlay) {
+      if (event is KeyDownEvent) {
+        widget.engine.play();
+        widget.onUserInteraction();
+      }
+      return KeyEventResult.handled;
+    } else if (key == LogicalKeyboardKey.mediaPause) {
+      if (event is KeyDownEvent) {
+        widget.engine.pause();
         widget.onUserInteraction();
       }
       return KeyEventResult.handled;
@@ -86,14 +108,16 @@ class _PlayerKeyboardListenerState
       }
       return KeyEventResult.handled;
     } else if (key == LogicalKeyboardKey.keyN ||
-        key == LogicalKeyboardKey.pageDown) {
+        key == LogicalKeyboardKey.pageDown ||
+        key == LogicalKeyboardKey.mediaTrackNext) {
       if (event is KeyDownEvent) {
         widget.controller.skipEpisode(forward: true);
         widget.onUserInteraction();
       }
       return KeyEventResult.handled;
     } else if (key == LogicalKeyboardKey.keyP ||
-        key == LogicalKeyboardKey.pageUp) {
+        key == LogicalKeyboardKey.pageUp ||
+        key == LogicalKeyboardKey.mediaTrackPrevious) {
       if (event is KeyDownEvent) {
         widget.controller.skipEpisode(forward: false);
         widget.onUserInteraction();
@@ -102,6 +126,7 @@ class _PlayerKeyboardListenerState
     } else if (key == LogicalKeyboardKey.keyE) {
       if (event is KeyDownEvent) {
         widget.onToggleEpisodePanel();
+        widget.onUserInteraction();
       }
       return KeyEventResult.handled;
     } else if (key == LogicalKeyboardKey.keyS) {
@@ -136,6 +161,7 @@ class _PlayerKeyboardListenerState
         key == LogicalKeyboardKey.f1) {
       if (event is KeyDownEvent) {
         widget.onShowShortcutsGuide();
+        widget.onUserInteraction();
       }
       return KeyEventResult.handled;
     } else if (key == LogicalKeyboardKey.escape) {

@@ -131,36 +131,41 @@ class HorizontalSection<T> extends StatelessWidget {
                     );
               }
 
-              return ListView.separated(
-                controller: controller,
-                clipBehavior: Clip.none,
-                scrollDirection: Axis.horizontal,
-                padding:
-                    listPadding ?? const EdgeInsets.symmetric(horizontal: 12),
-                itemCount: items.length,
-                itemBuilder: (context, index) {
-                  return Builder(
-                    builder: (itemContext) {
-                      return Focus(
-                        skipTraversal: true,
-                        canRequestFocus: false,
-                        onFocusChange: (hasFocus) {
-                          if (hasFocus) {
-                            Scrollable.ensureVisible(
-                              itemContext,
-                              alignment: 0.5,
-                              duration: const Duration(milliseconds: 250),
-                              curve: Curves.easeOutCubic,
-                            );
-                          }
-                        },
-                        child: itemBuilder(itemContext, items[index]),
-                      );
-                    },
-                  );
-                },
-                separatorBuilder: (context, index) =>
-                    SizedBox(width: gap ?? 10.0),
+              return ScrollConfiguration(
+                behavior: ScrollConfiguration.of(
+                  context,
+                ).copyWith(scrollbars: false),
+                child: ListView.separated(
+                  controller: controller,
+                  clipBehavior: Clip.none,
+                  scrollDirection: Axis.horizontal,
+                  padding:
+                      listPadding ?? const EdgeInsets.symmetric(horizontal: 12),
+                  itemCount: items.length,
+                  itemBuilder: (context, index) {
+                    return Builder(
+                      builder: (itemContext) {
+                        return Focus(
+                          skipTraversal: true,
+                          canRequestFocus: false,
+                          onFocusChange: (hasFocus) {
+                            if (hasFocus) {
+                              Scrollable.ensureVisible(
+                                itemContext,
+                                alignment: 0.5,
+                                duration: const Duration(milliseconds: 250),
+                                curve: Curves.easeOutCubic,
+                              );
+                            }
+                          },
+                          child: itemBuilder(itemContext, items[index]),
+                        );
+                      },
+                    );
+                  },
+                  separatorBuilder: (context, index) =>
+                      SizedBox(width: gap ?? 10.0),
+                ),
               );
             },
           ),

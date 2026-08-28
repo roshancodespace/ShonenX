@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/shared/providers/storage_provider.dart';
-
 import 'package:shonenx/shared/models/unified_media.dart';
 
 enum AdultContentMode {
@@ -13,19 +12,34 @@ enum AdultContentMode {
   const AdultContentMode(this.label);
 }
 
+enum EpisodeMetadataProviderType {
+  auto('Auto (Tenrai + Kitsu)'),
+  tenrai('Tenrai'),
+  kitsu('Kitsu'),
+  disabled('Disabled'),
+  @Deprecated('Jikan is disabled; use tenrai instead')
+  jikan('Jikan (Disabled)');
+
+  final String displayName;
+  const EpisodeMetadataProviderType(this.displayName);
+}
+
 class ContentPrefs {
   final AdultContentMode adultContentMode;
   final TitlePreference titlePreference;
+  final EpisodeMetadataProviderType episodeMetadataProvider;
 
   const ContentPrefs({
     this.adultContentMode = AdultContentMode.safe,
     this.titlePreference = TitlePreference.english,
+    this.episodeMetadataProvider = EpisodeMetadataProviderType.auto,
   });
 
   Map<String, dynamic> toJson() {
     return {
       'adultContentMode': adultContentMode.index,
       'titlePreference': titlePreference.name,
+      'episodeMetadataProvider': episodeMetadataProvider.name,
     };
   }
 
@@ -40,16 +54,23 @@ class ContentPrefs {
         (e) => e.name == json['titlePreference'],
         orElse: () => TitlePreference.english,
       ),
+      episodeMetadataProvider: EpisodeMetadataProviderType.values.firstWhere(
+        (e) => e.name == json['episodeMetadataProvider'],
+        orElse: () => EpisodeMetadataProviderType.auto,
+      ),
     );
   }
 
   ContentPrefs copyWith({
     AdultContentMode? adultContentMode,
     TitlePreference? titlePreference,
+    EpisodeMetadataProviderType? episodeMetadataProvider,
   }) {
     return ContentPrefs(
       adultContentMode: adultContentMode ?? this.adultContentMode,
       titlePreference: titlePreference ?? this.titlePreference,
+      episodeMetadataProvider:
+          episodeMetadataProvider ?? this.episodeMetadataProvider,
     );
   }
 }
@@ -62,16 +83,15 @@ class ContentPrefsNotifier extends Notifier<ContentPrefs> {
     final storage = ref.watch(sharedPreferencesProvider);
     final jsonStr = storage.getString(_keyPrefs);
     ContentPrefs prefs = const ContentPrefs();
-    
+
     if (jsonStr != null) {
       try {
         prefs = ContentPrefs.fromJson(jsonDecode(jsonStr));
       } catch (_) {}
     }
-    
-    // Sync static title preference on MediaTitle
+
     MediaTitle.preference = prefs.titlePreference;
-    
+
     return prefs;
   }
 
@@ -89,6 +109,12 @@ class ContentPrefsNotifier extends Notifier<ContentPrefs> {
   Future<void> setTitlePreference(TitlePreference preference) async {
     await _savePrefs(state.copyWith(titlePreference: preference));
     MediaTitle.preference = preference;
+  }
+
+  Future<void> setEpisodeMetadataProvider(
+    EpisodeMetadataProviderType providerType,
+  ) async {
+    await _savePrefs(state.copyWith(episodeMetadataProvider: providerType));
   }
 }
 

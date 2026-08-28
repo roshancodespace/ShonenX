@@ -18,6 +18,7 @@ import 'package:shonenx/features/history/providers/read_history_provider.dart';
 import 'package:shonenx/features/history/providers/watch_history_provider.dart';
 import 'package:shonenx/features/tracking/providers/media_tracking_provider.dart';
 import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
+import 'package:shonenx/features/episode_metadata/providers/episode_metadata_providers.dart';
 import 'package:shonenx/features/tv_mode/presentation/widgets/tv_episode_list_panel.dart';
 
 export 'episode_tiles.dart';
@@ -152,7 +153,29 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
         : (trackedProgress > 0 ? trackedProgress : maxHistoryEp);
 
     return episodesAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () {
+        final progressMsg = ref.watch(episodeMetadataProgressProvider).value;
+        return Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(),
+              if (progressMsg != null && progressMsg.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                Text(
+                  progressMsg,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: Colors.white70,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        );
+      },
       error: (e, _) => Center(
         child: Padding(
           padding: const EdgeInsets.all(24.0),

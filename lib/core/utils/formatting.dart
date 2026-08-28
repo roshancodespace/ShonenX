@@ -28,6 +28,46 @@ String trimText(String? text, {int maxLength = 100, String suffix = '...'}) {
   return '${text.substring(0, maxLength).trim()}$suffix';
 }
 
+String? formatAirDate(String? dateString) {
+  if (dateString == null || dateString.trim().isEmpty) return null;
+  final trimmed = dateString.trim();
+
+  DateTime? date = DateTime.tryParse(trimmed);
+  if (date == null) {
+    final numVal = int.tryParse(trimmed) ?? double.tryParse(trimmed)?.toInt();
+    if (numVal != null && numVal > 0) {
+      if (numVal > 100000000000) {
+        date = DateTime.fromMillisecondsSinceEpoch(numVal);
+      } else if (numVal > 100000000) {
+        date = DateTime.fromMillisecondsSinceEpoch(numVal * 1000);
+      }
+    }
+  }
+
+  if (date != null) {
+    const monthsList = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    final monthStr = (date.month >= 1 && date.month <= 12)
+        ? monthsList[date.month - 1]
+        : '';
+    return '$monthStr ${date.day}, ${date.year}';
+  }
+
+  return trimmed;
+}
+
 String? formatDateString(String? dateString) {
   if (dateString == null || dateString.trim().isEmpty) return null;
   final trimmed = dateString.trim();

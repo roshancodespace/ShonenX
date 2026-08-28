@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/router/app_navigator.dart';
+import 'package:shonenx/core/utils/formatting.dart';
 import 'package:shonenx/features/discovery/domain/media_args.dart';
 import 'package:shonenx/features/discovery/providers/episodes_provider.dart';
 import 'package:shonenx/features/history/domain/models/read_history_entry.dart';
@@ -18,6 +19,7 @@ import 'package:shonenx/features/tv_mode/presentation/widgets/tv_source_dialog.d
 import 'package:shonenx/shared/models/ui_style_enums.dart';
 import 'package:shonenx/shared/models/unified_episode.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
+import 'package:shonenx/features/episode_metadata/providers/episode_metadata_providers.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
 
 class _EpisodeChunk {
@@ -432,79 +434,85 @@ class _TvEpisodeShelfState extends ConsumerState<TvEpisodeShelf> {
                 ),
                 SizedBox(
                   height: 200,
-                  child: ListView.separated(
-                    controller: _scrollController,
-                    scrollDirection: Axis.horizontal,
-                    physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.only(bottom: 6),
-                    itemCount: finalEpisodes.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 16),
-                    itemBuilder: (context, index) {
-                      final episode = finalEpisodes[index];
+                  child: ScrollConfiguration(
+                    behavior: ScrollConfiguration.of(
+                      context,
+                    ).copyWith(scrollbars: false),
+                    child: ListView.separated(
+                      key: ValueKey('tv_shelf_${state.source.id}_$_chunkIndex'),
+                      controller: _scrollController,
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      padding: const EdgeInsets.only(bottom: 6),
+                      itemCount: finalEpisodes.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 16),
+                      itemBuilder: (context, index) {
+                        final episode = finalEpisodes[index];
 
-                      double progressPercent = 0.0;
-                      bool isCompleted = false;
+                        double progressPercent = 0.0;
+                        bool isCompleted = false;
 
-                      if (isManga) {
-                        final historyEntry = readHistory
-                            .where(
-                              (e) =>
-                                  (e.chapterNumber - episode.number).abs() <
-                                  0.01,
-                            )
-                            .firstOrNull;
-                        if (historyEntry != null &&
-                            historyEntry.totalPages > 0) {
-                          progressPercent =
-                              (historyEntry.positionPage /
-                                      historyEntry.totalPages)
-                                  .clamp(0.0, 1.0);
-                          isCompleted =
-                              historyEntry.positionPage >=
-                              historyEntry.totalPages;
-                        } else if (trackedProgress >= episode.number) {
-                          progressPercent = 1.0;
-                          isCompleted = true;
+                        if (isManga) {
+                          final historyEntry = readHistory
+                              .where(
+                                (e) =>
+                                    (e.chapterNumber - episode.number).abs() <
+                                    0.01,
+                              )
+                              .firstOrNull;
+                          if (historyEntry != null &&
+                              historyEntry.totalPages > 0) {
+                            progressPercent =
+                                (historyEntry.positionPage /
+                                        historyEntry.totalPages)
+                                    .clamp(0.0, 1.0);
+                            isCompleted =
+                                historyEntry.positionPage >=
+                                historyEntry.totalPages;
+                          } else if (trackedProgress >= episode.number) {
+                            progressPercent = 1.0;
+                            isCompleted = true;
+                          }
+                        } else {
+                          final historyEntry = watchHistory
+                              .where(
+                                (e) =>
+                                    (e.episodeNumber - episode.number).abs() <
+                                    0.01,
+                              )
+                              .firstOrNull;
+                          if (historyEntry != null &&
+                              historyEntry.durationInMilliseconds > 0) {
+                            progressPercent =
+                                (historyEntry.positionInMilliseconds /
+                                        historyEntry.durationInMilliseconds)
+                                    .clamp(0.0, 1.0);
+                            isCompleted =
+                                historyEntry.positionInMilliseconds >=
+                                historyEntry.durationInMilliseconds * 0.9;
+                          } else if (trackedProgress >= episode.number) {
+                            progressPercent = 1.0;
+                            isCompleted = true;
+                          }
                         }
-                      } else {
-                        final historyEntry = watchHistory
-                            .where(
-                              (e) =>
-                                  (e.episodeNumber - episode.number).abs() <
-                                  0.01,
-                            )
-                            .firstOrNull;
-                        if (historyEntry != null &&
-                            historyEntry.durationInMilliseconds > 0) {
-                          progressPercent =
-                              (historyEntry.positionInMilliseconds /
-                                      historyEntry.durationInMilliseconds)
-                                  .clamp(0.0, 1.0);
-                          isCompleted =
-                              historyEntry.positionInMilliseconds >=
-                              historyEntry.durationInMilliseconds * 0.9;
-                        } else if (trackedProgress >= episode.number) {
-                          progressPercent = 1.0;
-                          isCompleted = true;
-                        }
-                      }
 
-                      return _TvEpisodeCard(
-                        episode: episode,
-                        media: widget.media,
-                        source: state.source,
-                        progressPercent: progressPercent,
-                        isCompleted: isCompleted,
-                        radius: radius,
-                        onTap: () => _handleEpisodeTap(
-                          context,
-                          episode,
-                          state.source,
-                          watchHistory,
-                          readHistory,
-                        ),
-                      );
-                    },
+                        return _TvEpisodeCard(
+                          episode: episode,
+                          media: widget.media,
+                          source: state.source,
+                          progressPercent: progressPercent,
+                          isCompleted: isCompleted,
+                          radius: radius,
+                          onTap: () => _handleEpisodeTap(
+                            context,
+                            episode,
+                            state.source,
+                            watchHistory,
+                            readHistory,
+                          ),
+                        );
+                      },
+                    ),
                   ),
                 ),
               ],
@@ -578,16 +586,33 @@ class _TvEpisodeShelfState extends ConsumerState<TvEpisodeShelf> {
   }
 
   Widget _buildLoadingState(ColorScheme cs) {
+    final progressMsg = ref.watch(episodeMetadataProgressProvider).value;
     return SizedBox(
       height: 190,
       child: Center(
-        child: SizedBox(
-          width: 32,
-          height: 32,
-          child: CircularProgressIndicator(
-            strokeWidth: 2.5,
-            valueColor: AlwaysStoppedAnimation<Color>(cs.primary),
-          ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 32,
+              height: 32,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.5,
+                valueColor: AlwaysStoppedAnimation<Color>(cs.primary),
+              ),
+            ),
+            if (progressMsg != null && progressMsg.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text(
+                progressMsg,
+                style: TextStyle(
+                  color: cs.onSurface.withValues(alpha: 0.7),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ],
         ),
       ),
     );
@@ -908,7 +933,7 @@ class _TvEpisodeCard extends StatelessWidget {
                   children: [
                     if (episode.airDate != null && episode.airDate!.isNotEmpty)
                       Text(
-                        episode.airDate!,
+                        formatAirDate(episode.airDate) ?? episode.airDate!,
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.45),
                           fontSize: 11,

@@ -7,12 +7,22 @@ class MediaArgs {
   final MediaType type;
   final String? sourceId;
   final String? providerId;
+  final String? mediaId;
+  final String? mediaIdMal;
+  final String? mediaTitleRomaji;
+  final String? mediaTitleNative;
+  final MediaExternalIds? externalIds;
 
   const MediaArgs({
     required this.mediaTitle,
     required this.type,
     this.sourceId,
     this.providerId,
+    this.mediaId,
+    this.mediaIdMal,
+    this.mediaTitleRomaji,
+    this.mediaTitleNative,
+    this.externalIds,
   });
 
   factory MediaArgs.fromMedia(UnifiedMedia media) {
@@ -22,6 +32,27 @@ class MediaArgs {
       sourceId: media.sourceId,
       providerId:
           media.providerId ?? (media.sourceId != null ? media.id : null),
+      mediaId: media.id,
+      mediaIdMal: media.idMal,
+      mediaTitleRomaji: media.title.romaji,
+      mediaTitleNative: media.title.native,
+      externalIds: media.externalIds,
+    );
+  }
+
+  UnifiedMedia toMedia() {
+    return UnifiedMedia(
+      id: mediaId ?? '',
+      idMal: mediaIdMal,
+      providerId: providerId,
+      sourceId: sourceId,
+      type: type,
+      externalIds: externalIds ?? const MediaExternalIds(),
+      title: MediaTitle(
+        english: mediaTitle,
+        romaji: mediaTitleRomaji,
+        native: mediaTitleNative,
+      ),
     );
   }
 

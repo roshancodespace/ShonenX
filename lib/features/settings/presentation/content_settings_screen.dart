@@ -63,7 +63,7 @@ class ContentSettingsScreen extends ConsumerWidget {
                     ref
                         .read(contentPrefsProvider.notifier)
                         .setTitlePreference(val);
-                    ref.invalidate(homeFeedProvider);
+                    ref.invalidate(homeSectionFeedProvider);
                   }
                 },
               ),

@@ -494,6 +494,16 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
           ? json['seasonYear'].toString()
           : json['season']?.toString();
 
+      final year =
+          (json['seasonYear'] as num?)?.toInt() ??
+          ((json['startDate'] as Map?)?['year'] as num?)?.toInt();
+      final trailerObj = json['trailer'] as Map?;
+      final String? trailer = trailerObj != null && trailerObj['id'] != null
+          ? (trailerObj['site'] == 'youtube'
+                ? 'https://www.youtube.com/watch?v=${trailerObj['id']}'
+                : trailerObj['id'].toString())
+          : null;
+
       final studios = ((json['studios'] as Map?)?['nodes'] as List?)
           ?.map((s) => (s as Map)['name']?.toString() ?? '')
           .where((s) => s.isNotEmpty)
@@ -551,6 +561,8 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
         format: json['format'],
         score: score,
         season: seasonStr,
+        year: year,
+        trailer: trailer,
         cover:
             (json['coverImage'] as Map?)?['extraLarge'] ??
             (json['coverImage'] as Map?)?['large'] ??

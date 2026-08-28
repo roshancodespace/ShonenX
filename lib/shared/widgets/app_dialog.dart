@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shonenx/shared/models/ui_style_enums.dart';
 
 class AppDialog extends StatelessWidget {
   final String? title;
@@ -121,7 +122,7 @@ class AppDialog extends StatelessWidget {
           ),
           decoration: BoxDecoration(
             color: theme.colorScheme.surfaceContainerHigh,
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.45),

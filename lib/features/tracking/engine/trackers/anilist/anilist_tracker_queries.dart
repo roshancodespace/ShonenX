@@ -149,6 +149,13 @@ class AnilistTrackerQueries {
           genres
           seasonYear
           season
+          startDate {
+            year
+          }
+          trailer {
+            id
+            site
+          }
         }
       }
     }
@@ -207,6 +214,13 @@ class AnilistTrackerQueries {
           genres
           seasonYear
           season
+          startDate {
+            year
+          }
+          trailer {
+            id
+            site
+          }
         }
       }
     }
@@ -245,6 +259,15 @@ class AnilistTrackerQueries {
         averageScore
         episodes
         genres
+        seasonYear
+        season
+        startDate {
+          year
+        }
+        trailer {
+          id
+          site
+        }
         tags {
           id
           name

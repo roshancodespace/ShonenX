@@ -1,11 +1,12 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:shonenx/features/tv_mode/presentation/tv_scale.dart';
-import 'package:shonenx/features/tv_mode/presentation/widgets/tv_smart_image.dart';
+import 'package:shonenx/features/tv_mode/presentation/widgets/tv_focusable.dart';
+import 'package:shonenx/shared/models/ui_style_enums.dart';
 import 'package:shonenx/shared/models/unified_episode.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
 
-class TvEpisodeListPanel extends StatefulWidget {
+class TvEpisodeListPanel extends StatelessWidget {
   final List<UnifiedEpisode> episodes;
   final UnifiedMedia media;
   final SourceInfo source;
@@ -27,280 +28,230 @@ class TvEpisodeListPanel extends StatefulWidget {
   });
 
   @override
-  State<TvEpisodeListPanel> createState() => _TvEpisodeListPanelState();
-}
-
-class _TvEpisodeListPanelState extends State<TvEpisodeListPanel> {
-  final ScrollController _scrollController = ScrollController();
-  bool _hasAutoScrolled = false;
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    if (widget.currentEpisodeNumber != null && !_hasAutoScrolled) {
-      _hasAutoScrolled = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted || !_scrollController.hasClients) return;
-        final index = widget.episodes.indexWhere(
-          (ep) => ep.number == widget.currentEpisodeNumber,
-        );
-        if (index != -1) {
-          final scale = context.tvScale;
-          final itemHeight = (90 * scale).clamp(80.0, 140.0) + (12 * scale);
-          final offset = index * itemHeight;
-          _scrollController.jumpTo(
-            offset.clamp(0.0, _scrollController.position.maxScrollExtent),
-          );
-        }
-      });
-    }
+    final cs = Theme.of(context).colorScheme;
+    final radius = GlobalUI.uiRoundness;
+    final isManga =
+        media.type == MediaType.MANGA || media.type == MediaType.NOVEL;
 
-    return ListView.builder(
-      controller: _scrollController,
-      padding: EdgeInsets.only(bottom: 120 * context.tvScale),
-      itemCount: widget.episodes.length,
+    return GridView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      physics: const BouncingScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: 320,
+        mainAxisExtent: 210,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
+      ),
+      itemCount: episodes.length,
       itemBuilder: (context, index) {
-        final ep = widget.episodes[index];
-        final isCurrent = widget.currentEpisodeNumber == ep.number;
-        final isWatched =
-            widget.effectiveWatchedProgress >= ep.number ||
-            widget.historyWatchedSet.contains(ep.number);
+        final episode = episodes[index];
+        final isCompleted =
+            historyWatchedSet.contains(episode.number) ||
+            effectiveWatchedProgress >= episode.number;
+        final isCurrent = episode.number == currentEpisodeNumber;
 
-        return _TvEpisodeTile(
-          episode: ep,
-          mediaType: widget.media.type,
-          isCurrent: isCurrent,
-          isWatched: isWatched,
-          fallbackThumbnailUrl: widget.media.banner ?? widget.media.cover,
-          onTap: () => widget.onEpisodeTap(ep, widget.source),
-        );
-      },
-    );
-  }
-}
+        final imageUrl = episode.thumbnailUrl?.isNotEmpty == true
+            ? episode.thumbnailUrl!
+            : (media.banner?.isNotEmpty == true
+                  ? media.banner!
+                  : (media.cover ?? ''));
 
-class _TvEpisodeTile extends StatefulWidget {
-  final UnifiedEpisode episode;
-  final MediaType mediaType;
-  final bool isCurrent;
-  final bool isWatched;
-  final String? fallbackThumbnailUrl;
-  final VoidCallback onTap;
+        final epTitle = episode.title?.isNotEmpty == true
+            ? episode.title!
+            : (isManga
+                  ? 'Chapter ${episode.number}'
+                  : 'Episode ${episode.number}');
 
-  const _TvEpisodeTile({
-    required this.episode,
-    required this.mediaType,
-    required this.isCurrent,
-    required this.isWatched,
-    this.fallbackThumbnailUrl,
-    required this.onTap,
-  });
+        return TvFocusable(
+          onTap: () => onEpisodeTap(episode, source),
+          scaleFactor: 1.04,
+          builder: (context, isFocused, isHovered) {
+            final active = isFocused || isHovered;
 
-  @override
-  State<_TvEpisodeTile> createState() => _TvEpisodeTileState();
-}
-
-class _TvEpisodeTileState extends State<_TvEpisodeTile> {
-  bool _isFocused = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-    final scale = context.tvScale;
-    final epNumStr = widget.episode.number.toString().contains('.0')
-        ? widget.episode.number.toInt().toString()
-        : widget.episode.number.toString();
-
-    final label =
-        widget.mediaType == MediaType.MANGA ||
-            widget.mediaType == MediaType.NOVEL
-        ? 'Chapter $epNumStr'
-        : 'Episode $epNumStr';
-
-    final thumbnailUrl = widget.episode.thumbnailUrl?.isNotEmpty == true
-        ? widget.episode.thumbnailUrl
-        : widget.fallbackThumbnailUrl;
-
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: (6 * scale).clamp(4.0, 10.0)),
-      child: Focus(
-        onFocusChange: (hasFocus) {
-          setState(() => _isFocused = hasFocus);
-          if (hasFocus) {
-            Scrollable.ensureVisible(
-              context,
-              alignment: 0.5,
-              duration: const Duration(milliseconds: 250),
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
               curve: Curves.easeOutCubic,
-            );
-          }
-        },
-        child: InkWell(
-          onTap: widget.onTap,
-          borderRadius: BorderRadius.circular(12),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeOut,
-            height: (90 * scale).clamp(80.0, 140.0),
-            decoration: BoxDecoration(
-              color: _isFocused
-                  ? Colors.white.withValues(alpha: 0.15)
-                  : (widget.isCurrent
-                        ? cs.primary.withValues(alpha: 0.2)
-                        : Colors.white.withValues(alpha: 0.05)),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: _isFocused
-                    ? Colors.white
-                    : (widget.isCurrent
-                          ? cs.primary.withValues(alpha: 0.5)
-                          : Colors.transparent),
-                width: _isFocused ? 2.5 : 1.5,
-              ),
-              boxShadow: _isFocused
-                  ? [
-                      BoxShadow(
-                        color: Colors.white.withValues(alpha: 0.1),
-                        blurRadius: 10,
-                        spreadRadius: 2,
-                      ),
-                    ]
-                  : null,
-            ),
-            child: Row(
-              children: [
-                // Thumbnail
-                if (thumbnailUrl != null && thumbnailUrl.isNotEmpty)
-                  ClipRRect(
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(10.5),
-                      bottomLeft: Radius.circular(10.5),
-                    ),
-                    child: SizedBox(
-                      width: (160 * scale).clamp(140.0, 240.0),
-                      height: double.infinity,
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          TvSmartImage(
-                            imageUrl: thumbnailUrl,
-                            fit: BoxFit.cover,
-                            memCacheWidth: 400,
-                          ),
-                          if (widget.isWatched)
-                            Container(
-                              color: Colors.black.withValues(alpha: 0.5),
-                              child: const Icon(
-                                Icons.check_circle_rounded,
-                                color: Colors.white70,
-                                size: 32,
-                              ),
-                            ),
-                          // Watched Progress Bar (Bottom)
-                          if (widget.isWatched || widget.isCurrent)
-                            Positioned(
-                              bottom: 0,
-                              left: 0,
-                              right: 0,
-                              child: Container(
-                                height: 4,
-                                color: widget.isWatched
-                                    ? cs.primary
-                                    : cs.primary.withValues(alpha: 0.4),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  )
-                else
-                  // Fallback for no thumbnail
-                  Container(
-                    width: (160 * scale).clamp(140.0, 240.0),
-                    height: double.infinity,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.1),
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(10.5),
-                        bottomLeft: Radius.circular(10.5),
-                      ),
-                    ),
-                    child: const Center(
-                      child: Icon(
-                        Icons.image_not_supported_rounded,
-                        color: Colors.white30,
-                      ),
-                    ),
+              decoration: BoxDecoration(
+                color: active
+                    ? const Color(0xFF1E2024)
+                    : const Color(0xFF121316),
+                borderRadius: BorderRadius.circular(radius),
+                border: Border.all(
+                  color: active
+                      ? Colors.white
+                      : isCurrent
+                      ? cs.primary
+                      : isCompleted
+                      ? cs.primary.withValues(alpha: 0.3)
+                      : Colors.white.withValues(alpha: 0.08),
+                  width: active ? 2 : (isCurrent ? 1.5 : 1),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: active ? 0.7 : 0.3),
+                    blurRadius: active ? 20 : 6,
+                    spreadRadius: active ? 2 : 0,
                   ),
-
-                SizedBox(width: (20 * scale).clamp(16.0, 32.0)),
-
-                // Metadata
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        label,
-                        style: TextStyle(
-                          color: _isFocused || widget.isCurrent
-                              ? Colors.white
-                              : Colors.white70,
-                          fontWeight: FontWeight.w800,
-                          fontSize: (15 * scale).clamp(14.0, 22.0),
-                        ),
-                      ),
-                      if (widget.episode.title?.isNotEmpty == true) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          widget.episode.title!,
-                          style: TextStyle(
-                            color: Colors.white60,
-                            fontWeight: FontWeight.w500,
-                            fontSize: (14 * scale).clamp(13.0, 20.0),
+                ],
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        if (imageUrl.isNotEmpty)
+                          CachedNetworkImage(
+                            imageUrl: imageUrl,
+                            fit: BoxFit.cover,
+                            errorWidget: (_, __, ___) => Container(
+                              color: Colors.white10,
+                              child: const Icon(
+                                Icons.movie_outlined,
+                                color: Colors.white24,
+                              ),
+                            ),
+                          )
+                        else
+                          Container(
+                            color: Colors.white10,
+                            child: const Icon(
+                              Icons.movie_outlined,
+                              color: Colors.white24,
+                            ),
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                        Positioned.fill(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  Colors.black.withValues(alpha: 0.35),
+                                  Colors.transparent,
+                                  Colors.black.withValues(alpha: 0.8),
+                                ],
+                                stops: const [0.0, 0.4, 1.0],
+                              ),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          top: 8,
+                          left: 8,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 7,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.75),
+                              borderRadius: BorderRadius.circular(
+                                (radius * 0.6).clamp(0.0, radius),
+                              ),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.15),
+                              ),
+                            ),
+                            child: Text(
+                              isManga
+                                  ? 'CH ${episode.number % 1 == 0 ? episode.number.toInt() : episode.number}'
+                                  : 'EP ${episode.number % 1 == 0 ? episode.number.toInt() : episode.number}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                        ),
+                        if (isCompleted)
+                          Positioned(
+                            top: 8,
+                            right: 8,
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: cs.primary,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.check_rounded,
+                                color: Colors.black,
+                                size: 12,
+                              ),
+                            ),
+                          ),
+                        AnimatedOpacity(
+                          opacity: active ? 1.0 : 0.0,
+                          duration: const Duration(milliseconds: 180),
+                          child: Center(
+                            child: Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: cs.primary,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: cs.primary.withValues(alpha: 0.5),
+                                    blurRadius: 16,
+                                  ),
+                                ],
+                              ),
+                              child: Icon(
+                                isManga
+                                    ? Icons.menu_book_rounded
+                                    : Icons.play_arrow_rounded,
+                                color: Colors.black,
+                                size: 24,
+                              ),
+                            ),
+                          ),
                         ),
                       ],
-                    ],
-                  ),
-                ),
-
-                if (widget.episode.isFiller)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.amber.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        'FILLER',
-                        style: TextStyle(
-                          color: Colors.amberAccent,
-                          fontSize: (11 * scale).clamp(10.0, 16.0),
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
                     ),
                   ),
-              ],
-            ),
-          ),
-        ),
-      ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          epTitle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: active
+                                ? Colors.white
+                                : Colors.white.withValues(alpha: 0.9),
+                            fontSize: 13,
+                            fontWeight: active
+                                ? FontWeight.bold
+                                : FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          episode.airDate?.isNotEmpty == true
+                              ? episode.airDate!
+                              : (isManga ? 'Chapter' : 'Episode'),
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.45),
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }

@@ -161,6 +161,7 @@ class ShonenXApp extends ConsumerWidget {
           theme: lightTheme,
           darkTheme: darkTheme,
           scrollBehavior: const MaterialScrollBehavior().copyWith(
+            scrollbars: false,
             dragDevices: {
               PointerDeviceKind.touch,
               PointerDeviceKind.mouse,

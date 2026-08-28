@@ -35,6 +35,30 @@ class UnifiedEpisode {
     );
   }
 
+  UnifiedEpisode copyWith({
+    String? id,
+    double? number,
+    int? season,
+    String? title,
+    bool? isFiller,
+    String? thumbnailUrl,
+    String? airDate,
+    String? uploadDate,
+    String? scanlator,
+  }) {
+    return UnifiedEpisode(
+      id: id ?? this.id,
+      number: number ?? this.number,
+      season: season ?? this.season,
+      title: title ?? this.title,
+      isFiller: isFiller ?? this.isFiller,
+      thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
+      airDate: airDate ?? this.airDate,
+      uploadDate: uploadDate ?? this.uploadDate,
+      scanlator: scanlator ?? this.scanlator,
+    );
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,

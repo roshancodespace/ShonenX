@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:shonenx/core/utils/formatting.dart';
 import 'package:shonenx/features/tv_mode/presentation/widgets/tv_focusable.dart';
 import 'package:shonenx/shared/models/ui_style_enums.dart';
 import 'package:shonenx/shared/models/unified_episode.dart';
@@ -236,7 +237,8 @@ class TvEpisodeListPanel extends StatelessWidget {
                         const SizedBox(height: 3),
                         Text(
                           episode.airDate?.isNotEmpty == true
-                              ? episode.airDate!
+                              ? (formatAirDate(episode.airDate) ??
+                                    episode.airDate!)
                               : (isManga ? 'Chapter' : 'Episode'),
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.45),

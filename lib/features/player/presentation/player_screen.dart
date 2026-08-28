@@ -515,7 +515,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
         body: PlayerKeyboardListener(
           engine: engine,
           controller: controller,
-          onUserInteraction: () {},
+          onUserInteraction: _showControlsTemporarily,
           onToggleFullScreen: _toggleFullScreen,
           onToggleEpisodePanel: _toggleEpisodePanel,
           onShowShortcutsGuide: () => KeyboardShortcutsSheet.show(context),

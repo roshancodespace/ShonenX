@@ -258,6 +258,8 @@ class UnifiedMedia {
   final List<MediaExternalLink>? externalLinks;
   final List<MediaCharacter>? characters;
   final String? season;
+  final int? year;
+  final String? trailer;
   final DateTime? airingAt;
   final int? nextEpisode;
   final String? relationType;
@@ -294,6 +296,8 @@ class UnifiedMedia {
     this.externalLinks = const [],
     this.characters = const [],
     this.season,
+    this.year,
+    this.trailer,
     this.airingAt,
     this.nextEpisode,
     this.relationType,
@@ -400,6 +404,8 @@ extension UnifiedMediaX on UnifiedMedia {
           ? other.characters
           : characters,
       season: other.season ?? season,
+      year: other.year ?? year,
+      trailer: other.trailer ?? trailer,
       airingAt: other.airingAt ?? airingAt,
       nextEpisode: other.nextEpisode ?? nextEpisode,
       relationType: other.relationType ?? relationType,

@@ -1,37 +1,47 @@
 import 'dart:ui';
+
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
+
 import 'package:shonenx/core/router/app_navigator.dart';
-import 'package:shonenx/features/auth/providers/auth_provider.dart';
+import 'package:shonenx/core/utils/formatting.dart';
+import 'package:shonenx/features/discord/providers/discord_rpc_provider.dart';
 import 'package:shonenx/features/discovery/domain/media_args.dart';
-import 'package:shonenx/features/discovery/presentation/widgets/cards/media_card.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/rows/horizontal_section.dart';
+import 'package:shonenx/features/discovery/presentation/widgets/sheets/characters_sheet.dart';
 import 'package:shonenx/features/discovery/providers/details_provider.dart';
 import 'package:shonenx/features/discovery/providers/episodes_provider.dart';
-import 'package:shonenx/features/discovery/providers/matched_media_provider.dart';
 import 'package:shonenx/features/discovery/providers/media_preference_provider.dart';
+import 'package:shonenx/features/history/domain/models/read_history_entry.dart';
+import 'package:shonenx/features/history/domain/models/watch_history_entry.dart';
 import 'package:shonenx/features/history/providers/read_history_provider.dart';
 import 'package:shonenx/features/history/providers/watch_history_provider.dart';
 import 'package:shonenx/features/player/domain/player_mode.dart';
 import 'package:shonenx/features/reader/domain/reader_mode.dart';
-import 'package:shonenx/features/tracking/domain/isar_tracker_link.dart';
+import 'package:shonenx/features/tracking/domain/models/tracked_list_item.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
 import 'package:shonenx/features/tracking/engine/remote_tracker.dart';
+import 'package:shonenx/features/tracking/engine/tracking_service.dart';
+import 'package:shonenx/features/tracking/presentation/widgets/edit_tracker_sheet.dart';
 import 'package:shonenx/features/tracking/presentation/widgets/tracker_manager_sheet.dart';
 import 'package:shonenx/features/tracking/providers/media_tracking_provider.dart';
 import 'package:shonenx/features/tracking/providers/tracker_link_provider.dart';
 import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
-import 'package:shonenx/features/tracking/providers/tracking_prefs_provider.dart';
-import 'package:shonenx/features/tv_mode/presentation/tv_scale.dart';
 import 'package:shonenx/features/tv_mode/presentation/widgets/tv_episode_shelf.dart';
-import 'package:shonenx/features/tv_mode/presentation/widgets/tv_smart_image.dart';
+import 'package:shonenx/features/tv_mode/presentation/widgets/tv_focusable.dart';
+import 'package:shonenx/features/tv_mode/presentation/widgets/tv_media_card.dart';
+import 'package:shonenx/features/tv_mode/presentation/widgets/tv_source_dialog.dart';
+import 'package:shonenx/shared/models/ui_style_enums.dart';
+import 'package:shonenx/shared/models/unified_episode.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
-import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
-import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
-import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
-import 'package:shonenx/shared/widgets/source_selector_list.dart';
+import 'package:shonenx/shared/widgets/app_dialog.dart';
+import 'package:shonenx/shared/widgets/app_scaffold.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
-import 'package:shonenx/source_engine/utils/media_type_extensions.dart';
 
 class TvDetailsScreen extends ConsumerStatefulWidget {
   final UnifiedMedia media;
@@ -44,154 +54,89 @@ class TvDetailsScreen extends ConsumerStatefulWidget {
 }
 
 class _TvDetailsScreenState extends ConsumerState<TvDetailsScreen> {
+  final ScrollController _scrollController = ScrollController();
+  final GlobalKey _episodesShelfKey = GlobalKey();
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _autoLinkPrimaryTracker();
+      ref.read(discordRpcProvider.notifier).updateMediaPresence(widget.media);
     });
   }
 
-  Future<void> _autoLinkPrimaryTracker() async {
-    final prefs = ref.read(trackingPrefsProvider);
-    if (!prefs.autoTrackPrimary) return;
-
-    final primaryType = prefs.primaryTracker;
-    if (primaryType == TrackerType.local) return;
-
-    final media = widget.media;
-    final trackingId = resolveTrackingIdFromMedia(
-      trackerType: primaryType,
-      media: media,
-    );
-
-    if (trackingId == null || trackingId.isEmpty) return;
-
-    final linksMap = await ref.read(trackerLinkProvider(media.id).future);
-    if (linksMap.containsKey(primaryType)) return;
-
-    final mapping = TrackerMapping()
-      ..trackerId = primaryType.id
-      ..trackingId = trackingId
-      ..trackingTitle = media.title.availableTitle;
-
-    ref
-        .read(trackerLinkProvider(media.id).notifier)
-        .saveLink(primaryType, mapping);
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
-  void _openSourceSelector(
+  void _scrollToEpisodes() {
+    final context = _episodesShelfKey.currentContext;
+    if (context != null) {
+      Scrollable.ensureVisible(
+        context,
+        duration: const Duration(milliseconds: 360),
+        curve: Curves.easeOutCubic,
+      );
+    }
+  }
+
+  void _showSynopsisDialog(
     BuildContext context,
-    UnifiedMedia media,
-    List<SourceInfo> availableSources,
-    SourceInfo? currentSource,
+    String title,
+    String description,
   ) {
-    AppBottomSheet.show(
+    AppDialog.show(
       context: context,
-      title: 'Select Source',
-      child: SourceSelectorList(
-        availableSources: availableSources,
-        currentSource: currentSource,
-        mediaType: media.type,
-        onSourceSelected: (ctx, source) {
-          final matchArgs = MediaArgs.fromMedia(media);
-          ref
-              .read(mediaPreferenceProvider(matchArgs).notifier)
-              .updateSource(source);
-          ref.invalidate(matchedMediaProvider(matchArgs));
-          ref.invalidate(episodesListProvider(matchArgs));
-          Navigator.pop(ctx);
-        },
-        onSettingsClosed: () {
-          final matchArgs = MediaArgs.fromMedia(media);
-          ref.invalidate(matchedMediaProvider(matchArgs));
-          ref.invalidate(episodesListProvider(matchArgs));
-        },
+      title: 'Synopsis • $title',
+      icon: const Icon(Icons.description_outlined),
+      maxWidth: 700,
+      child: MarkdownBody(
+        data: description.replaceAll('<br>', '\n'),
+        styleSheet: MarkdownStyleSheet(
+          p: TextStyle(
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.9),
+            fontSize: 15,
+            height: 1.6,
+          ),
+        ),
       ),
     );
   }
 
-  void _openTrackerManager(BuildContext context, UnifiedMedia media) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => TrackerManagerSheet(media: media),
-    );
+  void _shareMedia(UnifiedMedia media) {
+    final providerId = media.providerId ?? 'anilist';
+    final id = media.id;
+    final type = media.type == MediaType.ANIME ? 'anime' : 'manga';
+    String url;
+    if (providerId == 'myanimelist' || providerId == 'mal') {
+      url = 'https://myanimelist.net/$type/$id';
+    } else if (providerId == 'kitsu') {
+      url = 'https://kitsu.io/$type/$id';
+    } else {
+      url = 'https://anilist.co/$type/$id';
+    }
+    SharePlus.instance.share(ShareParams(uri: Uri.parse(url)));
   }
 
-  void _handlePrimaryPlay(
-    BuildContext context,
-    UnifiedMedia media,
-    WidgetRef ref,
-  ) {
-    final matchArgs = MediaArgs.fromMedia(media);
-    final episodesData = ref.read(episodesListProvider(matchArgs)).value;
-    final episodes = episodesData?.episodes ?? [];
-    final source = episodesData?.source;
-
-    if (episodes.isEmpty || source == null) return;
-
-    final watchHistoryEntries =
-        ref.read(historyEpisodesProvider(media.id)).value ?? [];
-    final readHistoryEntries =
-        ref.read(historyChaptersProvider(media.id)).value ?? [];
-
-    final currentEpisodeNumber = media.type == MediaType.ANIME
-        ? watchHistoryEntries.firstOrNull?.episodeNumber
-        : readHistoryEntries.firstOrNull?.chapterNumber;
-
-    final targetEpisode = (currentEpisodeNumber != null
-        ? episodes.firstWhere(
-            (e) => e.number == currentEpisodeNumber,
-            orElse: () => episodes.first,
-          )
-        : episodes.first);
-
-    if (media.type == MediaType.MANGA || media.type == MediaType.NOVEL) {
-      final historyEntry = readHistoryEntries.firstOrNull;
-
-      final startPos =
-          (historyEntry != null &&
-              historyEntry.positionPage > 0 &&
-              historyEntry.positionPage <= historyEntry.totalPages)
-          ? historyEntry.positionPage
-          : 1;
-
-      context.pushReader(
-        ReaderModeOnline(
-          media: media,
-          episode: targetEpisode,
-          sourceInfo: source,
-          startPosition: startPos,
-        ),
-      );
-    } else {
-      context.pushPlayer(
-        PlayerModeOnline(
-          media: media,
-          episode: targetEpisode,
-          sourceInfo: source,
-        ),
-      );
+  Future<void> _playTrailer(String? trailer) async {
+    if (trailer == null || trailer.isEmpty) return;
+    final trailerUrl = trailer.startsWith('http')
+        ? trailer
+        : 'https://www.youtube.com/watch?v=$trailer';
+    final uri = Uri.tryParse(trailerUrl);
+    if (uri != null && await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-    final scale = context.tvScale;
-    final size = MediaQuery.sizeOf(context);
-    final cardStyle = ref.watch(uiPrefsProvider.select((s) => s.cardStyle));
-    final uiRoundness = ref.watch(
-      themePrefsProvider.select((s) => s.uiRoundness),
-    );
-    final isWide = ref.watch(
-      uiPrefsProvider.select((s) => s.isMediaCardWide(cardStyle.name)),
-    );
-    final sectionHeight = cardStyle.getLayout(isWideMode: isWide).height;
+    final cs = Theme.of(context).colorScheme;
+    final radius = GlobalUI.uiRoundness;
 
     final detailsArgs = DetailsArgs(
       widget.media.id,
@@ -201,517 +146,151 @@ class _TvDetailsScreenState extends ConsumerState<TvDetailsScreen> {
     );
 
     final detailsAsync = ref.watch(detailsProvider(detailsArgs));
-    final media = detailsAsync.value?.merge(widget.media) ?? widget.media;
+    final displayMedia =
+        detailsAsync.value?.merge(widget.media) ?? widget.media;
 
-    final matchArgs = MediaArgs.fromMedia(media);
-    final episodesData = ref.watch(episodesListProvider(matchArgs)).value;
-    final activeSource = episodesData?.source;
-    final availableSources =
-        ref.watch(media.type.availableSourcesProvider).value ?? [];
+    final mediaArgs = MediaArgs.fromMedia(displayMedia);
+    final preferenceState = ref.watch(mediaPreferenceProvider(mediaArgs)).value;
+    final currentSource = preferenceState?.sourceInfo;
 
-    final primaryTracker = ref.watch(primaryTrackerProvider);
+    final episodesState = ref.watch(episodesListProvider(mediaArgs)).value;
+    final watchHistory =
+        ref.watch(historyEpisodesProvider(displayMedia.id)).value ?? [];
+    final readHistory =
+        ref.watch(historyChaptersProvider(displayMedia.id)).value ?? [];
+
+    final tracker = ref.watch(primaryTrackerProvider);
     final trackingState = ref.watch(
-      mediaTrackingProvider(TrackingQuery(primaryTracker.type, media)),
+      mediaTrackingProvider(TrackingQuery(tracker.type, displayMedia)),
     );
-    final trackerLinksAsync = ref.watch(trackerLinkProvider(media.id));
-    final trackerLinks = trackerLinksAsync.value ?? {};
-    final trackingId =
-        trackerLinks[primaryTracker.type]?.trackingId ??
-        resolveTrackingIdFromMedia(
-          trackerType: primaryTracker.type,
-          media: media,
-          links: trackerLinks,
-        );
-    final isTrackerLinked =
-        trackingId != null || primaryTracker.type == TrackerType.local;
-    final isAuthenticated = primaryTracker.type.isAuthenticated(ref);
-    final listItem = trackingState.value;
+    final trackerLinks =
+        ref.watch(trackerLinkProvider(displayMedia.id)).value ?? {};
 
-    String trackingLabel = 'Add to List';
-    IconData trackingIcon = Icons.bookmark_add_outlined;
+    final backdropImage = (displayMedia.banner?.isNotEmpty == true)
+        ? displayMedia.banner!
+        : (displayMedia.cover ?? '');
 
-    if (!isAuthenticated && primaryTracker is RemoteTracker) {
-      trackingLabel = 'Login to ${primaryTracker.type.displayName}';
-      trackingIcon = Icons.login_rounded;
-    } else if (isTrackerLinked) {
-      if (listItem != null) {
-        final epPrefix = media.type == MediaType.MANGA ? 'Ch' : 'Ep';
-        final statusLabel = listItem.status.getLabelForMedia(media.type);
-        trackingLabel = '$epPrefix ${listItem.progress.toInt()} • $statusLabel';
-        trackingIcon = Icons.bookmark_added_rounded;
-      } else {
-        trackingLabel = 'Add to ${primaryTracker.type.displayName}';
-        trackingIcon = Icons.bookmark_add_outlined;
-      }
-    } else if (trackerLinks.isNotEmpty) {
-      trackingLabel = 'Manage Trackers';
-      trackingIcon = Icons.bookmarks_rounded;
-    }
+    final isManga =
+        displayMedia.type == MediaType.MANGA ||
+        displayMedia.type == MediaType.NOVEL;
 
-    final watchHistoryEntries =
-        ref.watch(historyEpisodesProvider(media.id)).value ?? [];
-    final readHistoryEntries =
-        ref.watch(historyChaptersProvider(media.id)).value ?? [];
-
-    final currentEpisodeNumber = media.type == MediaType.ANIME
-        ? watchHistoryEntries.firstOrNull?.episodeNumber
-        : readHistoryEntries.firstOrNull?.chapterNumber;
-
-    final backdrop = media.banner ?? media.cover ?? '';
-    final poster = media.cover ?? '';
-    final title = media.title.availableTitle;
-    final score = media.score;
-    final format = media.format;
-    final year = media.season;
-    final status = media.status;
-    final description = media.description ?? '';
-    final genres = media.genres ?? [];
-
-    final relations = media.relations ?? [];
-    final recommendations = media.recommendations ?? [];
-
-    final horizontalPad = (36.0 * scale).clamp(28.0, 68.0);
-    final posterWidth = (130.0 * scale).clamp(110.0, 175.0);
-    final posterHeight = (195.0 * scale).clamp(165.0, 260.0);
-
-    final posterRadius = BorderRadius.circular(uiRoundness);
-    final badgeRadius = BorderRadius.circular(
-      (uiRoundness * 0.4).clamp(4.0, 8.0),
-    );
-    final buttonRadius = BorderRadius.circular(
-      (uiRoundness * 0.6).clamp(6.0, 14.0),
+    final nextTarget = _resolveNextTarget(
+      isManga: isManga,
+      episodes: episodesState?.episodes ?? [],
+      watchHistory: watchHistory,
+      readHistory: readHistory,
+      trackedProgress: trackingState.value?.progress.toDouble() ?? 0,
     );
 
-    return Scaffold(
-      backgroundColor: cs.surface,
+    return AppScaffold(
       body: Stack(
         fit: StackFit.expand,
         children: [
-          if (backdrop.isNotEmpty)
+          if (backdropImage.isNotEmpty)
             Positioned(
               top: 0,
               left: 0,
               right: 0,
-              height: size.height * 0.72,
-              child: ClipRect(
+              height: MediaQuery.of(context).size.height * 0.82,
+              child: Opacity(
+                opacity: 0.55,
                 child: ShaderMask(
-                  shaderCallback: (Rect bounds) {
+                  shaderCallback: (rect) {
                     return const LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      stops: [0.0, 0.25, 0.60, 0.88, 1.0],
-                      colors: [
-                        Colors.white,
-                        Colors.white,
-                        Color(0x66FFFFFF),
-                        Colors.transparent,
-                        Colors.transparent,
-                      ],
-                    ).createShader(bounds);
+                      colors: [Colors.black, Colors.black, Colors.transparent],
+                      stops: [0.0, 0.35, 0.85],
+                    ).createShader(rect);
                   },
                   blendMode: BlendMode.dstIn,
                   child: ShaderMask(
-                    shaderCallback: (Rect bounds) {
+                    shaderCallback: (rect) {
                       return const LinearGradient(
                         begin: Alignment.centerLeft,
                         end: Alignment.centerRight,
-                        stops: [0.0, 0.35, 0.75, 1.0],
                         colors: [
                           Colors.transparent,
-                          Color(0x44FFFFFF),
-                          Colors.white,
-                          Colors.white,
+                          Color(0x55000000),
+                          Colors.black,
                         ],
-                      ).createShader(bounds);
+                        stops: [0.0, 0.35, 0.85],
+                      ).createShader(rect);
                     },
                     blendMode: BlendMode.dstIn,
-                    child: Transform.scale(
-                      scale: 1.10,
-                      child: TvSmartImage(
-                        imageUrl: backdrop,
-                        fit: BoxFit.cover,
-                        imageFilter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                        memCacheWidth: 1920,
-                        maxWidthDiskCache: 1920,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-
-          Positioned(
-            top: (24.0 * scale).clamp(18.0, 36.0),
-            left: horizontalPad,
-            child: _SpatialBackButton(
-              borderRadius: buttonRadius,
-              scale: scale,
-              onTap: () => Navigator.of(context).maybePop(),
-            ),
-          ),
-
-          Positioned.fill(
-            top: (72.0 * scale).clamp(64.0, 100.0),
-            child: ListView(
-              padding: EdgeInsets.fromLTRB(
-                horizontalPad,
-                0,
-                horizontalPad,
-                (80.0 * scale).clamp(60.0, 120.0),
-              ),
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (poster.isNotEmpty) ...[
-                      ClipRRect(
-                        borderRadius: posterRadius,
-                        child: Container(
-                          width: posterWidth,
-                          height: posterHeight,
-                          decoration: BoxDecoration(
-                            borderRadius: posterRadius,
-                            border: Border.all(
-                              color: cs.outlineVariant.withValues(alpha: 0.3),
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.6),
-                                blurRadius: 18,
-                                offset: const Offset(0, 8),
-                              ),
-                            ],
-                          ),
-                          child: TvSmartImage(
-                            imageUrl: poster,
-                            fit: BoxFit.cover,
-                            memCacheWidth: 400,
-                          ),
+                    child: ClipRect(
+                      child: ImageFiltered(
+                        imageFilter: ImageFilter.blur(
+                          sigmaX: 8,
+                          sigmaY: 8,
+                          tileMode: TileMode.decal,
+                        ),
+                        child: CachedNetworkImage(
+                          imageUrl: backdropImage,
+                          fit: BoxFit.cover,
+                          alignment: Alignment.topCenter,
+                          errorWidget: (_, __, ___) => const SizedBox.shrink(),
                         ),
                       ),
-                      SizedBox(width: (22.0 * scale).clamp(16.0, 32.0)),
-                    ],
-
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            title,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.headlineMedium?.copyWith(
-                              color: cs.onSurface,
-                              fontSize: (26.0 * scale).clamp(20.0, 38.0),
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: -0.6,
-                              height: 1.18,
-                              shadows: [
-                                Shadow(
-                                  color: Colors.black.withValues(alpha: 0.8),
-                                  blurRadius: 14,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                          ),
-                          if (media.title.native != null ||
-                              media.title.romaji != null)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 3, bottom: 6),
-                              child: Text(
-                                media.title.native ?? media.title.romaji ?? '',
-                                style: TextStyle(
-                                  color: cs.onSurfaceVariant.withValues(
-                                    alpha: 0.8,
-                                  ),
-                                  fontSize: (14.0 * scale).clamp(12.5, 18.0),
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          SizedBox(height: (6.0 * scale).clamp(4.0, 10.0)),
-
-                          Wrap(
-                            spacing: (8.0 * scale).clamp(6.0, 12.0),
-                            runSpacing: (6.0 * scale).clamp(4.0, 10.0),
-                            crossAxisAlignment: WrapCrossAlignment.center,
-                            children: [
-                              if (score != null && score > 0)
-                                Container(
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: (8.0 * scale).clamp(6.0, 12.0),
-                                    vertical: (3.0 * scale).clamp(2.0, 6.0),
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFFFB703),
-                                    borderRadius: badgeRadius,
-                                  ),
-                                  child: Text(
-                                    '★ ${score.toStringAsFixed(1)}',
-                                    style: TextStyle(
-                                      color: Colors.black,
-                                      fontSize: (11.5 * scale).clamp(
-                                        10.0,
-                                        14.5,
-                                      ),
-                                      fontWeight: FontWeight.w900,
-                                    ),
-                                  ),
-                                ),
-                              if (format != null && format.isNotEmpty)
-                                Container(
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: (8.0 * scale).clamp(6.0, 12.0),
-                                    vertical: (3.0 * scale).clamp(2.0, 6.0),
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: cs.secondaryContainer,
-                                    borderRadius: badgeRadius,
-                                  ),
-                                  child: Text(
-                                    format.toUpperCase(),
-                                    style: TextStyle(
-                                      color: cs.onSecondaryContainer,
-                                      fontSize: (11.0 * scale).clamp(
-                                        10.0,
-                                        14.0,
-                                      ),
-                                      fontWeight: FontWeight.w800,
-                                      letterSpacing: 0.3,
-                                    ),
-                                  ),
-                                ),
-                              if (year != null && year.isNotEmpty)
-                                Text(
-                                  year,
-                                  style: TextStyle(
-                                    color: cs.onSurfaceVariant,
-                                    fontSize: (12.5 * scale).clamp(11.0, 15.5),
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              if (status != null && status.isNotEmpty)
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Container(
-                                      width: 6,
-                                      height: 6,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color:
-                                            status.toLowerCase() == 'releasing'
-                                            ? Colors.greenAccent
-                                            : cs.onSurfaceVariant,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 5),
-                                    Text(
-                                      status.toUpperCase(),
-                                      style: TextStyle(
-                                        color:
-                                            status.toLowerCase() == 'releasing'
-                                            ? Colors.greenAccent
-                                            : cs.onSurfaceVariant,
-                                        fontSize: (11.0 * scale).clamp(
-                                          10.0,
-                                          14.0,
-                                        ),
-                                        fontWeight: FontWeight.bold,
-                                        letterSpacing: 0.3,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              if (media.episodes != null ||
-                                  media.chapters != null)
-                                Text(
-                                  '• ${media.episodes ?? media.chapters} ${media.type == MediaType.MANGA || media.type == MediaType.NOVEL ? "Chapters" : "Episodes"}',
-                                  style: TextStyle(
-                                    color: cs.onSurfaceVariant,
-                                    fontSize: (12.5 * scale).clamp(11.0, 15.5),
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                            ],
-                          ),
-                          SizedBox(height: (8.0 * scale).clamp(6.0, 12.0)),
-
-                          if (genres.isNotEmpty)
-                            Text(
-                              genres.join(' • '),
-                              style: TextStyle(
-                                color: cs.primary,
-                                fontSize: (13.0 * scale).clamp(11.5, 16.0),
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          SizedBox(height: (10.0 * scale).clamp(8.0, 14.0)),
-
-                          if (description.isNotEmpty)
-                            Text(
-                              description
-                                  .replaceAll(RegExp(r'<[^>]*>'), '')
-                                  .trim(),
-                              maxLines: 4,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: cs.onSurfaceVariant.withValues(
-                                  alpha: 0.9,
-                                ),
-                                fontSize: (13.5 * scale).clamp(12.0, 17.5),
-                                height: 1.42,
-                              ),
-                            ),
-                          SizedBox(height: (18.0 * scale).clamp(14.0, 24.0)),
-
-                          Row(
-                            children: [
-                              _SpatialDetailButton(
-                                icon: Icons.play_arrow_rounded,
-                                label: currentEpisodeNumber != null
-                                    ? 'Resume E${currentEpisodeNumber.toInt()}'
-                                    : 'Play E1',
-                                isPrimary: true,
-                                borderRadius: buttonRadius,
-                                scale: scale,
-                                onPressed: () =>
-                                    _handlePrimaryPlay(context, media, ref),
-                              ),
-                              SizedBox(width: (12.0 * scale).clamp(8.0, 16.0)),
-                              _SpatialDetailButton(
-                                icon: trackingIcon,
-                                label: trackingLabel,
-                                isPrimary: false,
-                                borderRadius: buttonRadius,
-                                scale: scale,
-                                onPressed: () {
-                                  if (primaryTracker is RemoteTracker &&
-                                      !isAuthenticated) {
-                                    ref
-                                        .read(authTokensProvider.notifier)
-                                        .login(primaryTracker);
-                                    return;
-                                  }
-                                  _openTrackerManager(context, media);
-                                },
-                              ),
-                              SizedBox(width: (12.0 * scale).clamp(8.0, 16.0)),
-                              _SpatialDetailButton(
-                                icon: Icons.tune_rounded,
-                                label: activeSource != null
-                                    ? activeSource.name
-                                    : 'Source',
-                                isPrimary: false,
-                                borderRadius: buttonRadius,
-                                scale: scale,
-                                onPressed: () => _openSourceSelector(
-                                  context,
-                                  media,
-                                  availableSources,
-                                  activeSource,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
                     ),
-                  ],
-                ),
-
-                SizedBox(height: (24.0 * scale).clamp(16.0, 32.0)),
-
-                TvEpisodeShelf(
-                  media: media,
-                  onOpenSourceSelector: () => _openSourceSelector(
-                    context,
-                    media,
-                    availableSources,
-                    activeSource,
                   ),
                 ),
-
-                if (relations.isNotEmpty) ...[
-                  SizedBox(height: (24.0 * scale).clamp(16.0, 32.0)),
-                  HorizontalSection<UnifiedMedia>(
-                    title: 'Relations & Franchise',
-                    height: sectionHeight,
-                    gap: 12.0,
-                    data: AsyncData(relations),
-                    itemBuilder: (context, rel) => MediaCard(
-                      tag: 'tv-relation-${rel.id}',
-                      title: rel.title.availableTitle,
-                      imageUrl: rel.cover ?? rel.banner ?? '',
-                      format: rel.format,
-                      score: rel.score,
-                      year: rel.season,
-                      status: rel.status,
-                      genres: rel.genres,
-                      style: cardStyle,
-                      badge: rel.relationType != null
-                          ? Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 5,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: cs.secondaryContainer.withValues(
-                                  alpha: 0.92,
-                                ),
-                                borderRadius: badgeRadius,
-                              ),
-                              child: Text(
-                                rel.relationType!
-                                    .replaceAll('_', ' ')
-                                    .toUpperCase(),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: theme.textTheme.labelSmall?.copyWith(
-                                  color: cs.onSecondaryContainer,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 0.3,
-                                  fontSize: (9.5 * scale).clamp(8.5, 12.0),
-                                ),
-                              ),
-                            )
-                          : null,
-                      onTap: () => context.pushDetails(
-                        mediaType: rel.type,
-                        media: rel,
-                        tag: 'tv-relation-${rel.id}',
-                      ),
+              ),
+            ),
+          Positioned.fill(
+            child: Container(
+              color: backdropImage.isEmpty
+                  ? const Color(0xFF0D0E11)
+                  : Colors.transparent,
+            ),
+          ),
+          SafeArea(
+            child: ListView(
+              controller: _scrollController,
+              padding: const EdgeInsets.fromLTRB(48, 16, 48, 48),
+              physics: const BouncingScrollPhysics(),
+              children: [
+                _buildTopBar(context, displayMedia, radius),
+                const SizedBox(height: 18),
+                _buildHeroCinematic(
+                  context,
+                  displayMedia,
+                  nextTarget,
+                  currentSource,
+                  episodesState?.source,
+                  isManga,
+                  radius,
+                  cs,
+                  tracker,
+                  trackingState,
+                  trackerLinks,
+                ),
+                const SizedBox(height: 36),
+                Container(
+                  key: _episodesShelfKey,
+                  child: TvEpisodeShelf(
+                    media: displayMedia,
+                    onOpenSourceSelector: () => TvSourceDialog.show(
+                      context,
+                      media: displayMedia,
+                      currentSource: currentSource ?? episodesState?.source,
                     ),
                   ),
-                ],
-
-                if (recommendations.isNotEmpty) ...[
-                  SizedBox(height: (24.0 * scale).clamp(16.0, 32.0)),
-                  HorizontalSection<UnifiedMedia>(
-                    title: 'More Like This',
-                    height: sectionHeight,
-                    gap: 12.0,
-                    data: AsyncData(recommendations),
-                    itemBuilder: (context, rec) => MediaCard(
-                      tag: 'tv-rec-${rec.id}',
-                      title: rec.title.availableTitle,
-                      imageUrl: rec.cover ?? rec.banner ?? '',
-                      format: rec.format,
-                      score: rec.score,
-                      year: rec.season,
-                      status: rec.status,
-                      genres: rec.genres,
-                      style: cardStyle,
-                      onTap: () => context.pushDetails(
-                        mediaType: rec.type,
-                        media: rec,
-                        tag: 'tv-rec-${rec.id}',
-                      ),
-                    ),
-                  ),
-                ],
+                ),
+                const SizedBox(height: 36),
+                if (displayMedia.characters != null &&
+                    displayMedia.characters!.isNotEmpty)
+                  _buildCharactersSection(context, displayMedia, radius),
+                const SizedBox(height: 36),
+                _buildInformationSection(context, displayMedia, radius),
+                const SizedBox(height: 36),
+                if (displayMedia.relations != null &&
+                    displayMedia.relations!.isNotEmpty)
+                  _buildRelationsSection(context, displayMedia),
+                const SizedBox(height: 36),
+                if (displayMedia.recommendations != null &&
+                    displayMedia.recommendations!.isNotEmpty)
+                  _buildRecommendationsSection(context, displayMedia),
               ],
             ),
           ),
@@ -719,233 +298,1143 @@ class _TvDetailsScreenState extends ConsumerState<TvDetailsScreen> {
       ),
     );
   }
-}
 
-class _SpatialDetailButton extends StatefulWidget {
-  final IconData icon;
-  final String label;
-  final bool isPrimary;
-  final BorderRadius borderRadius;
-  final double scale;
-  final VoidCallback onPressed;
-
-  const _SpatialDetailButton({
-    required this.icon,
-    required this.label,
-    required this.isPrimary,
-    required this.borderRadius,
-    required this.scale,
-    required this.onPressed,
-  });
-
-  @override
-  State<_SpatialDetailButton> createState() => _SpatialDetailButtonState();
-}
-
-class _SpatialDetailButtonState extends State<_SpatialDetailButton> {
-  final FocusNode _focusNode = FocusNode();
-  bool _isFocused = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _focusNode.addListener(() {
-      if (mounted) setState(() => _isFocused = _focusNode.hasFocus);
-    });
-  }
-
-  @override
-  void dispose() {
-    _focusNode.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    final bgColor = widget.isPrimary
-        ? (_isFocused ? cs.primary.withValues(alpha: 0.9) : cs.primary)
-        : (_isFocused
-              ? cs.surfaceContainerHighest.withValues(alpha: 0.9)
-              : cs.surfaceContainerHighest.withValues(alpha: 0.5));
-
-    final fgColor = widget.isPrimary ? cs.onPrimary : cs.onSurface;
-
-    return FocusableActionDetector(
-      focusNode: _focusNode,
-      actions: {
-        ActivateIntent: CallbackAction<ActivateIntent>(
-          onInvoke: (_) {
-            widget.onPressed();
-            return null;
+  Widget _buildTopBar(BuildContext context, UnifiedMedia media, double radius) {
+    return Row(
+      children: [
+        TvFocusable(
+          onTap: () => context.pop(),
+          builder: (context, isFocused, isHovered) {
+            final active = isFocused || isHovered;
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: active
+                    ? Colors.white
+                    : Colors.white.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(radius),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    size: 13,
+                    color: active ? Colors.black : Colors.white,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Back',
+                    style: TextStyle(
+                      color: active ? Colors.black : Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            );
           },
         ),
-      },
-      child: AnimatedScale(
-        scale: _isFocused ? 1.05 : 1.0,
-        duration: const Duration(milliseconds: 140),
-        child: InkWell(
-          canRequestFocus: false,
-          splashColor: Colors.transparent,
-          highlightColor: Colors.transparent,
-          hoverColor: Colors.transparent,
-          onTap: () {
-            _focusNode.requestFocus();
-            widget.onPressed();
-          },
-          borderRadius: widget.borderRadius,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 140),
-            padding: EdgeInsets.symmetric(
-              horizontal: (18.0 * widget.scale).clamp(14.0, 24.0),
-              vertical: (10.0 * widget.scale).clamp(8.0, 14.0),
-            ),
-            decoration: BoxDecoration(
-              color: bgColor,
-              borderRadius: widget.borderRadius,
-              border: Border.all(
-                color: _isFocused
-                    ? cs.primary
-                    : cs.outlineVariant.withValues(alpha: 0.3),
-                width: 1.5,
+        const Spacer(),
+        TvFocusable(
+          onTap: () => _shareMedia(media),
+          builder: (context, isFocused, isHovered) {
+            final active = isFocused || isHovered;
+            return Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: active
+                    ? Colors.white
+                    : Colors.white.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(radius),
               ),
-              boxShadow: _isFocused
-                  ? [
-                      BoxShadow(
-                        color: widget.isPrimary
-                            ? cs.primary.withValues(alpha: 0.45)
-                            : cs.onSurface.withValues(alpha: 0.15),
-                        blurRadius: 12,
-                        spreadRadius: 0,
+              child: Icon(
+                Icons.share_rounded,
+                size: 16,
+                color: active ? Colors.black : Colors.white70,
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHeroCinematic(
+    BuildContext context,
+    UnifiedMedia media,
+    _PlaybackTarget? nextTarget,
+    SourceInfo? currentSource,
+    SourceInfo? activeSource,
+    bool isManga,
+    double radius,
+    ColorScheme cs,
+    TrackingService tracker,
+    AsyncValue<TrackedListItem?> trackingState,
+    Map<TrackerType, dynamic> trackerLinks,
+  ) {
+    final posterUrl = media.cover ?? media.banner ?? '';
+    final effectiveSource = currentSource ?? activeSource;
+    final cleanSynopsis = (media.description ?? '')
+        .replaceAll(RegExp(r'<[^>]*>'), '')
+        .replaceAll('\n', ' ')
+        .trim();
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (posterUrl.isNotEmpty) ...[
+          ClipRRect(
+            borderRadius: BorderRadius.circular(radius),
+            child: Hero(
+              tag: widget.tag,
+              child: CachedNetworkImage(
+                imageUrl: posterUrl,
+                width: 170,
+                height: 245,
+                fit: BoxFit.cover,
+                errorWidget: (_, __, ___) => Container(
+                  width: 170,
+                  height: 245,
+                  color: Colors.white10,
+                  child: const Icon(Icons.movie_rounded, color: Colors.white24),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 32),
+        ],
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                media.title.availableTitle,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 34,
+                  fontWeight: FontWeight.w900,
+                  height: 1.15,
+                  letterSpacing: -0.6,
+                ),
+              ),
+              if (media.title.romaji != null || media.title.native != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  media.title.romaji ?? media.title.native!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.5),
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 12),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  if (media.score != null && media.score! > 0) ...[
+                    const Icon(
+                      Icons.star_rounded,
+                      size: 16,
+                      color: Colors.amberAccent,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      media.score!.toStringAsFixed(1),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
                       ),
-                    ]
-                  : null,
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  widget.icon,
-                  size: (18.0 * widget.scale).clamp(16.0, 24.0),
-                  color: fgColor,
-                ),
-                SizedBox(width: (7.0 * widget.scale).clamp(5.0, 10.0)),
+                    ),
+                    _buildDot(),
+                  ],
+                  if (media.year != null || media.season != null) ...[
+                    Text(
+                      [
+                        if (media.season != null) media.season!.toUpperCase(),
+                        if (media.year != null) media.year.toString(),
+                      ].join(' '),
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.85),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    _buildDot(),
+                  ],
+                  if (media.format != null && media.format!.isNotEmpty) ...[
+                    Text(
+                      media.format!.toUpperCase(),
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.85),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    _buildDot(),
+                  ],
+                  Text(
+                    isManga
+                        ? '${media.chapters ?? '?'} Chapters'
+                        : '${media.episodes ?? '?'} Episodes',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.85),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  if (media.duration != null && media.duration! > 0) ...[
+                    _buildDot(),
+                    Text(
+                      '${media.duration}m',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.85),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                  if (media.status != null && media.status!.isNotEmpty) ...[
+                    _buildDot(),
+                    _buildCleanStatusDot(media.status!),
+                    const SizedBox(width: 5),
+                    Text(
+                      media.status!.replaceAll('_', ' ').toUpperCase(),
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.85),
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              if (media.genres != null && media.genres!.isNotEmpty) ...[
+                const SizedBox(height: 8),
                 Text(
-                  widget.label,
+                  media.genres!.take(5).join('  ·  '),
                   style: TextStyle(
-                    color: fgColor,
-                    fontSize: (13.0 * widget.scale).clamp(11.5, 16.0),
-                    fontWeight: FontWeight.bold,
+                    color: cs.primary,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
-            ),
+              const SizedBox(height: 10),
+              if (cleanSynopsis.isNotEmpty)
+                TvFocusable(
+                  scaleFactor: 1.0,
+                  onTap: () => _showSynopsisDialog(
+                    context,
+                    media.title.availableTitle,
+                    media.description!,
+                  ),
+                  builder: (context, isFocused, isHovered) {
+                    final active = isFocused || isHovered;
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: active
+                            ? Colors.white.withValues(alpha: 0.08)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(radius),
+                        border: Border.all(
+                          color: active
+                              ? Colors.white.withValues(alpha: 0.25)
+                              : Colors.transparent,
+                          width: 1,
+                        ),
+                      ),
+                      child: Text(
+                        cleanSynopsis,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: active
+                              ? Colors.white
+                              : Colors.white.withValues(alpha: 0.75),
+                          fontSize: 13,
+                          height: 1.45,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 12,
+                runSpacing: 10,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  TvFocusable(
+                    autofocus: true,
+                    onTap: () {
+                      if (nextTarget != null && effectiveSource != null) {
+                        _launchTargetPlayback(
+                          context,
+                          media,
+                          nextTarget,
+                          effectiveSource,
+                          isManga,
+                        );
+                      } else {
+                        _scrollToEpisodes();
+                      }
+                    },
+                    builder: (context, isFocused, isHovered) {
+                      final active = isFocused || isHovered;
+                      final String playButtonLabel;
+                      if (nextTarget != null) {
+                        playButtonLabel = nextTarget.buttonLabel;
+                      } else if (trackingState.value != null &&
+                          trackingState.value!.progress > 0) {
+                        final p = trackingState.value!.progress;
+                        final numStr = p % 1 == 0
+                            ? (p.toInt() + 1).toString()
+                            : (p + 1).toString();
+                        playButtonLabel = isManga
+                            ? 'Read Ch $numStr'
+                            : 'Play Ep $numStr';
+                      } else {
+                        playButtonLabel = isManga
+                            ? 'Start Reading'
+                            : 'Start Watching';
+                      }
+
+                      return AnimatedContainer(
+                        duration: const Duration(milliseconds: 160),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 22,
+                          vertical: 11,
+                        ),
+                        decoration: BoxDecoration(
+                          color: active ? Colors.white : cs.primary,
+                          borderRadius: BorderRadius.circular(radius),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              isManga
+                                  ? Icons.menu_book_rounded
+                                  : Icons.play_arrow_rounded,
+                              size: 19,
+                              color: active ? Colors.black : Colors.white,
+                            ),
+                            const SizedBox(width: 7),
+                            Text(
+                              playButtonLabel,
+                              style: TextStyle(
+                                color: active ? Colors.black : Colors.white,
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                  if (effectiveSource != null)
+                    TvFocusable(
+                      onTap: () => TvSourceDialog.show(
+                        context,
+                        media: media,
+                        currentSource: effectiveSource,
+                      ),
+                      builder: (context, isFocused, isHovered) {
+                        final active = isFocused || isHovered;
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 11,
+                          ),
+                          decoration: BoxDecoration(
+                            color: active
+                                ? Colors.white
+                                : Colors.white.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(radius),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.tune_rounded,
+                                size: 14,
+                                color: active ? Colors.black : cs.primary,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                effectiveSource.name,
+                                style: TextStyle(
+                                  color: active ? Colors.black : Colors.white,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  TvFocusable(
+                    onTap: () {
+                      if (tracker is RemoteTracker &&
+                          !tracker.type.isAuthenticated(ref)) {
+                        showModalBottomSheet(
+                          context: context,
+                          builder: (_) => TrackerManagerSheet(media: media),
+                        );
+                        return;
+                      }
+                      final item = trackingState.value;
+                      if (item != null) {
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          useSafeArea: true,
+                          builder: (_) => EditTrackerSheet(
+                            media: media,
+                            initialItem: item,
+                            tracker: tracker,
+                          ),
+                        );
+                      } else {
+                        showModalBottomSheet(
+                          context: context,
+                          builder: (_) => TrackerManagerSheet(media: media),
+                        );
+                      }
+                    },
+                    builder: (context, isFocused, isHovered) {
+                      final active = isFocused || isHovered;
+                      final item = trackingState.value;
+                      final label = item != null
+                          ? '${isManga ? "Ch" : "Ep"} ${item.progress.toInt()} • ${item.status.getLabelForMedia(media.type)}'
+                          : 'Add to Library';
+
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 11,
+                        ),
+                        decoration: BoxDecoration(
+                          color: active
+                              ? Colors.white
+                              : item != null
+                              ? cs.primary.withValues(alpha: 0.15)
+                              : Colors.white.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(radius),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              item != null
+                                  ? Icons.bookmark_added_rounded
+                                  : Icons.bookmark_add_outlined,
+                              size: 15,
+                              color: active
+                                  ? Colors.black
+                                  : item != null
+                                  ? cs.primary
+                                  : Colors.white70,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              label,
+                              style: TextStyle(
+                                color: active
+                                    ? Colors.black
+                                    : item != null
+                                    ? cs.primary
+                                    : Colors.white,
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                  if (media.trailer != null && media.trailer!.isNotEmpty)
+                    TvFocusable(
+                      onTap: () => _playTrailer(media.trailer),
+                      builder: (context, isFocused, isHovered) {
+                        final active = isFocused || isHovered;
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 11,
+                          ),
+                          decoration: BoxDecoration(
+                            color: active
+                                ? Colors.white
+                                : Colors.white.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(radius),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.videocam_outlined,
+                                size: 16,
+                                color: active ? Colors.black : Colors.white70,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Trailer',
+                                style: TextStyle(
+                                  color: active ? Colors.black : Colors.white,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                ],
+              ),
+            ],
           ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDot() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Text(
+        '•',
+        style: TextStyle(
+          color: Colors.white.withValues(alpha: 0.35),
+          fontSize: 12,
         ),
       ),
     );
   }
-}
 
-class _SpatialBackButton extends StatefulWidget {
-  final BorderRadius borderRadius;
-  final double scale;
-  final VoidCallback onTap;
+  Widget _buildCleanStatusDot(String status) {
+    final clean = status.toLowerCase();
+    final isReleasing = clean == 'releasing' || clean == 'airing';
+    final isFinished = clean == 'finished' || clean == 'completed';
 
-  const _SpatialBackButton({
-    required this.borderRadius,
-    required this.scale,
-    required this.onTap,
-  });
+    final color = isReleasing
+        ? Colors.greenAccent
+        : isFinished
+        ? Colors.lightBlueAccent
+        : Colors.amberAccent;
 
-  @override
-  State<_SpatialBackButton> createState() => _SpatialBackButtonState();
-}
-
-class _SpatialBackButtonState extends State<_SpatialBackButton> {
-  final FocusNode _focusNode = FocusNode();
-  bool _isFocused = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _focusNode.addListener(() {
-      if (mounted) setState(() => _isFocused = _focusNode.hasFocus);
-    });
+    return Container(
+      width: 6,
+      height: 6,
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+    );
   }
 
-  @override
-  void dispose() {
-    _focusNode.dispose();
-    super.dispose();
-  }
+  Widget _buildCharactersSection(
+    BuildContext context,
+    UnifiedMedia media,
+    double radius,
+  ) {
+    final characters = media.characters ?? [];
 
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    return FocusableActionDetector(
-      focusNode: _focusNode,
-      actions: {
-        ActivateIntent: CallbackAction<ActivateIntent>(
-          onInvoke: (_) {
-            widget.onTap();
-            return null;
-          },
+    return HorizontalSection<MediaCharacter>(
+      titleWidget: const Text(
+        'Characters & Cast',
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 19,
+          fontWeight: FontWeight.w800,
+          letterSpacing: -0.3,
         ),
-      },
-      child: AnimatedScale(
-        scale: _isFocused ? 1.1 : 1.0,
-        duration: const Duration(milliseconds: 140),
-        child: InkWell(
-          canRequestFocus: false,
-          splashColor: Colors.transparent,
-          highlightColor: Colors.transparent,
-          hoverColor: Colors.transparent,
-          onTap: () {
-            _focusNode.requestFocus();
-            widget.onTap();
-          },
-          borderRadius: widget.borderRadius,
-          child: Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: (14.0 * widget.scale).clamp(10.0, 18.0),
-              vertical: (8.0 * widget.scale).clamp(6.0, 12.0),
-            ),
+      ),
+      headerTrailing: TvFocusable(
+        onTap: () => CharactersSheet.show(
+          context,
+          mediaId: media.id,
+          mediaType: media.type,
+          mediaTitle: media.title.availableTitle,
+          initialCharacters: characters,
+        ),
+        builder: (context, isFocused, isHovered) {
+          final active = isFocused || isHovered;
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
-              color: _isFocused
-                  ? cs.primary
-                  : cs.surfaceContainerHighest.withValues(alpha: 0.6),
-              borderRadius: widget.borderRadius,
-              border: Border.all(
-                color: _isFocused
-                    ? cs.primary
-                    : cs.outlineVariant.withValues(alpha: 0.4),
+              color: active
+                  ? Colors.white
+                  : Colors.white.withValues(alpha: 0.06),
+              borderRadius: BorderRadius.circular(radius),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'View All',
+                  style: TextStyle(
+                    color: active ? Colors.black : Colors.white70,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 10,
+                  color: active ? Colors.black : Colors.white70,
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+      data: AsyncValue.data(characters),
+      height: 140,
+      gap: 16,
+      headerPadding: const EdgeInsets.only(bottom: 14),
+      listPadding: EdgeInsets.zero,
+      itemBuilder: (context, character) {
+        return TvFocusable(
+          onTap: () => CharactersSheet.showDetails(context, character),
+          scaleFactor: 1.05,
+          builder: (context, isFocused, isHovered) {
+            final active = isFocused || isHovered;
+            return SizedBox(
+              width: 100,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 160),
+                    width: 68,
+                    height: 68,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: active ? Colors.white : Colors.transparent,
+                        width: 2.5,
+                      ),
+                    ),
+                    child: ClipOval(
+                      child: CachedNetworkImage(
+                        imageUrl: character.image ?? '',
+                        fit: BoxFit.cover,
+                        errorWidget: (_, __, ___) => Container(
+                          color: Colors.white10,
+                          child: const Icon(
+                            Icons.person_rounded,
+                            color: Colors.white30,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    character.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: active
+                          ? Colors.white
+                          : Colors.white.withValues(alpha: 0.9),
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  if (character.voiceActorName != null &&
+                      character.voiceActorName!.isNotEmpty)
+                    Text(
+                      character.voiceActorName!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.5),
+                        fontSize: 10.5,
+                      ),
+                    )
+                  else if (character.role != null && character.role!.isNotEmpty)
+                    Text(
+                      character.role!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.primary,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildInformationSection(
+    BuildContext context,
+    UnifiedMedia media,
+    double radius,
+  ) {
+    final infoItems = <({String label, String value})>[];
+
+    if (media.studios != null && media.studios!.isNotEmpty) {
+      infoItems.add((label: 'STUDIO', value: media.studios!.join(', ')));
+    }
+    if (media.source != null && media.source!.isNotEmpty) {
+      infoItems.add((
+        label: 'SOURCE MATERIAL',
+        value: media.source!.toUpperCase().replaceAll('_', ' '),
+      ));
+    }
+    if (media.airingAt != null) {
+      infoItems.add((
+        label: 'NEXT AIRING',
+        value: 'In ${formatCountdown(media.airingAt!)}',
+      ));
+    }
+    if (media.favourites != null && media.favourites! > 0) {
+      infoItems.add((label: 'FAVORITES', value: '${media.favourites}'));
+    }
+    if (media.popularity != null && media.popularity! > 0) {
+      infoItems.add((label: 'POPULARITY RANK', value: '#${media.popularity}'));
+    }
+
+    if (infoItems.isEmpty &&
+        (media.externalLinks == null || media.externalLinks!.isEmpty)) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Information & Details',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 19,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.3,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Wrap(
+          spacing: 36,
+          runSpacing: 18,
+          children: infoItems.map((item) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  item.label,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.45),
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  item.value,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            );
+          }).toList(),
+        ),
+        if (media.externalLinks != null && media.externalLinks!.isNotEmpty) ...[
+          const SizedBox(height: 20),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: media.externalLinks!.take(4).map((link) {
+              return TvFocusable(
+                onTap: () async {
+                  final uri = Uri.tryParse(link.url);
+                  if (uri != null && await canLaunchUrl(uri)) {
+                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  }
+                },
+                builder: (context, isFocused, isHovered) {
+                  final active = isFocused || isHovered;
+                  return Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 7,
+                    ),
+                    decoration: BoxDecoration(
+                      color: active
+                          ? Colors.white
+                          : Colors.white.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(radius),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.open_in_new_rounded,
+                          size: 13,
+                          color: active ? Colors.black : Colors.white70,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          link.site,
+                          style: TextStyle(
+                            color: active ? Colors.black : Colors.white,
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              );
+            }).toList(),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildRelationsSection(BuildContext context, UnifiedMedia media) {
+    final relations = media.relations ?? [];
+    if (relations.isEmpty) return const SizedBox.shrink();
+
+    final Map<String, List<UnifiedMedia>> grouped = {};
+    for (final rel in relations) {
+      final type = rel.relationType ?? 'Related';
+      final formattedType = type
+          .replaceAll('_', ' ')
+          .split(' ')
+          .map(
+            (s) => s.isEmpty
+                ? ''
+                : s[0].toUpperCase() + s.substring(1).toLowerCase(),
+          )
+          .join(' ');
+      grouped.putIfAbsent(formattedType, () => []).add(rel);
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: grouped.entries.map((entry) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 24),
+          child: HorizontalSection<UnifiedMedia>(
+            titleWidget: Text(
+              'Relations • ${entry.key}',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 19,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.3,
               ),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.arrow_back_rounded,
-                  color: _isFocused ? cs.onPrimary : cs.onSurface,
-                  size: (18.0 * widget.scale).clamp(16.0, 24.0),
+            data: AsyncValue.data(entry.value),
+            height: 220,
+            gap: 16,
+            headerPadding: const EdgeInsets.only(bottom: 14),
+            listPadding: EdgeInsets.zero,
+            itemBuilder: (context, item) {
+              return TvMediaCard(
+                title: item.title.availableTitle,
+                cover: item.cover ?? '',
+                banner: item.banner,
+                score: item.score,
+                description: item.description,
+                genres: item.genres,
+                year: item.year,
+                onTap: () => context.pushDetails(
+                  mediaType: item.type,
+                  media: item,
+                  tag: 'tv-rel-${item.id}',
                 ),
-                SizedBox(width: (6.0 * widget.scale).clamp(4.0, 8.0)),
-                Text(
-                  'Back',
-                  style: TextStyle(
-                    color: _isFocused ? cs.onPrimary : cs.onSurface,
-                    fontWeight: FontWeight.bold,
-                    fontSize: (13.0 * widget.scale).clamp(11.5, 16.0),
-                  ),
-                ),
-              ],
-            ),
+              );
+            },
           ),
-        ),
-      ),
+        );
+      }).toList(),
     );
   }
+
+  Widget _buildRecommendationsSection(
+    BuildContext context,
+    UnifiedMedia media,
+  ) {
+    final recommendations = media.recommendations ?? [];
+    if (recommendations.isEmpty) return const SizedBox.shrink();
+
+    return HorizontalSection<UnifiedMedia>(
+      titleWidget: const Text(
+        'More Like This',
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 19,
+          fontWeight: FontWeight.w800,
+          letterSpacing: -0.3,
+        ),
+      ),
+      data: AsyncValue.data(recommendations),
+      height: 220,
+      gap: 16,
+      headerPadding: const EdgeInsets.only(bottom: 14),
+      listPadding: EdgeInsets.zero,
+      itemBuilder: (context, item) {
+        return TvMediaCard(
+          title: item.title.availableTitle,
+          cover: item.cover ?? '',
+          banner: item.banner,
+          score: item.score,
+          description: item.description,
+          genres: item.genres,
+          year: item.year,
+          onTap: () => context.pushDetails(
+            mediaType: item.type,
+            media: item,
+            tag: 'tv-rec-${item.id}',
+          ),
+        );
+      },
+    );
+  }
+
+  _PlaybackTarget? _resolveNextTarget({
+    required bool isManga,
+    required List<UnifiedEpisode> episodes,
+    required List<WatchHistoryEntry> watchHistory,
+    required List<ReadHistoryEntry> readHistory,
+    required double trackedProgress,
+  }) {
+    if (episodes.isEmpty) return null;
+
+    final sortedEps = List<UnifiedEpisode>.from(episodes)
+      ..sort((a, b) => a.number.compareTo(b.number));
+
+    String fmtNum(num n) => n % 1 == 0 ? n.toInt().toString() : n.toString();
+
+    if (isManga) {
+      final latestRead = readHistory.firstOrNull;
+      if (latestRead != null) {
+        final currentEp = sortedEps
+            .where((e) => (e.number - latestRead.chapterNumber).abs() < 0.01)
+            .firstOrNull;
+        if (currentEp != null) {
+          final isFinished = latestRead.positionPage >= latestRead.totalPages;
+          if (!isFinished && latestRead.positionPage > 0) {
+            return _PlaybackTarget(
+              episode: currentEp,
+              buttonLabel:
+                  'Resume Ch ${fmtNum(currentEp.number)} (p. ${latestRead.positionPage})',
+              startPositionPage: latestRead.positionPage,
+            );
+          } else {
+            final nextEp = sortedEps
+                .where((e) => e.number > currentEp.number)
+                .firstOrNull;
+            if (nextEp != null) {
+              return _PlaybackTarget(
+                episode: nextEp,
+                buttonLabel: 'Read Ch ${fmtNum(nextEp.number)}',
+                startPositionPage: 1,
+              );
+            } else {
+              return _PlaybackTarget(
+                episode: currentEp,
+                buttonLabel: 'Re-read Ch ${fmtNum(currentEp.number)}',
+                startPositionPage: 1,
+              );
+            }
+          }
+        }
+      }
+      if (trackedProgress > 0) {
+        final nextTracked = sortedEps
+            .where((e) => e.number > trackedProgress)
+            .firstOrNull;
+        if (nextTracked != null) {
+          return _PlaybackTarget(
+            episode: nextTracked,
+            buttonLabel: 'Read Ch ${fmtNum(nextTracked.number)}',
+            startPositionPage: 1,
+          );
+        }
+
+        final exactTracked = sortedEps
+            .where((e) => (e.number - trackedProgress).abs() < 0.01)
+            .firstOrNull;
+        if (exactTracked != null) {
+          return _PlaybackTarget(
+            episode: exactTracked,
+            buttonLabel: 'Read Ch ${fmtNum(exactTracked.number)}',
+            startPositionPage: 1,
+          );
+        }
+
+        final lastAvailable = sortedEps.lastOrNull;
+        if (lastAvailable != null) {
+          return _PlaybackTarget(
+            episode: lastAvailable,
+            buttonLabel: 'Read Ch ${fmtNum(lastAvailable.number)}',
+            startPositionPage: 1,
+          );
+        }
+      }
+    } else {
+      final latestWatch = watchHistory.firstOrNull;
+      if (latestWatch != null) {
+        final currentEp = sortedEps
+            .where((e) => (e.number - latestWatch.episodeNumber).abs() < 0.01)
+            .firstOrNull;
+        if (currentEp != null) {
+          final isFinished =
+              latestWatch.durationInMilliseconds > 0 &&
+              latestWatch.positionInMilliseconds >=
+                  latestWatch.durationInMilliseconds * 0.9;
+
+          if (!isFinished && latestWatch.positionInMilliseconds > 0) {
+            final remainingMins =
+                latestWatch.durationInMilliseconds >
+                    latestWatch.positionInMilliseconds
+                ? ((latestWatch.durationInMilliseconds -
+                              latestWatch.positionInMilliseconds) /
+                          60000)
+                      .ceil()
+                : 0;
+            return _PlaybackTarget(
+              episode: currentEp,
+              buttonLabel: remainingMins > 0
+                  ? 'Resume Ep ${fmtNum(currentEp.number)} (${remainingMins}m left)'
+                  : 'Resume Ep ${fmtNum(currentEp.number)}',
+              startPositionDuration: Duration(
+                milliseconds: latestWatch.positionInMilliseconds,
+              ),
+            );
+          } else {
+            final nextEp = sortedEps
+                .where((e) => e.number > currentEp.number)
+                .firstOrNull;
+            if (nextEp != null) {
+              return _PlaybackTarget(
+                episode: nextEp,
+                buttonLabel: 'Play Ep ${fmtNum(nextEp.number)}',
+              );
+            } else {
+              return _PlaybackTarget(
+                episode: currentEp,
+                buttonLabel: 'Replay Ep ${fmtNum(currentEp.number)}',
+              );
+            }
+          }
+        }
+      }
+      if (trackedProgress > 0) {
+        final nextTracked = sortedEps
+            .where((e) => e.number > trackedProgress)
+            .firstOrNull;
+        if (nextTracked != null) {
+          return _PlaybackTarget(
+            episode: nextTracked,
+            buttonLabel: 'Play Ep ${fmtNum(nextTracked.number)}',
+          );
+        }
+
+        final exactTracked = sortedEps
+            .where((e) => (e.number - trackedProgress).abs() < 0.01)
+            .firstOrNull;
+        if (exactTracked != null) {
+          return _PlaybackTarget(
+            episode: exactTracked,
+            buttonLabel: 'Play Ep ${fmtNum(exactTracked.number)}',
+          );
+        }
+
+        final lastAvailable = sortedEps.lastOrNull;
+        if (lastAvailable != null) {
+          return _PlaybackTarget(
+            episode: lastAvailable,
+            buttonLabel: 'Play Ep ${fmtNum(lastAvailable.number)}',
+          );
+        }
+      }
+    }
+
+    final firstEp = sortedEps.first;
+    return _PlaybackTarget(
+      episode: firstEp,
+      buttonLabel: isManga
+          ? 'Read Ch ${fmtNum(firstEp.number)}'
+          : 'Play Ep ${fmtNum(firstEp.number)}',
+      startPositionPage: 1,
+    );
+  }
+
+  void _launchTargetPlayback(
+    BuildContext context,
+    UnifiedMedia media,
+    _PlaybackTarget target,
+    SourceInfo sourceInfo,
+    bool isManga,
+  ) {
+    if (isManga) {
+      context.pushReader(
+        ReaderModeOnline(
+          media: media,
+          episode: target.episode,
+          sourceInfo: sourceInfo,
+          startPosition: target.startPositionPage ?? 1,
+        ),
+      );
+    } else {
+      context.pushPlayer(
+        PlayerModeOnline(
+          media: media,
+          episode: target.episode,
+          sourceInfo: sourceInfo,
+          startPosition: target.startPositionDuration,
+        ),
+      );
+    }
+  }
+}
+
+class _PlaybackTarget {
+  final UnifiedEpisode episode;
+  final String buttonLabel;
+  final int? startPositionPage;
+  final Duration? startPositionDuration;
+
+  const _PlaybackTarget({
+    required this.episode,
+    required this.buttonLabel,
+    this.startPositionPage,
+    this.startPositionDuration,
+  });
 }

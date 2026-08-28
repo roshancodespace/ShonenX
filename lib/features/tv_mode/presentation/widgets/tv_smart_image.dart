@@ -71,7 +71,6 @@ class TvSmartImage extends StatelessWidget {
 
     final raw = imageUrl!.trim();
 
-    // 1. Network Image (http / https)
     if (raw.startsWith('http://') || raw.startsWith('https://')) {
       final cleanUrl = raw.split('#').first;
       final headers = decodeUrlHeaders(raw);
@@ -100,7 +99,6 @@ class TvSmartImage extends StatelessWidget {
       );
     }
 
-    // 2. Base64 Memory Image
     try {
       final base64String = raw.contains(',') ? raw.split(',').last.trim() : raw;
       final bytes = base64Decode(base64String);

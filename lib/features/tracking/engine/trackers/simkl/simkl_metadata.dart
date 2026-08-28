@@ -298,6 +298,14 @@ mixin SimklMetadata on BaseTracker implements RemoteTracker {
       kitsu: idKitsu,
     );
 
+    final int? year = (json['year'] as num?)?.toInt();
+    final String? trailerId = (json['trailers'] as List?)
+        ?.firstOrNull?['youtube']
+        ?.toString();
+    final String? trailer = (trailerId != null && trailerId.isNotEmpty)
+        ? 'https://www.youtube.com/watch?v=$trailerId'
+        : null;
+
     return UnifiedMedia(
       id: id,
       providerId: id,
@@ -309,6 +317,8 @@ mixin SimklMetadata on BaseTracker implements RemoteTracker {
       banner: bannerUrl,
       description: json['overview'] as String?,
       status: status,
+      year: year,
+      trailer: trailer,
       episodes: json['total_episodes'] as int?,
       score: (json['ratings']?['simkl']?['rating'] as num?)?.toDouble(),
       format: type.name,

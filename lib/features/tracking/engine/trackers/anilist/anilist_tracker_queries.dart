@@ -91,16 +91,25 @@ class AnilistTrackerQueries {
           userId: \$userId,
           status: \$status,
           type: \$type,
-          sort: [STARTED_ON_DESC],
+          sort: [UPDATED_TIME_DESC],
         ) {
+          progress
+          score(format: POINT_10_DECIMAL)
           media {
             id
+            idMal
             type
             format
             title { english romaji native }
             coverImage { large }
+            bannerImage
+            description(asHtml: false)
+            genres
+            averageScore
+            seasonYear
             status
             episodes
+            chapters
           }
         }
       }

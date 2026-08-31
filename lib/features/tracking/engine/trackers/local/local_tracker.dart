@@ -44,6 +44,7 @@ class LocalTracker implements TrackingService {
         ..cover = media.cover ?? ''
         ..type = media.type.id
         ..episodes = media.episodes
+        ..score = media.score
         ..sourceType = 'tracker'
         ..sourceId = 'local'
         ..updatedAt = DateTime.now();
@@ -58,6 +59,8 @@ class LocalTracker implements TrackingService {
 
       if (score != null) {
         entry.score = score;
+      } else if (entry.score == null && media.score != null) {
+        entry.score = media.score;
       }
 
       await _isar.libraryEntrys.putByProviderIdType(entry);
@@ -75,7 +78,7 @@ class LocalTracker implements TrackingService {
         .filter()
         .statusEqualTo(status.id)
         .typeEqualTo(mediaType.id)
-        .sortByAddedAtDesc()
+        .sortByUpdatedAtDesc()
         .offset((page - 1) * 50)
         .limit(50)
         .findAll();

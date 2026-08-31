@@ -30,6 +30,18 @@ class LibraryEntry {
   String? externalIdsJson;
 
   @ignore
+  String? banner;
+
+  @ignore
+  String? description;
+
+  @ignore
+  List<String>? genres;
+
+  @ignore
+  int? year;
+
+  @ignore
   MediaExternalIds get externalIds {
     if (externalIdsJson != null && externalIdsJson!.isNotEmpty) {
       try {
@@ -48,10 +60,18 @@ class LibraryEntry {
   UnifiedMedia toUnifiedMedia() {
     return UnifiedMedia(
       id: providerId,
-      type: MediaType.values.firstWhere((e) => e.id == type),
+      type: MediaType.values.firstWhere(
+        (e) => e.id == type,
+        orElse: () => MediaType.ANIME,
+      ),
       providerId: providerId,
       externalIds: externalIds,
       cover: cover,
+      banner: banner,
+      description: description,
+      genres: genres,
+      year: year,
+      score: score,
       title: MediaTitle(english: title),
       format: format,
       status: status,

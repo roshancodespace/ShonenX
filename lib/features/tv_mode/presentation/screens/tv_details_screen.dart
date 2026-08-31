@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -245,53 +246,57 @@ class _TvDetailsScreenState extends ConsumerState<TvDetailsScreen> {
             ),
           ),
           SafeArea(
-            child: ListView(
-              controller: _scrollController,
-              padding: const EdgeInsets.fromLTRB(48, 16, 48, 48),
-              physics: const BouncingScrollPhysics(),
-              children: [
-                _buildTopBar(context, displayMedia, radius),
-                const SizedBox(height: 18),
-                _buildHeroCinematic(
-                  context,
-                  displayMedia,
-                  nextTarget,
-                  currentSource,
-                  episodesState?.source,
-                  isManga,
-                  radius,
-                  cs,
-                  tracker,
-                  trackingState,
-                  trackerLinks,
-                ),
-                const SizedBox(height: 36),
-                Container(
-                  key: _episodesShelfKey,
-                  child: TvEpisodeShelf(
-                    media: displayMedia,
-                    onOpenSourceSelector: () => TvSourceDialog.show(
-                      context,
+            child: Skeletonizer(
+              enabled:
+                  detailsAsync.isLoading && displayMedia.description == null,
+              child: ListView(
+                controller: _scrollController,
+                padding: const EdgeInsets.fromLTRB(48, 16, 48, 48),
+                physics: const BouncingScrollPhysics(),
+                children: [
+                  _buildTopBar(context, displayMedia, radius),
+                  const SizedBox(height: 18),
+                  _buildHeroCinematic(
+                    context,
+                    displayMedia,
+                    nextTarget,
+                    currentSource,
+                    episodesState?.source,
+                    isManga,
+                    radius,
+                    cs,
+                    tracker,
+                    trackingState,
+                    trackerLinks,
+                  ),
+                  const SizedBox(height: 36),
+                  Container(
+                    key: _episodesShelfKey,
+                    child: TvEpisodeShelf(
                       media: displayMedia,
-                      currentSource: currentSource ?? episodesState?.source,
+                      onOpenSourceSelector: () => TvSourceDialog.show(
+                        context,
+                        media: displayMedia,
+                        currentSource: currentSource ?? episodesState?.source,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 36),
-                if (displayMedia.characters != null &&
-                    displayMedia.characters!.isNotEmpty)
-                  _buildCharactersSection(context, displayMedia, radius),
-                const SizedBox(height: 36),
-                _buildInformationSection(context, displayMedia, radius),
-                const SizedBox(height: 36),
-                if (displayMedia.relations != null &&
-                    displayMedia.relations!.isNotEmpty)
-                  _buildRelationsSection(context, displayMedia),
-                const SizedBox(height: 36),
-                if (displayMedia.recommendations != null &&
-                    displayMedia.recommendations!.isNotEmpty)
-                  _buildRecommendationsSection(context, displayMedia),
-              ],
+                  const SizedBox(height: 36),
+                  if (displayMedia.characters != null &&
+                      displayMedia.characters!.isNotEmpty)
+                    _buildCharactersSection(context, displayMedia, radius),
+                  const SizedBox(height: 36),
+                  _buildInformationSection(context, displayMedia, radius),
+                  const SizedBox(height: 36),
+                  if (displayMedia.relations != null &&
+                      displayMedia.relations!.isNotEmpty)
+                    _buildRelationsSection(context, displayMedia),
+                  const SizedBox(height: 36),
+                  if (displayMedia.recommendations != null &&
+                      displayMedia.recommendations!.isNotEmpty)
+                    _buildRecommendationsSection(context, displayMedia),
+                ],
+              ),
             ),
           ),
         ],

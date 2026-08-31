@@ -4,8 +4,10 @@ import 'package:shonenx/core/router/app_navigator.dart';
 import 'package:shonenx/features/discovery/domain/models/home_section.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/rows/horizontal_section.dart';
 import 'package:shonenx/features/discovery/providers/home_feed_provider.dart';
+import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
 import 'package:shonenx/features/tv_mode/presentation/widgets/tv_backdrop_background.dart';
 import 'package:shonenx/features/tv_mode/presentation/widgets/tv_continue_media_row.dart';
+import 'package:shonenx/features/tv_mode/presentation/widgets/tv_library_row.dart';
 import 'package:shonenx/features/tv_mode/presentation/widgets/tv_media_card.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
@@ -70,6 +72,23 @@ class TvHomeScreen extends ConsumerWidget {
         );
 
       case HomeSectionType.libraryStatus:
+        final hs = section.homeSection;
+        if (hs == null || hs.libraryStatus == null) {
+          return const SizedBox.shrink();
+        }
+        final activeTracker = hs.targetTracker != null
+            ? ref
+                  .watch(availableTrackersProvider)
+                  .firstWhere((t) => t.type == hs.targetTracker!)
+            : ref.watch(primaryTrackerProvider);
+
+        return TvLibraryRow(
+          title: section.title,
+          status: hs.libraryStatus!,
+          targetTracker: activeTracker.type,
+          targetMediaType: section.mediaType,
+        );
+
       case HomeSectionType.discovery:
         final cardStyles = ref.watch(
           uiPrefsProvider.select(
@@ -112,6 +131,9 @@ class _HomeSectionRow extends ConsumerWidget {
           cover: item.cover ?? '',
           banner: item.banner,
           score: item.score,
+          totalEpisodes: item.episodes,
+          format: item.format,
+          status: item.status,
           description: item.description,
           genres: item.genres,
           year: item.year,

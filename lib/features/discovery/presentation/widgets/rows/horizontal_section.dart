@@ -107,10 +107,12 @@ class HorizontalSection<T> extends StatelessWidget {
                     return skeletonItemBuilder!(context, index);
                   }
                   return Container(
-                    width: height * 0.7,
+                    width: (height * 0.71).clamp(130.0, 160.0),
                     height: height,
                     decoration: BoxDecoration(
-                      color: Colors.grey[300],
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white.withValues(alpha: 0.08)
+                          : Colors.black.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(12),
                     ),
                   );

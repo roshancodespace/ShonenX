@@ -174,6 +174,7 @@ class KitsuTracker extends BaseTracker
             'filter[status]': _toKitsuStatus(status),
             'page[limit]': limit.toString(),
             'page[offset]': offset.toString(),
+            'sort': '-updated_at',
             'include': kind,
           },
           headers: {'Authorization': 'Bearer $token'},
@@ -213,6 +214,19 @@ class KitsuTracker extends BaseTracker
               mediaAttr['episodeCount'] as int? ??
               mediaAttr['chapterCount'] as int?;
 
+          final coverImage = mediaAttr['coverImage'] as Map?;
+          final banner =
+              coverImage?['large']?.toString() ??
+              coverImage?['original']?.toString() ??
+              cover;
+          final description =
+              mediaAttr['synopsis']?.toString() ??
+              mediaAttr['description']?.toString();
+          final startDate = mediaAttr['startDate']?.toString();
+          final year = startDate != null
+              ? DateTime.tryParse(startDate)?.year
+              : null;
+
           final r20 = (attr['ratingTwenty'] as num?)?.toDouble() ?? 0.0;
           final score = r20 > 0 ? r20 / 2.0 : 0.0;
           final progress = (attr['progress'] as num?)?.toInt() ?? 0;
@@ -222,6 +236,9 @@ class KitsuTracker extends BaseTracker
             ..type = mediaType.id
             ..title = title
             ..cover = cover
+            ..banner = banner
+            ..description = description
+            ..year = year
             ..status = _parseKitsuStatus(attr['status']?.toString()).id
             ..score = score
             ..episodesWatched = progress

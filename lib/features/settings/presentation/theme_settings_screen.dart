@@ -12,6 +12,8 @@ import 'package:shonenx/features/settings/presentation/widgets/settings_ui_compo
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
 import 'package:shonenx/features/settings/presentation/widgets/preset_gallery_sheet.dart';
+import 'package:shonenx/features/settings/presentation/widgets/theme_palette_showcase.dart';
+import 'package:shonenx/shared/models/ui_style_enums.dart';
 import 'package:shonenx/shared/providers/preset_provider.dart';
 
 class ThemeSettingsScreen extends ConsumerWidget {
@@ -171,92 +173,60 @@ class ThemeSettingsScreen extends ConsumerWidget {
                   ],
                 ),
 
-                // Color Schemes
-                if (!themePrefs.useDynamic)
-                  SettingsSection(
-                    title: 'Color Schemes',
-                    children: [
-                      SettingsActionTile(
-                        icon: Icons.colorize,
-                        title: 'Standard Color Scheme',
-                        subtitle: themePrefs.exclusiveScheme == null
-                            ? FlexColor.schemes[themePrefs.flexScheme]?.name ??
-                                  'Default'
-                            : 'Not active',
-                        onTap: () => _openSchemePicker(
-                          context,
-                          themePrefs.flexScheme,
-                          (scheme) => notifier.updateTheme(
-                            (p) => p.copyWith(
-                              flexScheme: scheme,
-                              clearExclusiveScheme: true,
-                              clearColorSeed: true,
-                              clearPrimaryColor: true,
-                              clearSecondaryColor: true,
-                              clearTertiaryColor: true,
-                              clearSurfaceColor: true,
-                            ),
+                // Exclusive Schemes Shelf
+                if (!themePrefs.useDynamic) ...[
+                  ThemePaletteShelf(
+                    title: 'Exclusive Themes',
+                    countBadge: '${exclusiveSchemes.length} Themes',
+                    items: exclusiveSchemes.entries
+                        .map(
+                          (e) => ThemePaletteItem.fromExclusive(
+                            key: e.key,
+                            data: e.value,
+                            isDark: isDark,
                           ),
-                          isDark,
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (themePrefs.exclusiveScheme == null)
-                              _SwatchStack(
-                                colors: [cs.primary, cs.secondary, cs.tertiary],
-                              ),
-                            const SizedBox(width: 8),
-                            Icon(
-                              Icons.chevron_right_rounded,
-                              color: cs.onSurfaceVariant.withValues(alpha: 0.5),
-                            ),
-                          ],
-                        ),
-                      ),
-                      SettingsActionTile(
-                        icon: Icons.auto_awesome,
-                        title: 'Exclusive Scheme',
-                        subtitle: themePrefs.exclusiveScheme != null
-                            ? exclusiveSchemes[themePrefs.exclusiveScheme]
-                                      ?.name ??
-                                  'Unknown'
-                            : 'Not active',
-                        onTap: () => _openExclusiveSchemePicker(
-                          context,
-                          themePrefs.exclusiveScheme,
-                          (key) => notifier.updateTheme(
-                            (p) => p.copyWith(
-                              exclusiveScheme: key,
-                              clearColorSeed: true,
-                              clearPrimaryColor: true,
-                              clearSecondaryColor: true,
-                              clearTertiaryColor: true,
-                              clearSurfaceColor: true,
-                            ),
+                        )
+                        .toList(),
+                    selectedId: themePrefs.exclusiveScheme,
+                    onSelect: (item) => notifier.setExclusiveScheme(item.id),
+                    onViewAll: () => _openExclusiveSchemePicker(
+                      context,
+                      themePrefs.exclusiveScheme,
+                      (key) => notifier.setExclusiveScheme(key),
+                      isDark,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  ThemePaletteShelf(
+                    title: 'Standard Color Schemes',
+                    countBadge: '${FlexColor.schemes.length - 1} Themes',
+                    items: FlexColor.schemes.entries
+                        .where((e) => e.key != FlexScheme.custom)
+                        .map(
+                          (e) => ThemePaletteItem.fromFlexScheme(
+                            scheme: e.key,
+                            data: e.value,
+                            isDark: isDark,
                           ),
-                          isDark,
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (themePrefs.exclusiveScheme != null) ...[
-                              _ExclusiveSwatchPreview(
-                                schemeKey: themePrefs.exclusiveScheme!,
-                                isDark: isDark,
-                              ),
-                              const SizedBox(width: 8),
-                            ],
-                            Icon(
-                              Icons.chevron_right_rounded,
-                              color: cs.onSurfaceVariant.withValues(alpha: 0.5),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  )
-                else
+                        )
+                        .toList(),
+                    selectedId:
+                        themePrefs.exclusiveScheme == null &&
+                            !themePrefs.useDynamic &&
+                            !themePrefs.useImageColors
+                        ? themePrefs.flexScheme.name
+                        : null,
+                    onSelect: (item) => notifier.setStandardScheme(
+                      FlexScheme.values.byName(item.id),
+                    ),
+                    onViewAll: () => _openSchemePicker(
+                      context,
+                      themePrefs.flexScheme,
+                      (scheme) => notifier.setStandardScheme(scheme),
+                      isDark,
+                    ),
+                  ),
+                ] else
                   SettingsSection(
                     title: 'Color Scheme',
                     children: [
@@ -509,6 +479,29 @@ class ThemeSettingsScreen extends ConsumerWidget {
                           (p) => p.copyWith(useImageColors: v),
                         ),
                       ),
+                      if (themePrefs.useImageColors &&
+                          themePrefs.customBackgroundImagePath != null) ...[
+                        _WallpaperColorSchemesSelector(
+                          imagePath: themePrefs.customBackgroundImagePath!,
+                          currentSeed:
+                              themePrefs.wallpaperSettings?.imageColorSeed,
+                          isDark: isDark,
+                          onSelect: (seedArgb) {
+                            notifier.updateTheme(
+                              (p) => p.copyWith(
+                                wallpaperSettings:
+                                    (p.wallpaperSettings ??
+                                            WallpaperSettings(
+                                              imagePath: themePrefs
+                                                  .customBackgroundImagePath!,
+                                            ))
+                                        .copyWith(imageColorSeed: seedArgb),
+                                useImageColors: true,
+                              ),
+                            );
+                          },
+                        ),
+                      ],
                       SettingsActionTile(
                         icon: Icons.delete_outline_rounded,
                         title: 'Remove Wallpaper',
@@ -624,61 +617,6 @@ class ThemeSettingsScreen extends ConsumerWidget {
   }
 }
 
-class _ExclusiveSwatchPreview extends StatelessWidget {
-  const _ExclusiveSwatchPreview({
-    required this.schemeKey,
-    required this.isDark,
-  });
-  final String schemeKey;
-  final bool isDark;
-
-  @override
-  Widget build(BuildContext context) {
-    final data = exclusiveSchemes[schemeKey];
-    if (data == null) return const SizedBox.shrink();
-    final colors = isDark ? data.dark : data.light;
-    return _SwatchStack(
-      colors: [colors.primary, colors.secondary, colors.tertiary],
-    );
-  }
-}
-
-class _SwatchStack extends StatelessWidget {
-  const _SwatchStack({required this.colors});
-  final List<Color> colors;
-
-  @override
-  Widget build(BuildContext context) {
-    const size = 18.0;
-    const overlap = 10.0;
-    final totalWidth = size + (colors.length - 1) * (size - overlap);
-
-    return SizedBox(
-      width: totalWidth,
-      height: size,
-      child: Stack(
-        children: List.generate(colors.length, (i) {
-          return Positioned(
-            left: i * (size - overlap),
-            child: Container(
-              width: size,
-              height: size,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: colors[i],
-                border: Border.all(
-                  color: Theme.of(context).colorScheme.surface,
-                  width: 1.5,
-                ),
-              ),
-            ),
-          );
-        }),
-      ),
-    );
-  }
-}
-
 class _SchemePicker extends ConsumerWidget {
   const _SchemePicker({
     required this.currentScheme,
@@ -692,75 +630,28 @@ class _SchemePicker extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final cs = Theme.of(context).colorScheme;
-    final activeIsDark = Theme.of(context).brightness == Brightness.dark;
-    final prefs = ref.watch(themePrefsProvider);
-    final schemes = FlexColor.schemes.keys
-        .where((s) => s != FlexScheme.custom)
+    final items = FlexColor.schemes.entries
+        .where((e) => e.key != FlexScheme.custom)
+        .map(
+          (e) => ThemePaletteItem.fromFlexScheme(
+            scheme: e.key,
+            data: e.value,
+            isDark: isDark,
+          ),
+        )
         .toList();
 
     return ListView.builder(
       shrinkWrap: true,
-      itemCount: schemes.length,
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      itemCount: items.length,
       itemBuilder: (context, index) {
-        final scheme = schemes[index];
-        final data = FlexColor.schemes[scheme]!;
-        final primary = activeIsDark ? data.dark.primary : data.light.primary;
-        final secondary = activeIsDark
-            ? data.dark.secondary
-            : data.light.secondary;
-        final isSelected = currentScheme == scheme;
-
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 2),
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(100),
-              gradient: isSelected && prefs.useGradients
-                  ? LinearGradient(
-                      colors: [cs.secondaryContainer, Colors.transparent],
-                    )
-                  : null,
-            ),
-            child: ListTile(
-              shape: const StadiumBorder(),
-              tileColor: isSelected && !prefs.useGradients
-                  ? cs.secondaryContainer
-                  : Colors.transparent,
-              leading: CircleAvatar(
-                radius: 18,
-                backgroundColor: Colors.transparent,
-                child: Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [primary, secondary],
-                    ),
-                  ),
-                ),
-              ),
-              title: Text(
-                data.name,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: isSelected ? cs.onSecondaryContainer : cs.onSurface,
-                ),
-              ),
-              trailing: isSelected
-                  ? Icon(
-                      Icons.check_rounded,
-                      size: 18,
-                      color: cs.onSecondaryContainer,
-                    )
-                  : null,
-              onTap: () => onSelected(scheme),
-            ),
-          ),
+        final item = items[index];
+        return ThemePaletteTile(
+          item: item,
+          isSelected: currentScheme.name == item.id,
+          onTap: () => onSelected(FlexScheme.values.byName(item.id)),
         );
       },
     );
@@ -780,79 +671,27 @@ class _ExclusiveSchemePicker extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final cs = Theme.of(context).colorScheme;
-    final activeIsDark = Theme.of(context).brightness == Brightness.dark;
-    final prefs = ref.watch(themePrefsProvider);
-    final entries = exclusiveSchemes.entries.toList();
+    final items = exclusiveSchemes.entries
+        .map(
+          (e) => ThemePaletteItem.fromExclusive(
+            key: e.key,
+            data: e.value,
+            isDark: isDark,
+          ),
+        )
+        .toList();
 
     return ListView.builder(
       shrinkWrap: true,
-      itemCount: entries.length,
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      itemCount: items.length,
       itemBuilder: (context, index) {
-        final key = entries[index].key;
-        final data = entries[index].value;
-        final colors = activeIsDark ? data.dark : data.light;
-        final isSelected = currentKey == key;
-
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 2),
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(100),
-              gradient: isSelected && prefs.useGradients
-                  ? LinearGradient(
-                      colors: [cs.secondaryContainer, Colors.transparent],
-                    )
-                  : null,
-            ),
-            child: ListTile(
-              shape: const StadiumBorder(),
-              tileColor: isSelected && !prefs.useGradients
-                  ? cs.secondaryContainer
-                  : Colors.transparent,
-              leading: CircleAvatar(
-                radius: 18,
-                backgroundColor: Colors.transparent,
-                child: Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [colors.primary, colors.secondary],
-                    ),
-                  ),
-                ),
-              ),
-              title: Text(
-                data.name,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: isSelected ? cs.onSecondaryContainer : cs.onSurface,
-                ),
-              ),
-              subtitle: Text(
-                data.description,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: isSelected
-                      ? cs.onSecondaryContainer.withValues(alpha: 0.7)
-                      : cs.onSurfaceVariant,
-                ),
-              ),
-              trailing: isSelected
-                  ? Icon(
-                      Icons.check_rounded,
-                      size: 18,
-                      color: cs.onSecondaryContainer,
-                    )
-                  : null,
-              onTap: () => onSelected(key),
-            ),
-          ),
+        final item = items[index];
+        return ThemePaletteTile(
+          item: item,
+          isSelected: currentKey == item.id,
+          onTap: () => onSelected(item.id),
         );
       },
     );
@@ -1344,6 +1183,110 @@ class _WallpaperCustomizationOverlayState
           ),
         ],
       ),
+    );
+  }
+}
+
+class _WallpaperColorSchemesSelector extends StatefulWidget {
+  final String imagePath;
+  final int? currentSeed;
+  final bool isDark;
+  final ValueChanged<int> onSelect;
+
+  const _WallpaperColorSchemesSelector({
+    required this.imagePath,
+    required this.currentSeed,
+    required this.isDark,
+    required this.onSelect,
+  });
+
+  @override
+  State<_WallpaperColorSchemesSelector> createState() =>
+      _WallpaperColorSchemesSelectorState();
+}
+
+class _WallpaperColorSchemesSelectorState
+    extends State<_WallpaperColorSchemesSelector> {
+  List<WallpaperPaletteSeed>? _seeds;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSeeds();
+  }
+
+  @override
+  void didUpdateWidget(covariant _WallpaperColorSchemesSelector oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.imagePath != widget.imagePath) {
+      _loadSeeds();
+    }
+  }
+
+  Future<void> _loadSeeds() async {
+    setState(() => _isLoading = true);
+    final seeds = await WallpaperProcessor.extractTopPaletteSeeds(
+      widget.imagePath,
+    );
+    if (mounted) {
+      setState(() {
+        _seeds = seeds;
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final radius = GlobalUI.uiRoundness;
+
+    if (_isLoading) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 8.0),
+        child: SizedBox(
+          height: 94,
+          child: Row(
+            children: List.generate(
+              3,
+              (index) => Expanded(
+                child: Container(
+                  margin: EdgeInsets.only(right: index < 2 ? 8 : 0),
+                  decoration: BoxDecoration(
+                    color: cs.surfaceContainerHighest.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(radius),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (_seeds == null || _seeds!.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final items = _seeds!
+        .map(
+          (seed) => ThemePaletteItem.fromSeed(
+            id: seed.color.toARGB32().toString(),
+            label: seed.label,
+            seedColor: seed.color,
+            isDark: widget.isDark,
+          ),
+        )
+        .toList();
+
+    return ThemePaletteShelf(
+      title: 'Top Generated Schemes',
+      countBadge: '${items.length} Palettes',
+      items: items,
+      selectedId: widget.currentSeed?.toString(),
+      onSelect: (item) => widget.onSelect(int.parse(item.id)),
+      padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 8.0),
     );
   }
 }

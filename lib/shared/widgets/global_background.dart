@@ -1,52 +1,19 @@
 import 'dart:io';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
 import 'package:shonenx/shared/widgets/static_noise_overlay.dart';
 
-class GlobalBackground extends ConsumerWidget {
+class GlobalBackground extends StatelessWidget {
   final Widget child;
 
   const GlobalBackground({super.key, required this.child});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final useGradients = ref.watch(
-      themePrefsProvider.select((p) => p.useGradients),
-    );
-    final useAmoled = ref.watch(themePrefsProvider.select((p) => p.useAmoled));
-    final customBackgroundImagePath = ref.watch(
-      themePrefsProvider.select((p) => p.customBackgroundImagePath),
-    );
-    final processedWallpaperPath = ref.watch(
-      themePrefsProvider.select((p) => p.wallpaperSettings?.processedPath),
-    );
-    final backgroundImageOpacity = ref.watch(
-      themePrefsProvider.select((p) => p.backgroundImageOpacity),
-    );
-    final useNoiseOverlay = ref.watch(
-      themePrefsProvider.select((p) => p.useNoiseOverlay),
-    );
-    final noiseOpacity = ref.watch(
-      themePrefsProvider.select((p) => p.noiseOpacity),
-    );
-
-    final gradientStyle = ref.watch(
-      themePrefsProvider.select((p) => p.gradientStyle),
-    );
-    final gradientDirection = ref.watch(
-      themePrefsProvider.select((p) => p.gradientDirection),
-    );
-    final gradientColorPair = ref.watch(
-      themePrefsProvider.select((p) => p.gradientColorPair),
-    );
-    final gradientIntensity = ref.watch(
-      themePrefsProvider.select((p) => p.gradientIntensity),
-    );
-
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final overlayStyle = isDark
         ? SystemUiOverlayStyle.light.copyWith(
@@ -60,79 +27,83 @@ class GlobalBackground extends ConsumerWidget {
             systemNavigationBarDividerColor: Colors.transparent,
           );
 
-    final List<Widget> backgroundLayers = [];
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: overlayStyle,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          const Positioned.fill(child: _GlobalBackgroundSurface()),
+          child,
+        ],
+      ),
+    );
+  }
+}
 
-    if (customBackgroundImagePath != null) {
-      final imagePathToRender =
-          processedWallpaperPath ?? customBackgroundImagePath;
-      final isNetwork =
-          imagePathToRender.startsWith('http://') ||
-          imagePathToRender.startsWith('https://');
+class _GlobalBackgroundSurface extends ConsumerWidget {
+  const _GlobalBackgroundSurface();
 
-      final img = isNetwork
-          ? Image.network(
-              imagePathToRender,
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => const SizedBox.shrink(),
-            )
-          : Image.file(
-              File(imagePathToRender),
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => const SizedBox.shrink(),
-            );
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final themePrefs = ref.watch(themePrefsProvider);
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
-      backgroundLayers.add(
-        Positioned.fill(
-          child: RepaintBoundary(
-            child: Opacity(opacity: backgroundImageOpacity, child: img),
-          ),
-        ),
-      );
-    }
-
-    if (useNoiseOverlay && noiseOpacity > 0.0 && !(isDark && useAmoled)) {
-      backgroundLayers.add(
-        Positioned.fill(
-          child: IgnorePointer(
-            child: StaticNoiseOverlay(
-              color: theme.colorScheme.onSurface,
-              opacity: noiseOpacity,
-            ),
-          ),
-        ),
-      );
-    }
-
-    final Widget content = backgroundLayers.isEmpty
-        ? child
-        : Stack(children: [...backgroundLayers, child]);
+    final useGradients = themePrefs.useGradients;
+    final useAmoled = themePrefs.useAmoled;
+    final customBackgroundImagePath = themePrefs.customBackgroundImagePath;
+    final processedWallpaperPath = themePrefs.wallpaperSettings?.processedPath;
+    final backgroundImageOpacity = themePrefs.backgroundImageOpacity;
+    final useNoiseOverlay = themePrefs.useNoiseOverlay;
+    final noiseOpacity = themePrefs.noiseOpacity;
 
     final isAmoledActive =
         isDark && useAmoled && customBackgroundImagePath == null;
 
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: overlayStyle,
+    final gradient =
+        (!isAmoledActive && useGradients && customBackgroundImagePath == null)
+        ? _buildBackgroundGradient(
+            theme: theme,
+            style: themePrefs.gradientStyle,
+            direction: themePrefs.gradientDirection,
+            colorPair: themePrefs.gradientColorPair,
+            intensity: themePrefs.gradientIntensity,
+          )
+        : null;
+
+    final backgroundColor = isAmoledActive
+        ? const Color(0xFF000000)
+        : (gradient != null || customBackgroundImagePath != null
+              ? null
+              : theme.scaffoldBackgroundColor);
+
+    final imagePathToRender =
+        processedWallpaperPath ?? customBackgroundImagePath;
+
+    return RepaintBoundary(
       child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: isAmoledActive
-              ? const Color(0xFF000000)
-              : ((useGradients || customBackgroundImagePath != null)
-                    ? null
-                    : theme.scaffoldBackgroundColor),
-          gradient:
-              (!isAmoledActive &&
-                  useGradients &&
-                  customBackgroundImagePath == null)
-              ? _buildBackgroundGradient(
-                  theme: theme,
-                  style: gradientStyle,
-                  direction: gradientDirection,
-                  colorPair: gradientColorPair,
-                  intensity: gradientIntensity,
-                )
-              : null,
+        decoration: BoxDecoration(color: backgroundColor, gradient: gradient),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (imagePathToRender != null && imagePathToRender.isNotEmpty)
+              Positioned.fill(
+                child: Opacity(
+                  opacity: backgroundImageOpacity.clamp(0.0, 1.0),
+                  child: _WallpaperImage(imagePath: imagePathToRender),
+                ),
+              ),
+            if (useNoiseOverlay && noiseOpacity > 0.0 && !isAmoledActive)
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: StaticNoiseOverlay(
+                    color: theme.colorScheme.onSurface,
+                    opacity: noiseOpacity,
+                  ),
+                ),
+              ),
+          ],
         ),
-        child: content,
       ),
     );
   }
@@ -216,5 +187,39 @@ class GlobalBackground extends ConsumerWidget {
         }
         return LinearGradient(begin: begin, end: end, colors: colors);
     }
+  }
+}
+
+class _WallpaperImage extends StatelessWidget {
+  final String imagePath;
+
+  const _WallpaperImage({required this.imagePath});
+
+  @override
+  Widget build(BuildContext context) {
+    final isNetwork =
+        imagePath.startsWith('http://') || imagePath.startsWith('https://');
+
+    if (isNetwork) {
+      return CachedNetworkImage(
+        key: ValueKey(imagePath),
+        imageUrl: imagePath,
+        fit: BoxFit.cover,
+        memCacheWidth: 1080,
+        maxWidthDiskCache: 1920,
+        fadeInDuration: const Duration(milliseconds: 200),
+        fadeOutDuration: const Duration(milliseconds: 150),
+        errorWidget: (_, __, ___) => const SizedBox.shrink(),
+      );
+    }
+
+    return Image.file(
+      File(imagePath),
+      key: ValueKey(imagePath),
+      fit: BoxFit.cover,
+      gaplessPlayback: true,
+      filterQuality: FilterQuality.medium,
+      errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+    );
   }
 }

@@ -1,12 +1,13 @@
-import 'dart:ui';
-
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/router/app_navigator.dart';
+import 'package:shonenx/features/discovery/domain/models/home_section.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/rows/horizontal_section.dart';
 import 'package:shonenx/features/discovery/providers/home_feed_provider.dart';
+import 'package:shonenx/features/tv_mode/presentation/widgets/tv_backdrop_background.dart';
+import 'package:shonenx/features/tv_mode/presentation/widgets/tv_continue_media_row.dart';
 import 'package:shonenx/features/tv_mode/presentation/widgets/tv_media_card.dart';
+import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
 
@@ -33,55 +34,12 @@ class TvHomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final activeSections = ref.watch(homeFeedSectionsProvider);
-    final backdropUrl = ref.watch(tvFocusedBackdropProvider);
 
     return AppScaffold(
       body: Stack(
         fit: StackFit.expand,
         children: [
-          if (backdropUrl != null && backdropUrl.isNotEmpty)
-            Positioned.fill(
-              child: ImageFiltered(
-                imageFilter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-                child: ShaderMask(
-                  shaderCallback: (rect) {
-                    return const LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Color(0x50FFFFFF),
-                        Color(0x20FFFFFF),
-                        Colors.transparent,
-                      ],
-                      stops: [0.0, 0.50, 1.0],
-                    ).createShader(rect);
-                  },
-                  blendMode: BlendMode.dstIn,
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 600),
-                    switchInCurve: Curves.easeOut,
-                    switchOutCurve: Curves.easeIn,
-                    layoutBuilder: (currentChild, previousChildren) {
-                      return Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          ...previousChildren,
-                          if (currentChild != null) currentChild,
-                        ],
-                      );
-                    },
-                    child: CachedNetworkImage(
-                      key: ValueKey(backdropUrl),
-                      imageUrl: backdropUrl,
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                      height: double.infinity,
-                      errorWidget: (_, __, ___) => const SizedBox.shrink(),
-                    ),
-                  ),
-                ),
-              ),
-            ),
+          const TvBackdropBackground(),
 
           ListView.separated(
             padding: const EdgeInsets.only(top: 8, bottom: 40),
@@ -104,17 +62,28 @@ class TvHomeScreen extends ConsumerWidget {
     WidgetRef ref,
     HomeFeedSection section,
   ) {
-    final cardStyles = ref.watch(
-      uiPrefsProvider.select(
-        (s) => (s.cardStyle, s.continueWatchingStyle, s.continueReadingStyle),
-      ),
-    );
-    return _HomeSectionRow(
-      section: section,
-      cardStyle: cardStyles.$1,
-      continueWatchingStyle: cardStyles.$2,
-      continueReadingStyle: cardStyles.$3,
-    );
+    switch (section.type) {
+      case HomeSectionType.continueMedia:
+        return TvContinueMediaRow(
+          title: section.title,
+          type: section.mediaType,
+        );
+
+      case HomeSectionType.libraryStatus:
+      case HomeSectionType.discovery:
+        final cardStyles = ref.watch(
+          uiPrefsProvider.select(
+            (s) =>
+                (s.cardStyle, s.continueWatchingStyle, s.continueReadingStyle),
+          ),
+        );
+        return _HomeSectionRow(
+          section: section,
+          cardStyle: cardStyles.$1,
+          continueWatchingStyle: cardStyles.$2,
+          continueReadingStyle: cardStyles.$3,
+        );
+    }
   }
 }
 
@@ -134,13 +103,13 @@ class _HomeSectionRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final feedAsync = ref.watch(homeSectionFeedProvider(section));
-    return HorizontalSection(
+    return HorizontalSection<UnifiedMedia>(
       data: feedAsync,
       title: section.title,
       itemBuilder: (context, item) {
         return TvMediaCard(
           title: item.title.availableTitle,
-          cover: item.cover!,
+          cover: item.cover ?? '',
           banner: item.banner,
           score: item.score,
           description: item.description,

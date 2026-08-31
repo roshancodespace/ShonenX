@@ -202,7 +202,7 @@ class AppBottomSheet extends StatelessWidget {
         tween: Tween<double>(begin: 0.32, end: 0.0),
         duration: const Duration(milliseconds: 380),
         curve: Curves.easeInOut,
-        builder: (context, tilt, child) {
+        builder: (ctx, tilt, child) {
           return Transform(
             alignment: Alignment.bottomCenter,
             transform: Matrix4.identity()
@@ -263,7 +263,7 @@ class AppBottomSheet extends StatelessWidget {
                         foregroundColor: cs.onErrorContainer,
                       ),
                       icon: const Icon(Icons.close, size: 20),
-                      onPressed: () => context.pop(),
+                      onPressed: () => Navigator.pop(context),
                     ),
                   ],
                 ),

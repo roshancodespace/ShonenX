@@ -64,6 +64,7 @@ class _SourceSettingsSheetState extends ConsumerState<SourceSettingsSheet> {
         children: [
           Flexible(
             child: ListView.builder(
+              physics: const BouncingScrollPhysics(),
               shrinkWrap: true,
               itemCount: schema.length,
               itemBuilder: (context, index) {
@@ -272,36 +273,46 @@ class _SourceSettingsSheetState extends ConsumerState<SourceSettingsSheet> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              ...options.map((option) {
-                final isSelected = selected.contains(option);
-                return CheckboxListTile(
-                  title: Text(option),
-                  value: isSelected,
-                  onChanged: (val) {
-                    setState(() {
-                      if (val == true) {
-                        selected.add(option);
-                      } else {
-                        // Enforce at least 1 selection if user unchecks the last one
-                        if (selected.length > 1) {
-                          selected.remove(option);
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'At least one option must be selected.',
-                              ),
-                              duration: Duration(seconds: 1),
-                            ),
-                          );
-                        }
-                      }
-                    });
-                  },
-                );
-              }),
+              Flexible(
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: options.map((option) {
+                      final isSelected = selected.contains(option);
+                      return CheckboxListTile(
+                        title: Text(option),
+                        value: isSelected,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        onChanged: (val) {
+                          setState(() {
+                            if (val == true) {
+                              selected.add(option);
+                            } else {
+                              if (selected.length > 1) {
+                                selected.remove(option);
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'At least one option must be selected.',
+                                    ),
+                                    duration: Duration(seconds: 1),
+                                  ),
+                                );
+                              }
+                            }
+                          });
+                        },
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
               const SizedBox(height: 16),
-              ElevatedButton(
+              FilledButton(
                 onPressed: () {
                   onChanged(selected);
                   Navigator.pop(context);

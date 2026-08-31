@@ -47,6 +47,9 @@ class AppBottomSheet extends StatelessWidget {
       enableDrag: enableDrag,
       useSafeArea: useSafeArea,
       backgroundColor: Colors.transparent,
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.88,
+      ),
       sheetAnimationStyle: AnimationStyle(
         duration: const Duration(milliseconds: 380),
         reverseDuration: const Duration(milliseconds: 280),
@@ -107,6 +110,7 @@ class AppBottomSheet extends StatelessWidget {
         builder: (sheetContext) {
           return ListView.builder(
             shrinkWrap: true,
+            physics: const BouncingScrollPhysics(),
             itemCount: items.length,
             itemBuilder: (context, index) {
               final item = items[index];

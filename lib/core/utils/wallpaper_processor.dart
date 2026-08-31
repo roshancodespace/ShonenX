@@ -1,8 +1,16 @@
 import 'dart:io';
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:palette_generator/palette_generator.dart';
 import 'package:path_provider/path_provider.dart';
+
+class WallpaperPaletteSeed {
+  final String label;
+  final Color color;
+
+  const WallpaperPaletteSeed({required this.label, required this.color});
+}
 
 class WallpaperProcessor {
   static Future<Directory> _getThemeDirectory() async {
@@ -176,5 +184,81 @@ class WallpaperProcessor {
       debugPrint('Error processing background image: $e\n$stack');
       return (processedPath: originalPath, imageColorSeed: imageColorSeed);
     }
+  }
+
+  static Future<List<WallpaperPaletteSeed>> extractTopPaletteSeeds(
+    String imagePath,
+  ) async {
+    try {
+      final file = File(imagePath);
+      if (!await file.exists()) return [];
+
+      final palette = await PaletteGenerator.fromImageProvider(
+        FileImage(file),
+        maximumColorCount: 32,
+        size: const Size(200, 200),
+      );
+
+      final List<WallpaperPaletteSeed> seeds = [];
+      final Set<int> seenArgb = {};
+
+      void addSeed(String label, Color? color) {
+        if (color == null) return;
+        final argb = color.toARGB32();
+        if (!seenArgb.contains(argb)) {
+          final isTooClose = seeds.any(
+            (s) => _colorDistance(s.color, color) < 28.0,
+          );
+          if (!isTooClose) {
+            seenArgb.add(argb);
+            seeds.add(WallpaperPaletteSeed(label: label, color: color));
+          }
+        }
+      }
+
+      addSeed('Dominant', palette.dominantColor?.color);
+      addSeed('Vibrant', palette.vibrantColor?.color);
+      addSeed('Light Vibrant', palette.lightVibrantColor?.color);
+      addSeed('Dark Vibrant', palette.darkVibrantColor?.color);
+      addSeed('Muted', palette.mutedColor?.color);
+      addSeed('Light Muted', palette.lightMutedColor?.color);
+      addSeed('Dark Muted', palette.darkMutedColor?.color);
+
+      final sortedByPop = List<PaletteColor>.from(palette.paletteColors)
+        ..sort((a, b) => b.population.compareTo(a.population));
+
+      int accentCount = 1;
+      for (final pc in sortedByPop) {
+        if (seeds.length >= 10) break;
+        final argb = pc.color.toARGB32();
+        if (!seenArgb.contains(argb)) {
+          final isTooClose = seeds.any(
+            (s) => _colorDistance(s.color, pc.color) < 28.0,
+          );
+          if (!isTooClose) {
+            seenArgb.add(argb);
+            seeds.add(
+              WallpaperPaletteSeed(
+                label: 'Accent $accentCount',
+                color: pc.color,
+              ),
+            );
+            accentCount++;
+          }
+        }
+      }
+
+      return seeds.take(10).toList();
+    } catch (e) {
+      debugPrint('Error extracting palette seeds: $e');
+      return [];
+    }
+  }
+
+  static double _colorDistance(Color c1, Color c2) {
+    final r = ((c1.r * 255.0) - (c2.r * 255.0));
+    final g = ((c1.g * 255.0) - (c2.g * 255.0));
+    final b = ((c1.b * 255.0) - (c2.b * 255.0));
+    return math.sqrt((r * r) + (g * g) + (b * b));
   }
 }

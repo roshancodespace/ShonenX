@@ -593,6 +593,87 @@ class ThemePrefsNotifier extends Notifier<ThemePrefsState> {
     );
   }
 
+  void setStandardScheme(FlexScheme scheme) {
+    updateTheme(
+      (p) => p.copyWith(
+        flexScheme: scheme,
+        clearExclusiveScheme: true,
+        clearColorSeed: true,
+        clearPrimaryColor: true,
+        clearSecondaryColor: true,
+        clearTertiaryColor: true,
+        clearSurfaceColor: true,
+        useImageColors: false,
+        useDynamic: false,
+      ),
+    );
+  }
+
+  void setExclusiveScheme(String key) {
+    updateTheme(
+      (p) => p.copyWith(
+        exclusiveScheme: key,
+        clearColorSeed: true,
+        clearPrimaryColor: true,
+        clearSecondaryColor: true,
+        clearTertiaryColor: true,
+        clearSurfaceColor: true,
+        useImageColors: false,
+        useDynamic: false,
+      ),
+    );
+  }
+
+  void setWallpaperColorSeed(int seedArgb) {
+    updateTheme(
+      (p) => p.copyWith(
+        wallpaperSettings:
+            (p.wallpaperSettings ??
+                    WallpaperSettings(
+                      imagePath: p.customBackgroundImagePath ?? '',
+                    ))
+                .copyWith(imageColorSeed: seedArgb),
+        useImageColors: true,
+        clearExclusiveScheme: true,
+        clearColorSeed: true,
+        clearPrimaryColor: true,
+        clearSecondaryColor: true,
+        clearTertiaryColor: true,
+        clearSurfaceColor: true,
+        useDynamic: false,
+      ),
+    );
+  }
+
+  void setCustomColorSeed(int seedArgb) {
+    updateTheme(
+      (p) => p.copyWith(
+        colorSeed: seedArgb,
+        clearExclusiveScheme: true,
+        clearPrimaryColor: true,
+        clearSecondaryColor: true,
+        clearTertiaryColor: true,
+        clearSurfaceColor: true,
+        useImageColors: false,
+        useDynamic: false,
+      ),
+    );
+  }
+
+  void setDynamicColors(bool enable) {
+    updateTheme(
+      (p) => p.copyWith(
+        useDynamic: enable,
+        clearExclusiveScheme: enable,
+        useImageColors: enable ? false : p.useImageColors,
+      ),
+    );
+  }
+
+  void resetToDefaults() {
+    updateTheme((_) => const ThemePrefsState());
+  }
+
   void _saveDb() {
     final prefs = ref.read(sharedPreferencesProvider);
     prefs.setString(_themeDataKey, state.toJson());

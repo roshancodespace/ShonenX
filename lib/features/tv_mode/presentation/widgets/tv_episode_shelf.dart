@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 import 'package:shonenx/core/router/app_navigator.dart';
 import 'package:shonenx/core/utils/formatting.dart';
 import 'package:shonenx/features/discovery/domain/media_args.dart';
@@ -19,7 +20,6 @@ import 'package:shonenx/features/tv_mode/presentation/widgets/tv_source_dialog.d
 import 'package:shonenx/shared/models/ui_style_enums.dart';
 import 'package:shonenx/shared/models/unified_episode.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
-import 'package:shonenx/features/episode_metadata/providers/episode_metadata_providers.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
 
 class _EpisodeChunk {
@@ -586,34 +586,77 @@ class _TvEpisodeShelfState extends ConsumerState<TvEpisodeShelf> {
   }
 
   Widget _buildLoadingState(ColorScheme cs) {
-    final progressMsg = ref.watch(episodeMetadataProgressProvider).value;
-    return SizedBox(
-      height: 190,
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox(
-              width: 32,
-              height: 32,
-              child: CircularProgressIndicator(
-                strokeWidth: 2.5,
-                valueColor: AlwaysStoppedAnimation<Color>(cs.primary),
+    return Skeletonizer(
+      enabled: true,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 140,
+                height: 22,
+                decoration: BoxDecoration(
+                  color: Colors.white12,
+                  borderRadius: BorderRadius.circular(6),
+                ),
               ),
-            ),
-            if (progressMsg != null && progressMsg.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Text(
-                progressMsg,
-                style: TextStyle(
-                  color: cs.onSurface.withValues(alpha: 0.7),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
+              const Spacer(),
+              Container(
+                width: 80,
+                height: 22,
+                decoration: BoxDecoration(
+                  color: Colors.white12,
+                  borderRadius: BorderRadius.circular(6),
                 ),
               ),
             ],
-          ],
-        ),
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            height: 190,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: 6,
+              separatorBuilder: (_, __) => const SizedBox(width: 16),
+              itemBuilder: (context, index) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 220,
+                      height: 124,
+                      decoration: BoxDecoration(
+                        color: Colors.white12,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      width: 160,
+                      height: 14,
+                      decoration: BoxDecoration(
+                        color: Colors.white12,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Container(
+                      width: 90,
+                      height: 11,
+                      decoration: BoxDecoration(
+                        color: Colors.white12,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

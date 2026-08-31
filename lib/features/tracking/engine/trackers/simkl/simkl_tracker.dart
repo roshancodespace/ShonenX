@@ -297,7 +297,7 @@ class SimklTracker extends BaseTracker
         list = jsonResponse;
       }
 
-      return list
+      final entries = list
           .whereType<Map>()
           .map((item) {
             final inner =
@@ -315,18 +315,36 @@ class SimklTracker extends BaseTracker
                 ? 'https://simkl.in/posters/${poster}_m.webp'
                 : '';
 
+            final lastWatchedStr =
+                item['last_watched_at']?.toString() ??
+                item['updated_at']?.toString();
+            final updatedAt = lastWatchedStr != null
+                ? DateTime.tryParse(lastWatchedStr) ?? DateTime.now()
+                : DateTime.now();
+
+            final rating = (item['user_rating'] as num?)?.toDouble();
+            final watchedEp =
+                (item['watched_episodes_count'] as num?)?.toInt() ?? 0;
+
             return LibraryEntry()
               ..providerId = id
               ..type = mediaType.id
               ..title = inner['title'] ?? 'Unknown'
               ..cover = coverUrl
+              ..banner = coverUrl
               ..status = status.id
+              ..score = rating != null && rating > 0 ? rating : null
+              ..episodesWatched = watchedEp
               ..episodes = inner['total_episodes']
+              ..updatedAt = updatedAt
               ..sourceType = 'tracker'
               ..sourceId = 'simkl';
           })
           .whereType<LibraryEntry>()
           .toList();
+
+      entries.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+      return entries;
     });
   }
 

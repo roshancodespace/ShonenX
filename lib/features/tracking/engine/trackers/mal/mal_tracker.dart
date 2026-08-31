@@ -291,7 +291,9 @@ class MalTracker extends BaseTracker with MalMetadata implements RemoteTracker {
             'status': _toMalStatus(status, mediaType),
             'limit': limit.toString(),
             'offset': offset.toString(),
-            'fields': 'list_status,$totalCountKey,mean,main_picture',
+            'sort': 'list_updated_at',
+            'fields':
+                'list_status,$totalCountKey,mean,main_picture,synopsis,genres,start_season',
           },
           headers: {'Authorization': 'Bearer $token'},
         );
@@ -305,20 +307,38 @@ class MalTracker extends BaseTracker with MalMetadata implements RemoteTracker {
           final node = item['node'];
           final listStatus = item['list_status'];
 
-          final rawScore = (listStatus?['score'] as num?)?.toInt() ?? 0;
+          final rawScore = (listStatus?['score'] as num?)?.toDouble() ?? 0.0;
+          final meanScore = (node['mean'] as num?)?.toDouble();
+          final effectiveScore = rawScore > 0 ? rawScore : meanScore;
+
+          final rawGenres = node['genres'] as List?;
+          final genres = rawGenres
+              ?.map((g) => g['name']?.toString() ?? '')
+              .where((g) => g.isNotEmpty)
+              .toList();
+
+          final startSeason = node['start_season'] as Map?;
+          final year = startSeason?['year'] as int?;
+
+          final coverUrl =
+              node['main_picture']?['large'] ??
+              node['main_picture']?['medium'] ??
+              '';
 
           return LibraryEntry()
             ..providerId = node['id']?.toString() ?? ''
             ..type = mediaType.id
             ..title = node['title'] ?? 'Unknown'
-            ..cover =
-                node['main_picture']?['large'] ??
-                node['main_picture']?['medium'] ??
-                ''
+            ..cover = coverUrl
+            ..banner = coverUrl
+            ..description = node['synopsis']?.toString()
+            ..genres = genres
+            ..year = year
             ..status = _parseMalStatus(listStatus?['status']).id
-            ..score = rawScore > 0 ? rawScore.toDouble() : 0
+            ..score = effectiveScore
             ..episodesWatched = (listStatus?[progressKey] as num?)?.toInt() ?? 0
             ..episodes = node[totalCountKey]
+            ..externalIds = MediaExternalIds(mal: node['id']?.toString())
             ..sourceType = 'tracker'
             ..sourceId = 'mal';
         }).toList();

@@ -327,6 +327,15 @@ class AnilistTracker extends BaseTracker
 
               if (media == null) return null;
 
+              final userScore = (entry['score'] as num?)?.toDouble() ?? 0.0;
+              final avgScore = (media['averageScore'] as num?)?.toDouble();
+              final effectiveScore = userScore > 0
+                  ? userScore
+                  : (avgScore != null && avgScore > 0 ? avgScore / 10.0 : null);
+
+              final rawGenres = media['genres'] as List?;
+              final genres = rawGenres?.map((g) => g.toString()).toList();
+
               return LibraryEntry()
                 ..providerId = media['id']?.toString() ?? ''
                 ..type = mediaType.id
@@ -336,8 +345,18 @@ class AnilistTracker extends BaseTracker
                     'Unknown'
                 ..format = media['format']?.toString() ?? ''
                 ..cover = media['coverImage']?['large'] ?? ''
+                ..banner = media['bannerImage']?.toString()
+                ..description = media['description']?.toString()
+                ..genres = genres
+                ..year = media['seasonYear'] as int?
                 ..status = _parseAnilistStatus(media['status']).id
-                ..episodes = media['episodes']
+                ..score = effectiveScore
+                ..episodesWatched = (entry['progress'] as num?)?.toInt() ?? 0
+                ..episodes = (media['episodes'] ?? media['chapters']) as int?
+                ..externalIds = MediaExternalIds(
+                  mal: media['idMal']?.toString(),
+                  anilist: media['id']?.toString(),
+                )
                 ..sourceType = 'tracker'
                 ..sourceId = 'anilist';
             })

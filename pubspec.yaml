@@ -86,6 +86,7 @@ dependencies:
   flutter_discord_rpc: ^1.1.0
   rhttp: ^0.18.0
   flutter_rust_bridge: ^2.12.0
+  intl: ^0.20.3
 
 dependency_overrides:
   flutter_inappwebview:

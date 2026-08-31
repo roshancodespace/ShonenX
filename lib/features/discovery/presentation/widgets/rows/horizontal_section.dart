@@ -34,7 +34,7 @@ class HorizontalSection<T> extends StatelessWidget {
     this.emptyWidget,
     this.onMoreTap,
     this.skeletonItemBuilder,
-    this.skeletonCount = 6,
+    this.skeletonCount = 10,
     this.controller,
     this.headerPadding,
     this.listPadding,
@@ -97,6 +97,7 @@ class HorizontalSection<T> extends StatelessWidget {
               enabled: true,
               child: ListView.separated(
                 controller: controller,
+                physics: const BouncingScrollPhysics(),
                 clipBehavior: Clip.none,
                 scrollDirection: Axis.horizontal,
                 padding:
@@ -139,6 +140,7 @@ class HorizontalSection<T> extends StatelessWidget {
                 ).copyWith(scrollbars: false),
                 child: ListView.separated(
                   controller: controller,
+                  physics: const BouncingScrollPhysics(),
                   clipBehavior: Clip.none,
                   scrollDirection: Axis.horizontal,
                   padding:

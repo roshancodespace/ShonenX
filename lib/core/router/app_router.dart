@@ -10,6 +10,7 @@ import 'package:shonenx/features/onboarding/presentation/onboarding_screen.dart'
 import 'package:shonenx/features/discovery/presentation/home_screen.dart';
 import 'package:shonenx/features/settings/presentation/discord_settings_screen.dart';
 import 'package:shonenx/features/splash/presentation/splash_screen.dart';
+import 'package:shonenx/features/calendar/presentation/calendar_screen.dart';
 import 'package:shonenx/features/discovery/presentation/filtered_discover_screen.dart';
 import 'package:shonenx/features/discovery/presentation/discover_screen.dart';
 import 'package:shonenx/features/downloads/presentation/downloads_screen.dart';
@@ -291,6 +292,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           final mode = state.extra as ReaderModeOnline;
           return ReaderScreen(key: ValueKey(mode.episode.id), mode: mode);
         },
+      ),
+      GoRoute(
+        path: '/calendar',
+        builder: (context, state) => const CalendarScreen(),
       ),
       GoRoute(
         path: '/settings',

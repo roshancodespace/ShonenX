@@ -237,6 +237,12 @@ class HomeScreen extends ConsumerWidget {
             ),
             const SizedBox(width: 8),
             _HeaderButton(
+              tooltip: 'Airing Calendar',
+              onTap: () => context.pushCalendar(),
+              icon: Icons.calendar_month_outlined,
+            ),
+            const SizedBox(width: 8),
+            _HeaderButton(
               tooltip: 'Settings',
               onTap: () => context.pushSettings(),
               icon: Icons.settings_outlined,

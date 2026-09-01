@@ -244,7 +244,7 @@ mixin TraktMetadata on BaseTracker implements RemoteTracker {
         description: show['overview'] as String?,
         year: show['year'] as int?,
         genres: (show['genres'] as List<dynamic>?)?.cast<String>() ?? [],
-        episodes: episodesList,
+        episodes: episodesList.isNotEmpty ? episodesList.length : null,
         externalIds: MediaExternalIds(
           mal: ids['mal']?.toString(),
           anilist: ids['anilist']?.toString(),

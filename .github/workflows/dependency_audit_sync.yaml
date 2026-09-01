@@ -54,28 +54,35 @@ jobs:
       - name: Initialize Git Submodules & Bridge Dependencies
         run: |
           echo "Initializing and updating submodules..."
-          git submodule update --init --recursive packages/anymex_extension_bridge || true
-          git submodule update --init --recursive packages/commentum_client || true
+          git submodule update --init --recursive packages/anymex_extension_bridge || echo "anymex_extension_bridge failed to clone"
+          git submodule update --init --recursive packages/commentum_client || echo "commentum_client failed to clone"
+          git submodule update --init --recursive lib/source_engine/inbuilt_sources || echo "inbuilt_sources submodule unavailable (private/fork upstream). Continuing with fallback..."
 
       - name: Check Submodule & Rust Bridge Health
         id: submodule_check
         run: |
-          echo "### 🔍 Submodule Alignment" >> report.md
-          
-          BRIDGE_PATH="packages/anymex_extension_bridge"
-          COMMENTUM_PATH="packages/commentum_client"
-          
-          STATUS="OK"
-          if [ ! -d "$BRIDGE_PATH" ] || [ ! -f "$BRIDGE_PATH/pubspec.yaml" ]; then
-            STATUS="WARNING: anymex_extension_bridge not found or missing pubspec.yaml"
-          fi
-          
-          if [ ! -d "$COMMENTUM_PATH" ] || [ ! -f "$COMMENTUM_PATH/pubspec.yaml" ]; then
-            STATUS="WARNING: commentum_client not found or missing pubspec.yaml"
-          fi
-          
-          echo "- **Extension Bridge Status**: $STATUS" >> report.md
-          echo "submodule_status=$STATUS" >> "$GITHUB_OUTPUT"
+          echo "### 🔍 Submodule Alignment & Availability" >> report.md
+          echo "| Submodule | Path | Status |" >> report.md
+          echo "|---|---|---|" >> report.md
+
+          check_submodule() {
+            local name="$1"
+            local path="$2"
+            local required="$3"
+            if [ -d "$path" ] && [ "$(ls -A "$path" 2>/dev/null)" ]; then
+              echo "| **$name** | \`$path\` | 🟢 Connected & Synced |" >> report.md
+            else
+              if [ "$required" = "true" ]; then
+                echo "| **$name** | \`$path\` | 🔴 Missing |" >> report.md
+              else
+                echo "| **$name** | \`$path\` | 🟡 Unavailable on Fork (Upstream Private) |" >> report.md
+              fi
+            fi
+          }
+
+          check_submodule "Extension Bridge" "packages/anymex_extension_bridge" "true"
+          check_submodule "Commentum Client" "packages/commentum_client" "true"
+          check_submodule "Inbuilt Sources" "lib/source_engine/inbuilt_sources" "false"
 
       - name: Audit Git Dependencies (MediaKit & Webview Forks)
         id: git_deps_check

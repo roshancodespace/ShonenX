@@ -132,8 +132,9 @@ jobs:
 
       - name: Init specific submodules
         run: |
-          git submodule update --init packages/anymex_extension_bridge
-          git submodule update --init packages/commentum_client
+          git submodule update --init packages/anymex_extension_bridge || true
+          git submodule update --init packages/commentum_client || true
+          git submodule update --init lib/source_engine/inbuilt_sources || echo "inbuilt_sources submodule unavailable (private/fork upstream). Continuing..."
 
       - name: Override pubspec.yaml version
         if: github.event_name == 'workflow_dispatch'
@@ -262,8 +263,9 @@ jobs:
 
       - name: Init specific submodules
         run: |
-          git submodule update --init packages/anymex_extension_bridge
-          git submodule update --init packages/commentum_client
+          git submodule update --init packages/anymex_extension_bridge || true
+          git submodule update --init packages/commentum_client || true
+          git submodule update --init lib/source_engine/inbuilt_sources || echo "inbuilt_sources submodule unavailable (private/fork upstream). Continuing..."
 
       - name: Override pubspec.yaml version
         if: github.event_name == 'workflow_dispatch'
@@ -336,8 +338,9 @@ jobs:
 
       - name: Init specific submodules
         run: |
-          git submodule update --init packages/anymex_extension_bridge
-          git submodule update --init packages/commentum_client
+          git submodule update --init packages/anymex_extension_bridge || true
+          git submodule update --init packages/commentum_client || true
+          git submodule update --init lib/source_engine/inbuilt_sources || echo "inbuilt_sources submodule unavailable (private/fork upstream). Continuing..."
 
       - name: Override pubspec.yaml version
         if: github.event_name == 'workflow_dispatch'

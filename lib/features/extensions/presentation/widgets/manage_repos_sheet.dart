@@ -588,7 +588,7 @@ class _ManageReposSheetState extends ConsumerState<ManageReposSheet> {
               ),
               icon: const Icon(Icons.auto_awesome_rounded, size: 18),
               label: const Text(
-                'Import ShonenX Master Repos (1-Click)',
+                'Import Ronin API',
                 style: TextStyle(fontWeight: FontWeight.w600),
               ),
             ),

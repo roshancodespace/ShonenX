@@ -1,6 +1,3 @@
-[submodule "lib/source_engine/inbuilt_sources"]
-	path = lib/source_engine/inbuilt_sources
-	url = https://github.com/roshancodespace/shonenx-sources.git
 [submodule "packages/anymex_extension_bridge"]
 	path = packages/anymex_extension_bridge
 	url = https://github.com/roshancodespace/AnymeXExtensionRuntimeBridge

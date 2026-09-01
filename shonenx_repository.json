@@ -1,0 +1,304 @@
+{
+  "name": "ShonenX Ultimate Universal Repository",
+  "author": "Zcross091",
+  "version": "1.0.0",
+  "description": "Comprehensive curated repository containing providers for Anime, Donghua, Movies, TV Shows, Manga, Manhwa, Manhua, and Light Novels.",
+  "manifestVersion": 1,
+  "iconUrl": "https://raw.githubusercontent.com/Zcross091/ShonenX/main/assets/icons/app_icon.png",
+  "supportedEngines": [
+    "cloudstream",
+    "mangayomi",
+    "aniyomi",
+    "kotatsu",
+    "keiyoushi"
+  ],
+  "categories": {
+    "anime": [
+      {
+        "name": "HiAnime / Zoro",
+        "lang": "en",
+        "baseUrl": "https://hianime.to",
+        "type": "anime",
+        "status": "active",
+        "quality": ["1080p", "720p", "480p", "360p"],
+        "features": ["Sub", "Dub", "Auto-Skip", "Multi-Server"]
+      },
+      {
+        "name": "Gogoanime / Anitaku",
+        "lang": "en",
+        "baseUrl": "https://anitaku.to",
+        "type": "anime",
+        "status": "active",
+        "quality": ["1080p", "720p", "480p"],
+        "features": ["Sub", "Dub", "Fast Releases"]
+      },
+      {
+        "name": "AnimePahe",
+        "lang": "en",
+        "baseUrl": "https://animepahe.ru",
+        "type": "anime",
+        "status": "active",
+        "quality": ["1080p", "720p"],
+        "features": ["Small Size", "High Efficiency", "Sub", "Dub"]
+      },
+      {
+        "name": "YugenAnime",
+        "lang": "en",
+        "baseUrl": "https://yugenanime.tv",
+        "type": "anime",
+        "status": "active",
+        "quality": ["1080p", "720p"],
+        "features": ["Sub", "Dub", "Schedule"]
+      },
+      {
+        "name": "KickAssAnime",
+        "lang": "en",
+        "baseUrl": "https://kaas.to",
+        "type": "anime",
+        "status": "active",
+        "quality": ["1080p", "720p"],
+        "features": ["Hardsub", "Softsub", "Dub", "Multiple Mirrors"]
+      },
+      {
+        "name": "AnimeDex",
+        "lang": "en",
+        "baseUrl": "https://animedex.live",
+        "type": "anime",
+        "status": "active",
+        "quality": ["1080p", "720p"],
+        "features": ["Zero Ads", "Fast Stream"]
+      },
+      {
+        "name": "LuciferDonghua",
+        "lang": "en",
+        "baseUrl": "https://luciferdonghua.org",
+        "type": "donghua",
+        "status": "active",
+        "quality": ["1080p", "720p"],
+        "features": ["Chinese 3D/2D Anime", "English Sub"]
+      }
+    ],
+    "movies_and_tv": [
+      {
+        "name": "FlixHQ",
+        "lang": "en",
+        "baseUrl": "https://flixhq.to",
+        "type": "tv_movie",
+        "status": "active",
+        "quality": ["4K", "1080p", "720p"],
+        "features": ["Multi-subtitles", "Up-to-date Movies & TV"]
+      },
+      {
+        "name": "SuperStream",
+        "lang": "en",
+        "baseUrl": "https://superstream.media",
+        "type": "tv_movie",
+        "status": "active",
+        "quality": ["4K", "1080p"],
+        "features": ["Ultra Fast CDN", "VIP Streams"]
+      },
+      {
+        "name": "SFlix",
+        "lang": "en",
+        "baseUrl": "https://sflix.to",
+        "type": "tv_movie",
+        "status": "active",
+        "quality": ["1080p", "720p"],
+        "features": ["Popular Series", "HD Releases"]
+      },
+      {
+        "name": "VidSrc / TwoEmbed",
+        "lang": "en",
+        "baseUrl": "https://vidsrc.to",
+        "type": "tv_movie",
+        "status": "active",
+        "quality": ["1080p", "720p"],
+        "features": ["High Availability", "Direct Embeds"]
+      },
+      {
+        "name": "SmashyStream",
+        "lang": "en",
+        "baseUrl": "https://smashystream.xyz",
+        "type": "tv_movie",
+        "status": "active",
+        "quality": ["1080p", "720p"],
+        "features": ["Multiple Player Servers"]
+      },
+      {
+        "name": "LookMovie",
+        "lang": "en",
+        "baseUrl": "https://lookmovie2.to",
+        "type": "tv_movie",
+        "status": "active",
+        "quality": ["1080p", "720p"],
+        "features": ["Clean UI", "Low Buffer"]
+      }
+    ],
+    "manga_manhwa_manhua": [
+      {
+        "name": "MangaDex",
+        "lang": "all",
+        "baseUrl": "https://mangadex.org",
+        "type": "manga",
+        "status": "active",
+        "features": ["Scanlation Groups", "High Res Images", "Multi-Language"]
+      },
+      {
+        "name": "MangaSee / MangaLife",
+        "lang": "en",
+        "baseUrl": "https://mangasee123.com",
+        "type": "manga",
+        "status": "active",
+        "features": ["Official Rips", "High Quality Scans"]
+      },
+      {
+        "name": "Asura Scans",
+        "lang": "en",
+        "baseUrl": "https://asuracomic.net",
+        "type": "manhwa",
+        "status": "active",
+        "features": ["Top Korean Manhwa", "Fast Daily Translations"]
+      },
+      {
+        "name": "Flame Comics",
+        "lang": "en",
+        "baseUrl": "https://flamecomics.xyz",
+        "type": "manhwa",
+        "status": "active",
+        "features": ["Action & Cultivation Manhwa/Manhua"]
+      },
+      {
+        "name": "Reaper Scans",
+        "lang": "en",
+        "baseUrl": "https://reaperscans.com",
+        "type": "manhwa",
+        "status": "active",
+        "features": ["Exclusive Manhwa & Novels"]
+      },
+      {
+        "name": "MangaReader",
+        "lang": "en",
+        "baseUrl": "https://mangareader.to",
+        "type": "manga",
+        "status": "active",
+        "features": ["Color & Manga Editions", "Fast Load"]
+      },
+      {
+        "name": "MangaKakalot / Manganato",
+        "lang": "en",
+        "baseUrl": "https://manganato.com",
+        "type": "manga",
+        "status": "active",
+        "features": ["Huge Catalog", "Old & New Series"]
+      },
+      {
+        "name": "Webtoons Official",
+        "lang": "en",
+        "baseUrl": "https://www.webtoons.com",
+        "type": "webtoon",
+        "status": "active",
+        "features": ["Original Webcomics", "HQ Long-strip"]
+      },
+      {
+        "name": "Bato.to",
+        "lang": "all",
+        "baseUrl": "https://bato.to",
+        "type": "manga_manhwa",
+        "status": "active",
+        "features": ["Community Uploads", "Manhwa & Romance"]
+      },
+      {
+        "name": "ManhuaUS",
+        "lang": "en",
+        "baseUrl": "https://manhuaus.com",
+        "type": "manhua",
+        "status": "active",
+        "features": ["Chinese Cultivation Manhua", "Action"]
+      }
+    ],
+    "novels": [
+      {
+        "name": "NovelFull",
+        "lang": "en",
+        "baseUrl": "https://novelfull.com",
+        "type": "novel",
+        "status": "active",
+        "features": ["Light Novels", "Web Novels", "Complete Chapters"]
+      },
+      {
+        "name": "ReadLightNovel",
+        "lang": "en",
+        "baseUrl": "https://www.readlightnovel.me",
+        "type": "novel",
+        "status": "active",
+        "features": ["Japanese & Korean Translated Novels"]
+      },
+      {
+        "name": "Royal Road",
+        "lang": "en",
+        "baseUrl": "https://www.royalroad.com",
+        "type": "novel",
+        "status": "active",
+        "features": ["Original Web Fiction", "Progression Fantasy", "LitRPG"]
+      },
+      {
+        "name": "WuxiaWorld",
+        "lang": "en",
+        "baseUrl": "https://www.wuxiaworld.com",
+        "type": "novel",
+        "status": "active",
+        "features": ["High Quality Cultivation & Xianxia Novels"]
+      }
+    ]
+  },
+  "bundledRepositories": [
+    {
+      "name": "CloudStream Mega Repo (Hexated)",
+      "engine": "cloudstream",
+      "url": "https://raw.githubusercontent.com/hexated/cloudstream-extensions-hexated/master/repo.json",
+      "types": ["anime", "movies", "tv", "cartoons"]
+    },
+    {
+      "name": "CloudStream Multi (Rowdy5056 / Sora)",
+      "engine": "cloudstream",
+      "url": "https://raw.githubusercontent.com/Rowdy5056/Cloudstream-Extensions/master/repo.json",
+      "types": ["anime", "movies", "tv"]
+    },
+    {
+      "name": "CloudStream Storm Multi-Extensions",
+      "engine": "cloudstream",
+      "url": "https://raw.githubusercontent.com/LikDev-25/Storm-CloudStream-Extensions/master/repo.json",
+      "types": ["anime", "movies", "tv", "asian_drama"]
+    },
+    {
+      "name": "CloudStream Indo & Multi (HatsuneMikuUwU)",
+      "engine": "cloudstream",
+      "url": "https://raw.githubusercontent.com/HatsuneMikuUwU/cloudstream-extensions-uwu/master/repo.json",
+      "types": ["anime", "donghua", "movies", "tv"]
+    },
+    {
+      "name": "Mangayomi Official Extensions (Anime, Manga, Novels)",
+      "engine": "mangayomi",
+      "url": "https://raw.githubusercontent.com/kodjodevf/mangayomi-extensions/main/index.json",
+      "types": ["anime", "manga", "manhwa", "manhua", "novel"]
+    },
+    {
+      "name": "Aniyomi Official Anime Extensions",
+      "engine": "aniyomi",
+      "url": "https://raw.githubusercontent.com/aniyomiorg/aniyomi-extensions/repo/index.min.json",
+      "types": ["anime"]
+    },
+    {
+      "name": "Keiyoushi Manga Extensions (Mihon / Tachiyomi)",
+      "engine": "aniyomi",
+      "url": "https://raw.githubusercontent.com/keiyoushi/extensions/repo/index.min.json",
+      "types": ["manga", "manhwa", "manhua", "webtoons"]
+    },
+    {
+      "name": "Kotatsu Parsers (Manga, Manhwa, Comics)",
+      "engine": "kotatsu",
+      "url": "https://raw.githubusercontent.com/KotatsuApp/kotatsu-parsers/master/parsers_list.json",
+      "types": ["manga", "manhwa", "manhua"]
+    }
+  ]
+}

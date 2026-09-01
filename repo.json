@@ -1,0 +1,12 @@
+{
+  "name": "ShonenX Master Multi-Provider Repository",
+  "iconUrl": "https://raw.githubusercontent.com/Zcross091/ShonenX/main/assets/icons/app_icon.png",
+  "description": "The ultimate aggregated repository for ShonenX containing hundreds of sources for Anime, Movies, TV Series, Donghua, Asian Drama, Manga, Manhwa, Manhua, and Light Novels.",
+  "manifestVersion": 1,
+  "pluginLists": [
+    "https://raw.githubusercontent.com/hexated/cloudstream-extensions-hexated/master/repo.json",
+    "https://raw.githubusercontent.com/Rowdy5056/Cloudstream-Extensions/master/repo.json",
+    "https://raw.githubusercontent.com/LikDev-25/Storm-CloudStream-Extensions/master/repo.json",
+    "https://raw.githubusercontent.com/HatsuneMikuUwU/cloudstream-extensions-uwu/master/repo.json"
+  ]
+}

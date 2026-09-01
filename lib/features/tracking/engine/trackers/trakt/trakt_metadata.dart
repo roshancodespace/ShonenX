@@ -1,16 +1,12 @@
 import 'dart:convert';
 import 'package:shonenx/core/network/http_client.dart';
-import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/discovery/domain/models/search_filter_options.dart';
-import 'package:shonenx/features/tracking/domain/models/tracked_list_item.dart';
-import 'package:shonenx/features/tracking/domain/models/tracked_status.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_category.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_credentials.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_filter_options.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_profile.dart';
 import 'package:shonenx/features/tracking/engine/base_tracker.dart';
 import 'package:shonenx/features/tracking/engine/remote_tracker.dart';
-import 'package:shonenx/shared/models/media_title.dart';
 import 'package:shonenx/shared/models/unified_episode.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/providers/content_prefs_provider.dart';
@@ -107,11 +103,11 @@ mixin TraktMetadata on BaseTracker implements RemoteTracker {
             sourceId: 'trakt',
             providerId: 'trakt',
             type: type,
-            title: MediaTitle(english: title, romaji: title, userPreferred: title),
+            title: MediaTitle(english: title, romaji: title),
             description: show['overview'] as String?,
             year: show['year'] as int?,
-            genres: (show['genres'] as List<dynamic>?)?.cast<String>(),
-            externalIds: ExternalIds(
+            genres: (show['genres'] as List<dynamic>?)?.cast<String>() ?? [],
+            externalIds: MediaExternalIds(
               mal: ids['mal']?.toString(),
               anilist: ids['anilist']?.toString(),
             ),
@@ -121,6 +117,22 @@ mixin TraktMetadata on BaseTracker implements RemoteTracker {
 
       return PaginatedResult(items: items, hasNextPage: items.length >= 25);
     });
+  }
+
+  @override
+  Future<PaginatedResult<UnifiedMedia>> getTrending({
+    int page = 1,
+    MediaType type = MediaType.ANIME,
+    Duration? cacheDuration,
+    AdultContentMode adultMode = AdultContentMode.safe,
+  }) {
+    return getCategoryItems(
+      TrackerCategory.trending,
+      page: page,
+      type: type,
+      cacheDuration: cacheDuration,
+      adultMode: adultMode,
+    );
   }
 
   @override
@@ -163,11 +175,11 @@ mixin TraktMetadata on BaseTracker implements RemoteTracker {
             sourceId: 'trakt',
             providerId: 'trakt',
             type: type,
-            title: MediaTitle(english: title, romaji: title, userPreferred: title),
+            title: MediaTitle(english: title, romaji: title),
             description: show['overview'] as String?,
             year: show['year'] as int?,
-            genres: (show['genres'] as List<dynamic>?)?.cast<String>(),
-            externalIds: ExternalIds(
+            genres: (show['genres'] as List<dynamic>?)?.cast<String>() ?? [],
+            externalIds: MediaExternalIds(
               mal: ids['mal']?.toString(),
               anilist: ids['anilist']?.toString(),
             ),
@@ -215,8 +227,7 @@ mixin TraktMetadata on BaseTracker implements RemoteTracker {
                   id: '${providerId}_s${sNum}_e$eNum',
                   number: eNum.toDouble(),
                   title: ep['title'] as String? ?? 'Episode $eNum',
-                  overview: ep['overview'] as String?,
-                  seasonNumber: sNum,
+                  season: sNum,
                 ),
               );
             }
@@ -229,19 +240,30 @@ mixin TraktMetadata on BaseTracker implements RemoteTracker {
         sourceId: 'trakt',
         providerId: 'trakt',
         type: type,
-        title: MediaTitle(english: title, romaji: title, userPreferred: title),
+        title: MediaTitle(english: title, romaji: title),
         description: show['overview'] as String?,
         year: show['year'] as int?,
-        genres: (show['genres'] as List<dynamic>?)?.cast<String>(),
+        genres: (show['genres'] as List<dynamic>?)?.cast<String>() ?? [],
         episodes: episodesList,
-        totalEpisodes: episodesList.isNotEmpty ? episodesList.length : null,
-        externalIds: ExternalIds(
+        externalIds: MediaExternalIds(
           mal: ids['mal']?.toString(),
           anilist: ids['anilist']?.toString(),
         ),
       );
     });
   }
+
+  @override
+  Future<PaginatedResult<MediaCharacter>> getCharacters(
+    String providerId, {
+    int page = 1,
+    int perPage = 25,
+    MediaType type = MediaType.ANIME,
+  }) async =>
+      const PaginatedResult(items: [], hasNextPage: false);
+
+  @override
+  Future<MediaCharacter?> getCharacterDetails(String characterId) async => null;
 
   @override
   Future<TrackerFilterOptions> fetchFilterOptions([MediaType? type]) async =>

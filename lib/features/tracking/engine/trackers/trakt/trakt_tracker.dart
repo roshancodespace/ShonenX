@@ -7,7 +7,6 @@ import 'package:shonenx/features/library/domain/models/library_entry.dart';
 import 'package:shonenx/features/tracking/domain/models/tracked_list_item.dart';
 import 'package:shonenx/features/tracking/domain/models/tracked_status.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_credentials.dart';
-import 'package:shonenx/features/tracking/domain/models/tracker_profile.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
 import 'package:shonenx/features/tracking/engine/base_tracker.dart';
 import 'package:shonenx/features/tracking/engine/remote_tracker.dart';
@@ -72,8 +71,8 @@ class TraktTracker extends BaseTracker with TraktMetadata implements RemoteTrack
         .map(
           (m) => TrackerSearchResult(
             id: m.id,
-            title: m.title.availableTitle,
-            cover: m.posterImage,
+            title: m.title,
+            cover: m.cover,
           ),
         )
         .toList();
@@ -159,10 +158,9 @@ class TraktTracker extends BaseTracker with TraktMetadata implements RemoteTrack
         if (traktId == mediaId) {
           final watchedCount = (item['watched_episodes_count'] as num?)?.toDouble() ?? 1.0;
           return TrackedListItem(
-            trackingId: traktId ?? mediaId,
+            id: traktId ?? mediaId,
             status: TrackedStatus.watching,
-            progress: watchedCount.toInt(),
-            totalEpisodes: show['aired_episodes'] as int?,
+            progress: watchedCount,
           );
         }
       }

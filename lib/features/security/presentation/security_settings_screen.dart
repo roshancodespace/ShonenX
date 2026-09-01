@@ -25,98 +25,105 @@ class SecuritySettingsScreen extends ConsumerWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         children: [
           // App Lock Section
-          SettingsSectionHeader(title: 'App Protection'),
-          SettingsSwitchTile(
-            icon: Icons.lock_outline_rounded,
-            title: 'Native App Lock',
-            subtitle: securityPrefs.isLockEnabled
-                ? 'PIN lock is active'
-                : 'Protect ShonenX with a 4-digit PIN',
-            value: securityPrefs.isLockEnabled,
-            onChanged: (val) async {
-              if (val) {
-                // Open PIN creation screen
-                final success = await Navigator.of(context).push<bool>(
-                  MaterialPageRoute(
-                    builder: (_) => const AppLockScreen(mode: AppLockMode.setup),
-                  ),
-                );
-                if (success != true) {
-                  notifier.updatePrefs(securityPrefs.copyWith(isLockEnabled: false));
-                }
-              } else {
-                // Verify before disabling
-                final success = await Navigator.of(context).push<bool>(
-                  MaterialPageRoute(
-                    builder: (_) => const AppLockScreen(mode: AppLockMode.unlock),
-                  ),
-                );
-                if (success == true) {
-                  await notifier.removePin();
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('App Lock disabled.')),
+          SettingsSection(
+            title: 'App Protection',
+            children: [
+              SettingsSwitchTile(
+                icon: Icons.lock_outline_rounded,
+                title: 'Native App Lock',
+                subtitle: securityPrefs.isLockEnabled
+                    ? 'PIN lock is active'
+                    : 'Protect ShonenX with a 4-digit PIN',
+                value: securityPrefs.isLockEnabled,
+                onChanged: (val) async {
+                  if (val) {
+                    // Open PIN creation screen
+                    final success = await Navigator.of(context).push<bool>(
+                      MaterialPageRoute(
+                        builder: (_) => const AppLockScreen(mode: AppLockMode.setup),
+                      ),
                     );
+                    if (success != true) {
+                      notifier.updatePrefs(securityPrefs.copyWith(isLockEnabled: false));
+                    }
+                  } else {
+                    // Verify before disabling
+                    final success = await Navigator.of(context).push<bool>(
+                      MaterialPageRoute(
+                        builder: (_) => const AppLockScreen(mode: AppLockMode.unlock),
+                      ),
+                    );
+                    if (success == true) {
+                      await notifier.removePin();
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('App Lock disabled.')),
+                        );
+                      }
+                    }
                   }
-                }
-              }
-            },
+                },
+              ),
+              if (securityPrefs.isLockEnabled) ...[
+                SettingsActionTile(
+                  icon: Icons.password_rounded,
+                  title: 'Change PIN',
+                  subtitle: 'Update your 4-digit security PIN',
+                  onTap: () async {
+                    final verified = await Navigator.of(context).push<bool>(
+                      MaterialPageRoute(
+                        builder: (_) => const AppLockScreen(mode: AppLockMode.unlock),
+                      ),
+                    );
+                    if (verified == true && context.mounted) {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const AppLockScreen(mode: AppLockMode.setup),
+                        ),
+                      );
+                    }
+                  },
+                ),
+                SettingsActionTile(
+                  icon: Icons.timer_outlined,
+                  title: 'Auto-Lock Timeout',
+                  subtitle: _getTimeoutLabel(securityPrefs.autoLockDelaySeconds),
+                  onTap: () {
+                    _showTimeoutSelector(context, ref, securityPrefs);
+                  },
+                ),
+              ],
+            ],
           ),
-
-          if (securityPrefs.isLockEnabled) ...[
-            SettingsActionTile(
-              icon: Icons.password_rounded,
-              title: 'Change PIN',
-              subtitle: 'Update your 4-digit security PIN',
-              onTap: () async {
-                final verified = await Navigator.of(context).push<bool>(
-                  MaterialPageRoute(
-                    builder: (_) => const AppLockScreen(mode: AppLockMode.unlock),
-                  ),
-                );
-                if (verified == true && context.mounted) {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const AppLockScreen(mode: AppLockMode.setup),
-                    ),
-                  );
-                }
-              },
-            ),
-            SettingsActionTile(
-              icon: Icons.timer_outlined,
-              title: 'Auto-Lock Timeout',
-              subtitle: _getTimeoutLabel(securityPrefs.autoLockDelaySeconds),
-              onTap: () {
-                _showTimeoutSelector(context, ref, securityPrefs);
-              },
-            ),
-          ],
 
           const SizedBox(height: 16),
           // Privacy Section
-          SettingsSectionHeader(title: 'Privacy & History'),
-          SettingsSwitchTile(
-            icon: Icons.visibility_off_outlined,
-            title: 'Incognito Mode',
-            subtitle:
-                'Temporarily pause saving watch/read history and tracker synchronizations',
-            value: securityPrefs.incognitoMode,
-            onChanged: (val) {
-              notifier.toggleIncognito(val);
-              _showIncognitoSnackbar(context, val);
-            },
-          ),
-          SettingsSwitchTile(
-            icon: Icons.security_rounded,
-            title: 'Hide in App Switcher',
-            subtitle: 'Blur or hide app preview in recent applications view',
-            value: securityPrefs.hideContentInAppSwitcher,
-            onChanged: (val) {
-              notifier.updatePrefs(
-                securityPrefs.copyWith(hideContentInAppSwitcher: val),
-              );
-            },
+          SettingsSection(
+            title: 'Privacy & History',
+            children: [
+              SettingsSwitchTile(
+                icon: Icons.visibility_off_outlined,
+                title: 'Incognito Mode',
+                subtitle:
+                    'Temporarily pause saving watch/read history and tracker synchronizations',
+                value: securityPrefs.incognitoMode,
+                onChanged: (val) {
+                  notifier.toggleIncognito(val);
+                  _showIncognitoSnackbar(context, val);
+                },
+              ),
+              SettingsSwitchTile(
+                icon: Icons.security_rounded,
+                title: 'Hide in App Switcher',
+                subtitle: 'Blur or hide app preview in recent applications view',
+                value: securityPrefs.hideContentInAppSwitcher,
+                onChanged: (val) {
+                  notifier.updatePrefs(
+                    securityPrefs.copyWith(hideContentInAppSwitcher: val),
+                  );
+                },
+              ),
+            ],
           ),
 
           const SizedBox(height: 24),

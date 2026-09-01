@@ -571,6 +571,28 @@ class _ManageReposSheetState extends ConsumerState<ManageReposSheet> {
               ),
             ),
 
+            const SizedBox(height: 10),
+            OutlinedButton.icon(
+              onPressed: _isLoading
+                  ? null
+                  : () {
+                      _controller.text =
+                          'https://raw.githubusercontent.com/Zcross091/ShonenX/main/shonenx_repository.json';
+                      _addRepo();
+                    },
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              icon: const Icon(Icons.auto_awesome_rounded, size: 18),
+              label: const Text(
+                'Import ShonenX Master Repos (1-Click)',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+
             const SizedBox(height: 32),
 
             // ACTIVE REPOSITORIES SECTION

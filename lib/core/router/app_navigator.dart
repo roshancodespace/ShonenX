@@ -54,6 +54,7 @@ extension AppNavigator on BuildContext {
   void pushSettingsUpdates() => push('/settings/updates');
   void pushSettingsAbout() => push('/settings/about');
   void pushSettingsDiscord() => push('/settings/discord');
+  void pushSettingsSecurity() => push('/settings/security');
 
   // Details
   void pushDetails({

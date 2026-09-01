@@ -19,6 +19,7 @@ import 'package:shonenx/core/remote_config/ui/remote_config_listener.dart';
 import 'package:shonenx/core/theme/app_theme.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/discord/providers/discord_rpc_provider.dart';
+import 'package:shonenx/features/security/presentation/security_gate_wrapper.dart';
 import 'package:shonenx/shared/widgets/global_background.dart';
 
 final _log = AppLogger.scope('Main');
@@ -185,7 +186,9 @@ class ShonenXApp extends ConsumerWidget {
             );
 
             return RemoteConfigListener(
-              child: GlobalBackground(child: textScaledChild),
+              child: GlobalBackground(
+                child: SecurityGateWrapper(child: textScaledChild),
+              ),
             );
           },
         );

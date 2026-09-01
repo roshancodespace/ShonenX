@@ -48,6 +48,7 @@ class AppBottomSheet extends StatelessWidget {
       useSafeArea: useSafeArea,
       backgroundColor: Colors.transparent,
       constraints: BoxConstraints(
+        maxWidth: 600,
         maxHeight: MediaQuery.of(context).size.height * 0.88,
       ),
       sheetAnimationStyle: AnimationStyle(

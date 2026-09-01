@@ -372,62 +372,56 @@ class _EpisodesHeader extends ConsumerWidget {
     final availableSources =
         ref.read(media.type.availableSourcesProvider).value ?? [];
 
-    showModalBottomSheet(
+    AppBottomSheet.show(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (sheetContext) {
-        return AppBottomSheet(
-          title: 'Select Source',
-          child: SourceSelectorList(
-            availableSources: availableSources,
-            currentSource: currentSource,
-            mediaType: media.type,
-            onSourceSelected: (context, source) {
-              final matchArgs = MediaArgs(
-                mediaTitle: title,
-                type: media.type,
-                sourceId: media.sourceId,
+      title: 'Select Source',
+      child: SourceSelectorList(
+        availableSources: availableSources,
+        currentSource: currentSource,
+        mediaType: media.type,
+        onSourceSelected: (sheetContext, source) {
+          final matchArgs = MediaArgs(
+            mediaTitle: title,
+            type: media.type,
+            sourceId: media.sourceId,
+            providerId: media.id,
+          );
+          ref
+              .read(mediaPreferenceProvider(matchArgs).notifier)
+              .updateSource(source);
+          ref.invalidate(matchedMediaProvider(matchArgs));
+          ref.invalidate(episodesListProvider(matchArgs));
+          if (media.sourceId != null) {
+            ref.invalidate(
+              sourceEpisodesProvider((
                 providerId: media.id,
-              );
-              ref
-                  .read(mediaPreferenceProvider(matchArgs).notifier)
-                  .updateSource(source);
-              ref.invalidate(matchedMediaProvider(matchArgs));
-              ref.invalidate(episodesListProvider(matchArgs));
-              if (media.sourceId != null) {
-                ref.invalidate(
-                  sourceEpisodesProvider((
-                    providerId: media.id,
-                    sourceId: media.sourceId!,
-                    type: media.type,
-                  )),
-                );
-              }
-              Navigator.pop(sheetContext);
-            },
-            onSettingsClosed: () {
-              final matchArgs = MediaArgs(
-                mediaTitle: title,
+                sourceId: media.sourceId!,
                 type: media.type,
-                sourceId: media.sourceId,
+              )),
+            );
+          }
+          Navigator.pop(sheetContext);
+        },
+        onSettingsClosed: () {
+          final matchArgs = MediaArgs(
+            mediaTitle: title,
+            type: media.type,
+            sourceId: media.sourceId,
+            providerId: media.id,
+          );
+          ref.invalidate(matchedMediaProvider(matchArgs));
+          ref.invalidate(episodesListProvider(matchArgs));
+          if (media.sourceId != null) {
+            ref.invalidate(
+              sourceEpisodesProvider((
                 providerId: media.id,
-              );
-              ref.invalidate(matchedMediaProvider(matchArgs));
-              ref.invalidate(episodesListProvider(matchArgs));
-              if (media.sourceId != null) {
-                ref.invalidate(
-                  sourceEpisodesProvider((
-                    providerId: media.id,
-                    sourceId: media.sourceId!,
-                    type: media.type,
-                  )),
-                );
-              }
-            },
-          ),
-        );
-      },
+                sourceId: media.sourceId!,
+                type: media.type,
+              )),
+            );
+          }
+        },
+      ),
     );
   }
 }

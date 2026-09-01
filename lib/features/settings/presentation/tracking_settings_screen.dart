@@ -134,122 +134,8 @@ class _TrackingSettingsScreenState
             ],
           ),
           SettingsSection(
-            title: 'Privacy & Automation',
+            title: 'Automation',
             children: [
-              SettingsSwitchTile(
-                icon: Icons.visibility_off_outlined,
-                title: 'Incognito Mode',
-                subtitle: 'Pause all cloud syncing temporarily',
-                value: prefs.isIncognito,
-                onInfoCallback: () {
-                  final theme = Theme.of(context);
-                  final cs = theme.colorScheme;
-                  final textTheme = theme.textTheme;
-
-                  AppBottomSheet.show(
-                    context: context,
-                    title: 'Incognito Mode',
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: cs.surfaceContainer,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.visibility_off_outlined,
-                                color: cs.primary,
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  'Temporarily pause cloud tracking',
-                                  style: textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-
-                          const SizedBox(height: 16),
-
-                          Text(
-                            'Incognito Mode temporarily prevents ShonenX from updating your connected trackers while you browse, read, or watch.',
-                            style: textTheme.bodyMedium,
-                          ),
-
-                          const SizedBox(height: 20),
-
-                          Container(
-                            padding: const EdgeInsets.all(14),
-                            decoration: BoxDecoration(
-                              color: cs.secondaryContainer,
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.pause_circle_outline_rounded,
-                                  size: 24,
-                                  color: cs.onSecondaryContainer,
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    'Progress updates, status changes, and automatic tracking are paused until Incognito Mode is disabled.',
-                                    style: textTheme.bodyMedium?.copyWith(
-                                      color: cs.onSecondaryContainer,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          const SizedBox(height: 20),
-
-                          RichText(
-                            text: TextSpan(
-                              style: textTheme.bodyMedium?.copyWith(
-                                color: cs.onSurface,
-                              ),
-                              children: [
-                                const TextSpan(
-                                  text: 'Good for: ',
-                                  style: TextStyle(fontWeight: FontWeight.w700),
-                                ),
-                                TextSpan(
-                                  text:
-                                      'previewing content, testing sources, avoiding tracker spoilers, or keeping activity private temporarily.',
-                                  style: TextStyle(color: cs.onSurfaceVariant),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          const SizedBox(height: 12),
-
-                          Text(
-                            'Your tracker accounts remain connected. Syncing simply resumes when Incognito Mode is turned off.',
-                            style: textTheme.bodySmall?.copyWith(
-                              color: cs.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-                onChanged: (_) {
-                  ref.read(trackingPrefsProvider.notifier).toggleIncognito();
-                },
-              ),
               SettingsSwitchTile(
                 icon: Icons.auto_awesome_outlined,
                 title: 'Auto Track Primary',
@@ -470,13 +356,11 @@ class _TrackingSettingsScreenState
                             : theme.colorScheme.onPrimaryContainer,
                       ),
                     ),
-                    onTap: !prefs.isIncognito
-                        ? () {
-                            ref
-                                .read(trackingPrefsProvider.notifier)
-                                .setPrimaryTracker(tracker.type);
-                          }
-                        : null,
+                    onTap: () {
+                      ref
+                          .read(trackingPrefsProvider.notifier)
+                          .setPrimaryTracker(tracker.type);
+                    },
                     trailing: !isRemote || isLoggedIn
                         ? Row(
                             mainAxisSize: MainAxisSize.min,

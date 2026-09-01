@@ -11,8 +11,8 @@ import 'package:shonenx/features/tracking/engine/sync_engine.dart';
 import 'package:shonenx/shared/models/unified_episode.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/models/video_server.dart';
+import 'package:shonenx/shared/providers/security_prefs_provider.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
-
 
 // Holds current media info passed to ProgressTracker on each save tick.
 class ProgressContext {
@@ -109,6 +109,7 @@ class ProgressTracker {
     final sourceInfo = context.sourceInfo;
 
     if (activeServer == null || media == null) return;
+    if (_ref.read(securityPrefsProvider).incognitoMode) return;
 
     final engine = _ref.read(videoEngineProvider);
     final position = engine.currentPosition;

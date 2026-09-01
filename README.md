@@ -204,7 +204,9 @@ Contributions are welcome! Feel free to inspect the code, compile from source, o
 
 Thanks to everyone who has contributed to ShonenX!
 
-- **[Zcross091](https://github.com/Zcross091)** - Trakt.tv Integration, Native App Lock & Security, AniSkip Enhancements, Anime Season Navigator, Multiplatform CI/CD Automation & Dependency Sync.
+<a href="https://github.com/Zcross091">
+  <img src="https://github.com/Zcross091.png" width="64" height="64" alt="Zcross091" style="border-radius: 50%;" />
+</a>
 
 <a href="https://github.com/roshancodespace/ShonenX/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=roshancodespace/ShonenX" />

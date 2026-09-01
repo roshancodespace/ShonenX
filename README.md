@@ -205,7 +205,7 @@ Contributions are welcome! Feel free to inspect the code, compile from source, o
 Thanks to everyone who has contributed to ShonenX!
 
 <a href="https://github.com/Zcross091">
-  <img src="https://github.com/Zcross091.png" width="64" height="64" alt="Zcross091" style="border-radius: 50%;" />
+  <img src="https://images.weserv.nl/?url=github.com/Zcross091.png&w=64&h=64&mask=circle" width="64" height="64" alt="Zcross091" />
 </a>
 
 <a href="https://github.com/roshancodespace/ShonenX/graphs/contributors">

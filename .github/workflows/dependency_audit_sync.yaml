@@ -212,10 +212,14 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Send Discord Alert
-        if: ${{ (inputs.notify_discord == true || github.event_name == 'schedule') && secrets.DISCORD_WEBHOOK != '' }}
+        if: ${{ github.event_name == 'schedule' || inputs.notify_discord == true }}
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         run: |
+          if [ -z "$DISCORD_WEBHOOK" ]; then
+            echo "No DISCORD_WEBHOOK secret configured. Skipping Discord notification."
+            exit 0
+          fi
           PAYLOAD=$(jq -n \
             --arg title "📦 ShonenX Dependency Audit & Sync Report" \
             --arg url "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \

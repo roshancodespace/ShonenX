@@ -104,7 +104,7 @@ class SecuritySettingsScreen extends ConsumerWidget {
             value: securityPrefs.incognitoMode,
             onChanged: (val) {
               notifier.toggleIncognito(val);
-              ScognitoSnackbar(context, val);
+              _showIncognitoSnackbar(context, val);
             },
           ),
           SettingsSwitchTile(
@@ -155,7 +155,7 @@ class SecuritySettingsScreen extends ConsumerWidget {
     );
   }
 
-  static void ScognitoSnackbar(BuildContext context, bool enabled) {
+  static void _showIncognitoSnackbar(BuildContext context, bool enabled) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(

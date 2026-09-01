@@ -1,102 +1,115 @@
 import 'dart:convert';
 import 'package:shonenx/core/network/http_client.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
+import 'package:shonenx/features/discovery/domain/models/search_filter_options.dart';
 import 'package:shonenx/features/tracking/domain/models/tracked_list_item.dart';
 import 'package:shonenx/features/tracking/domain/models/tracked_status.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_category.dart';
+import 'package:shonenx/features/tracking/domain/models/tracker_credentials.dart';
+import 'package:shonenx/features/tracking/domain/models/tracker_filter_options.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_profile.dart';
-import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
+import 'package:shonenx/features/tracking/engine/base_tracker.dart';
+import 'package:shonenx/features/tracking/engine/remote_tracker.dart';
 import 'package:shonenx/shared/models/media_title.dart';
 import 'package:shonenx/shared/models/unified_episode.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
+import 'package:shonenx/shared/providers/content_prefs_provider.dart';
+import 'package:shonenx/source_engine/models/paginated_result.dart';
 
-class TraktMetadata {
+mixin TraktMetadata on BaseTracker implements RemoteTracker {
+  HTTP get http;
+
+  TrackerCredentials? get customCredentials => null;
+
   static const String _baseUrl = 'https://api.trakt.tv';
-  static final HTTP _http = HTTP();
-  static final _log = AppLogger.scope(TraktMetadata);
 
   static const String defaultClientId =
       '030ef1d48c8b417c8052aa8bc0d9eb4f40f0c0587d1591880ca0eb65851725cf';
 
-  static Map<String, String> _headers(String? token, {String? clientId}) {
-    return {
-      'Content-Type': 'application/json',
-      'trakt-api-version': '2',
-      'trakt-api-key': clientId ?? defaultClientId,
-      if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
-    };
-  }
+  String get clientId => customCredentials?.clientId ?? defaultClientId;
 
-  static Future<TrackerProfile?> fetchUserProfile(
-    String token, {
-    String? clientId,
-  }) async {
-    try {
-      final response = await _http.get(
+  @override
+  List<TrackerCategory> get supportedCategories => [
+        TrackerCategory.trending,
+        TrackerCategory.popular,
+      ];
+
+  Map<String, String> _headers([String? token]) => {
+        'Content-Type': 'application/json',
+        'trakt-api-version': '2',
+        'trakt-api-key': clientId,
+        if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+      };
+
+  @override
+  Future<TrackerProfile> fetchProfile() async {
+    return executeApi('PROFILE', () async {
+      final token = await (this as dynamic).getToken();
+      if (token == null) throw Exception('Trakt is not authenticated');
+
+      final response = await http.get(
         '$_baseUrl/users/me?extended=full',
-        headers: _headers(token, clientId: clientId),
+        headers: _headers(token),
       );
 
-      if (response.statusCode != 200) return null;
+      if (response.statusCode != 200) {
+        throw Exception('Failed to fetch Trakt profile: ${response.statusCode}');
+      }
 
       final data = jsonDecode(response.body);
       final username = data['username'] as String? ?? 'Trakt User';
-      final name = data['name'] as String? ?? username;
+      final ids = data['ids'] as Map<String, dynamic>? ?? {};
       final avatar = data['images']?['avatar']?['full'] as String?;
 
       return TrackerProfile(
-        tracker: TrackerType.trakt,
+        id: ids['slug']?.toString() ?? username,
         username: username,
-        name: name,
         avatarUrl: avatar,
+        lastSyncedAt: DateTime.now(),
       );
-    } catch (e) {
-      _log.w('Error fetching Trakt user profile: $e');
-      return null;
-    }
+    });
   }
 
-  static Future<List<UnifiedMedia>> searchAnime(
-    String query, {
-    String? token,
-    String? clientId,
-  }) async {
-    try {
-      final url = Uri.parse(
-        '$_baseUrl/search/show,movie?query=${Uri.encodeComponent(query)}&extended=full',
-      );
-      final response = await _http.get(
-        url.toString(),
-        headers: _headers(token, clientId: clientId),
-      );
+  @override
+  Future<PaginatedResult<UnifiedMedia>> getCategoryItems(
+    TrackerCategory category, {
+    int page = 1,
+    MediaType type = MediaType.ANIME,
+    Duration? cacheDuration,
+    AdultContentMode adultMode = AdultContentMode.safe,
+  }) {
+    return executeApi('CATEGORY_ITEMS', () async {
+      final endpoint = (category == TrackerCategory.popular) ? 'popular' : 'trending';
+      final mediaPath = (type == MediaType.MOVIE) ? 'movies' : 'shows';
+      final url = '$_baseUrl/$mediaPath/$endpoint?page=$page&limit=25&extended=full';
 
-      if (response.statusCode != 200) return [];
+      final response = await http.get(url, headers: _headers());
+      if (response.statusCode != 200) {
+        return const PaginatedResult(items: [], hasNextPage: false);
+      }
 
       final List<dynamic> data = jsonDecode(response.body);
-      final List<UnifiedMedia> list = [];
+      final List<UnifiedMedia> items = [];
 
       for (final item in data) {
-        final type = item['type'] as String?;
-        final show = (type == 'movie') ? item['movie'] : item['show'];
-        if (show == null) continue;
+        final show = (item is Map && item.containsKey('show'))
+            ? item['show']
+            : ((item is Map && item.containsKey('movie')) ? item['movie'] : item);
 
+        if (show == null || show is! Map) continue;
         final ids = show['ids'] as Map<String, dynamic>? ?? {};
         final traktId = ids['trakt']?.toString() ?? '';
         final title = show['title'] as String? ?? 'Unknown';
-        final overview = show['overview'] as String?;
-        final year = show['year'] as int?;
-        final rating = (show['rating'] as num?)?.toDouble();
 
-        list.add(
+        items.add(
           UnifiedMedia(
             id: traktId,
             sourceId: 'trakt',
             providerId: 'trakt',
-            type: (type == 'movie') ? MediaType.ANIME : MediaType.ANIME,
+            type: type,
             title: MediaTitle(english: title, romaji: title, userPreferred: title),
-            description: overview,
-            year: year,
-            averageScore: rating != null ? (rating * 10).round() : null,
+            description: show['overview'] as String?,
+            year: show['year'] as int?,
             genres: (show['genres'] as List<dynamic>?)?.cast<String>(),
             externalIds: ExternalIds(
               mal: ids['mal']?.toString(),
@@ -106,62 +119,116 @@ class TraktMetadata {
         );
       }
 
-      return list;
-    } catch (e) {
-      _log.w('Error searching Trakt: $e');
-      return [];
-    }
+      return PaginatedResult(items: items, hasNextPage: items.length >= 25);
+    });
   }
 
-  static Future<UnifiedMedia?> getMediaDetails(
-    String traktId, {
-    String? token,
-    String? clientId,
-  }) async {
-    try {
-      final response = await _http.get(
-        '$_baseUrl/shows/$traktId?extended=full',
-        headers: _headers(token, clientId: clientId),
+  @override
+  Future<PaginatedResult<UnifiedMedia>> search(
+    String query, {
+    int page = 1,
+    required MediaType type,
+    List<String>? genres,
+    List<String>? tags,
+    SearchSort sort = SearchSort.popularity,
+    SearchStatusFilter status = SearchStatusFilter.all,
+    SearchFormatFilter format = SearchFormatFilter.all,
+    Duration? cacheDuration,
+    AdultContentMode adultMode = AdultContentMode.safe,
+  }) {
+    return executeApi('SEARCH', () async {
+      final mediaPath = (type == MediaType.MOVIE) ? 'movie' : 'show';
+      final clean = Uri.encodeComponent(query);
+      final url = '$_baseUrl/search/$mediaPath?query=$clean&page=$page&limit=25&extended=full';
+
+      final response = await http.get(url, headers: _headers());
+      if (response.statusCode != 200) {
+        return const PaginatedResult(items: [], hasNextPage: false);
+      }
+
+      final List<dynamic> data = jsonDecode(response.body);
+      final List<UnifiedMedia> items = [];
+
+      for (final item in data) {
+        final show = item['show'] ?? item['movie'];
+        if (show == null || show is! Map) continue;
+
+        final ids = show['ids'] as Map<String, dynamic>? ?? {};
+        final traktId = ids['trakt']?.toString() ?? '';
+        final title = show['title'] as String? ?? 'Unknown';
+
+        items.add(
+          UnifiedMedia(
+            id: traktId,
+            sourceId: 'trakt',
+            providerId: 'trakt',
+            type: type,
+            title: MediaTitle(english: title, romaji: title, userPreferred: title),
+            description: show['overview'] as String?,
+            year: show['year'] as int?,
+            genres: (show['genres'] as List<dynamic>?)?.cast<String>(),
+            externalIds: ExternalIds(
+              mal: ids['mal']?.toString(),
+              anilist: ids['anilist']?.toString(),
+            ),
+          ),
+        );
+      }
+
+      return PaginatedResult(items: items, hasNextPage: items.length >= 25);
+    });
+  }
+
+  @override
+  Future<UnifiedMedia> getDetails(String providerId, MediaType type) {
+    return executeApi('DETAILS', () async {
+      final mediaPath = (type == MediaType.MOVIE) ? 'movies' : 'shows';
+      final response = await http.get(
+        '$_baseUrl/$mediaPath/$providerId?extended=full',
+        headers: _headers(),
       );
 
-      if (response.statusCode != 200) return null;
+      if (response.statusCode != 200) {
+        throw Exception('Failed to load Trakt details: ${response.statusCode}');
+      }
+
       final show = jsonDecode(response.body);
       final ids = show['ids'] as Map<String, dynamic>? ?? {};
       final title = show['title'] as String? ?? 'Unknown';
 
-      // Fetch seasons and episodes
-      final seasonsResp = await _http.get(
-        '$_baseUrl/shows/$traktId/seasons?extended=episodes',
-        headers: _headers(token, clientId: clientId),
-      );
-
       final List<UnifiedEpisode> episodesList = [];
-      if (seasonsResp.statusCode == 200) {
-        final List<dynamic> seasons = jsonDecode(seasonsResp.body);
-        for (final season in seasons) {
-          final sNum = season['number'] as int? ?? 1;
-          final List<dynamic> eps = season['episodes'] ?? [];
-          for (final ep in eps) {
-            final eNum = ep['number'] as int? ?? 1;
-            final epTitle = ep['title'] as String? ?? 'Episode $eNum';
-            episodesList.add(
-              UnifiedEpisode(
-                id: '${traktId}_s${sNum}_e$eNum',
-                number: eNum.toDouble(),
-                title: epTitle,
-                overview: ep['overview'] as String?,
-                seasonNumber: sNum,
-              ),
-            );
+      if (type != MediaType.MOVIE) {
+        final seasonsResp = await http.get(
+          '$_baseUrl/shows/$providerId/seasons?extended=episodes',
+          headers: _headers(),
+        );
+
+        if (seasonsResp.statusCode == 200) {
+          final List<dynamic> seasons = jsonDecode(seasonsResp.body);
+          for (final season in seasons) {
+            final sNum = season['number'] as int? ?? 1;
+            final List<dynamic> eps = season['episodes'] ?? [];
+            for (final ep in eps) {
+              final eNum = ep['number'] as int? ?? 1;
+              episodesList.add(
+                UnifiedEpisode(
+                  id: '${providerId}_s${sNum}_e$eNum',
+                  number: eNum.toDouble(),
+                  title: ep['title'] as String? ?? 'Episode $eNum',
+                  overview: ep['overview'] as String?,
+                  seasonNumber: sNum,
+                ),
+              );
+            }
           }
         }
       }
 
       return UnifiedMedia(
-        id: traktId,
+        id: providerId,
         sourceId: 'trakt',
         providerId: 'trakt',
-        type: MediaType.ANIME,
+        type: type,
         title: MediaTitle(english: title, romaji: title, userPreferred: title),
         description: show['overview'] as String?,
         year: show['year'] as int?,
@@ -173,90 +240,16 @@ class TraktMetadata {
           anilist: ids['anilist']?.toString(),
         ),
       );
-    } catch (e) {
-      _log.w('Error fetching Trakt media details: $e');
-      return null;
-    }
+    });
   }
 
-  static Future<List<TrackedListItem>> fetchUserList(
-    String token,
-    TrackerCategory category, {
-    String? clientId,
-  }) async {
-    try {
-      final response = await _http.get(
-        '$_baseUrl/sync/history/shows?extended=full',
-        headers: _headers(token, clientId: clientId),
-      );
+  @override
+  Future<TrackerFilterOptions> fetchFilterOptions([MediaType? type]) async =>
+      const TrackerFilterOptions();
 
-      if (response.statusCode != 200) return [];
+  @override
+  Future<List<String>> fetchGenres() async => [];
 
-      final List<dynamic> list = jsonDecode(response.body);
-      final List<TrackedListItem> result = [];
-
-      for (final item in list) {
-        final show = item['show'] as Map<String, dynamic>?;
-        if (show == null) continue;
-
-        final ids = show['ids'] as Map<String, dynamic>? ?? {};
-        final traktId = ids['trakt']?.toString() ?? '';
-        final title = show['title'] as String? ?? 'Unknown';
-        final watchedCount = item['watched_episodes_count'] as int? ?? 1;
-
-        result.add(
-          TrackedListItem(
-            trackingId: traktId,
-            title: title,
-            mediaType: MediaType.ANIME,
-            status: TrackedStatus.watching,
-            progress: watchedCount,
-            totalEpisodes: show['aired_episodes'] as int?,
-          ),
-        );
-      }
-
-      return result;
-    } catch (e) {
-      _log.w('Error fetching Trakt user list: $e');
-      return [];
-    }
-  }
-
-  static Future<bool> updateProgress(
-    String token, {
-    required String traktId,
-    required int episodeNumber,
-    int seasonNumber = 1,
-    String? clientId,
-  }) async {
-    try {
-      final body = jsonEncode({
-        'shows': [
-          {
-            'ids': {'trakt': int.tryParse(traktId) ?? traktId},
-            'seasons': [
-              {
-                'number': seasonNumber,
-                'episodes': [
-                  {'number': episodeNumber}
-                ]
-              }
-            ]
-          }
-        ]
-      });
-
-      final response = await _http.post(
-        '$_baseUrl/sync/history',
-        headers: _headers(token, clientId: clientId),
-        body: body,
-      );
-
-      return response.statusCode == 201 || response.statusCode == 200;
-    } catch (e) {
-      _log.w('Error updating Trakt progress: $e');
-      return false;
-    }
-  }
+  @override
+  Future<List<String>> fetchTags() async => [];
 }

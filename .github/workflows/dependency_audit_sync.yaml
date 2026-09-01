@@ -2,12 +2,16 @@ name: Dependency Audit & Sync
 
 on:
   schedule:
-    # Run every Monday at 04:00 UTC
-    - cron: '0 4 * * 1'
+    # Run every 2 days at 04:00 UTC
+    - cron: '0 4 */2 * *'
   workflow_dispatch:
     inputs:
+      auto_commit:
+        description: 'Auto-commit verified dependency updates to main?'
+        type: boolean
+        default: true
       create_pr:
-        description: 'Auto-create PR with safe upgrades?'
+        description: 'Create PR instead of committing directly to main?'
         type: boolean
         default: false
       create_issue:
@@ -15,7 +19,7 @@ on:
         type: boolean
         default: true
       notify_discord:
-        description: 'Send Discord alert on critical updates?'
+        description: 'Send Discord alert?'
         type: boolean
         default: true
 
@@ -25,7 +29,7 @@ permissions:
   issues: write
 
 jobs:
-  audit-dependencies:
+  audit-and-sync:
     name: Audit & Sync Dependencies
     runs-on: ubuntu-latest
 
@@ -48,12 +52,13 @@ jobs:
           flutter-version: 3.35.7
           cache: true
 
-      - name: Initialize Git Submodules
+      - name: Initialize Git Submodules & Bridge Dependencies
         run: |
+          echo "Initializing and updating submodules..."
           git submodule update --init --recursive packages/anymex_extension_bridge || true
           git submodule update --init --recursive packages/commentum_client || true
 
-      - name: Check Submodule & Rust Bridge Compatibility
+      - name: Check Submodule & Rust Bridge Health
         id: submodule_check
         run: |
           echo "### 🔍 Submodule Alignment" >> report.md
@@ -94,11 +99,20 @@ jobs:
           check_git_repo "flutter_inappwebview" "https://github.com/roshancodespace/flutter_inappwebview.git"
           check_git_repo "flutter_web_auth_2" "https://github.com/roshancodespace/flutter_web_auth.git"
 
-      - name: Resolve Dependencies & Check Outdated
-        id: pub_outdated
+      - name: Perform Safe Dependency Upgrade & Outdated Check
+        id: pub_upgrade
         run: |
-          find . -name "pubspec.lock" -type f -delete || true
-          flutter pub get
+          echo "Upgrading dependencies to latest compatible versions..."
+          flutter pub upgrade
+          
+          # Check if pubspec.lock or files were updated
+          if git status --porcelain pubspec.lock | grep -q "pubspec.lock"; then
+            echo "lockfile_updated=true" >> "$GITHUB_OUTPUT"
+            echo "- **Lockfile Status**: 🔄 Dependencies updated to latest compatible versions" >> report.md
+          else
+            echo "lockfile_updated=false" >> "$GITHUB_OUTPUT"
+            echo "- **Lockfile Status**: 🟢 Already at latest compatible versions" >> report.md
+          fi
           
           # Generate JSON outdated report
           flutter pub outdated --json > outdated.json || true
@@ -107,10 +121,9 @@ jobs:
           echo "| Package | Current | Resolvable | Latest | Status |" >> report.md
           echo "|---|---|---|---|---|" >> report.md
 
-          # Parse critical packages from JSON using jq
           CRITICAL_PKGS=("media_kit" "media_kit_video" "flutter_inappwebview" "rhttp" "flutter_rust_bridge" "isar_community" "flutter_secure_storage" "go_router" "flutter_riverpod" "permission_handler" "flutter_local_notifications" "window_manager")
 
-          HAS_UPDATES=false
+          HAS_MAJOR_UPDATES=false
 
           for PKG in "${CRITICAL_PKGS[@]}"; do
             PKG_DATA=$(jq -r --arg p "$PKG" '.packages[] | select(.package == $p)' outdated.json 2>/dev/null || true)
@@ -120,8 +133,8 @@ jobs:
               LATEST=$(echo "$PKG_DATA" | jq -r '.latest.version // "-"')
               
               if [ "$CURRENT" != "$LATEST" ] && [ "$LATEST" != "-" ] && [ "$LATEST" != "null" ]; then
-                STATUS="🟡 Update Available"
-                HAS_UPDATES=true
+                STATUS="🟡 New Release ($LATEST)"
+                HAS_MAJOR_UPDATES=true
               else
                 STATUS="🟢 Up to Date"
               fi
@@ -129,9 +142,9 @@ jobs:
             fi
           done
 
-          echo "has_updates=$HAS_UPDATES" >> "$GITHUB_OUTPUT"
+          echo "has_major_updates=$HAS_MAJOR_UPDATES" >> "$GITHUB_OUTPUT"
 
-      - name: Static Analysis & Health Check
+      - name: Static Analysis & Compilation Verification
         id: analyze
         run: |
           echo "### 🛠️ Static Analysis & Build Health" >> report.md
@@ -159,25 +172,23 @@ jobs:
           cat report.md >> full_report.md
           cat full_report.md >> $GITHUB_STEP_SUMMARY
 
-      - name: Create or Update GitHub Issue (Optional)
-        if: ${{ (inputs.create_issue == true || github.event_name == 'schedule') && (steps.pub_outdated.outputs.has_updates == 'true' || steps.analyze.outputs.analyze_status == 'WARNINGS') }}
-        uses: peter-evans/create-issue-from-file@v5
-        with:
-          title: "🤖 Weekly Dependency Audit & Compatibility Report [$(date +'%Y-%m-%d')]"
-          content-filepath: full_report.md
-          labels: |
-            dependencies
-            automated-audit
-            maintenance
+      - name: Commit & Push Verified Dependency Updates (Direct to main)
+        if: ${{ (github.event_name == 'schedule' || inputs.auto_commit == true) && inputs.create_pr != true && steps.pub_upgrade.outputs.lockfile_updated == 'true' && steps.analyze.outputs.analyze_status == 'PASSED' }}
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add pubspec.lock
+          git commit -m "chore(deps): automated sync and update of compatible dependencies"
+          git push origin ${{ github.ref_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Create Pull Request with Safe Upgrades (Optional)
-        if: ${{ inputs.create_pr == true }}
+      - name: Create Pull Request with Upgrades (If PR Mode Selected)
+        if: ${{ inputs.create_pr == true && steps.pub_upgrade.outputs.lockfile_updated == 'true' && steps.analyze.outputs.analyze_status == 'PASSED' }}
         uses: peter-evans/create-pull-request@v6
         with:
-          commit-message: "chore(deps): safe automated dependency upgrades"
-          title: "🤖 chore(deps): automated dependency upgrades"
+          commit-message: "chore(deps): automated sync of compatible dependencies"
+          title: "🤖 chore(deps): sync and update compatible dependencies"
           body-path: full_report.md
           branch: chore/automated-dependency-sync
           delete-branch: true
@@ -187,13 +198,26 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Create or Update GitHub Issue (On Incompatibilities / Major Upgrades)
+        if: ${{ (inputs.create_issue == true || github.event_name == 'schedule') && (steps.analyze.outputs.analyze_status == 'WARNINGS' || steps.pub_upgrade.outputs.has_major_updates == 'true') }}
+        uses: peter-evans/create-issue-from-file@v5
+        with:
+          title: "🤖 Dependency Audit & Compatibility Alert [$(date +'%Y-%m-%d')]"
+          content-filepath: full_report.md
+          labels: |
+            dependencies
+            automated-audit
+            maintenance
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Send Discord Alert
         if: ${{ (inputs.notify_discord == true || github.event_name == 'schedule') && secrets.DISCORD_WEBHOOK != '' }}
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         run: |
           PAYLOAD=$(jq -n \
-            --arg title "📦 ShonenX Dependency Audit Report" \
+            --arg title "📦 ShonenX Dependency Audit & Sync Report" \
             --arg url "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
             --arg time "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
             --rawfile desc full_report.md \

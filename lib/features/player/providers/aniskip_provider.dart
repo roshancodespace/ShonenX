@@ -39,9 +39,7 @@ class AniSkipArgs {
 
 final aniSkipProvider = FutureProvider.autoDispose
     .family<List<AniSkipStamp>, AniSkipArgs?>((ref, args) async {
-      if (args == null ||
-          args.episodeLength < 50 ||
-          args.episodeNumber % 1 != 0) {
+      if (args == null || args.episodeNumber % 1 != 0) {
         return [];
       }
 

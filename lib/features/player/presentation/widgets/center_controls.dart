@@ -89,6 +89,8 @@ class _CenterControlsState extends ConsumerState<CenterControls> {
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: IconButton.filled(
                       style: IconButton.styleFrom(
+                        shape: const CircleBorder(),
+                        padding: const EdgeInsets.all(12),
                         backgroundColor: theme.colorScheme.primaryContainer
                             .withValues(alpha: 0.4),
                         foregroundColor: theme.colorScheme.onPrimaryContainer,
@@ -121,7 +123,7 @@ class _CenterControlsState extends ConsumerState<CenterControls> {
                               ? Icons.pause_rounded
                               : Icons.play_arrow_rounded,
                           key: ValueKey(isPlaying),
-                          size: 80,
+                          size: 72,
                         ),
                       ),
                     ),

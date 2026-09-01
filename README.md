@@ -223,8 +223,8 @@ Thanks to everyone who has contributed to ShonenX!
 
 <div align="center">
 
-### ⭐ Star this repo if you find it useful!
+### ⭐ Don't forget to star this repo!
 
-**Made with ❤️ by [Roshan Kumar](https://github.com/roshancodespace)**
+**Public Contribution from the community for the community**
 
 </div>

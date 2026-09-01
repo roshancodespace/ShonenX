@@ -58,16 +58,13 @@ class _SourceSettingsSheetState extends ConsumerState<SourceSettingsSheet> {
 
     return AppBottomSheet(
       title: '${source.name} Settings',
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Flexible(
-            child: ListView.builder(
-              physics: const BouncingScrollPhysics(),
-              shrinkWrap: true,
-              itemCount: schema.length,
-              itemBuilder: (context, index) {
+      child: ListView.builder(
+        physics: const AlwaysScrollableScrollPhysics(
+          parent: BouncingScrollPhysics(),
+        ),
+        shrinkWrap: true,
+        itemCount: schema.length,
+        itemBuilder: (context, index) {
                 final theme = Theme.of(context);
                 final setting = schema[index];
                 final currentValue =
@@ -200,9 +197,6 @@ class _SourceSettingsSheetState extends ConsumerState<SourceSettingsSheet> {
                 return const SizedBox.shrink();
               },
             ),
-          ),
-        ],
-      ),
     );
   }
 

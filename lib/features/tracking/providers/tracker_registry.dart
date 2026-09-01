@@ -20,6 +20,8 @@ class TrackerRegistry {
         return KitsuTracker(ref);
       case TrackerType.simkl:
         return SimklTracker(ref);
+      case TrackerType.trakt:
+        return TraktTracker(ref);
       case TrackerType.local:
         return LocalTracker(ref.watch(databaseProvider));
     }

@@ -8,12 +8,15 @@ on:
   workflow_dispatch:
     inputs:
       build_android:
+        description: "Build Android & Android TV APKs?"
         type: boolean
         default: true
       build_linux:
+        description: "Build Linux PC?"
         type: boolean
         default: true
       build_windows:
+        description: "Build Windows PC?"
         type: boolean
         default: true
       notify_discord:
@@ -45,6 +48,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       tag_name: ${{ steps.resolve.outputs.tag_name }}
+      clean_version: ${{ steps.resolve.outputs.clean_version }}
       is_prerelease: ${{ steps.resolve.outputs.is_prerelease }}
     steps:
       - uses: actions/checkout@v4
@@ -110,8 +114,12 @@ jobs:
             v*-*) prerelease="true" ;;
           esac
 
+          clean_ver="${resolved#v}"
+
           echo "Resolved release tag: $resolved"
+          echo "Clean version: $clean_ver"
           echo "tag_name=$resolved" >> "$GITHUB_OUTPUT"
+          echo "clean_version=$clean_ver" >> "$GITHUB_OUTPUT"
           echo "is_prerelease=$prerelease" >> "$GITHUB_OUTPUT"
 
   build-android:
@@ -131,15 +139,12 @@ jobs:
         if: github.event_name == 'workflow_dispatch'
         shell: bash
         run: |
-          CLEAN_VER="${{ needs.resolve-release-tag.outputs.tag_name }}"
-          CLEAN_VER="${CLEAN_VER#v}" 
-          
+          CLEAN_VER="${{ needs.resolve-release-tag.outputs.clean_version }}"
           EXISTING_VER=$(grep '^version:' pubspec.yaml | awk '{print $2}')
           if [[ "$EXISTING_VER" == *"+"* ]] && [[ "$CLEAN_VER" != *"+"* ]]; then
             BUILD_NUM="+${EXISTING_VER#*+}"
             CLEAN_VER="${CLEAN_VER}${BUILD_NUM}"
           fi
-          
           echo "Overriding pubspec.yaml version to: $CLEAN_VER"
           sed -i -e "s/^version: .*/version: $CLEAN_VER/g" pubspec.yaml
 
@@ -159,17 +164,27 @@ jobs:
           flutter-version: 3.35.7
           cache: true
 
-      - name: Decode keystore
-        run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
-
-      - name: Create key.properties
+      - name: Setup Keystore & Signing Configuration
         run: |
-          cat > android/key.properties <<EOF
+          if [ -n "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]; then
+            echo "Using provided repository secrets keystore..."
+            echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
+            cat > android/key.properties <<EOF
           storePassword=${{ secrets.ANDROID_STORE_PASSWORD }}
           keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
           keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
           storeFile=upload-keystore.jks
           EOF
+          else
+            echo "No custom keystore provided. Generating a release keystore for CI signing..."
+            keytool -genkey -v -keystore android/app/upload-keystore.jks -alias shonenx -keyalg RSA -keysize 2048 -validity 10000 -storepass shonenxpass -keypass shonenxpass -dname "CN=ShonenX, OU=Development, O=ShonenX, L=Unknown, S=Unknown, C=US"
+            cat > android/key.properties <<EOF
+          storePassword=shonenxpass
+          keyPassword=shonenxpass
+          keyAlias=shonenx
+          storeFile=upload-keystore.jks
+          EOF
+          fi
 
       - name: Create env file
         run: |
@@ -182,22 +197,47 @@ jobs:
             "SIMKL_CLIENT_ID": "${{ secrets.SIMKL_CLIENT_ID }}",
             "SIMKL_CLIENT_SECRET": "${{ secrets.SIMKL_CLIENT_SECRET }}",
             "COMMENTUM_API_URL": "${{ secrets.COMMENTUM_API_URL }}",
-            "RELEASE_REPO": "roshancodespace/ShonenX"
+            "RELEASE_REPO": "${{ github.repository }}"
           }
           EOF
 
       - name: Get Dependencies
         run: find . -name "pubspec.lock" -type f -delete && flutter pub upgrade
 
-      - name: Build APKs
+      - name: Build Split-per-ABI APKs (Mobile & TV)
         run: flutter build apk --release --split-per-abi --dart-define-from-file=keys.json
 
-      - name: Upload Android Artifacts
+      - name: Build Universal APK (Universal Android & Android TV)
+        run: flutter build apk --release --dart-define-from-file=keys.json
+
+      - name: Prepare & Rename Android & Android TV Artifacts
+        run: |
+          TAG="${{ needs.resolve-release-tag.outputs.tag_name }}"
+          mkdir -p output-apks
+          
+          # Universal APK (Ideal for Android TV sideloading & generic devices)
+          if [ -f build/app/outputs/flutter-apk/app-release.apk ]; then
+            cp build/app/outputs/flutter-apk/app-release.apk "output-apks/ShonenX-${TAG}-android-universal.apk"
+          fi
+          
+          # Architecture-specific APKs
+          if [ -f build/app/outputs/flutter-apk/app-arm64-v8a-release.apk ]; then
+            cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk "output-apks/ShonenX-${TAG}-android-arm64-v8a.apk"
+          fi
+          if [ -f build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk ]; then
+            cp build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk "output-apks/ShonenX-${TAG}-android-armeabi-v7a.apk"
+          fi
+          if [ -f build/app/outputs/flutter-apk/app-x86_64-release.apk ]; then
+            cp build/app/outputs/flutter-apk/app-x86_64-release.apk "output-apks/ShonenX-${TAG}-android-x86_64.apk"
+          fi
+
+          ls -lah output-apks/
+
+      - name: Upload Android & Android TV Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: android-apks
-          # Explicitly only upload APK files, no random build junk
-          path: build/app/outputs/flutter-apk/*-release.apk
+          path: output-apks/*.apk
 
   build-linux:
     needs: resolve-release-tag
@@ -229,15 +269,12 @@ jobs:
         if: github.event_name == 'workflow_dispatch'
         shell: bash
         run: |
-          CLEAN_VER="${{ needs.resolve-release-tag.outputs.tag_name }}"
-          CLEAN_VER="${CLEAN_VER#v}"
-          
+          CLEAN_VER="${{ needs.resolve-release-tag.outputs.clean_version }}"
           EXISTING_VER=$(grep '^version:' pubspec.yaml | awk '{print $2}')
           if [[ "$EXISTING_VER" == *"+"* ]] && [[ "$CLEAN_VER" != *"+"* ]]; then
             BUILD_NUM="+${EXISTING_VER#*+}"
             CLEAN_VER="${CLEAN_VER}${BUILD_NUM}"
           fi
-          
           echo "Overriding pubspec.yaml version to: $CLEAN_VER"
           sed -i -e "s/^version: .*/version: $CLEAN_VER/g" pubspec.yaml
 
@@ -257,7 +294,7 @@ jobs:
             "SIMKL_CLIENT_ID": "${{ secrets.SIMKL_CLIENT_ID }}",
             "SIMKL_CLIENT_SECRET": "${{ secrets.SIMKL_CLIENT_SECRET }}",
             "COMMENTUM_API_URL": "${{ secrets.COMMENTUM_API_URL }}",
-            "RELEASE_REPO": "roshancodespace/ShonenX"
+            "RELEASE_REPO": "${{ github.repository }}"
           }
           EOF
 
@@ -273,17 +310,21 @@ jobs:
       - name: Build Linux app
         run: flutter build linux --release -v --dart-define-from-file=keys.json
 
-      - name: Zip Linux bundle
+      - name: Package Linux PC Artifacts
         run: |
+          TAG="${{ needs.resolve-release-tag.outputs.tag_name }}"
+          mkdir -p output-linux
           cd build/linux/x64/release/bundle
-          zip -r ../../../../../ShonenX-linux.zip .
+          zip -r "../../../../../output-linux/ShonenX-${TAG}-linux-x86_64.zip" .
+          tar -czvf "../../../../../output-linux/ShonenX-${TAG}-linux-x86_64.tar.gz" .
+          cd ../../../../../
+          ls -lah output-linux/
 
       - name: Upload Linux Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: linux-bundle
-          # Upload only the finished zip file, NOT the raw directory
-          path: ShonenX-linux.zip
+          path: output-linux/*
 
   build-windows:
     needs: resolve-release-tag
@@ -302,15 +343,12 @@ jobs:
         if: github.event_name == 'workflow_dispatch'
         shell: bash
         run: |
-          CLEAN_VER="${{ needs.resolve-release-tag.outputs.tag_name }}"
-          CLEAN_VER="${CLEAN_VER#v}"
-          
+          CLEAN_VER="${{ needs.resolve-release-tag.outputs.clean_version }}"
           EXISTING_VER=$(grep '^version:' pubspec.yaml | awk '{print $2}')
           if [[ "$EXISTING_VER" == *"+"* ]] && [[ "$CLEAN_VER" != *"+"* ]]; then
             BUILD_NUM="+${EXISTING_VER#*+}"
             CLEAN_VER="${CLEAN_VER}${BUILD_NUM}"
           fi
-          
           echo "Overriding pubspec.yaml version to: $CLEAN_VER"
           sed -i -e "s/^version: .*/version: $CLEAN_VER/g" pubspec.yaml
 
@@ -337,7 +375,7 @@ jobs:
             "SIMKL_CLIENT_ID": "${{ secrets.SIMKL_CLIENT_ID }}",
             "SIMKL_CLIENT_SECRET": "${{ secrets.SIMKL_CLIENT_SECRET }}",
             "COMMENTUM_API_URL": "${{ secrets.COMMENTUM_API_URL }}",
-            "RELEASE_REPO": "roshancodespace/ShonenX"
+            "RELEASE_REPO": "${{ github.repository }}"
           }
           EOF
 
@@ -352,15 +390,34 @@ jobs:
             flutter build windows --release --dart-define-from-file=keys.json
           }
 
-      - name: Build installer (InnoBundle)
+      - name: Build Installer (InnoBundle)
         run: dart run inno_bundle --release --no-app
+
+      - name: Package Windows PC Artifacts (Setup & Portable)
+        shell: bash
+        run: |
+          TAG="${{ needs.resolve-release-tag.outputs.tag_name }}"
+          mkdir -p output-windows
+          
+          # Installer .exe
+          if compgen -G "build/windows/x64/installer/Release/*.exe" > /dev/null; then
+            cp build/windows/x64/installer/Release/*.exe "output-windows/ShonenX-${TAG}-windows-setup.exe"
+          fi
+          
+          # Portable .zip
+          if [ -d "build/windows/x64/runner/Release" ]; then
+            cd build/windows/x64/runner/Release
+            7z a "../../../../../output-windows/ShonenX-${TAG}-windows-portable.zip" .
+            cd ../../../../../
+          fi
+
+          ls -lah output-windows/
 
       - name: Upload Windows Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: windows-installer
-          # Explicitly only upload the built .exe
-          path: build/windows/x64/installer/Release/*.exe
+          path: output-windows/*
 
   create-release:
     needs: [resolve-release-tag, build-android, build-linux, build-windows]
@@ -376,7 +433,6 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: release-artifacts
-          # This forces all downloaded files (.apk, .exe, .zip) into a single flat directory
           merge-multiple: true
 
       - name: Generate Release Notes
@@ -405,7 +461,7 @@ jobs:
           fi
 
           NOTES=""
-          if [ -n "$GEMINI_API_KEY" ]; then
+          if [ -n "${GEMINI_API_KEY:-}" ]; then
             PROMPT="You are a professional software release manager. Format the following git commit messages into minimal, clean, professional Markdown release notes for version ${CURRENT_TAG}.
 
           Rules:
@@ -453,7 +509,6 @@ jobs:
           name: ${{ needs.resolve-release-tag.outputs.tag_name }}
           prerelease: ${{ needs.resolve-release-tag.outputs.is_prerelease == 'true' }}
           body_path: release_notes.md
-          # Simply upload everything in our clean artifact folder
           files: release-artifacts/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

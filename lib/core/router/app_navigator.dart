@@ -18,6 +18,8 @@ extension AppNavigator on BuildContext {
   void pushSettingsPermissions() => push('/settings/permissions');
   void pushSettingsNotifications() => push('/settings/notifications');
   void pushSettingsTracking() => push('/settings/tracking');
+  void pushSettingsSecurity() => push('/settings/security');
+  void pushAppLock() => push('/lock');
   void pushSettingsExtensions({
     String? autoAddUrl,
     String? autoAddType,

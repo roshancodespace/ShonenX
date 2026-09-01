@@ -14,6 +14,7 @@ class AniSkipResolver {
   final Ref _ref;
   final _log = AppLogger.scope(AniSkipResolver);
   static const _anilistEndpoint = 'https://graphql.anilist.co';
+  static final Map<String, int> _malIdCache = {};
 
   AniSkipResolver(this._ref);
 
@@ -28,6 +29,11 @@ class AniSkipResolver {
       return null;
     }
 
+    final cacheKey = '${media.id}_${media.title.availableTitle}';
+    if (_malIdCache.containsKey(cacheKey)) {
+      return _malIdCache[cacheKey];
+    }
+
     final title = media.title.availableTitle;
 
     // 2. Check externalIds.mal
@@ -35,6 +41,7 @@ class AniSkipResolver {
     if (extMalStr != null && extMalStr.isNotEmpty) {
       final parsed = int.tryParse(extMalStr);
       if (parsed != null && parsed > 0) {
+        _malIdCache[cacheKey] = parsed;
         return parsed;
       }
     }
@@ -44,6 +51,7 @@ class AniSkipResolver {
     if (directMalStr != null && directMalStr.isNotEmpty) {
       final parsed = int.tryParse(directMalStr);
       if (parsed != null && parsed > 0) {
+        _malIdCache[cacheKey] = parsed;
         return parsed;
       }
     }
@@ -53,6 +61,7 @@ class AniSkipResolver {
     if (providerId == 'mal' || providerId == 'myanimelist') {
       final parsed = int.tryParse(media.id);
       if (parsed != null && parsed > 0) {
+        _malIdCache[cacheKey] = parsed;
         return parsed;
       }
     }
@@ -64,6 +73,7 @@ class AniSkipResolver {
       if (malMapping?.trackingId != null) {
         final parsed = int.tryParse(malMapping!.trackingId!);
         if (parsed != null && parsed > 0) {
+          _malIdCache[cacheKey] = parsed;
           return parsed;
         }
       }
@@ -81,16 +91,25 @@ class AniSkipResolver {
       if (anilistId != null && anilistId > 0) {
         final resolved = await _resolveMalFromAniListId(anilistId);
         if (resolved != null) {
+          _malIdCache[cacheKey] = resolved;
           return resolved;
         }
       }
     }
 
-    // 7. Resolve from Title search (e.g. Source Discovery mode)
+    // 7. Resolve from Title search via AniList
     if (title.isNotEmpty && title != 'Unknown' && title != 'Local Media') {
       final resolved = await _resolveMalFromTitle(title);
       if (resolved != null) {
+        _malIdCache[cacheKey] = resolved;
         return resolved;
+      }
+
+      // 8. Jikan search fallback for complex title disparities
+      final jikanResolved = await _resolveMalFromJikan(title);
+      if (jikanResolved != null) {
+        _malIdCache[cacheKey] = jikanResolved;
+        return jikanResolved;
       }
     }
 
@@ -135,6 +154,7 @@ class AniSkipResolver {
 
   Future<int?> _resolveMalFromTitle(String title) async {
     try {
+      final cleanTitle = _cleanTitle(title);
       const query = '''
         query (\$search: String) {
           Media(search: \$search, type: ANIME) {
@@ -152,7 +172,7 @@ class AniSkipResolver {
         },
         body: jsonEncode({
           'query': query,
-          'variables': {'search': title},
+          'variables': {'search': cleanTitle},
         }),
       );
 
@@ -167,5 +187,32 @@ class AniSkipResolver {
       _log.w('Failed to resolve MAL ID from title "$title": $e');
     }
     return null;
+  }
+
+  Future<int?> _resolveMalFromJikan(String title) async {
+    try {
+      final clean = Uri.encodeComponent(_cleanTitle(title));
+      final url = 'https://api.jikan.moe/v4/anime?q=$clean&limit=1';
+      final response = await HTTP().get(url);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final List<dynamic> results = data['data'] ?? [];
+        if (results.isNotEmpty) {
+          final malId = results.first['mal_id'] as int?;
+          if (malId != null && malId > 0) {
+            return malId;
+          }
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  String _cleanTitle(String title) {
+    return title
+        .replaceAll(RegExp(r'\s*\([^)]*\)'), '')
+        .replaceAll(RegExp(r'\s*\[[^\]]*\]'), '')
+        .replaceAll(RegExp(r'(?i)(dub|sub|uncensored|tv|season\s*\d+)', caseSensitive: false), '')
+        .trim();
   }
 }

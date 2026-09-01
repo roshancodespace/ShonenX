@@ -82,6 +82,12 @@ class SettingsScreen extends ConsumerWidget {
                 onTap: () => context.pushSettingsTracking(),
               ),
               SettingsNavTile(
+                icon: Icons.lock_outline_rounded,
+                title: 'Security & Privacy',
+                subtitle: 'App Lock, PIN code, Incognito mode',
+                onTap: () => context.pushSettingsSecurity(),
+              ),
+              SettingsNavTile(
                 icon: Icons.import_export_outlined,
                 title: 'Backup & Restore',
                 subtitle: 'Export or import your data',

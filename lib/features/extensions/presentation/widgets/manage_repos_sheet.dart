@@ -108,8 +108,19 @@ class _ManageReposSheetState extends ConsumerState<ManageReposSheet> {
   }
 
   String? _parseRepoUrl(String input) {
-    // Strip quotes, backticks, whitespace
-    input = input.replaceAll(RegExp(r"^['"`\s]+|['"`\s]+$"), '').trim();
+    input = input.trim();
+    while (input.isNotEmpty &&
+        (input.startsWith("'") ||
+            input.startsWith('"') ||
+            input.startsWith('`'))) {
+      input = input.substring(1).trim();
+    }
+    while (input.isNotEmpty &&
+        (input.endsWith("'") ||
+            input.endsWith('"') ||
+            input.endsWith('`'))) {
+      input = input.substring(0, input.length - 1).trim();
+    }
     if (input.isEmpty) return null;
 
     if (!input.startsWith('http://') && !input.startsWith('https://')) {

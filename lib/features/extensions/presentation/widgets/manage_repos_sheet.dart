@@ -1,5 +1,7 @@
 // ignore_for_file: curly_braces_in_flow_control_structures
 
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:anymex_extension_runtime_bridge/anymex_extension_runtime_bridge.dart'
     as bridge;
 import 'package:flutter/material.dart';
@@ -183,31 +185,75 @@ class _ManageReposSheetState extends ConsumerState<ManageReposSheet> {
       final adapter = ref.read(extensionAdapterProvider);
       bool added = false;
 
-      if (_selectedCategory == 'both' || _selectedCategory == 'anime') {
-        if (await adapter.addRepo(
-          parsedUrl,
-          _selectedEngineId,
-          bridge.ItemType.anime,
-        )) {
-          added = true;
-        }
+      // Check if the URL is a universal repository bundle (e.g. shonenx_repository.json)
+      if (parsedUrl.endsWith('.json')) {
+        try {
+          final res = await http.get(Uri.parse(parsedUrl));
+          if (res.statusCode == 200) {
+            final data = jsonDecode(res.body);
+            if (data is Map && data.containsKey('bundledRepositories')) {
+              final list = data['bundledRepositories'] as List<dynamic>? ?? [];
+              for (final item in list) {
+                if (item is Map) {
+                  final eUrl = item['url']?.toString();
+                  final eEngine = item['engine']?.toString() ?? _selectedEngineId;
+                  final eTypes = (item['types'] as List<dynamic>?)
+                          ?.map((e) => e.toString().toLowerCase())
+                          .toList() ??
+                      ['anime'];
+                  if (eUrl != null && eUrl.isNotEmpty) {
+                    if (eTypes.contains('anime')) {
+                      if (await adapter.addRepo(eUrl, eEngine, bridge.ItemType.anime)) {
+                        added = true;
+                      }
+                    }
+                    if (eTypes.contains('manga') ||
+                        eTypes.contains('manhwa') ||
+                        eTypes.contains('manhua')) {
+                      if (await adapter.addRepo(eUrl, eEngine, bridge.ItemType.manga)) {
+                        added = true;
+                      }
+                    }
+                    if (eTypes.contains('novel')) {
+                      if (await adapter.addRepo(eUrl, eEngine, bridge.ItemType.novel)) {
+                        added = true;
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        } catch (_) {}
       }
-      if (_selectedCategory == 'both' || _selectedCategory == 'manga') {
-        if (await adapter.addRepo(
-          parsedUrl,
-          _selectedEngineId,
-          bridge.ItemType.manga,
-        )) {
-          added = true;
+
+      if (!added) {
+        if (_selectedCategory == 'both' || _selectedCategory == 'anime') {
+          if (await adapter.addRepo(
+            parsedUrl,
+            _selectedEngineId,
+            bridge.ItemType.anime,
+          )) {
+            added = true;
+          }
         }
-      }
-      if (_selectedCategory == 'both' || _selectedCategory == 'novel') {
-        if (await adapter.addRepo(
-          parsedUrl,
-          _selectedEngineId,
-          bridge.ItemType.novel,
-        )) {
-          added = true;
+        if (_selectedCategory == 'both' || _selectedCategory == 'manga') {
+          if (await adapter.addRepo(
+            parsedUrl,
+            _selectedEngineId,
+            bridge.ItemType.manga,
+          )) {
+            added = true;
+          }
+        }
+        if (_selectedCategory == 'both' || _selectedCategory == 'novel') {
+          if (await adapter.addRepo(
+            parsedUrl,
+            _selectedEngineId,
+            bridge.ItemType.novel,
+          )) {
+            added = true;
+          }
         }
       }
 

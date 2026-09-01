@@ -2,6 +2,8 @@ name: Release Build
 
 on:
   push:
+    branches:
+      - main
     tags:
       - "v*"
 
@@ -81,9 +83,9 @@ jobs:
             } | sed -n "s/^$(printf '%s' "$prefix" | sed 's/[.[\*^$()+?{}|\\]/\\&/g')-alpha\.\([0-9][0-9]*\)$/\1/p" | sort -n | tail -1
           }
 
-          if [ "${{ github.event_name }}" = "push" ]; then
+          if [ "${{ github.ref_type }}" = "tag" ]; then
             resolved="$GITHUB_REF_NAME"
-          elif [ -z "$requested" ] || [ "$requested" = "auto" ]; then
+          elif [ -z "$requested" ] || [ "$requested" = "auto" ] || [ "$requested" = "main" ]; then
             version="$(awk '/^version:[[:space:]]*/ {print $2; exit}' pubspec.yaml | cut -d+ -f1)"
             if [ -z "$version" ]; then
               echo "Could not read version from pubspec.yaml" >&2

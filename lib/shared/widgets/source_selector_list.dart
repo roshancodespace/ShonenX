@@ -1,8 +1,10 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:shonenx/features/settings/presentation/source_settings_sheet.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
+import 'package:shonenx/shared/widgets/selection_card_group.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
 import 'package:shonenx/source_engine/models/source_setting.dart';
 import 'package:shonenx/source_engine/source_engine_provider.dart';
@@ -14,6 +16,7 @@ class SourceSelectorList extends ConsumerWidget {
   final MediaType mediaType;
   final void Function(BuildContext context, SourceInfo source) onSourceSelected;
   final void Function()? onSettingsClosed;
+  final bool showDoneButton;
 
   const SourceSelectorList({
     super.key,
@@ -22,13 +25,13 @@ class SourceSelectorList extends ConsumerWidget {
     required this.mediaType,
     required this.onSourceSelected,
     this.onSettingsClosed,
+    this.showDoneButton = false,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-    final textTheme = theme.textTheme;
+    final cs = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
 
     if (availableSources.isEmpty) {
       return Padding(
@@ -57,206 +60,206 @@ class SourceSelectorList extends ConsumerWidget {
 
     final groupedNames = groupedSources.keys.toList();
 
-    return ListView.builder(
-      shrinkWrap: true,
+    return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
-      itemCount: groupedNames.length,
-      itemBuilder: (context, index) {
-        final sourceName = groupedNames[index];
-        final sources = groupedSources[sourceName]!;
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SelectionCardGroup(
+            title: 'Available Sources',
+            subtitle:
+                'Select an extension for media playback and chapter reading.',
+            children: groupedNames.asMap().entries.map((entry) {
+              final groupIndex = entry.key;
+              final sourceName = entry.value;
+              final sources = groupedSources[sourceName]!;
+              final isLastGroup = groupIndex == groupedNames.length - 1;
 
-        return StatefulBuilder(
-          builder: (context, setState) {
-            bool isExpanded = false;
+              return StatefulBuilder(
+                builder: (context, setState) {
+                  bool isExpanded = false;
 
-            Widget buildSourceItem({
-              required SourceInfo sourceInfo,
-              required bool isSubItem,
-              required String? parentIconUrl,
-              Widget? expandAction,
-            }) {
-              final selected = currentSource == sourceInfo;
-              final sourceImpl = mediaType.usesAnimeSources
-                  ? ref.read(animeSourceProvider(sourceInfo))
-                  : ref.read(mangaSourceProvider(sourceInfo));
+                  Widget buildSourceTile({
+                    required SourceInfo sourceInfo,
+                    required bool isSubItem,
+                    required String? parentIconUrl,
+                    Widget? expandAction,
+                    bool showDivider = false,
+                  }) {
+                    final selected = currentSource == sourceInfo;
+                    final sourceImpl = mediaType.usesAnimeSources
+                        ? ref.read(animeSourceProvider(sourceInfo))
+                        : ref.read(mangaSourceProvider(sourceInfo));
 
-              final iconUrlToUse = sourceInfo.iconUrl?.isNotEmpty == true
-                  ? sourceInfo.iconUrl
-                  : parentIconUrl;
+                    final iconUrlToUse = sourceInfo.iconUrl?.isNotEmpty == true
+                        ? sourceInfo.iconUrl
+                        : parentIconUrl;
 
-              return Material(
-                type: MaterialType.transparency,
-                child: InkWell(
-                  onTap: () => onSourceSelected(context, sourceInfo),
-                  focusColor: cs.secondaryContainer.withValues(alpha: 0.5),
-                  hoverColor: cs.onSurface.withValues(alpha: 0.08),
-                  highlightColor: cs.onSurface.withValues(alpha: 0.12),
-                  child: Container(
-                    color: selected && isSubItem
-                        ? cs.primaryContainer.withValues(alpha: 0.15)
-                        : Colors.transparent,
-                    padding: EdgeInsets.fromLTRB(isSubItem ? 30 : 18, 8, 18, 8),
-                    child: Row(
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(6),
-                          child:
-                              (iconUrlToUse != null && iconUrlToUse.isNotEmpty)
-                              ? CachedNetworkImage(
-                                  imageUrl: iconUrlToUse,
-                                  width: isSubItem ? 32 : 44,
-                                  height: isSubItem ? 32 : 44,
-                                  fit: BoxFit.cover,
-                                  errorWidget: (context, url, error) => Icon(
-                                    Icons.extension,
-                                    size: isSubItem ? 32 : 44,
-                                  ),
-                                )
-                              : Icon(
-                                  Icons.extension,
-                                  size: isSubItem ? 32 : 44,
+                    return SelectionCardTile(
+                      isSubItem: isSubItem,
+                      isSelected: selected,
+                      showDivider: showDivider,
+                      leading: ClipRRect(
+                        borderRadius: BorderRadius.circular(6),
+                        child: (iconUrlToUse != null && iconUrlToUse.isNotEmpty)
+                            ? CachedNetworkImage(
+                                imageUrl: iconUrlToUse,
+                                width: isSubItem ? 20 : 24,
+                                height: isSubItem ? 20 : 24,
+                                fit: BoxFit.cover,
+                                errorWidget: (context, url, error) => Icon(
+                                  Icons.extension_rounded,
+                                  size: isSubItem ? 20 : 24,
+                                  color: cs.onSurfaceVariant,
                                 ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                isSubItem
-                                    ? (sourceInfo.lang ?? sourceInfo.type.name)
-                                          .toUpperCase()
-                                    : sourceInfo.name,
-                                style: textTheme.titleMedium?.copyWith(
-                                  fontWeight: selected
-                                      ? FontWeight.w700
-                                      : FontWeight.w500,
-                                  color: selected ? cs.primary : cs.onSurface,
-                                ),
+                              )
+                            : Icon(
+                                Icons.extension_rounded,
+                                size: isSubItem ? 20 : 24,
+                                color: cs.onSurfaceVariant,
                               ),
-                              if (!isSubItem) ...[
-                                const SizedBox(height: 2),
-                                Text(
-                                  '${sources.length} variants • ${(sourceInfo.lang ?? sourceInfo.type.name).toUpperCase()}',
-                                  style: textTheme.labelSmall?.copyWith(
-                                    color: cs.onSurfaceVariant.withValues(
-                                      alpha: 0.7,
-                                    ),
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                        FutureBuilder<List<SourceSetting>>(
-                          future: sourceImpl.getSettingsSchema(),
-                          builder: (context, snapshot) {
-                            final hasSettings =
-                                snapshot.hasData && snapshot.data!.isNotEmpty;
-                            if (!hasSettings) {
-                              return const SizedBox.shrink();
-                            }
+                      ),
+                      title: isSubItem
+                          ? (sourceInfo.lang ?? sourceInfo.type.name).toUpperCase()
+                          : sourceInfo.name,
+                      subtitle: isSubItem
+                          ? null
+                          : '${sources.length} ${sources.length == 1 ? 'variant' : 'variants'} • ${(sourceInfo.lang ?? sourceInfo.type.name).toUpperCase()}',
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          FutureBuilder<List<SourceSetting>>(
+                            future: sourceImpl.getSettingsSchema(),
+                            builder: (context, snapshot) {
+                              final hasSettings =
+                                  snapshot.hasData && snapshot.data!.isNotEmpty;
+                              if (!hasSettings) return const SizedBox.shrink();
 
-                            return IconButton(
-                              icon: const Icon(Icons.settings_outlined),
-                              color: cs.onSurfaceVariant,
-                              tooltip: 'Source Settings',
-                              onPressed: () {
-                                showModalBottomSheet(
-                                  context: context,
-                                  isScrollControlled: true,
-                                  backgroundColor: Colors.transparent,
-                                  builder: (context) => SourceSettingsSheet(
-                                    source: sourceInfo,
-                                    schema: snapshot.data!,
-                                  ),
-                                ).then((_) {
-                                  if (onSettingsClosed != null) {
-                                    onSettingsClosed!();
-                                  }
-                                });
-                              },
-                            );
+                              return IconButton(
+                                icon: const Icon(Icons.settings_outlined, size: 18),
+                                color: cs.onSurfaceVariant,
+                                visualDensity: VisualDensity.compact,
+                                tooltip: 'Source Settings',
+                                onPressed: () {
+                                  showModalBottomSheet(
+                                    context: context,
+                                    isScrollControlled: true,
+                                    backgroundColor: Colors.transparent,
+                                    builder: (context) => SourceSettingsSheet(
+                                      source: sourceInfo,
+                                      schema: snapshot.data!,
+                                    ),
+                                  ).then((_) {
+                                    if (onSettingsClosed != null) {
+                                      onSettingsClosed!();
+                                    }
+                                  });
+                                },
+                              );
+                            },
+                          ),
+                          if (expandAction != null) expandAction,
+                        ],
+                      ),
+                      onTap: () => onSourceSelected(context, sourceInfo),
+                    );
+                  }
+
+                  if (sources.length == 1) {
+                    return buildSourceTile(
+                      sourceInfo: sources.first,
+                      isSubItem: false,
+                      parentIconUrl: sources.first.iconUrl,
+                      showDivider: !isLastGroup,
+                    );
+                  }
+
+                  final hasSelectedVariant =
+                      sources.any((s) => s == currentSource);
+                  final defaultVariant = sources.firstWhere((s) {
+                    final l = s.lang?.toLowerCase();
+                    return l == 'en' || l == 'english';
+                  }, orElse: () => sources.first);
+
+                  final activeVariant = hasSelectedVariant
+                      ? currentSource!
+                      : defaultVariant;
+
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      buildSourceTile(
+                        sourceInfo: activeVariant,
+                        isSubItem: false,
+                        parentIconUrl: sources.first.iconUrl,
+                        showDivider: !isLastGroup && !isExpanded,
+                        expandAction: IconButton(
+                          icon: Icon(
+                            isExpanded
+                                ? Icons.keyboard_arrow_up_rounded
+                                : Icons.keyboard_arrow_down_rounded,
+                            color: cs.onSurfaceVariant,
+                            size: 20,
+                          ),
+                          visualDensity: VisualDensity.compact,
+                          tooltip: 'Expand variants',
+                          onPressed: () {
+                            setState(() {
+                              isExpanded = !isExpanded;
+                            });
                           },
                         ),
-                        if (selected && !isSubItem) ...[
-                          const SizedBox(width: 8),
-                          Icon(
-                            Icons.check_circle_rounded,
-                            color: cs.primary,
-                            size: 24,
-                          ),
-                        ],
-                        if (expandAction != null) ...[
-                          const SizedBox(width: 4),
-                          expandAction,
-                        ],
-                      ],
-                    ),
-                  ),
-                ),
+                      ),
+                      AnimatedCrossFade(
+                        firstChild: const SizedBox(width: double.infinity),
+                        secondChild: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: sources.asMap().entries.map((vEntry) {
+                            final vIdx = vEntry.key;
+                            final s = vEntry.value;
+                            final isLastVariant = vIdx == sources.length - 1;
+
+                            return buildSourceTile(
+                              sourceInfo: s,
+                              isSubItem: true,
+                              parentIconUrl: sources.first.iconUrl,
+                              showDivider: !isLastGroup && isLastVariant,
+                            );
+                          }).toList(),
+                        ),
+                        crossFadeState: isExpanded
+                            ? CrossFadeState.showSecond
+                            : CrossFadeState.showFirst,
+                        duration: const Duration(milliseconds: 200),
+                      ),
+                    ],
+                  );
+                },
               );
-            }
-
-            if (sources.length == 1) {
-              return buildSourceItem(
-                sourceInfo: sources.first,
-                isSubItem: false,
-                parentIconUrl: sources.first.iconUrl,
-              );
-            }
-
-            final hasSelectedVariant = sources.any((s) => s == currentSource);
-            final defaultVariant = sources.firstWhere((s) {
-              final l = s.lang?.toLowerCase();
-              return l == 'en' || l == 'english';
-            }, orElse: () => sources.first);
-
-            final activeVariant = hasSelectedVariant
-                ? currentSource!
-                : defaultVariant;
-
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                buildSourceItem(
-                  sourceInfo: activeVariant,
-                  isSubItem: false,
-                  parentIconUrl: sources.first.iconUrl,
-                  expandAction: IconButton(
-                    icon: Icon(Icons.expand_more, color: cs.onSurfaceVariant),
-                    tooltip: 'Expand variants',
-                    onPressed: () {
-                      setState(() {
-                        isExpanded = !isExpanded;
-                      });
-                    },
-                  ),
+            }).toList(),
+          ),
+          if (showDoneButton) ...[
+            const SizedBox(height: 16),
+            FilledButton(
+              onPressed: context.pop,
+              style: FilledButton.styleFrom(
+                backgroundColor: cs.primary,
+                foregroundColor: cs.onPrimary,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24),
                 ),
-                AnimatedCrossFade(
-                  firstChild: const SizedBox(width: double.infinity),
-                  secondChild: Column(
-                    children: sources
-                        .map(
-                          (s) => buildSourceItem(
-                            sourceInfo: s,
-                            isSubItem: true,
-                            parentIconUrl: sources.first.iconUrl,
-                          ),
-                        )
-                        .toList(),
-                  ),
-                  crossFadeState: isExpanded
-                      ? CrossFadeState.showSecond
-                      : CrossFadeState.showFirst,
-                  duration: const Duration(milliseconds: 200),
-                ),
-              ],
-            );
-          },
-        );
-      },
+                elevation: 1,
+              ),
+              child: const Text(
+                'Done',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

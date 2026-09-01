@@ -61,6 +61,12 @@ class SettingsScreen extends ConsumerWidget {
                 subtitle: 'Content filters, 18+ toggle',
                 onTap: () => context.pushSettingsContent(),
               ),
+              SettingsNavTile(
+                icon: Icons.lock_outline_rounded,
+                title: 'Security & Privacy',
+                subtitle: 'PIN lock, biometrics, app protection',
+                onTap: () => context.pushSettingsSecurity(),
+              ),
               if (Platform.isAndroid) ...[
                 SettingsNavTile(
                   icon: Icons.security_outlined,

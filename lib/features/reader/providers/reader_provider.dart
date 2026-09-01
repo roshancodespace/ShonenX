@@ -3,6 +3,7 @@ import 'package:shonenx/features/history/domain/models/read_history_entry.dart';
 import 'package:shonenx/features/history/providers/read_history_provider.dart';
 import 'package:shonenx/features/reader/domain/reader_mode.dart';
 import 'package:shonenx/features/tracking/engine/sync_engine.dart';
+import 'package:shonenx/shared/providers/security_prefs_provider.dart';
 import 'package:shonenx/source_engine/models/chapter_page.dart';
 import 'package:shonenx/source_engine/source_engine_provider.dart';
 
@@ -116,6 +117,7 @@ class ReaderNotifier extends Notifier<ReaderState> {
 
   void _saveHistory(int pageIndex, int total) {
     if (total == 0) return;
+    if (ref.read(securityPrefsProvider).incognitoMode) return;
     final savedPageNumber = pageIndex + 1;
 
     final entry = ReadHistoryEntry()

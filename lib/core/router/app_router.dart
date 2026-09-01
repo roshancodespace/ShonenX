@@ -40,6 +40,7 @@ import "package:shonenx/features/notifications/presentation/notifications_settin
 import 'package:shonenx/features/settings/presentation/content_settings_screen.dart';
 import 'package:shonenx/features/settings/presentation/logs_screen.dart';
 import 'package:shonenx/features/settings/presentation/about_screen.dart';
+import 'package:shonenx/features/settings/presentation/security_settings_screen.dart';
 import 'package:shonenx/features/settings/presentation/update_settings_screen.dart';
 import 'package:shonenx/features/settings/presentation/troubleshoot_settings_screen.dart';
 import 'package:shonenx/core/services/backup_service.dart';
@@ -405,6 +406,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: 'about',
             builder: (context, state) => const AboutScreen(),
+          ),
+          GoRoute(
+            path: 'security',
+            builder: (context, state) => const SecuritySettingsScreen(),
           ),
         ],
       ),

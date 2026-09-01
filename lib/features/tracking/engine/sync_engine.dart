@@ -8,6 +8,7 @@ import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
 import 'package:shonenx/features/tracking/providers/tracker_link_provider.dart';
 import 'package:shonenx/features/tracking/providers/tracking_prefs_provider.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
+import 'package:shonenx/shared/providers/security_prefs_provider.dart';
 
 final syncEngineProvider = Provider<SyncEngine>((ref) => SyncEngine(ref));
 
@@ -81,8 +82,10 @@ class SyncEngine {
     final log = _log.child('syncEpisodeProgress');
 
     final prefs = ref.read(trackingPrefsProvider);
+    final isIncognito =
+        ref.read(securityPrefsProvider).incognitoMode || prefs.isIncognito;
 
-    if (prefs.isIncognito) {
+    if (isIncognito) {
       log.w('Incognito mode → sync skipped');
       return;
     }

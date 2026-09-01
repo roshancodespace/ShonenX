@@ -108,19 +108,39 @@ class _ManageReposSheetState extends ConsumerState<ManageReposSheet> {
   }
 
   String? _parseRepoUrl(String input) {
-    input = input.trim();
+    // Strip quotes, backticks, whitespace
+    input = input.replaceAll(RegExp(r"^['"`\s]+|['"`\s]+$"), '').trim();
     if (input.isEmpty) return null;
+
+    if (!input.startsWith('http://') && !input.startsWith('https://')) {
+      input = 'https://$input';
+    }
+
     if (input.startsWith('https://github.com/') && input.contains('/blob/')) {
-      return input
+      input = input
           .replaceFirst(
             'https://github.com/',
             'https://raw.githubusercontent.com/',
           )
           .replaceFirst('/blob/', '/');
     }
-    if (!input.startsWith('http://') && !input.startsWith('https://')) {
-      return 'https://$input';
+
+    // Auto-resolve CloudStream repo URLs if only the repo root was provided
+    if (_selectedEngineId == 'cloudstream' &&
+        !input.endsWith('.json') &&
+        (input.contains('github.com') || input.contains('raw.githubusercontent.com'))) {
+      if (input.endsWith('/')) {
+        input = input.substring(0, input.length - 1);
+      }
+      if (input.startsWith('https://github.com/')) {
+        final parts = input.replaceFirst('https://github.com/', '').split('/');
+        if (parts.length == 2) {
+          // Format: https://github.com/owner/repo -> https://raw.githubusercontent.com/owner/repo/master/repo.json
+          return 'https://raw.githubusercontent.com/${parts[0]}/${parts[1]}/master/repo.json';
+        }
+      }
     }
+
     return input;
   }
 

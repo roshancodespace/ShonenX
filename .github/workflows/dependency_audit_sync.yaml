@@ -1,0 +1,209 @@
+name: Dependency Audit & Sync
+
+on:
+  schedule:
+    # Run every Monday at 04:00 UTC
+    - cron: '0 4 * * 1'
+  workflow_dispatch:
+    inputs:
+      create_pr:
+        description: 'Auto-create PR with safe upgrades?'
+        type: boolean
+        default: false
+      create_issue:
+        description: 'Create/update GitHub issue if updates or breakages are found?'
+        type: boolean
+        default: true
+      notify_discord:
+        description: 'Send Discord alert on critical updates?'
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  audit-dependencies:
+    name: Audit & Sync Dependencies
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository with submodules
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.35.7
+          cache: true
+
+      - name: Initialize Git Submodules
+        run: |
+          git submodule update --init --recursive packages/anymex_extension_bridge || true
+          git submodule update --init --recursive packages/commentum_client || true
+
+      - name: Check Submodule & Rust Bridge Compatibility
+        id: submodule_check
+        run: |
+          echo "### 🔍 Submodule Alignment" >> report.md
+          
+          BRIDGE_PATH="packages/anymex_extension_bridge"
+          COMMENTUM_PATH="packages/commentum_client"
+          
+          STATUS="OK"
+          if [ ! -d "$BRIDGE_PATH" ] || [ ! -f "$BRIDGE_PATH/pubspec.yaml" ]; then
+            STATUS="WARNING: anymex_extension_bridge not found or missing pubspec.yaml"
+          fi
+          
+          if [ ! -d "$COMMENTUM_PATH" ] || [ ! -f "$COMMENTUM_PATH/pubspec.yaml" ]; then
+            STATUS="WARNING: commentum_client not found or missing pubspec.yaml"
+          fi
+          
+          echo "- **Extension Bridge Status**: $STATUS" >> report.md
+          echo "submodule_status=$STATUS" >> "$GITHUB_OUTPUT"
+
+      - name: Audit Git Dependencies (MediaKit & Webview Forks)
+        id: git_deps_check
+        run: |
+          echo "### 🌐 Git Dependencies Health" >> report.md
+          echo "| Git Dependency | Repository | Status |" >> report.md
+          echo "|---|---|---|" >> report.md
+          
+          check_git_repo() {
+            local name="$1"
+            local url="$2"
+            if git ls-remote "$url" HEAD > /dev/null 2>&1; then
+              echo "| **$name** | \`$url\` | 🟢 Reachable |" >> report.md
+            else
+              echo "| **$name** | \`$url\` | 🔴 UNREACHABLE |" >> report.md
+            fi
+          }
+          
+          check_git_repo "media_kit" "https://github.com/Predidit/media-kit.git"
+          check_git_repo "flutter_inappwebview" "https://github.com/roshancodespace/flutter_inappwebview.git"
+          check_git_repo "flutter_web_auth_2" "https://github.com/roshancodespace/flutter_web_auth.git"
+
+      - name: Resolve Dependencies & Check Outdated
+        id: pub_outdated
+        run: |
+          find . -name "pubspec.lock" -type f -delete || true
+          flutter pub get
+          
+          # Generate JSON outdated report
+          flutter pub outdated --json > outdated.json || true
+          
+          echo "### 📦 Critical Packages Audit" >> report.md
+          echo "| Package | Current | Resolvable | Latest | Status |" >> report.md
+          echo "|---|---|---|---|---|" >> report.md
+
+          # Parse critical packages from JSON using jq
+          CRITICAL_PKGS=("media_kit" "media_kit_video" "flutter_inappwebview" "rhttp" "flutter_rust_bridge" "isar_community" "flutter_secure_storage" "go_router" "flutter_riverpod" "permission_handler" "flutter_local_notifications" "window_manager")
+
+          HAS_UPDATES=false
+
+          for PKG in "${CRITICAL_PKGS[@]}"; do
+            PKG_DATA=$(jq -r --arg p "$PKG" '.packages[] | select(.package == $p)' outdated.json 2>/dev/null || true)
+            if [ -n "$PKG_DATA" ]; then
+              CURRENT=$(echo "$PKG_DATA" | jq -r '.current.version // "git/path"')
+              RESOLVABLE=$(echo "$PKG_DATA" | jq -r '.resolvable.version // "-"')
+              LATEST=$(echo "$PKG_DATA" | jq -r '.latest.version // "-"')
+              
+              if [ "$CURRENT" != "$LATEST" ] && [ "$LATEST" != "-" ] && [ "$LATEST" != "null" ]; then
+                STATUS="🟡 Update Available"
+                HAS_UPDATES=true
+              else
+                STATUS="🟢 Up to Date"
+              fi
+              echo "| \`$PKG\` | $CURRENT | $RESOLVABLE | $LATEST | $STATUS |" >> report.md
+            fi
+          done
+
+          echo "has_updates=$HAS_UPDATES" >> "$GITHUB_OUTPUT"
+
+      - name: Static Analysis & Health Check
+        id: analyze
+        run: |
+          echo "### 🛠️ Static Analysis & Build Health" >> report.md
+          
+          if dart analyze --fatal-infos=false > analyze_output.txt 2>&1; then
+            echo "🟢 **Dart Analyze Passed without fatal errors.**" >> report.md
+            echo "analyze_status=PASSED" >> "$GITHUB_OUTPUT"
+          else
+            echo "⚠️ **Dart Analyze Reported Issues:**" >> report.md
+            echo '```text' >> report.md
+            head -n 20 analyze_output.txt >> report.md
+            echo '```' >> report.md
+            echo "analyze_status=WARNINGS" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Generate Final Audit Report
+        id: final_report
+        run: |
+          cat << 'EOF' > full_report.md
+          ## 📊 ShonenX Dependency & Ecosystem Compatibility Audit
+          
+          Automated check executed on **$(date -u +"%Y-%m-%d %H:%M:%S UTC")** for branch \`${{ github.ref_name }}\`.
+          
+          EOF
+          cat report.md >> full_report.md
+          cat full_report.md >> $GITHUB_STEP_SUMMARY
+
+      - name: Create or Update GitHub Issue (Optional)
+        if: ${{ (inputs.create_issue == true || github.event_name == 'schedule') && (steps.pub_outdated.outputs.has_updates == 'true' || steps.analyze.outputs.analyze_status == 'WARNINGS') }}
+        uses: peter-evans/create-issue-from-file@v5
+        with:
+          title: "🤖 Weekly Dependency Audit & Compatibility Report [$(date +'%Y-%m-%d')]"
+          content-filepath: full_report.md
+          labels: |
+            dependencies
+            automated-audit
+            maintenance
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Pull Request with Safe Upgrades (Optional)
+        if: ${{ inputs.create_pr == true }}
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: "chore(deps): safe automated dependency upgrades"
+          title: "🤖 chore(deps): automated dependency upgrades"
+          body-path: full_report.md
+          branch: chore/automated-dependency-sync
+          delete-branch: true
+          labels: |
+            dependencies
+            automated-pr
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Send Discord Alert
+        if: ${{ (inputs.notify_discord == true || github.event_name == 'schedule') && secrets.DISCORD_WEBHOOK != '' }}
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: |
+          PAYLOAD=$(jq -n \
+            --arg title "📦 ShonenX Dependency Audit Report" \
+            --arg url "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --arg time "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --rawfile desc full_report.md \
+            '{
+              embeds: [{
+                title: $title,
+                url: $url,
+                description: ($desc[0:3900]),
+                color: 3447003,
+                timestamp: $time
+              }]
+            }')
+          curl -s -H "Content-Type: application/json" -X POST -d "$PAYLOAD" "$DISCORD_WEBHOOK" || true

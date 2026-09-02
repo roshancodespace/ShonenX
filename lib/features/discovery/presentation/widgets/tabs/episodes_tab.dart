@@ -18,6 +18,7 @@ import 'package:shonenx/shared/models/unified_episode.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/features/discovery/providers/episodes_provider.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
+import 'package:shonenx/shared/widgets/app_focus_hover.dart';
 import 'package:shonenx/shared/widgets/source_selector_list.dart';
 import 'package:shonenx/shared/widgets/staggered_fade_in.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
@@ -426,7 +427,7 @@ class _EpisodesHeader extends ConsumerWidget {
   }
 }
 
-class _HeaderButton extends StatefulWidget {
+class _HeaderButton extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
@@ -438,85 +439,51 @@ class _HeaderButton extends StatefulWidget {
   });
 
   @override
-  State<_HeaderButton> createState() => _HeaderButtonState();
-}
-
-class _HeaderButtonState extends State<_HeaderButton> {
-  final FocusNode _focusNode = FocusNode();
-  bool _isFocused = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _focusNode.addListener(() {
-      if (mounted) setState(() => _isFocused = _focusNode.hasFocus);
-    });
-  }
-
-  @override
-  void dispose() {
-    _focusNode.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    return FocusableActionDetector(
-      focusNode: _focusNode,
-      actions: {
-        ActivateIntent: CallbackAction<ActivateIntent>(
-          onInvoke: (_) {
-            widget.onTap();
-            return null;
-          },
-        ),
-      },
-      child: AnimatedScale(
-        scale: _isFocused ? 1.05 : 1.0,
-        duration: const Duration(milliseconds: 150),
-        child: Material(
-          color: _isFocused
+    return AppFocusHover(
+      onTap: onTap,
+      scaleFactor: 1.05,
+      builder: (context, isFocused, isHovered) {
+        final active = isFocused || isHovered;
+        return Material(
+          color: active
               ? cs.primary
               : cs.surfaceContainerHighest.withValues(alpha: 0.6),
           borderRadius: BorderRadius.circular(16),
           clipBehavior: Clip.antiAlias,
-          child: InkWell(
-            canRequestFocus: false,
-            onTap: widget.onTap,
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: _isFocused ? Colors.white : Colors.transparent,
-                  width: 1.5,
-                ),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    widget.icon,
-                    size: 16,
-                    color: _isFocused ? cs.onPrimary : cs.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    widget.label,
-                    style: textTheme.labelMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: _isFocused ? cs.onPrimary : cs.onSurfaceVariant,
-                    ),
-                  ),
-                ],
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: active ? Colors.white : Colors.transparent,
+                width: 1.5,
               ),
             ),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  icon,
+                  size: 16,
+                  color: active ? cs.onPrimary : cs.onSurfaceVariant,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  label,
+                  style: textTheme.labelMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: active ? cs.onPrimary : cs.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

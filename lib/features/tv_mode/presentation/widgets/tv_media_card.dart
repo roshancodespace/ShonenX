@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:shonenx/features/tv_mode/presentation/widgets/tv_focusable.dart';
 import 'package:shonenx/features/tv_mode/presentation/widgets/tv_smart_image.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
+import 'package:shonenx/shared/widgets/app_focus_hover.dart';
 
 class TvMediaCard extends StatelessWidget {
   final String title;
@@ -53,7 +53,7 @@ class TvMediaCard extends StatelessWidget {
         ? (progress! / totalEpisodes!).clamp(0.0, 1.0)
         : null;
 
-    return TvFocusable(
+    return AppFocusHover(
       focusNode: focusNode,
       autofocus: autofocus,
       onTap: onTap,

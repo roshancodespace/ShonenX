@@ -7,6 +7,7 @@ import 'package:shonenx/features/history/domain/models/read_history_entry.dart';
 import 'package:shonenx/features/history/providers/continue_reading_resolver.dart';
 import 'package:shonenx/features/history/providers/read_history_provider.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
+import 'package:shonenx/shared/widgets/app_focus_hover.dart';
 import 'package:shonenx/source_engine/source_registry.dart';
 import 'continue_card_layout.dart';
 import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
@@ -30,18 +31,6 @@ class ContinueReadingItem extends ConsumerStatefulWidget {
 
 class _ContinueReadingItemState extends ConsumerState<ContinueReadingItem>
     with ContinueMediaMixin {
-  bool _isFocused = false;
-  bool _isHovered = false;
-
-  late final Map<Type, Action<Intent>> _actions = {
-    ActivateIntent: CallbackAction<ActivateIntent>(
-      onInvoke: (_) {
-        _resumeReading();
-        return null;
-      },
-    ),
-  };
-
   Future<void> _resumeReading() async {
     await handleResumeMedia(
       resolveAndPlay: () async {
@@ -87,23 +76,17 @@ class _ContinueReadingItemState extends ConsumerState<ContinueReadingItem>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isActive = _isFocused || _isHovered;
 
-    return FocusableActionDetector(
-      onShowFocusHighlight: (v) => setState(() => _isFocused = v),
-      onShowHoverHighlight: (v) => setState(() => _isHovered = v),
-      actions: _actions,
-      mouseCursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: () {
-          _resumeReading();
-          FocusManager.instance.primaryFocus?.unfocus();
-        },
-        onSecondaryTapDown: (details) =>
-            _showContextMenu(details.globalPosition),
-        onLongPressStart: (details) => _showContextMenu(details.globalPosition),
-        child: _buildStyledContent(widget.style, theme, isActive),
-      ),
+    return AppFocusHover(
+      onTap: () {
+        _resumeReading();
+        FocusManager.instance.primaryFocus?.unfocus();
+      },
+      onSecondaryTapDown: (details) => _showContextMenu(details.globalPosition),
+      onLongPressStart: (details) => _showContextMenu(details.globalPosition),
+      builder: (context, isFocused, isHovered) {
+        return _buildStyledContent(widget.style, theme, isFocused || isHovered);
+      },
     );
   }
 

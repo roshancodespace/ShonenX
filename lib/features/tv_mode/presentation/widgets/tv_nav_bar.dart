@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shonenx/core/router/app_navigator.dart';
-import 'package:shonenx/features/tv_mode/presentation/widgets/tv_focusable.dart';
+import 'package:shonenx/core/utils/focus_hover_detector.dart';
+
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 
 class TvNavBar extends StatelessWidget {
@@ -76,7 +77,7 @@ class _TvTabItemState extends State<_TvTabItem> {
   Widget build(BuildContext context) {
     final cs = ColorScheme.of(context);
     final radius = GlobalUI.uiRoundness;
-    return TvFocusable(
+    return AppFocusHover(
       onTap: widget.onTap,
       builder: (context, isFocused, isHovered) {
         return InkWell(

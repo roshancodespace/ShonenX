@@ -1,9 +1,10 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/core/utils/focus_hover_detector.dart';
 import 'package:shonenx/features/discovery/domain/media_args.dart';
 import 'package:shonenx/features/discovery/providers/media_preference_provider.dart';
-import 'package:shonenx/features/tv_mode/presentation/widgets/tv_focusable.dart';
+
 import 'package:shonenx/shared/models/ui_style_enums.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/widgets/app_dialog.dart';
@@ -172,7 +173,7 @@ class _SourceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TvFocusable(
+    return AppFocusHover(
       onTap: onTap,
       scaleFactor: 1.02,
       builder: (context, isFocused, isHovered) {

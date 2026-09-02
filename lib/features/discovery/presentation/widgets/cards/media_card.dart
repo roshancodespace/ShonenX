@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
-import 'package:shonenx/core/utils/focus_hover_detector.dart';
+import 'package:flutter/widgets.dart';
+import 'package:shonenx/shared/widgets/app_focus_hover.dart';
 import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/shared/widgets/card/card_renderer.dart';
@@ -60,18 +60,10 @@ class MediaCard extends ConsumerWidget {
     return SizedBox(
       width: layout.width,
       height: layout.height,
-      child: FocusHoverDetector(
+      child: AppFocusHover(
         onTap: onTap,
         onSecondaryTap: onSecondaryTap,
         onLongPress: onLongPress,
-        actions: {
-          ActivateIntent: CallbackAction<ActivateIntent>(
-            onInvoke: (_) {
-              onTap();
-              return null;
-            },
-          ),
-        },
         builder: (context, isFocused, isHovered) {
           final isActive = isFocused || isHovered;
           final baseLayout = style.getBaseLayout(isWideMode: isWideMode);

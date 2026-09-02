@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:shonenx/core/utils/focus_hover_detector.dart';
 import 'package:shonenx/core/utils/formatting.dart';
 import 'package:shonenx/features/history/domain/models/read_history_entry.dart';
 import 'package:shonenx/features/history/domain/models/watch_history_entry.dart';
-import 'package:shonenx/features/tv_mode/presentation/widgets/tv_focusable.dart';
 import 'package:shonenx/features/tv_mode/presentation/widgets/tv_smart_image.dart';
 import 'package:shonenx/shared/models/ui_style_enums.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
@@ -161,7 +161,7 @@ class TvContinueCard extends StatelessWidget {
         ? bannerUrl!
         : (coverUrl ?? '');
 
-    return TvFocusable(
+    return AppFocusHover(
       focusNode: focusNode,
       autofocus: autofocus,
       onTap: onTap,

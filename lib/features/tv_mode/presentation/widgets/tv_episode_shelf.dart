@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/shared/widgets/app_focus_hover.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'package:shonenx/core/router/app_navigator.dart';
 import 'package:shonenx/core/utils/formatting.dart';
@@ -15,7 +16,6 @@ import 'package:shonenx/features/reader/domain/reader_mode.dart';
 import 'package:shonenx/features/reader/providers/preferred_scanlator_provider.dart';
 import 'package:shonenx/features/tracking/providers/media_tracking_provider.dart';
 import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
-import 'package:shonenx/features/tv_mode/presentation/widgets/tv_focusable.dart';
 import 'package:shonenx/features/tv_mode/presentation/widgets/tv_source_dialog.dart';
 import 'package:shonenx/shared/models/ui_style_enums.dart';
 import 'package:shonenx/shared/models/unified_episode.dart';
@@ -233,7 +233,7 @@ class _TvEpisodeShelfState extends ConsumerState<TvEpisodeShelf> {
                             final isSelected = season == currentSeason;
                             return Padding(
                               padding: const EdgeInsets.only(right: 8),
-                              child: TvFocusable(
+                              child: AppFocusHover(
                                 onTap: () => setState(() {
                                   _selectedSeason = season;
                                   _chunkIndex = 0;
@@ -289,7 +289,7 @@ class _TvEpisodeShelfState extends ConsumerState<TvEpisodeShelf> {
 
                             return Padding(
                               padding: const EdgeInsets.only(right: 8),
-                              child: TvFocusable(
+                              child: AppFocusHover(
                                 onTap: () => setState(() {
                                   _chunkIndex = idx;
                                   _hasAutoScrolled = false;
@@ -334,7 +334,7 @@ class _TvEpisodeShelfState extends ConsumerState<TvEpisodeShelf> {
                           }),
                           const SizedBox(width: 8),
                         ],
-                        TvFocusable(
+                        AppFocusHover(
                           onTap: () => setState(() {
                             _descending = !_descending;
                             _hasAutoScrolled = false;
@@ -381,7 +381,7 @@ class _TvEpisodeShelfState extends ConsumerState<TvEpisodeShelf> {
                           },
                         ),
                         const SizedBox(width: 10),
-                        TvFocusable(
+                        AppFocusHover(
                           onTap: () {
                             if (widget.onOpenSourceSelector != null) {
                               widget.onOpenSourceSelector!();
@@ -680,7 +680,7 @@ class _TvEpisodeShelfState extends ConsumerState<TvEpisodeShelf> {
             style: TextStyle(color: Colors.white70, fontSize: 14),
           ),
           const SizedBox(height: 14),
-          TvFocusable(
+          AppFocusHover(
             onTap: () {
               if (widget.onOpenSourceSelector != null) {
                 widget.onOpenSourceSelector!();
@@ -744,7 +744,7 @@ class _TvEpisodeShelfState extends ConsumerState<TvEpisodeShelf> {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TvFocusable(
+              AppFocusHover(
                 onTap: () => ref.refresh(episodesListProvider(mediaArgs)),
                 builder: (context, isFocused, isHovered) {
                   final active = isFocused || isHovered;
@@ -771,7 +771,7 @@ class _TvEpisodeShelfState extends ConsumerState<TvEpisodeShelf> {
                 },
               ),
               const SizedBox(width: 12),
-              TvFocusable(
+              AppFocusHover(
                 onTap: () {
                   if (widget.onOpenSourceSelector != null) {
                     widget.onOpenSourceSelector!();
@@ -845,7 +845,7 @@ class _TvEpisodeCard extends StatelessWidget {
               ? 'Chapter ${episode.number % 1 == 0 ? episode.number.toInt() : episode.number}'
               : 'Episode ${episode.number % 1 == 0 ? episode.number.toInt() : episode.number}');
 
-    return TvFocusable(
+    return AppFocusHover(
       onTap: onTap,
       scaleFactor: 1.04,
       builder: (context, isFocused, isHovered) {

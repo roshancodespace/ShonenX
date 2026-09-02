@@ -12,6 +12,7 @@ import 'package:shonenx/features/history/domain/models/watch_history_entry.dart'
 import 'package:shonenx/features/history/providers/continue_watching_resolver.dart';
 import 'package:shonenx/features/history/providers/watch_history_provider.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
+import 'package:shonenx/shared/widgets/app_focus_hover.dart';
 import 'package:shonenx/source_engine/source_registry.dart';
 import 'continue_card_layout.dart';
 
@@ -34,18 +35,6 @@ class ContinueWatchingItem extends ConsumerStatefulWidget {
 
 class _ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem>
     with ContinueMediaMixin {
-  bool _isFocused = false;
-  bool _isHovered = false;
-
-  late final Map<Type, Action<Intent>> _actions = {
-    ActivateIntent: CallbackAction<ActivateIntent>(
-      onInvoke: (_) {
-        _resumeEpisode();
-        return null;
-      },
-    ),
-  };
-
   Future<void> _resumeEpisode() async {
     await handleResumeMedia(
       resolveAndPlay: () async {
@@ -91,26 +80,17 @@ class _ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isActive = _isFocused || _isHovered;
 
-    return FocusableActionDetector(
-      onShowFocusHighlight: (v) => setState(() => _isFocused = v),
-      onShowHoverHighlight: (v) => setState(() => _isHovered = v),
-      actions: _actions,
-      mouseCursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: () {
-          _resumeEpisode();
-          FocusManager.instance.primaryFocus?.unfocus();
-        },
-        onSecondaryTapDown: (details) {
-          _showContextMenu(details.globalPosition);
-        },
-        onLongPressStart: (details) {
-          _showContextMenu(details.globalPosition);
-        },
-        child: _buildStyledContent(widget.style, theme, isActive),
-      ),
+    return AppFocusHover(
+      onTap: () {
+        _resumeEpisode();
+        FocusManager.instance.primaryFocus?.unfocus();
+      },
+      onSecondaryTapDown: (details) => _showContextMenu(details.globalPosition),
+      onLongPressStart: (details) => _showContextMenu(details.globalPosition),
+      builder: (context, isFocused, isHovered) {
+        return _buildStyledContent(widget.style, theme, isFocused || isHovered);
+      },
     );
   }
 

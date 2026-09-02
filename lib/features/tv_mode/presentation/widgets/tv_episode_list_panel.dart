@@ -1,7 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:shonenx/core/utils/focus_hover_detector.dart';
 import 'package:shonenx/core/utils/formatting.dart';
-import 'package:shonenx/features/tv_mode/presentation/widgets/tv_focusable.dart';
 import 'package:shonenx/shared/models/ui_style_enums.dart';
 import 'package:shonenx/shared/models/unified_episode.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
@@ -64,7 +64,7 @@ class TvEpisodeListPanel extends StatelessWidget {
                   ? 'Chapter ${episode.number}'
                   : 'Episode ${episode.number}');
 
-        return TvFocusable(
+        return AppFocusHover(
           onTap: () => onEpisodeTap(episode, source),
           scaleFactor: 1.04,
           builder: (context, isFocused, isHovered) {

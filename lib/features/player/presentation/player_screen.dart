@@ -43,7 +43,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
 
   bool _showControls = false;
   bool _lockControls = false;
+  bool _showLockedIcon = false;
   Timer? _controlsTimer;
+  Timer? _lockedIconTimer;
 
   bool _isFullScreen = false;
   bool _isEpisodePanelOpen = false;
@@ -117,6 +119,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
       WakelockPlus.disable();
     } catch (_) {}
     _controlsTimer?.cancel();
+    _lockedIconTimer?.cancel();
     _disposeSystemUI();
 
     try {
@@ -159,15 +162,60 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     }
   }
 
-  void _showControlsTemporarily() {
+  void _startLockedIconTimer() {
+    _lockedIconTimer?.cancel();
+    _lockedIconTimer = Timer(const Duration(milliseconds: 2500), () {
+      if (mounted) setState(() => _showLockedIcon = false);
+    });
+  }
+
+  void _showLockedIconTemporarily() {
+    if (!_lockControls) return;
+    _lockedIconTimer?.cancel();
+    if (!_showLockedIcon && mounted) setState(() => _showLockedIcon = true);
+    _startLockedIconTimer();
+  }
+
+  void _toggleLockedIcon() {
+    if (!_lockControls) return;
+    if (_showLockedIcon) {
+      _lockedIconTimer?.cancel();
+      if (mounted) setState(() => _showLockedIcon = false);
+    } else {
+      _showLockedIconTemporarily();
+    }
+  }
+
+  void _lockScreen() {
     _controlsTimer?.cancel();
-    if (!_showControls) setState(() => _showControls = true);
+    setState(() {
+      _lockControls = true;
+      _showControls = false;
+      _showLockedIcon = true;
+    });
+    _startLockedIconTimer();
+  }
+
+  void _unlockScreen() {
+    _lockedIconTimer?.cancel();
+    setState(() {
+      _lockControls = false;
+      _showLockedIcon = false;
+    });
+    _showControlsTemporarily();
+  }
+
+  void _showControlsTemporarily() {
+    if (_lockControls) return;
+    _controlsTimer?.cancel();
+    if (!_showControls && mounted) setState(() => _showControls = true);
     _controlsTimer = Timer(_controlsAutoHideDuration, () {
       if (mounted) setState(() => _showControls = false);
     });
   }
 
   void _toggleControls() {
+    if (_lockControls) return;
     if (_showControls) {
       _controlsTimer?.cancel();
       setState(() => _showControls = false);
@@ -203,6 +251,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
   }
 
   void _onMouseHover(PointerHoverEvent event) {
+    if (_lockControls) return;
     if (event.kind == PointerDeviceKind.touch) return;
     if (_lastHoverPosition == event.position) return;
     _lastHoverPosition = event.position;
@@ -296,6 +345,10 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     VideoEngine engine,
     PlayerController controller,
   ) {
+    if (_lockControls) {
+      _unlockScreen();
+      return;
+    }
     if (!didPop) {
       try {
         engine.pause();
@@ -318,15 +371,41 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
   }
 
   Widget _buildLockedOverlay() {
-    return Center(
-      child: IconButton.filled(
-        padding: const EdgeInsets.all(15),
-        icon: const Icon(
-          Icons.lock_open_rounded,
-          color: Colors.white,
-          size: 50,
-        ),
-        onPressed: () => setState(() => _lockControls = false),
+    return Positioned.fill(
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: _toggleLockedIcon,
+            ),
+          ),
+          AnimatedOpacity(
+            opacity: _showLockedIcon ? 1.0 : 0.0,
+            duration: const Duration(milliseconds: 250),
+            child: IgnorePointer(
+              ignoring: !_showLockedIcon,
+              child: SafeArea(
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 32),
+                    child: IconButton.filled(
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.black.withValues(alpha: 0.55),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.all(12),
+                      ),
+                      icon: const Icon(Icons.lock_outline_rounded, size: 26),
+                      tooltip: 'Unlock',
+                      onPressed: _unlockScreen,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -377,8 +456,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
           isFullScreen: _isFullScreen,
           onToggleFullScreen: _toggleFullScreen,
           onShowEpisodePanel: _toggleEpisodePanel,
-          onToggleLockControls: () =>
-              setState(() => _lockControls = !_lockControls),
+          onToggleLockControls: _lockScreen,
         ),
       ],
     );
@@ -529,24 +607,29 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
             }
           },
           child: MouseRegion(
-            cursor: _showControls
-                ? SystemMouseCursors.basic
-                : SystemMouseCursors.none,
+            cursor: _lockControls
+                ? (_showLockedIcon
+                      ? SystemMouseCursors.basic
+                      : SystemMouseCursors.none)
+                : (_showControls
+                      ? SystemMouseCursors.basic
+                      : SystemMouseCursors.none),
             onHover: _onMouseHover,
             child: Stack(
               children: [
                 _buildVideoLayer(engine, playerState),
                 if (playerState.activeSubtitle != null)
                   const CustomSubtitleOverlay(),
-                Positioned.fill(
-                  child: PlayerGestureOverlay(
-                    onToggleControls: _toggleControls,
-                    onHideControls: _hideControls,
-                    onRightClick: _toggleEpisodePanel,
-                    onSeek: engine.seekRelative,
-                    onSetSpeed: engine.setSpeed,
+                if (!_lockControls)
+                  Positioned.fill(
+                    child: PlayerGestureOverlay(
+                      onToggleControls: _toggleControls,
+                      onHideControls: _hideControls,
+                      onRightClick: _toggleEpisodePanel,
+                      onSeek: engine.seekRelative,
+                      onSetSpeed: engine.setSpeed,
+                    ),
                   ),
-                ),
                 if (_lockControls)
                   _buildLockedOverlay()
                 else

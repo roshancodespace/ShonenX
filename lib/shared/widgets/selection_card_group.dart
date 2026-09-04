@@ -77,10 +77,7 @@ class SelectionCardGroup extends StatelessWidget {
                 width: 1.0,
               ),
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: children,
-            ),
+            child: Column(mainAxisSize: MainAxisSize.min, children: children),
           ),
         ],
       ),
@@ -172,10 +169,7 @@ class SelectionCardTile extends StatelessWidget {
                     ],
                   ),
                 ),
-                if (trailing != null) ...[
-                  trailing!,
-                  const SizedBox(width: 6),
-                ],
+                if (trailing != null) ...[trailing!, const SizedBox(width: 6)],
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   width: 20,
@@ -201,10 +195,7 @@ class SelectionCardTile extends StatelessWidget {
           ),
         ),
         if (showDivider)
-          Divider(
-            height: 1,
-            color: cs.outline.withValues(alpha: 0.1),
-          ),
+          Divider(height: 1, color: cs.outline.withValues(alpha: 0.1)),
       ],
     );
   }

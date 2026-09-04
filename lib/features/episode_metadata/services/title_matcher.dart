@@ -1,5 +1,22 @@
+import 'package:shonenx/shared/models/unified_media.dart';
+
 class TitleMatcher {
   static const double minimumSimilarityThreshold = 0.85;
+
+  static List<String> extractTargetTitles(UnifiedMedia media) {
+    final titles = <String>[];
+    void add(String? t) {
+      if (t != null && t.trim().isNotEmpty && !titles.contains(t.trim())) {
+        titles.add(t.trim());
+      }
+    }
+
+    add(media.title.english);
+    add(media.title.romaji);
+    add(media.title.native);
+    add(media.title.availableTitle);
+    return titles;
+  }
 
   static double calculateSimilarity(String a, String b) {
     final cleanA = _normalize(a);

@@ -5,6 +5,7 @@ class UnifiedEpisode {
   final double number;
   final int? season;
   final String? title;
+  final String? description;
   final bool isFiller;
   final String? thumbnailUrl;
   final String? airDate;
@@ -16,6 +17,7 @@ class UnifiedEpisode {
     required this.number,
     this.season,
     this.title,
+    this.description,
     this.isFiller = false,
     this.thumbnailUrl,
     this.scanlator,
@@ -40,6 +42,7 @@ class UnifiedEpisode {
     double? number,
     int? season,
     String? title,
+    String? description,
     bool? isFiller,
     String? thumbnailUrl,
     String? airDate,
@@ -51,6 +54,7 @@ class UnifiedEpisode {
       number: number ?? this.number,
       season: season ?? this.season,
       title: title ?? this.title,
+      description: description ?? this.description,
       isFiller: isFiller ?? this.isFiller,
       thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
       airDate: airDate ?? this.airDate,
@@ -65,6 +69,7 @@ class UnifiedEpisode {
       'number': number,
       'season': season,
       'title': title,
+      if (description != null) 'description': description,
       'isFiller': isFiller,
       'thumbnailUrl': thumbnailUrl,
       'airDate': airDate,

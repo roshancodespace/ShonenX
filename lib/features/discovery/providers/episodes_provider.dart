@@ -65,6 +65,7 @@ final episodesListProvider =
             media: args.toMedia(),
             sourceEpisodes: sourceEpisodesState.episodes,
             mode: contentPrefs.episodeMetadataProvider,
+            titlePreference: contentPrefs.titlePreference,
           );
 
           return EpisodesListState(

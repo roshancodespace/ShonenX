@@ -22,22 +22,40 @@ class TenraiEpisodeMetadataProvider implements EpisodeMetadataProvider {
 
   @override
   Future<String?> resolveId({required UnifiedMedia media}) async {
-    if (media.idMal?.isNotEmpty == true) return media.idMal;
-    if (media.externalIds.mal?.isNotEmpty == true) return media.externalIds.mal;
-    if (media.providerId == 'myanimelist' || media.providerId == 'mal') {
+    // 1. Direct Provider Match (O(1))
+    final providerId = media.providerId?.toLowerCase();
+    if ((providerId == 'mal' || providerId == 'myanimelist') &&
+        media.id.isNotEmpty) {
+      _log.d('Direct MAL ID from provider: ${media.id}');
       return media.id;
     }
+
+    // 2. Direct MAL ID or External Cross-Mapping (O(1))
+    if (media.idMal?.isNotEmpty == true) {
+      _log.d('Resolved MAL ID from idMal: ${media.idMal}');
+      return media.idMal;
+    }
+    if (media.externalIds.mal?.isNotEmpty == true) {
+      _log.d('Resolved MAL ID from externalIds: ${media.externalIds.mal}');
+      return media.externalIds.mal;
+    }
+
+    // 3. Fallback: Fuzzy Search by Title via Tenrai API
+    _log.i(
+      'No direct MAL ID found for Tenrai; resolving by title for "${media.title.availableTitle}"',
+    );
     return await _resolveIdByTitle(media);
   }
 
   Future<String?> _resolveIdByTitle(UnifiedMedia media) async {
-    final title =
-        media.title.romaji ?? media.title.english ?? media.title.availableTitle;
-    if (title.trim().isEmpty) return null;
+    final targetTitles = TitleMatcher.extractTargetTitles(media);
+    if (targetTitles.isEmpty) return null;
+
+    final queryTitle = targetTitles.first;
 
     try {
       final url =
-          'https://api.tenrai.org/v1/anime?q=${Uri.encodeComponent(title)}&limit=10';
+          'https://api.tenrai.org/v1/anime?q=${Uri.encodeComponent(queryTitle)}&limit=10';
       var res = await _http.get(url, cacheDuration: _cacheDuration);
 
       if (res.statusCode == 429) {
@@ -49,13 +67,6 @@ class TenraiEpisodeMetadataProvider implements EpisodeMetadataProvider {
 
       final data = jsonDecode(res.body)['data'];
       if (data is! List || data.isEmpty) return null;
-
-      final targetTitles = [
-        media.title.english,
-        media.title.romaji,
-        media.title.native,
-        media.title.availableTitle,
-      ].whereType<String>().toList();
 
       final match = TitleMatcher.findBestMatch<dynamic>(
         targetTitles: targetTitles,
@@ -80,8 +91,15 @@ class TenraiEpisodeMetadataProvider implements EpisodeMetadataProvider {
         },
       );
 
-      return match?.item is Map ? match!.item['mal_id']?.toString() : null;
-    } catch (_) {
+      final matchedId = match?.item is Map
+          ? match!.item['mal_id']?.toString()
+          : null;
+      if (matchedId != null) {
+        _log.d('Resolved MAL ID via Tenrai title search: $matchedId');
+      }
+      return matchedId;
+    } catch (e) {
+      _log.d('Tenrai title search failed: $e');
       return null;
     }
   }

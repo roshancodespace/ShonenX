@@ -6,6 +6,7 @@ import 'package:shonenx/core/router/app_navigator.dart';
 import 'package:shonenx/features/discovery/domain/media_args.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/sheets/download_sheet.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/episodes_panel/episode_list_panel.dart';
+import 'package:shonenx/features/discovery/presentation/widgets/episodes_panel/season_selector_bar.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/sheets/manual_match_sheet.dart';
 import 'package:shonenx/features/discovery/providers/matched_media_provider.dart';
 import 'package:shonenx/features/discovery/providers/media_preference_provider.dart';
@@ -66,6 +67,10 @@ class EpisodesTabWidget extends ConsumerWidget {
       children: [
         if (media.sourceId == null && !isTv) ...[
           StaggeredFadeIn(index: 0, child: _EpisodesHeader(media: media)),
+          StaggeredFadeIn(
+            index: 1,
+            child: SeasonSelectorBar(currentMedia: media),
+          ),
           Container(
             width: double.maxFinite,
             height: 1,

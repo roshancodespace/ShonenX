@@ -67,7 +67,10 @@ class EpisodesTabWidget extends ConsumerWidget {
       children: [
         if (media.sourceId == null && !isTv) ...[
           StaggeredFadeIn(index: 0, child: _EpisodesHeader(media: media)),
-          SeasonSelectorBar(currentMedia: media),
+          StaggeredFadeIn(
+            index: 1,
+            child: SeasonSelectorBar(currentMedia: media),
+          ),
           Container(
             width: double.maxFinite,
             height: 1,

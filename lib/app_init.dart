@@ -13,8 +13,6 @@ import 'package:path_provider/path_provider.dart';
 import 'package:rhttp/rhttp.dart';
 import 'package:shonenx/core/caching/cache_manager.dart';
 import 'package:shonenx/core/caching/domain/cache_entry.dart';
-import 'package:shonenx/core/network/http_adapter.dart';
-import 'package:shonenx/core/network/http_client.dart';
 import 'package:shonenx/core/services/notification_service.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/discovery/domain/media_preference.dart';
@@ -193,7 +191,6 @@ class AppInit {
         getDirectory: AnymeXExtensionBridge.defaultGetDirectory(
           baseDirectory: await getDatabaseDirectory('ShonenX'),
         ),
-        http: HTTPAdapter(ref.read(httpClientProvider)),
         projectName: "ShonenX",
       );
 

@@ -25,37 +25,34 @@ class _HeaderButton extends StatelessWidget {
   final VoidCallback onTap;
   final String tooltip;
   final bool active;
+  final double? borderRadius;
 
   const _HeaderButton({
     required this.icon,
     required this.onTap,
     required this.tooltip,
     this.active = false,
+    this.borderRadius,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final radius = BorderRadius.circular(borderRadius ?? GlobalUI.uiRoundness);
+
     return Tooltip(
       message: tooltip,
       child: Material(
         color: active
             ? theme.colorScheme.primaryContainer
             : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: radius,
+        clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
+          borderRadius: radius,
+          child: Padding(
             padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: active
-                    ? theme.colorScheme.primary.withValues(alpha: 0.5)
-                    : theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
-              ),
-            ),
             child: Icon(
               icon,
               size: 20,
@@ -221,6 +218,7 @@ class HomeScreen extends ConsumerWidget {
 
                 return _HeaderButton(
                   tooltip: 'Discovery Mode',
+                  borderRadius: uiRoundness,
                   onTap: () => showModalBottomSheet(
                     context: context,
                     isScrollControlled: true,
@@ -238,12 +236,14 @@ class HomeScreen extends ConsumerWidget {
             const SizedBox(width: 8),
             _HeaderButton(
               tooltip: 'Airing Calendar',
+              borderRadius: uiRoundness,
               onTap: () => context.pushCalendar(),
               icon: Icons.calendar_month_outlined,
             ),
             const SizedBox(width: 8),
             _HeaderButton(
               tooltip: 'Settings',
+              borderRadius: uiRoundness,
               onTap: () => context.pushSettings(),
               icon: Icons.settings_outlined,
             ),

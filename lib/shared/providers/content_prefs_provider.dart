@@ -13,9 +13,10 @@ enum AdultContentMode {
 }
 
 enum EpisodeMetadataProviderType {
-  auto('Auto (Tenrai + Kitsu)'),
+  auto('Auto (Tenrai + Kitsu + AniZip)'),
   tenrai('Tenrai'),
   kitsu('Kitsu'),
+  anizip('AniZip'),
   disabled('Disabled'),
   @Deprecated('Jikan is disabled; use tenrai instead')
   jikan('Jikan (Disabled)');

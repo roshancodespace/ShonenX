@@ -121,7 +121,8 @@ class SourceSelectorList extends ConsumerWidget {
                               ),
                       ),
                       title: isSubItem
-                          ? (sourceInfo.lang ?? sourceInfo.type.name).toUpperCase()
+                          ? (sourceInfo.lang ?? sourceInfo.type.name)
+                                .toUpperCase()
                           : sourceInfo.name,
                       subtitle: isSubItem
                           ? null
@@ -137,7 +138,10 @@ class SourceSelectorList extends ConsumerWidget {
                               if (!hasSettings) return const SizedBox.shrink();
 
                               return IconButton(
-                                icon: const Icon(Icons.settings_outlined, size: 18),
+                                icon: const Icon(
+                                  Icons.settings_outlined,
+                                  size: 18,
+                                ),
                                 color: cs.onSurfaceVariant,
                                 visualDensity: VisualDensity.compact,
                                 tooltip: 'Source Settings',
@@ -175,8 +179,9 @@ class SourceSelectorList extends ConsumerWidget {
                     );
                   }
 
-                  final hasSelectedVariant =
-                      sources.any((s) => s == currentSource);
+                  final hasSelectedVariant = sources.any(
+                    (s) => s == currentSource,
+                  );
                   final defaultVariant = sources.firstWhere((s) {
                     final l = s.lang?.toLowerCase();
                     return l == 'en' || l == 'english';
@@ -196,9 +201,7 @@ class SourceSelectorList extends ConsumerWidget {
                         showDivider: !isLastGroup && !isExpanded,
                         expandAction: IconButton(
                           icon: Icon(
-                            isExpanded
-                                ? Icons.keyboard_arrow_up_rounded
-                                : Icons.keyboard_arrow_down_rounded,
+                            Icons.keyboard_arrow_down_rounded,
                             color: cs.onSurfaceVariant,
                             size: 20,
                           ),

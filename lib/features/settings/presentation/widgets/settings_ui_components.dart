@@ -359,19 +359,23 @@ class SettingsSliderTile extends StatelessWidget {
 class SettingsDropdownTile<T> extends StatelessWidget {
   final IconData icon;
   final String title;
+  final String? subtitle;
   final T value;
   final List<DropdownMenuItem<T>> items;
   final ValueChanged<T?>? onChanged;
   final DropdownButtonBuilder? selectedItemBuilder;
+  final VoidCallback? onInfoCallback;
 
   const SettingsDropdownTile({
     super.key,
     required this.icon,
     required this.title,
+    this.subtitle,
     required this.value,
     required this.items,
     this.onChanged,
     this.selectedItemBuilder,
+    this.onInfoCallback,
   });
 
   @override
@@ -382,16 +386,40 @@ class SettingsDropdownTile<T> extends StatelessWidget {
       contentPadding: const EdgeInsets.symmetric(horizontal: 10.0),
       leading: Icon(icon, color: theme.colorScheme.primary),
       title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-      trailing: DropdownButtonHideUnderline(
-        child: DropdownButton<T>(
-          value: value,
-          items: items,
-          onChanged: onChanged,
-          isDense: true,
-          alignment: AlignmentDirectional.centerEnd,
-          borderRadius: BorderRadius.circular(12),
-          selectedItemBuilder: selectedItemBuilder,
-        ),
+      subtitle: subtitle != null
+          ? Text(
+              subtitle!,
+              style: TextStyle(
+                fontSize: 12,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            )
+          : null,
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (onInfoCallback != null) ...[
+            IconButton(
+              icon: const Icon(Icons.info_outline, size: 20),
+              visualDensity: VisualDensity.compact,
+              splashRadius: 20,
+              tooltip: 'Info',
+              onPressed: onInfoCallback,
+            ),
+            const SizedBox(width: 4),
+          ],
+          DropdownButtonHideUnderline(
+            child: DropdownButton<T>(
+              value: value,
+              items: items,
+              onChanged: onChanged,
+              isDense: true,
+              alignment: AlignmentDirectional.centerEnd,
+              borderRadius: BorderRadius.circular(12),
+              selectedItemBuilder: selectedItemBuilder,
+            ),
+          ),
+        ],
       ),
     );
   }

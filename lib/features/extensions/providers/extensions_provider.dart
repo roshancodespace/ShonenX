@@ -69,6 +69,48 @@ class ExtensionsController extends Notifier<Set<String>> {
     }
   }
 
+  Future<void> installVariantGroup(
+    BuildContext context,
+    String name,
+    List<UnifiedSource> groupSources,
+  ) async {
+    final ids = groupSources.map((s) => s.id).toSet();
+    state = {...state, ...ids, name};
+    try {
+      for (final source in groupSources) {
+        if (source.bridgeSource != null) {
+          await bridge
+              .getSourceManager(source.bridgeSource!)
+              .installSource(source.bridgeSource!);
+        }
+      }
+      ref.invalidateAllSources();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Installed all variants of $name!'),
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to install variants of $name: $e'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      state = {...state}
+        ..removeAll(ids)
+        ..remove(name);
+    }
+  }
+
   void uninstallVariantGroup(
     BuildContext context,
     String name,

@@ -43,6 +43,7 @@ class _ExtensionsSettingsScreenState
   final TextEditingController _searchController = TextEditingController();
   String _selectedLangFilter = 'All';
   String _selectedEngineFilter = 'All';
+  bool _isInstalledMode = true;
   Timer? _debounceTimer;
 
   void _onSearchTextChanged() {
@@ -92,7 +93,7 @@ class _ExtensionsSettingsScreenState
     final theme = Theme.of(context);
 
     return DefaultTabController(
-      length: 6,
+      length: 2,
       child: AppScaffold(
         title: 'Sources',
         subtitle: 'Extensions & Catalogs',
@@ -102,46 +103,22 @@ class _ExtensionsSettingsScreenState
         body: TabBarView(
           children: [
             SourcesTab(
+              key: ValueKey('anime_$_isInstalledMode'),
               engineFilter: _selectedEngineFilter,
               type: MediaType.ANIME,
               searchQuery: _searchQuery,
               langFilter: _selectedLangFilter,
-              isInstalled: true,
+              isInstalled: _isInstalledMode,
+              onBrowseAvailable: () => setState(() => _isInstalledMode = false),
             ),
             SourcesTab(
+              key: ValueKey('manga_$_isInstalledMode'),
               engineFilter: _selectedEngineFilter,
               type: MediaType.MANGA,
               searchQuery: _searchQuery,
               langFilter: _selectedLangFilter,
-              isInstalled: true,
-            ),
-            SourcesTab(
-              engineFilter: _selectedEngineFilter,
-              type: MediaType.NOVEL,
-              searchQuery: _searchQuery,
-              langFilter: _selectedLangFilter,
-              isInstalled: true,
-            ),
-            SourcesTab(
-              engineFilter: _selectedEngineFilter,
-              type: MediaType.ANIME,
-              searchQuery: _searchQuery,
-              langFilter: _selectedLangFilter,
-              isInstalled: false,
-            ),
-            SourcesTab(
-              engineFilter: _selectedEngineFilter,
-              type: MediaType.MANGA,
-              searchQuery: _searchQuery,
-              langFilter: _selectedLangFilter,
-              isInstalled: false,
-            ),
-            SourcesTab(
-              engineFilter: _selectedEngineFilter,
-              type: MediaType.NOVEL,
-              searchQuery: _searchQuery,
-              langFilter: _selectedLangFilter,
-              isInstalled: false,
+              isInstalled: _isInstalledMode,
+              onBrowseAvailable: () => setState(() => _isInstalledMode = false),
             ),
           ],
         ),
@@ -153,12 +130,73 @@ class _ExtensionsSettingsScreenState
   }
 
   PreferredSizeWidget _buildBarBottom() {
+    final animeSources = ref.watch(availableAnimeSourcesProvider).value ?? [];
+    final mangaSources = ref.watch(availableMangaSourcesProvider).value ?? [];
+    final enabledManagers = ref.watch(enabledExtensionManagersProvider);
+
+    final countInstalledAnime = ExtensionsService.getSourcesTabCount(
+      type: MediaType.ANIME,
+      isInstalled: true,
+      engineFilter: _selectedEngineFilter,
+      searchQuery: _searchQuery,
+      langFilter: _selectedLangFilter,
+      animeSources: animeSources,
+      mangaSources: mangaSources,
+      novelSources: const [],
+      enabledManagers: enabledManagers.toList(),
+    );
+    final countInstalledManga = ExtensionsService.getSourcesTabCount(
+      type: MediaType.MANGA,
+      isInstalled: true,
+      engineFilter: _selectedEngineFilter,
+      searchQuery: _searchQuery,
+      langFilter: _selectedLangFilter,
+      animeSources: animeSources,
+      mangaSources: mangaSources,
+      novelSources: const [],
+      enabledManagers: enabledManagers.toList(),
+    );
+    final countAvailableAnime = ExtensionsService.getSourcesTabCount(
+      type: MediaType.ANIME,
+      isInstalled: false,
+      engineFilter: _selectedEngineFilter,
+      searchQuery: _searchQuery,
+      langFilter: _selectedLangFilter,
+      animeSources: animeSources,
+      mangaSources: mangaSources,
+      novelSources: const [],
+      enabledManagers: enabledManagers.toList(),
+    );
+    final countAvailableManga = ExtensionsService.getSourcesTabCount(
+      type: MediaType.MANGA,
+      isInstalled: false,
+      engineFilter: _selectedEngineFilter,
+      searchQuery: _searchQuery,
+      langFilter: _selectedLangFilter,
+      animeSources: animeSources,
+      mangaSources: mangaSources,
+      novelSources: const [],
+      enabledManagers: enabledManagers.toList(),
+    );
+
+    final totalInstalled = countInstalledAnime + countInstalledManga;
+    final totalAvailable = countAvailableAnime + countAvailableManga;
+
     return PreferredSize(
-      preferredSize: const Size.fromHeight(88),
+      preferredSize: const Size.fromHeight(130),
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [_buildFilterBar(), _buildTabBarContent()],
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildModeSelector(totalInstalled, totalAvailable),
+          _buildFilterBar(),
+          _buildTabBarContent(
+            countInstalledAnime: countInstalledAnime,
+            countInstalledManga: countInstalledManga,
+            countAvailableAnime: countAvailableAnime,
+            countAvailableManga: countAvailableManga,
+          ),
+        ],
       ),
     );
   }
@@ -393,99 +431,81 @@ class _ExtensionsSettingsScreenState
     );
   }
 
-  Widget _buildTabBarContent() {
-    final animeSources = ref.watch(availableAnimeSourcesProvider).value ?? [];
-    final mangaSources = ref.watch(availableMangaSourcesProvider).value ?? [];
-    final novelSources = ref.watch(availableNovelSourcesProvider).value ?? [];
-    final enabledManagers = ref.watch(enabledExtensionManagersProvider);
+  Widget _buildModeSelector(int totalInstalled, int totalAvailable) {
+    final roundness = ref.watch(
+      themePrefsProvider.select((s) => s.uiRoundness),
+    );
+    final availableStr = totalAvailable > 99
+        ? '99+'
+        : totalAvailable.toString();
 
-    // 5. Removed Obx entirely. Riverpod's `ref.watch` already triggers rebuilds.
-    final countInstalledAnime = ExtensionsService.getSourcesTabCount(
-      type: MediaType.ANIME,
-      isInstalled: true,
-      engineFilter: _selectedEngineFilter,
-      searchQuery: _searchQuery,
-      langFilter: _selectedLangFilter,
-      animeSources: animeSources,
-      mangaSources: mangaSources,
-      novelSources: novelSources,
-      enabledManagers: enabledManagers.toList(),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      child: SegmentedButton<bool>(
+        showSelectedIcon: true,
+        segments: [
+          ButtonSegment<bool>(
+            value: true,
+            icon: const Icon(Icons.download_done_rounded, size: 18),
+            label: Text(
+              'Installed ($totalInstalled)',
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+            ),
+          ),
+          ButtonSegment<bool>(
+            value: false,
+            icon: const Icon(Icons.explore_outlined, size: 18),
+            label: Text(
+              'Get Extensions ($availableStr)',
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+            ),
+          ),
+        ],
+        selected: {_isInstalledMode},
+        onSelectionChanged: (newSelection) {
+          setState(() {
+            _isInstalledMode = newSelection.first;
+          });
+        },
+        style: ButtonStyle(
+          visualDensity: VisualDensity.compact,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          shape: WidgetStatePropertyAll(
+            RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(roundness * 0.75),
+            ),
+          ),
+        ),
+      ),
     );
-    final countInstalledManga = ExtensionsService.getSourcesTabCount(
-      type: MediaType.MANGA,
-      isInstalled: true,
-      engineFilter: _selectedEngineFilter,
-      searchQuery: _searchQuery,
-      langFilter: _selectedLangFilter,
-      animeSources: animeSources,
-      mangaSources: mangaSources,
-      novelSources: novelSources,
-      enabledManagers: enabledManagers.toList(),
-    );
-    final countInstalledNovel = ExtensionsService.getSourcesTabCount(
-      type: MediaType.NOVEL,
-      isInstalled: true,
-      engineFilter: _selectedEngineFilter,
-      searchQuery: _searchQuery,
-      langFilter: _selectedLangFilter,
-      animeSources: animeSources,
-      mangaSources: mangaSources,
-      novelSources: novelSources,
-      enabledManagers: enabledManagers.toList(),
-    );
-    final countAvailableAnime = ExtensionsService.getSourcesTabCount(
-      type: MediaType.ANIME,
-      isInstalled: false,
-      engineFilter: _selectedEngineFilter,
-      searchQuery: _searchQuery,
-      langFilter: _selectedLangFilter,
-      animeSources: animeSources,
-      mangaSources: mangaSources,
-      novelSources: novelSources,
-      enabledManagers: enabledManagers.toList(),
-    );
-    final countAvailableManga = ExtensionsService.getSourcesTabCount(
-      type: MediaType.MANGA,
-      isInstalled: false,
-      engineFilter: _selectedEngineFilter,
-      searchQuery: _searchQuery,
-      langFilter: _selectedLangFilter,
-      animeSources: animeSources,
-      mangaSources: mangaSources,
-      novelSources: novelSources,
-      enabledManagers: enabledManagers.toList(),
-    );
-    final countAvailableNovel = ExtensionsService.getSourcesTabCount(
-      type: MediaType.NOVEL,
-      isInstalled: false,
-      engineFilter: _selectedEngineFilter,
-      searchQuery: _searchQuery,
-      langFilter: _selectedLangFilter,
-      animeSources: animeSources,
-      mangaSources: mangaSources,
-      novelSources: novelSources,
-      enabledManagers: enabledManagers.toList(),
-    );
+  }
 
+  Widget _buildTabBarContent({
+    required int countInstalledAnime,
+    required int countInstalledManga,
+    required int countAvailableAnime,
+    required int countAvailableManga,
+  }) {
     return TabBar(
-      isScrollable: true,
+      isScrollable: false,
       indicatorSize: TabBarIndicatorSize.tab,
       indicatorAnimation: TabIndicatorAnimation.linear,
-      tabAlignment: TabAlignment.start,
       dividerColor: Colors.transparent,
       tabs: [
-        _buildTab('Installed Anime', countInstalledAnime),
-        _buildTab('Installed Manga', countInstalledManga),
-        _buildTab('Installed Novel', countInstalledNovel),
-        _buildTab('Available Anime', countAvailableAnime),
-        _buildTab('Available Manga', countAvailableManga),
-        _buildTab('Available Novel', countAvailableNovel),
+        _buildTab(
+          'Anime',
+          _isInstalledMode ? countInstalledAnime : countAvailableAnime,
+        ),
+        _buildTab(
+          'Manga',
+          _isInstalledMode ? countInstalledManga : countAvailableManga,
+        ),
       ],
     );
   }
 
   Widget _buildTab(String text, int count) {
-    final countStr = count > 100 ? '100+' : count.toString();
+    final countStr = count > 99 ? '99+' : count.toString();
     final cs = Theme.of(context).colorScheme;
     final roundness = ref.watch(
       themePrefsProvider.select((s) => s.uiRoundness),
@@ -494,6 +514,7 @@ class _ExtensionsSettingsScreenState
     return Tab(
       child: Row(
         mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(text),
           const SizedBox(width: 6),
@@ -506,7 +527,7 @@ class _ExtensionsSettingsScreenState
             child: Text(
               countStr,
               style: TextStyle(
-                fontSize: 11,
+                fontSize: 10,
                 fontWeight: FontWeight.bold,
                 color: cs.onPrimaryContainer,
               ),

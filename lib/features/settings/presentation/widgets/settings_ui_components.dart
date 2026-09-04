@@ -170,6 +170,10 @@ class SettingsActionTile extends StatelessWidget {
   final Color? accentColor;
   final Color? tileColor;
   final Color? foregroundColor;
+  final int? titleMaxLines;
+  final TextOverflow? titleOverflow;
+  final int? subtitleMaxLines;
+  final TextOverflow? subtitleOverflow;
 
   const SettingsActionTile({
     super.key,
@@ -183,6 +187,10 @@ class SettingsActionTile extends StatelessWidget {
     this.accentColor,
     this.tileColor,
     this.foregroundColor,
+    this.titleMaxLines = 1,
+    this.titleOverflow = TextOverflow.ellipsis,
+    this.subtitleMaxLines,
+    this.subtitleOverflow,
   });
 
   @override
@@ -205,11 +213,15 @@ class SettingsActionTile extends StatelessWidget {
               : null),
       title: Text(
         title,
+        maxLines: titleMaxLines,
+        overflow: titleOverflow,
         style: TextStyle(fontWeight: FontWeight.w600, color: color),
       ),
       subtitle: subtitle != null
           ? Text(
               subtitle!,
+              maxLines: subtitleMaxLines,
+              overflow: subtitleOverflow,
               style: TextStyle(
                 fontSize: 12,
                 color: theme.colorScheme.onSurfaceVariant,

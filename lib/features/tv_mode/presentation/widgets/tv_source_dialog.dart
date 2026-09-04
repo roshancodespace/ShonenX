@@ -88,52 +88,45 @@ class _TvSourceSelector extends ConsumerWidget {
           );
         }
 
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            final useTwoColumns =
-                constraints.maxWidth >= 460 && sources.length > 2;
+        final Map<String, List<SourceInfo>> groupedSources = {};
+        for (final source in sources) {
+          groupedSources.putIfAbsent(source.name, () => []).add(source);
+        }
 
-            if (useTwoColumns) {
-              return GridView.builder(
-                shrinkWrap: true,
-                physics: const BouncingScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  childAspectRatio: 3.4,
-                  mainAxisSpacing: 10,
-                  crossAxisSpacing: 10,
-                ),
-                itemCount: sources.length,
-                itemBuilder: (context, index) {
-                  final source = sources[index];
-                  final isSelected = currentSource?.id == source.id;
-                  return _SourceCard(
-                    source: source,
-                    isSelected: isSelected,
-                    radius: radius,
-                    cs: cs,
-                    onTap: () => _selectSource(context, ref, source),
-                  );
-                },
+        for (final name in groupedSources.keys) {
+          if (groupedSources[name]!.length > 1) {
+            groupedSources[name]!.removeWhere(
+              (s) => s.lang?.toLowerCase() == 'all',
+            );
+          }
+        }
+        final groupList = groupedSources.values.toList();
+
+        return ListView.separated(
+          shrinkWrap: true,
+          physics: const BouncingScrollPhysics(),
+          itemCount: groupList.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 8),
+          itemBuilder: (context, index) {
+            final group = groupList[index];
+            if (group.length == 1) {
+              final source = group.first;
+              final isSelected = currentSource?.id == source.id;
+              return _SourceCard(
+                source: source,
+                isSelected: isSelected,
+                radius: radius,
+                cs: cs,
+                onTap: () => _selectSource(context, ref, source),
               );
             }
 
-            return ListView.separated(
-              shrinkWrap: true,
-              physics: const BouncingScrollPhysics(),
-              itemCount: sources.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
-              itemBuilder: (context, index) {
-                final source = sources[index];
-                final isSelected = currentSource?.id == source.id;
-                return _SourceCard(
-                  source: source,
-                  isSelected: isSelected,
-                  radius: radius,
-                  cs: cs,
-                  onTap: () => _selectSource(context, ref, source),
-                );
-              },
+            return _TvSourceGroupCard(
+              sources: group,
+              currentSource: currentSource,
+              radius: radius,
+              cs: cs,
+              onSelectSource: (source) => _selectSource(context, ref, source),
             );
           },
         );
@@ -302,6 +295,318 @@ class _SourceCard extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _TvSourceGroupCard extends StatefulWidget {
+  final List<SourceInfo> sources;
+  final SourceInfo? currentSource;
+  final double radius;
+  final ColorScheme cs;
+  final ValueChanged<SourceInfo> onSelectSource;
+
+  const _TvSourceGroupCard({
+    required this.sources,
+    required this.currentSource,
+    required this.radius,
+    required this.cs,
+    required this.onSelectSource,
+  });
+
+  @override
+  State<_TvSourceGroupCard> createState() => _TvSourceGroupCardState();
+}
+
+class _TvSourceGroupCardState extends State<_TvSourceGroupCard> {
+  bool _isExpanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasSelected = widget.sources.any(
+      (s) => s.id == widget.currentSource?.id,
+    );
+    final defaultVariant = widget.sources.firstWhere(
+      (s) =>
+          s.lang?.toLowerCase() == 'en' || s.lang?.toLowerCase() == 'english',
+      orElse: () => widget.sources.first,
+    );
+    final activeVariant = hasSelected ? widget.currentSource! : defaultVariant;
+    final isSelected = widget.currentSource?.id == activeVariant.id;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        AppFocusHover(
+          onTap: () => widget.onSelectSource(activeVariant),
+          scaleFactor: 1.02,
+          builder: (context, isFocused, isHovered) {
+            final active = isFocused || isHovered;
+
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 160),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: active
+                    ? Colors.white
+                    : isSelected
+                    ? widget.cs.primary.withValues(alpha: 0.14)
+                    : Colors.white.withValues(alpha: 0.04),
+                borderRadius: BorderRadius.circular(widget.radius),
+                border: Border.all(
+                  color: active
+                      ? Colors.white
+                      : isSelected
+                      ? widget.cs.primary.withValues(alpha: 0.45)
+                      : Colors.white.withValues(alpha: 0.08),
+                  width: active ? 1.8 : 1.0,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 34,
+                    height: 34,
+                    padding: const EdgeInsets.all(5),
+                    decoration: BoxDecoration(
+                      color: active
+                          ? Colors.black.withValues(alpha: 0.08)
+                          : isSelected
+                          ? widget.cs.primary.withValues(alpha: 0.2)
+                          : Colors.white.withValues(alpha: 0.06),
+                      borderRadius: BorderRadius.circular(
+                        (widget.radius * 0.6).clamp(0.0, widget.radius),
+                      ),
+                    ),
+                    child:
+                        activeVariant.iconUrl != null &&
+                            activeVariant.iconUrl!.isNotEmpty
+                        ? CachedNetworkImage(
+                            imageUrl: activeVariant.iconUrl!,
+                            fit: BoxFit.contain,
+                            errorWidget: (_, __, ___) => Icon(
+                              Icons.extension_rounded,
+                              size: 18,
+                              color: active
+                                  ? Colors.black
+                                  : (isSelected
+                                        ? widget.cs.primary
+                                        : Colors.white70),
+                            ),
+                          )
+                        : Icon(
+                            Icons.extension_rounded,
+                            size: 18,
+                            color: active
+                                ? Colors.black
+                                : (isSelected
+                                      ? widget.cs.primary
+                                      : Colors.white70),
+                          ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          activeVariant.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: active ? Colors.black : Colors.white,
+                            fontWeight: isSelected || active
+                                ? FontWeight.bold
+                                : FontWeight.w600,
+                            fontSize: 13.5,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 5,
+                                vertical: 1,
+                              ),
+                              decoration: BoxDecoration(
+                                color: active
+                                    ? Colors.black.withValues(alpha: 0.1)
+                                    : Colors.white.withValues(alpha: 0.08),
+                                borderRadius: BorderRadius.circular(
+                                  (widget.radius * 0.4).clamp(
+                                    0.0,
+                                    widget.radius,
+                                  ),
+                                ),
+                              ),
+                              child: Text(
+                                '${widget.sources.length} VARIANTS • ${(activeVariant.lang ?? activeVariant.type.name).toUpperCase()}',
+                                style: TextStyle(
+                                  color: active
+                                      ? Colors.black87
+                                      : Colors.white60,
+                                  fontSize: 9.5,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (isSelected) ...[
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: active ? Colors.black : widget.cs.primary,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.check_rounded,
+                        size: 13,
+                        color: active ? Colors.white : Colors.black,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  AppFocusHover(
+                    onTap: () {
+                      setState(() {
+                        _isExpanded = !_isExpanded;
+                      });
+                    },
+                    scaleFactor: 1.1,
+                    builder: (context, isArrowFocused, isArrowHovered) {
+                      final arrowActive = isArrowFocused || isArrowHovered;
+                      return Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: arrowActive
+                              ? (active ? Colors.black26 : Colors.white24)
+                              : Colors.transparent,
+                          shape: BoxShape.circle,
+                        ),
+                        child: AnimatedRotation(
+                          turns: _isExpanded ? 0.5 : 0.0,
+                          duration: const Duration(milliseconds: 180),
+                          child: Icon(
+                            Icons.keyboard_arrow_down_rounded,
+                            size: 20,
+                            color: active ? Colors.black : Colors.white70,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+          alignment: Alignment.topCenter,
+          child: _isExpanded
+              ? Padding(
+                  padding: const EdgeInsets.only(left: 20, top: 6, bottom: 4),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: widget.sources.map((variant) {
+                      final isVariantSelected =
+                          widget.currentSource?.id == variant.id;
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: AppFocusHover(
+                          onTap: () => widget.onSelectSource(variant),
+                          scaleFactor: 1.02,
+                          builder: (context, isSubFocused, isSubHovered) {
+                            final subActive = isSubFocused || isSubHovered;
+                            return AnimatedContainer(
+                              duration: const Duration(milliseconds: 160),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: subActive
+                                    ? Colors.white
+                                    : isVariantSelected
+                                    ? widget.cs.primary.withValues(alpha: 0.14)
+                                    : Colors.white.withValues(alpha: 0.03),
+                                borderRadius: BorderRadius.circular(
+                                  widget.radius * 0.8,
+                                ),
+                                border: Border.all(
+                                  color: subActive
+                                      ? Colors.white
+                                      : isVariantSelected
+                                      ? widget.cs.primary.withValues(alpha: 0.4)
+                                      : Colors.white.withValues(alpha: 0.06),
+                                  width: subActive ? 1.5 : 1.0,
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.subdirectory_arrow_right_rounded,
+                                    size: 16,
+                                    color: subActive
+                                        ? Colors.black54
+                                        : Colors.white.withValues(alpha: 0.4),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      (variant.lang ?? variant.type.name)
+                                          .toUpperCase(),
+                                      style: TextStyle(
+                                        color: subActive
+                                            ? Colors.black
+                                            : Colors.white,
+                                        fontWeight:
+                                            isVariantSelected || subActive
+                                            ? FontWeight.bold
+                                            : FontWeight.w600,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                  if (isVariantSelected)
+                                    Container(
+                                      padding: const EdgeInsets.all(3),
+                                      decoration: BoxDecoration(
+                                        color: subActive
+                                            ? Colors.black
+                                            : widget.cs.primary,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(
+                                        Icons.check_rounded,
+                                        size: 11,
+                                        color: subActive
+                                            ? Colors.white
+                                            : Colors.black,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                )
+              : const SizedBox.shrink(),
+        ),
+      ],
     );
   }
 }

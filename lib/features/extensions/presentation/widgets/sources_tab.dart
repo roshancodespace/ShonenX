@@ -13,6 +13,7 @@ import 'package:shonenx/features/settings/presentation/source_settings_sheet.dar
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/providers/storage_provider.dart';
+import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
 import 'package:shonenx/source_engine/models/source_setting.dart';
 import 'package:shonenx/source_engine/providers/media_source.dart';
@@ -86,6 +87,7 @@ class _SourceSettingsButton extends ConsumerWidget {
         }
 
         return IconButton(
+          visualDensity: VisualDensity.compact,
           icon: Icon(Icons.settings_outlined, size: iconSize),
           padding: EdgeInsets.all(iconSize <= 16 ? 4 : 8),
           constraints: iconSize <= 16 ? const BoxConstraints() : null,
@@ -157,11 +159,14 @@ class _GroupHeaderTile extends ConsumerWidget {
               fontWeight: FontWeight.w500,
             ),
             overflow: TextOverflow.ellipsis,
+            maxLines: 1,
           ),
           subtitle: Text(
             isNsfw
                 ? '18+ • ${groupSources.length} variants'
                 : '${groupSources.length} variants',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: theme.textTheme.labelSmall?.copyWith(
               color: isNsfw
                   ? Colors.red.shade400
@@ -229,6 +234,7 @@ class _GroupHeaderTile extends ConsumerWidget {
                     ),
                   ),
                 IconButton(
+                  visualDensity: VisualDensity.compact,
                   icon: const Icon(Icons.delete_outline),
                   onPressed: () => controller.uninstallVariantGroup(
                     context,
@@ -237,6 +243,42 @@ class _GroupHeaderTile extends ConsumerWidget {
                     type,
                   ),
                 ),
+              ] else if (!isInstalled) ...[
+                if (isGroupProcessing)
+                  const Padding(
+                    padding: EdgeInsets.all(12),
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  )
+                else
+                  Padding(
+                    padding: const EdgeInsets.only(right: 6),
+                    child: FilledButton.tonalIcon(
+                      onPressed: () => controller.installVariantGroup(
+                        context,
+                        name,
+                        groupSources,
+                      ),
+                      icon: const Icon(Icons.download_rounded, size: 16),
+                      label: const Text(
+                        'Install All',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 0,
+                        ),
+                        minimumSize: const Size(0, 32),
+                      ),
+                    ),
+                  ),
               ],
               AnimatedRotation(
                 turns: isExpanded ? 0.5 : 0.0,
@@ -451,7 +493,12 @@ class _GroupHeaderTile extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
-                      'v$versionStr',
+                      source.hasUpdate &&
+                              source.versionLast != null &&
+                              source.version != null &&
+                              source.version != source.versionLast
+                          ? 'v${source.version} → v${source.versionLast}'
+                          : 'v$versionStr',
                       style: TextStyle(
                         fontSize: 9,
                         fontWeight: FontWeight.w700,
@@ -528,6 +575,48 @@ class _GroupHeaderTile extends ConsumerWidget {
               type: type,
               iconSize: 18,
             ),
+          ] else if (!isInstalled) ...[
+            Consumer(
+              builder: (context, ref, _) {
+                final isProcessing = ref
+                    .watch(extensionsControllerProvider)
+                    .contains(source.id);
+                return isProcessing
+                    ? const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 8),
+                        child: SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      )
+                    : FilledButton.tonalIcon(
+                        onPressed: () {
+                          if (Platform.isAndroid &&
+                              source.bridgeSource is ASource) {
+                            showInstallMethodSheet(context, source, controller);
+                          } else {
+                            controller.installSource(context, source);
+                          }
+                        },
+                        icon: const Icon(Icons.download_rounded, size: 14),
+                        label: const Text(
+                          'Install',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 11,
+                          ),
+                        ),
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 0,
+                          ),
+                          minimumSize: const Size(0, 28),
+                        ),
+                      );
+              },
+            ),
           ],
         ],
       ),
@@ -555,7 +644,7 @@ class _UpdatesHeaderTile extends ConsumerWidget {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              'Updates Available (${outdatedSources.length})',
+              'Updates (${outdatedSources.length})',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: Theme.of(context).colorScheme.primary,
@@ -620,6 +709,7 @@ class SourcesTab extends ConsumerStatefulWidget {
   final String searchQuery;
   final String langFilter;
   final bool isInstalled;
+  final VoidCallback? onBrowseAvailable;
 
   const SourcesTab({
     super.key,
@@ -628,6 +718,7 @@ class SourcesTab extends ConsumerStatefulWidget {
     required this.searchQuery,
     required this.langFilter,
     required this.isInstalled,
+    this.onBrowseAvailable,
   });
 
   @override
@@ -842,6 +933,27 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
                   ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
+                if (widget.isInstalled &&
+                    widget.searchQuery.isEmpty &&
+                    widget.langFilter == 'All') ...[
+                  Text(
+                    'Explore the online catalog to find and install ${widget.type == MediaType.ANIME ? 'anime' : (widget.type == MediaType.MANGA ? 'manga' : 'novel')} sources.',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  if (widget.onBrowseAvailable != null)
+                    FilledButton.icon(
+                      onPressed: widget.onBrowseAvailable,
+                      icon: const Icon(Icons.explore_outlined),
+                      label: Text(
+                        'Get ${widget.type == MediaType.ANIME ? 'Anime' : (widget.type == MediaType.MANGA ? 'Manga' : 'Novel')} Extensions',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                ],
                 if (!widget.isInstalled &&
                     widget.searchQuery.isEmpty &&
                     widget.langFilter == 'All') ...[
@@ -913,6 +1025,10 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
 
     final sectionWidgets = <Widget>[];
 
+    if (!widget.isInstalled && sources.isNotEmpty) {
+      sectionWidgets.add(_buildCatalogInfoBanner(context));
+    }
+
     if (widget.isInstalled && outdatedSources.isNotEmpty) {
       sectionWidgets.add(
         _buildUpdatesSection(context, outdatedSources, outdatedGroups),
@@ -937,6 +1053,44 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
             sliver: SliverList.builder(
               itemCount: sectionWidgets.length,
               itemBuilder: (context, index) => sectionWidgets[index],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCatalogInfoBanner(BuildContext context) {
+    final theme = Theme.of(context);
+    final roundness = ref.watch(
+      themePrefsProvider.select((s) => s.uiRoundness),
+    );
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.35),
+        borderRadius: BorderRadius.circular(roundness * 0.5),
+        border: Border.all(
+          color: theme.colorScheme.primary.withValues(alpha: 0.25),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.info_outline_rounded,
+            size: 18,
+            color: theme.colorScheme.primary,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Online Catalog — extensions here are not installed yet. Tap "Install" to add them to your sources.',
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: theme.colorScheme.onPrimaryContainer,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
         ],
@@ -1093,7 +1247,12 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
         source.lang!.toLowerCase() != 'multi') {
       subtitleParts.add(source.lang!.toUpperCase());
     }
-    if (versionStr != null && versionStr.isNotEmpty) {
+    if (source.hasUpdate &&
+        source.versionLast != null &&
+        source.version != null &&
+        source.version != source.versionLast) {
+      subtitleParts.add('v${source.version} → v${source.versionLast}');
+    } else if (versionStr != null && versionStr.isNotEmpty) {
       subtitleParts.add('v$versionStr');
     }
     if (engineStr != null) {
@@ -1112,6 +1271,8 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
                 .toUpperCase()
           : source.name,
       subtitle: subtitleText,
+      subtitleMaxLines: 1,
+      subtitleOverflow: TextOverflow.ellipsis,
       tileColor: source.isInbuilt
           ? Theme.of(context).colorScheme.secondaryContainer
           : (source.effectiveNsfw ? Colors.red.withValues(alpha: 0.06) : null),
@@ -1170,6 +1331,7 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
                         ),
                       ),
                     IconButton(
+                      visualDensity: VisualDensity.compact,
                       icon: Icon(
                         isDefault
                             ? Icons.push_pin_rounded
@@ -1244,9 +1406,7 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            source.versionLast != null
-                                ? 'UPDATE ${source.versionLast}'
-                                : 'UPDATE',
+                            'UPDATE',
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w800,
@@ -1261,6 +1421,7 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
                 ),
               if (!isSubItem)
                 IconButton(
+                  visualDensity: VisualDensity.compact,
                   icon: const Icon(Icons.delete_outline),
                   onPressed: () =>
                       controller.uninstallSource(context, source, widget.type),
@@ -1280,7 +1441,7 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
                     onPressed: () {
                       if (Platform.isAndroid &&
                           source.bridgeSource is ASource) {
-                        _showInstallMethodSheet(context, source, controller);
+                        showInstallMethodSheet(context, source, controller);
                       } else {
                         controller.installSource(context, source);
                       }
@@ -1320,6 +1481,7 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
         }
 
         return IconButton(
+          visualDensity: VisualDensity.compact,
           icon: const Icon(Icons.settings_outlined),
           onPressed: () {
             showModalBottomSheet(
@@ -1336,67 +1498,67 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
       },
     );
   }
+}
 
-  void _showInstallMethodSheet(
-    BuildContext context,
-    UnifiedSource source,
-    ExtensionsController controller,
-  ) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return Container(
-          padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Install ${source.name}',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+void showInstallMethodSheet(
+  BuildContext context,
+  UnifiedSource source,
+  ExtensionsController controller,
+) {
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: Colors.transparent,
+    builder: (context) {
+      return Container(
+        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Install ${source.name}',
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'How would you like to install this extension?',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
-              const SizedBox(height: 8),
-              Text(
-                'How would you like to install this extension?',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+            ),
+            const SizedBox(height: 24),
+            ListTile(
+              leading: const Icon(Icons.apps_rounded),
+              title: const Text('App (Normal)'),
+              subtitle: const Text('Installs as a standard Android app.'),
+              onTap: () {
+                Navigator.pop(context);
+                (source.bridgeSource as ASource).isPrivate = false;
+                controller.installSource(context, source);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.security_rounded),
+              title: const Text('Private / Internal'),
+              subtitle: const Text(
+                'Installs internally. Does not show up in device settings or launcher.',
               ),
-              const SizedBox(height: 24),
-              ListTile(
-                leading: const Icon(Icons.apps_rounded),
-                title: const Text('App (Normal)'),
-                subtitle: const Text('Installs as a standard Android app.'),
-                onTap: () {
-                  Navigator.pop(context);
-                  (source.bridgeSource as ASource).isPrivate = false;
-                  controller.installSource(context, source);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.security_rounded),
-                title: const Text('Private / Internal'),
-                subtitle: const Text(
-                  'Installs internally. Does not show up in device settings or launcher.',
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-                  (source.bridgeSource as ASource).isPrivate = true;
-                  controller.installSource(context, source);
-                },
-              ),
-              const SizedBox(height: 16),
-            ],
-          ),
-        );
-      },
-    );
-  }
+              onTap: () {
+                Navigator.pop(context);
+                (source.bridgeSource as ASource).isPrivate = true;
+                controller.installSource(context, source);
+              },
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      );
+    },
+  );
 }

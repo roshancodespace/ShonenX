@@ -16,9 +16,9 @@
 
 **[🌐 Visit the Official Website](https://shonenx.vercel.app)**
 
-Started as a personal project, ShonenX is an open-source anime and manga client. Ad-free with no trackers. Tracks progress across AniList, MyAnimeList, and Kitsu.
+Created and maintained by [Roshan Kumar](https://github.com/roshancodespace) with the help of community contributors. ShonenX is an open-source, ad-free, and tracker-free anime and manga client. Tracks progress across AniList, MyAnimeList, and Kitsu.
 
-[Features](#-features) • [Screenshots](#-screenshots) • [Installation](#-installation) • [Extensions](#-extensions) • [Legal](#-legal--dmca-disclaimer)
+[Features](#features) • [Screenshots](#screenshots) • [Installation](#installation) • [Contributing](#contributing--guidelines) • [Contributors](#contributors) • [Legal](#legal--dmca-disclaimer)
 
 </div>
 
@@ -194,15 +194,20 @@ If you're a copyright holder looking to DMCA someone, you're barking up the wron
 
 ---
 
-## Contributing & Documentation
+## Contributing & Guidelines
 
-Contributions are welcome! Feel free to inspect the code, compile from source, open an issue, or contribute if you understand the architecture.
+Contributions are welcome! However, to maintain stability, maintainability, and a unified vision, please adhere to the following rules:
+
+- **Architectural Authority**: The architecture, design system, state management patterns, and project direction remain strictly at the discretion of [@roshancodespace](https://github.com/roshancodespace).
+- **No Unsolicited Architectural Changes**: **Do not** submit PRs that alter the core architecture, restructure directory conventions, replace major dependencies, or rewrite foundational patterns. Unsolicited refactors will be closed.
+- **Discuss Major Changes First**: If you want to propose a significant feature or structural adjustment, open an Issue to discuss and obtain approval before starting work.
+- **What is Welcome**: Bug fixes, provider and extension bridge improvements, performance optimizations, localized UI polish matching existing design tokens, and features that adhere cleanly to the established architecture.
 
 ---
 
 ## Contributors
 
-Thanks to everyone who has contributed to ShonenX!
+A huge thank you to everyone who has contributed to ShonenX!
 
 <a href="https://github.com/roshancodespace/ShonenX/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=roshancodespace/ShonenX" />
@@ -210,9 +215,9 @@ Thanks to everyone who has contributed to ShonenX!
 
 ---
 
-## Support
+## Author & Support
 
-**Developer**: Roshan Kumar Sharma  
+**Lead Developer & Maintainer**: Roshan Kumar Sharma  
 **GitHub**: [@roshancodespace](https://github.com/roshancodespace)  
 **Buy Me a Coffee**: [roshan.codespace](https://www.buymeacoffee.com/roshan.codespace)  
 **Email**: roshan.codespace@gmail.com  
@@ -225,6 +230,6 @@ Thanks to everyone who has contributed to ShonenX!
 
 ### ⭐ Star this repo if you find it useful!
 
-**Made with ❤️ by [Roshan Kumar](https://github.com/roshancodespace)**
+**Crafted with ❤️ by [Roshan Kumar](https://github.com/roshancodespace) & [Contributors](https://github.com/roshancodespace/ShonenX/graphs/contributors)**
 
 </div>

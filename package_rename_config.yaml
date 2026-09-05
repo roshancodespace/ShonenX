@@ -3,6 +3,16 @@ package_rename_config-production:
     app_name: "ShonenX"
     package_name: "com.roshancodespace.shonenx"
 
+  ios:
+    app_name: "ShonenX"
+    bundle_name: "ShonenX"
+    package_name: "com.roshancodespace.shonenx"
+
+  macos:
+    app_name: "ShonenX"
+    package_name: "com.roshancodespace.shonenx"
+    copyright_notice: "Copyright © 2026"
+
   linux:
     app_name: "ShonenX"
     package_name: "com.roshancodespace.shonenx"
@@ -18,6 +28,16 @@ package_rename_config-development:
   android:
     app_name: "ShonenX Dev"
     package_name: "com.roshancodespace.shonenx.dev"
+
+  ios:
+    app_name: "ShonenX Dev"
+    bundle_name: "ShonenX Dev"
+    package_name: "com.roshancodespace.shonenx.dev"
+
+  macos:
+    app_name: "ShonenX Dev"
+    package_name: "com.roshancodespace.shonenx.dev"
+    copyright_notice: "Copyright © 2026"
 
   linux:
     app_name: "ShonenX Dev"

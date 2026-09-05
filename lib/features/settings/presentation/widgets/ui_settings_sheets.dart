@@ -1302,87 +1302,87 @@ class _EpisodeViewModePreview extends StatelessWidget {
   }
 
   Widget _buildFlatCoverCard(ColorScheme cs, double roundness) {
-    return AspectRatio(
-      aspectRatio: 16 / 7,
-      child: Container(
-        key: const ValueKey('cover_flat'),
-        width: double.maxFinite,
-        clipBehavior: Clip.antiAlias,
-        decoration: BoxDecoration(
-          color: cs.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(roundness),
-        ),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            Positioned.fill(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.bottomCenter,
-                    end: Alignment.topCenter,
-                    stops: const [0.0, 0.65, 1.0],
-                    colors: [
-                      Colors.black.withValues(alpha: 0.88),
-                      Colors.black.withValues(alpha: 0.45),
-                      Colors.transparent,
-                    ],
-                  ),
+    return Container(
+      key: const ValueKey('cover_flat'),
+      width: double.maxFinite,
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(roundness),
+      ),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 100,
+            child: AspectRatio(
+              aspectRatio: 16 / 9,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(roundness * 0.7),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    ColoredBox(
+                      color: cs.surfaceContainer,
+                      child: Icon(
+                        Icons.movie_outlined,
+                        color: cs.onSurfaceVariant.withValues(alpha: 0.4),
+                        size: 20,
+                      ),
+                    ),
+                    Center(
+                      child: Container(
+                        padding: const EdgeInsets.all(5),
+                        decoration: BoxDecoration(
+                          color: cs.primary,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.play_arrow_rounded,
+                          color: cs.onPrimary,
+                          size: 14,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-            Positioned(
-              left: 12,
-              right: 12,
-              bottom: 12,
-              child: Row(
-                children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: cs.primary,
-                      shape: BoxShape.circle,
-                    ),
-                    alignment: Alignment.center,
-                    child: Icon(
-                      Icons.play_arrow_rounded,
-                      color: cs.onPrimary,
-                      size: 22,
-                    ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'EPISODE 1',
+                  style: TextStyle(
+                    color: cs.primary,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.5,
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'Episode 1',
-                          style: TextStyle(
-                            color: cs.primary,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        Text(
-                          'The Beginning of a Legend',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'The Beginning of a Legend',
+                  style: TextStyle(
+                    color: cs.onSurface,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
                   ),
-                ],
-              ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '24m • Sub | Dub',
+                  style: TextStyle(color: cs.onSurfaceVariant, fontSize: 10),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -1418,7 +1418,8 @@ String _episodeModeDesc(EpisodeViewMode m) => switch (m) {
   EpisodeViewMode.box => 'Compact numbered boxes — great for long anime',
   EpisodeViewMode.compact =>
     'Clean text rows without thumbnails for fast browsing',
-  EpisodeViewMode.cover => 'Cinematic wide cards with prominent action bar',
+  EpisodeViewMode.cover =>
+    'Wide landscape cards with thumbnail preview and details',
 };
 
 IconData _episodeModeIcon(EpisodeViewMode m) => switch (m) {
@@ -1426,7 +1427,7 @@ IconData _episodeModeIcon(EpisodeViewMode m) => switch (m) {
   EpisodeViewMode.grid => Icons.grid_view_outlined,
   EpisodeViewMode.box => Icons.tag_outlined,
   EpisodeViewMode.compact => Icons.format_list_bulleted_rounded,
-  EpisodeViewMode.cover => Icons.movie_creation_outlined,
+  EpisodeViewMode.cover => Icons.video_library_outlined,
 };
 
 String _navBarStyleDesc(NavBarStyle style) => switch (style) {

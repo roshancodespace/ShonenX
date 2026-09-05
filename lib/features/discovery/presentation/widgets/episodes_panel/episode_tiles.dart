@@ -920,6 +920,8 @@ class EpisodeCoverTile extends BaseEpisodeTile {
     required super.isCurrent,
     required super.isWatched,
     required super.onTap,
+    super.onSecondaryTap,
+    super.onLongPress,
     super.isFiller = false,
     super.actions = const [],
     super.fallbackThumbnailUrl,
@@ -935,201 +937,288 @@ class EpisodeCoverTile extends BaseEpisodeTile {
     final cs = theme.colorScheme;
     final textTheme = theme.textTheme;
 
-    final epNumText = episode.number % 1 == 0
-        ? episode.number.toInt().toString()
-        : episode.number.toString();
+    final num = formatEpisodeNumber(episode.number);
     final epLabel = mediaType == MediaType.ANIME
-        ? 'Episode $epNumText'
-        : 'Chapter $epNumText';
-    final title = episode.title ?? epLabel;
+        ? 'EPISODE $num'
+        : 'CHAPTER $num';
+    final title = (episode.title == null || episode.title!.trim().isEmpty)
+        ? (mediaType == MediaType.ANIME ? 'Episode $num' : 'Chapter $num')
+        : episode.title!.trim();
 
     final isEffectivelyWatched = isWatched;
+    final dimColor = cs.onSurfaceVariant.withValues(alpha: 0.55);
 
     return Material(
-      color: cs.surfaceContainerHigh,
+      color: isCurrent
+          ? cs.primaryContainer.withValues(alpha: 0.22)
+          : isEffectivelyWatched
+          ? cs.surfaceContainerLow.withValues(alpha: 0.5)
+          : cs.surfaceContainerLow,
       borderRadius: BorderRadius.circular(12),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
-        onLongPress: triggerMenuAction,
-        onSecondaryTap: triggerMenuAction,
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: Opacity(
-                opacity: isEffectivelyWatched ? 0.6 : 1.0,
-                child:
-                    resolvedThumbnailUrl != null &&
-                        resolvedThumbnailUrl!.isNotEmpty
-                    ? buildImage(
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
-                          color: cs.surfaceContainerHighest,
-                          alignment: Alignment.center,
-                          child: Icon(
-                            Icons.tv_rounded,
-                            size: 32,
-                            color: cs.onSurfaceVariant.withValues(alpha: 0.3),
+        onLongPress: onLongPress ?? triggerMenuAction,
+        onSecondaryTap: onSecondaryTap ?? triggerMenuAction,
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: isCurrent
+                ? Border.all(
+                    color: cs.primary.withValues(alpha: 0.55),
+                    width: 1.5,
+                  )
+                : null,
+          ),
+          padding: const EdgeInsets.all(8),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              SizedBox(
+                width: 124,
+                child: AspectRatio(
+                  aspectRatio: 16 / 9,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        if (imageUrl != null && imageUrl!.isNotEmpty)
+                          buildImage(
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(
+                              color: cs.surfaceContainerHighest,
+                              alignment: Alignment.center,
+                              child: Icon(
+                                mediaType == MediaType.ANIME
+                                    ? Icons.movie_outlined
+                                    : Icons.menu_book_rounded,
+                                color: cs.onSurfaceVariant.withValues(
+                                  alpha: 0.4,
+                                ),
+                                size: 24,
+                              ),
+                            ),
+                          )
+                        else
+                          Container(
+                            color: cs.surfaceContainerHighest,
+                            alignment: Alignment.center,
+                            child: Icon(
+                              mediaType == MediaType.ANIME
+                                  ? Icons.movie_outlined
+                                  : Icons.menu_book_rounded,
+                              color: cs.onSurfaceVariant.withValues(alpha: 0.4),
+                              size: 24,
+                            ),
                           ),
-                        ),
-                      )
-                    : Container(
-                        color: cs.surfaceContainerHighest,
-                        alignment: Alignment.center,
-                        child: Icon(
-                          Icons.tv_rounded,
-                          size: 32,
-                          color: cs.onSurfaceVariant.withValues(alpha: 0.3),
-                        ),
-                      ),
-              ),
-            ),
-            if (isEffectivelyWatched)
-              const Positioned.fill(child: ColoredBox(color: Colors.black26)),
-            Positioned.fill(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.bottomCenter,
-                    end: Alignment.topCenter,
-                    stops: const [0.0, 0.6, 1.0],
-                    colors: [
-                      Colors.black.withValues(alpha: 0.90),
-                      Colors.black.withValues(alpha: 0.45),
-                      Colors.transparent,
-                    ],
+                        if (isEffectivelyWatched) ...[
+                          const ColoredBox(color: Colors.black45),
+                          const Center(
+                            child: Icon(
+                              Icons.check_circle_rounded,
+                              color: Colors.white,
+                              size: 22,
+                            ),
+                          ),
+                        ] else if (isCurrent) ...[
+                          ColoredBox(
+                            color: Colors.black.withValues(alpha: 0.35),
+                          ),
+                          Center(
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: cs.primary,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.play_arrow_rounded,
+                                color: cs.onPrimary,
+                                size: 18,
+                              ),
+                            ),
+                          ),
+                        ],
+                        if (isFiller)
+                          Positioned(
+                            top: 4,
+                            left: 4,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
+                                vertical: 1,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.amber.shade700,
+                                borderRadius: BorderRadius.circular(3),
+                              ),
+                              child: const Text(
+                                'FILLER',
+                                style: TextStyle(
+                                  fontSize: 7.5,
+                                  fontWeight: FontWeight.w900,
+                                  color: Colors.black,
+                                  letterSpacing: 0.4,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-            Positioned(
-              left: 10,
-              right: 10,
-              bottom: 10,
-              child: Row(
-                children: [
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: isCurrent
-                          ? cs.primary
-                          : Colors.white.withValues(alpha: 0.25),
-                      shape: BoxShape.circle,
-                    ),
-                    alignment: Alignment.center,
-                    child: Icon(
-                      isCurrent
-                          ? Icons.play_arrow_rounded
-                          : isEffectivelyWatched
-                          ? Icons.check_rounded
-                          : Icons.play_arrow_rounded,
-                      color: isCurrent ? cs.onPrimary : Colors.white,
-                      size: 18,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
                       children: [
-                        Row(
-                          children: [
-                            Text(
-                              epLabel,
-                              style: textTheme.labelSmall?.copyWith(
-                                color: isCurrent ? cs.primary : Colors.white70,
-                                fontWeight: FontWeight.w800,
-                                fontSize: 10,
-                              ),
-                            ),
-                            if (isFiller) ...[
-                              const SizedBox(width: 6),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 5,
-                                  vertical: 1,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.amber.shade600,
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: const Text(
-                                  'FILLER',
-                                  style: TextStyle(
-                                    fontSize: 8,
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.black,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                        const SizedBox(height: 2),
                         Text(
-                          title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: textTheme.titleSmall?.copyWith(
-                            color: isEffectivelyWatched
-                                ? Colors.white60
-                                : Colors.white,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 12,
+                          epLabel,
+                          style: textTheme.labelSmall?.copyWith(
+                            color: isCurrent
+                                ? cs.primary
+                                : (isEffectivelyWatched
+                                      ? dimColor
+                                      : cs.primary.withValues(alpha: 0.85)),
+                            fontWeight: FontWeight.w800,
+                            fontSize: 10.5,
+                            letterSpacing: 0.5,
                           ),
                         ),
-                        if (displayDate != null && displayDate!.isNotEmpty) ...[
-                          const SizedBox(height: 2),
-                          Text(
-                            displayDate!,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Colors.white60,
-                              fontWeight: FontWeight.w500,
-                              fontSize: 10,
+                        if (isCurrent) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 5,
+                              vertical: 1.5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isWatched
+                                  ? cs.secondaryContainer
+                                  : cs.primaryContainer,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              isWatched
+                                  ? (mediaType == MediaType.ANIME
+                                        ? 'WATCHED'
+                                        : 'READ')
+                                  : 'PLAYING',
+                              style: TextStyle(
+                                fontSize: 8,
+                                fontWeight: FontWeight.w800,
+                                color: isWatched
+                                    ? cs.onSecondaryContainer
+                                    : cs.onPrimaryContainer,
+                                letterSpacing: 0.4,
+                              ),
                             ),
                           ),
                         ],
                       ],
                     ),
-                  ),
-                ],
-              ),
-            ),
-            if (actions.isNotEmpty)
-              Positioned(
-                top: 6,
-                right: 6,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 4,
-                    vertical: 1,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.75),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.15),
-                    ),
-                  ),
-                  child: Theme(
-                    data: theme.copyWith(
-                      iconTheme: const IconThemeData(
-                        color: Colors.white,
-                        size: 18,
+                    const SizedBox(height: 3),
+                    Text(
+                      title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: textTheme.titleSmall?.copyWith(
+                        color: isCurrent
+                            ? (cs.brightness == Brightness.dark
+                                  ? Colors.white
+                                  : cs.onSurface)
+                            : (isEffectivelyWatched ? dimColor : cs.onSurface),
+                        fontWeight: isCurrent
+                            ? FontWeight.w700
+                            : FontWeight.w600,
+                        fontSize: 13,
+                        height: 1.2,
                       ),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: actions,
-                    ),
-                  ),
+                    if ((displayDate != null && displayDate!.isNotEmpty) ||
+                        (episode.scanlator != null &&
+                            episode.scanlator!.isNotEmpty) ||
+                        (episode.description != null &&
+                            episode.description!.trim().isNotEmpty)) ...[
+                      const SizedBox(height: 3),
+                      Row(
+                        children: [
+                          if (displayDate != null &&
+                              displayDate!.isNotEmpty) ...[
+                            Icon(
+                              Icons.access_time_rounded,
+                              size: 11,
+                              color: dimColor,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              displayDate!,
+                              style: TextStyle(
+                                color: dimColor,
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                          if (episode.scanlator != null &&
+                              episode.scanlator!.isNotEmpty) ...[
+                            if (displayDate != null && displayDate!.isNotEmpty)
+                              Text(
+                                '  •  ',
+                                style: TextStyle(color: dimColor, fontSize: 10),
+                              ),
+                            Flexible(
+                              child: Text(
+                                episode.scanlator!,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: dimColor,
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                          if ((displayDate == null || displayDate!.isEmpty) &&
+                              episode.description != null &&
+                              episode.description!.trim().isNotEmpty)
+                            Flexible(
+                              child: Text(
+                                episode.description!.trim(),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: dimColor,
+                                  fontSize: 10.5,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ],
                 ),
               ),
-          ],
+              if (actions.isNotEmpty) ...[
+                const SizedBox(width: 4),
+                Theme(
+                  data: theme.copyWith(
+                    iconTheme: IconThemeData(
+                      size: 20,
+                      color: cs.onSurfaceVariant,
+                    ),
+                  ),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: actions),
+                ),
+              ],
+            ],
+          ),
         ),
       ),
     );

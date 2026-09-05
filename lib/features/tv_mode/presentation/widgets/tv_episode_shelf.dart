@@ -16,6 +16,7 @@ import 'package:shonenx/features/reader/domain/reader_mode.dart';
 import 'package:shonenx/features/reader/providers/preferred_scanlator_provider.dart';
 import 'package:shonenx/features/tracking/providers/media_tracking_provider.dart';
 import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
+import 'package:shonenx/features/tracking/providers/tracking_prefs_provider.dart';
 import 'package:shonenx/features/tv_mode/presentation/widgets/tv_source_dialog.dart';
 import 'package:shonenx/shared/models/ui_style_enums.dart';
 import 'package:shonenx/shared/models/unified_episode.dart';
@@ -489,7 +490,10 @@ class _TvEpisodeShelfState extends ConsumerState<TvEpisodeShelf> {
                                     .clamp(0.0, 1.0);
                             isCompleted =
                                 historyEntry.positionInMilliseconds >=
-                                historyEntry.durationInMilliseconds * 0.9;
+                                historyEntry.durationInMilliseconds *
+                                    ref
+                                        .read(trackingPrefsProvider)
+                                        .syncThreshold;
                           } else if (trackedProgress >= episode.number) {
                             progressPercent = 1.0;
                             isCompleted = true;
@@ -563,7 +567,8 @@ class _TvEpisodeShelfState extends ConsumerState<TvEpisodeShelf> {
           historyEntry != null &&
           historyEntry.durationInMilliseconds > 0 &&
           historyEntry.positionInMilliseconds >=
-              historyEntry.durationInMilliseconds * 0.9;
+              historyEntry.durationInMilliseconds *
+                  ref.read(trackingPrefsProvider).syncThreshold;
       if (historyEntry != null &&
           historyEntry.positionInMilliseconds > 0 &&
           !isFinished) {

@@ -5,6 +5,8 @@ import 'package:shonenx/features/discovery/providers/episodes_provider.dart';
 import 'package:shonenx/features/discovery/providers/media_preference_provider.dart';
 import 'package:shonenx/features/history/domain/models/watch_history_entry.dart';
 import 'package:shonenx/features/player/domain/player_mode.dart';
+import 'package:shonenx/features/tracking/providers/tracking_prefs_provider.dart';
+import 'package:shonenx/shared/models/unified_episode.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/source_engine/source_registry.dart';
 
@@ -56,11 +58,33 @@ class ContinueWatchingResolver {
           );
 
     final episodesState = await episodesFuture;
-    final episode = episodesState.episodes.firstWhereOrNull(
+
+    final threshold = ref.read(trackingPrefsProvider).syncThreshold;
+    final isWatched =
+        entry.durationInMilliseconds > 0 &&
+        entry.positionInMilliseconds >=
+            entry.durationInMilliseconds * threshold;
+
+    UnifiedEpisode? targetEpisode = episodesState.episodes.firstWhereOrNull(
       (e) => e.number == entry.episodeNumber,
     );
 
-    if (episode == null) {
+    Duration? startPosition = Duration(
+      milliseconds: entry.positionInMilliseconds,
+    );
+
+    if (isWatched && targetEpisode != null) {
+      final currentIndex = episodesState.episodes.indexOf(targetEpisode);
+      if (currentIndex != -1 &&
+          currentIndex + 1 < episodesState.episodes.length) {
+        targetEpisode = episodesState.episodes[currentIndex + 1];
+        startPosition = null;
+      } else {
+        startPosition = null;
+      }
+    }
+
+    if (targetEpisode == null) {
       throw Exception('Episode not found.');
     }
 
@@ -78,9 +102,9 @@ class ContinueWatchingResolver {
         type: MediaType.ANIME,
         title: MediaTitle(english: entry.animeTitle),
       ),
-      episode: episode,
+      episode: targetEpisode,
       sourceInfo: sourceInfo,
-      startPosition: Duration(milliseconds: entry.positionInMilliseconds),
+      startPosition: startPosition,
     );
   }
 }

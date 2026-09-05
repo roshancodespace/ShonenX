@@ -98,6 +98,7 @@ class SeasonSelectorBar extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: SingleChildScrollView(
+        clipBehavior: Clip.none,
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
         padding: const EdgeInsets.symmetric(horizontal: 16),

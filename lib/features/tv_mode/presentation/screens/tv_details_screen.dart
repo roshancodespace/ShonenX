@@ -34,6 +34,7 @@ import 'package:shonenx/features/tracking/presentation/widgets/tracker_manager_s
 import 'package:shonenx/features/tracking/providers/media_tracking_provider.dart';
 import 'package:shonenx/features/tracking/providers/tracker_link_provider.dart';
 import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
+import 'package:shonenx/features/tracking/providers/tracking_prefs_provider.dart';
 import 'package:shonenx/features/tv_mode/presentation/widgets/tv_episode_shelf.dart';
 
 import 'package:shonenx/features/tv_mode/presentation/widgets/tv_media_card.dart';
@@ -1323,7 +1324,8 @@ class _TvDetailsScreenState extends ConsumerState<TvDetailsScreen> {
           final isFinished =
               latestWatch.durationInMilliseconds > 0 &&
               latestWatch.positionInMilliseconds >=
-                  latestWatch.durationInMilliseconds * 0.9;
+                  latestWatch.durationInMilliseconds *
+                      ref.read(trackingPrefsProvider).syncThreshold;
 
           if (!isFinished && latestWatch.positionInMilliseconds > 0) {
             final remainingMins =

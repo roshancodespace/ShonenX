@@ -24,6 +24,7 @@ import 'package:shonenx/source_engine/models/source_info.dart';
 import 'package:shonenx/source_engine/utils/media_type_extensions.dart';
 import 'package:shonenx/features/history/providers/watch_history_provider.dart';
 import 'package:shonenx/features/comments/presentation/widgets/comments_tab.dart';
+import 'package:shonenx/features/tracking/providers/tracking_prefs_provider.dart';
 
 class EpisodesTabWidget extends ConsumerWidget {
   final UnifiedMedia media;
@@ -99,11 +100,17 @@ class EpisodesTabWidget extends ConsumerWidget {
                     .where((e) => e.episodeNumber == episode.number)
                     .firstOrNull;
 
+                final threshold = ref.read(trackingPrefsProvider).syncThreshold;
+                final isFinished =
+                    historyEntry != null &&
+                    historyEntry.durationInMilliseconds > 0 &&
+                    historyEntry.positionInMilliseconds >=
+                        historyEntry.durationInMilliseconds * threshold;
+
                 final Duration? startPosition;
                 if (historyEntry != null &&
                     historyEntry.positionInMilliseconds > 0 &&
-                    historyEntry.positionInMilliseconds <
-                        historyEntry.durationInMilliseconds) {
+                    !isFinished) {
                   startPosition = Duration(
                     milliseconds: historyEntry.positionInMilliseconds,
                   );

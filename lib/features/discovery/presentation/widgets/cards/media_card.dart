@@ -22,6 +22,9 @@ class MediaCard extends ConsumerWidget {
   final String? year;
   final String? status;
   final List<String>? genres;
+  final double? progress;
+  final String? progressText;
+  final String? bottomLeftBadgeText;
 
   const MediaCard({
     super.key,
@@ -40,6 +43,9 @@ class MediaCard extends ConsumerWidget {
     this.year,
     this.status,
     this.genres,
+    this.progress,
+    this.progressText,
+    this.bottomLeftBadgeText,
   });
 
   @override
@@ -79,6 +85,9 @@ class MediaCard extends ConsumerWidget {
               heroTag: tag,
               badgeText: format,
               topRightBadge: badge,
+              bottomLeftBadgeText: bottomLeftBadgeText,
+              progress: progress,
+              progressText: progressText,
               score: showRatings ? score : null,
               subtitle: subtitle,
               year: showYear ? year : null,

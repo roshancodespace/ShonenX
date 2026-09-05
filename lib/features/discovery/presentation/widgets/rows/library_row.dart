@@ -35,14 +35,39 @@ class LibraryRow extends ConsumerWidget {
     final rowHeight = style.getLayout(isWideMode: isWide).height;
 
     Widget buildCard(BuildContext ctx, dynamic entry, String tagPrefix) {
+      final isAnime = mediaType == MediaType.ANIME;
+      final unit = isAnime ? 'Ep' : 'Ch';
+      final watched = (entry.episodesWatched as int?) ?? 0;
+      final total = (entry.episodes as int?);
+
+      double? progress;
+      String? progressText;
+
+      if (watched > 0) {
+        if (total != null && total > 0) {
+          progress = (watched / total).clamp(0.0, 1.0);
+          progressText = '$unit $watched/$total';
+        } else {
+          progressText = '$unit $watched';
+        }
+      }
+
+      final cardTag = '$tagPrefix-$status-${entry.providerId}';
+
       return MediaCard(
-        tag: '$tagPrefix-$status-${entry.providerId}',
+        tag: cardTag,
         title: entry.title,
         imageUrl: entry.cover,
         format: entry.format,
+        score: entry.score,
+        year: entry.year?.toString(),
+        status: entry.status,
+        genres: entry.genres,
+        progress: progress,
+        progressText: progressText,
         style: style,
         onTap: () => ctx.push(
-          '/details/${entry.type}/?tag=$tagPrefix-$status-${entry.providerId}',
+          '/details/${entry.type}/?tag=$cardTag',
           extra: entry.toUnifiedMedia(),
         ),
       );

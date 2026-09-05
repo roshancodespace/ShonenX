@@ -79,43 +79,11 @@ class NeonCard extends StatelessWidget {
                 ),
               ),
             ),
-            if (config.effectiveSubtitle != null ||
-                config.progress != null ||
-                config.progressText != null) ...[
+            if (config.effectiveSubtitle != null) ...[
               const Spacer(),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    if (config.effectiveSubtitle != null)
-                      Expanded(child: PortraitMetadataRow(config: config)),
-                    if (config.progressText != null || config.progress != null)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: cs.primary.withValues(alpha: 0.18),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(
-                            color: cs.primary.withValues(alpha: 0.4),
-                            strokeAlign: BorderSide.strokeAlignOutside,
-                          ),
-                        ),
-                        child: Text(
-                          config.progressText ??
-                              '${(config.progress!.clamp(0.0, 1.0) * 100).toInt()}%',
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: cs.primary,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 10,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
+                child: PortraitMetadataRow(config: config),
               ),
             ],
           ],

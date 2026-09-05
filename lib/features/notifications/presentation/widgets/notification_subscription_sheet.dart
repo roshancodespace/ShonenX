@@ -17,10 +17,7 @@ import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 
 final _sheetScheduleProvider = FutureProvider.autoDispose
     .family<List<AiringSchedule>, UnifiedMedia>((ref, media) async {
-      final args = MediaArgs(
-        mediaTitle: media.title.availableTitle,
-        type: media.type,
-      );
+      final args = MediaArgs.fromMedia(media);
       final prefs = await ref.watch(mediaPreferenceProvider(args).future);
       final discoveryPrefs = ref.read(discoveryPrefsProvider);
       final metadataSourceId =
@@ -451,10 +448,7 @@ class _NotificationSubscriptionSheetState
             const SizedBox(height: 8),
             Consumer(
               builder: (context, ref, child) {
-                final args = MediaArgs(
-                  mediaTitle: widget.media.title.availableTitle,
-                  type: widget.media.type,
-                );
+                final args = MediaArgs.fromMedia(widget.media);
                 final prefsAsync = ref.watch(mediaPreferenceProvider(args));
                 final discoveryPrefs = ref.watch(discoveryPrefsProvider);
                 final primaryTracker = ref.watch(primaryTrackerProvider);

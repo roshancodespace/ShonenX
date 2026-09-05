@@ -20,7 +20,7 @@ class ContinueReadingResolver {
   Future<ReaderModeOnline> resolve(ReadHistoryEntry entry) async {
     final prefState = await ref.read(
       mediaPreferenceProvider(
-        MediaArgs(mediaTitle: entry.mangaTitle, type: MediaType.MANGA),
+        MediaArgs.fromTitle(entry.mangaTitle, type: MediaType.MANGA),
       ).future,
     );
 
@@ -51,7 +51,7 @@ class ContinueReadingResolver {
           )
         : ref.read(
             episodesListProvider(
-              MediaArgs(mediaTitle: entry.mangaTitle, type: MediaType.MANGA),
+              MediaArgs.fromTitle(entry.mangaTitle, type: MediaType.MANGA),
             ).future,
           );
 

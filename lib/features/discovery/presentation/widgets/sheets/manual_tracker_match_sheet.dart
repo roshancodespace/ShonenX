@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/discovery/domain/media_args.dart';
 import 'package:shonenx/features/discovery/providers/media_preference_provider.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
@@ -94,7 +95,12 @@ class _ManualTrackerMatchSheetState
       } else {
         if (mounted) setState(() => _results = []);
       }
-    } catch (_) {
+    } catch (e, st) {
+      AppLogger.scope('ManualTrackerMatchSheet').e(
+        'Search failed for "$cleanQuery" on ${widget.targetTracker.displayName}',
+        e,
+        st,
+      );
       if (mounted) setState(() => _results = []);
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -105,7 +111,7 @@ class _ManualTrackerMatchSheetState
     ref
         .read(
           mediaPreferenceProvider(
-            MediaArgs(mediaTitle: widget.mediaTitle, type: widget.type),
+            MediaArgs.fromTitle(widget.mediaTitle, type: widget.type),
           ).notifier,
         )
         .setTrackerMediaId(result.id);

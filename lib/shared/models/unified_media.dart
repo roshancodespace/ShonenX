@@ -315,6 +315,8 @@ class UnifiedMedia {
 
   @override
   int get hashCode => id.hashCode;
+
+  bool get isFromExtensionSource => sourceId != null;
 }
 
 class MediaTitle {

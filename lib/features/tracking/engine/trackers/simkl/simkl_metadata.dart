@@ -169,7 +169,12 @@ mixin SimklMetadata on BaseTracker implements RemoteTracker {
 
         final response = await http.get(
           '$_baseUrl/search/$endpoint',
-          queryParameters: {'q': query, 'page': page.toString(), 'limit': '50'},
+          queryParameters: {
+            'q': query,
+            'page': page.toString(),
+            'limit': '50',
+            if (clientId.isNotEmpty) 'client_id': clientId,
+          },
           headers: _headers,
           cacheDuration: cacheDuration,
         );
@@ -199,7 +204,10 @@ mixin SimklMetadata on BaseTracker implements RemoteTracker {
 
       final response = await http.get(
         '$_baseUrl/$endpoint/$providerId',
-        queryParameters: {'extended': 'full'},
+        queryParameters: {
+          'extended': 'full',
+          if (clientId.isNotEmpty) 'client_id': clientId,
+        },
         headers: _headers,
         cacheDuration: const Duration(days: 1),
       );

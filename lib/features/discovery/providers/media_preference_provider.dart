@@ -62,6 +62,26 @@ class MediaPreferenceState {
 
   @Deprecated('Use trackerMediaId instead')
   String? get manualAiringTrackerId => trackerMediaId;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is MediaPreferenceState &&
+          runtimeType == other.runtimeType &&
+          sourceInfo == other.sourceInfo &&
+          matchedMediaId == other.matchedMediaId &&
+          matchedMediaTitle == other.matchedMediaTitle &&
+          preferredTracker == other.preferredTracker &&
+          trackerMediaId == other.trackerMediaId;
+
+  @override
+  int get hashCode => Object.hash(
+    sourceInfo,
+    matchedMediaId,
+    matchedMediaTitle,
+    preferredTracker,
+    trackerMediaId,
+  );
 }
 
 class MediaPreferenceNotifier extends AsyncNotifier<MediaPreferenceState> {
@@ -161,7 +181,12 @@ class MediaPreferenceNotifier extends AsyncNotifier<MediaPreferenceState> {
         resolvedSource = defaultSource;
       }
 
-      log.i('Resolved → ${resolvedSource.name} (${resolvedSource.id})');
+      final matchInfo = savedPreference?.matchedMediaTitle != null
+          ? ', saved match: "${savedPreference!.matchedMediaTitle}"'
+          : '';
+      log.i(
+        'Resolved source "${resolvedSource.name}" (${resolvedSource.id})$matchInfo',
+      );
 
       TrackerType? preferredTracker;
       if (savedPreference?.preferredTracker != null) {
@@ -186,9 +211,9 @@ class MediaPreferenceNotifier extends AsyncNotifier<MediaPreferenceState> {
   Future<void> updateSource(SourceInfo sourceInfo) async {
     final log = _log.child('updateSource');
 
-    log.i('Switch → ${sourceInfo.name}');
+    log.i('Switching source to "${sourceInfo.name}" (${sourceInfo.id})');
 
-    final currentState = await future;
+    final currentState = state.value ?? await future;
 
     state = AsyncData(
       currentState.copyWith(
@@ -199,7 +224,6 @@ class MediaPreferenceNotifier extends AsyncNotifier<MediaPreferenceState> {
     );
 
     await _saveToDb();
-    log.s('Updated');
   }
 
   Future<void> setManualMatch(
@@ -208,9 +232,9 @@ class MediaPreferenceNotifier extends AsyncNotifier<MediaPreferenceState> {
   ) async {
     final log = _log.child('setManualMatch');
 
-    log.i('Match → $matchedMediaTitle ($matchedMediaId)');
+    log.i('Setting manual match: "$matchedMediaTitle" ($matchedMediaId)');
 
-    final currentState = await future;
+    final currentState = state.value ?? await future;
 
     state = AsyncData(
       currentState.copyWith(
@@ -219,7 +243,7 @@ class MediaPreferenceNotifier extends AsyncNotifier<MediaPreferenceState> {
       ),
     );
 
-    _saveToDb();
+    await _saveToDb();
   }
 
   @Deprecated('Use setManualMatch instead')
@@ -234,6 +258,7 @@ class MediaPreferenceNotifier extends AsyncNotifier<MediaPreferenceState> {
     String matchedMediaId,
     String matchedMediaTitle,
   ) async {
+    final log = _log.child('saveAutoMatch');
     final currentState = state.value;
     if (currentState == null) return;
 
@@ -252,25 +277,22 @@ class MediaPreferenceNotifier extends AsyncNotifier<MediaPreferenceState> {
 
       await _isar.writeTxn(() async => await _isar.mediaPreferences.put(pref));
 
-      state = AsyncData(
-        currentState.copyWith(
-          matchedMediaId: matchedMediaId,
-          matchedMediaTitle: matchedMediaTitle,
-        ),
+      log.s(
+        'Cached auto-match: "$matchedMediaTitle" ($matchedMediaId) on "${currentState.sourceInfo.name}"',
       );
     } catch (e, st) {
-      _log.e('Failed to save auto match', e, st);
+      log.e('Failed to save auto match', e, st);
     }
   }
 
   Future<void> setPreferredTracker(TrackerType trackerType) async {
     final log = _log.child('setPreferredTracker');
-    log.i('Tracker → ${trackerType.displayName}');
+    log.i('Setting preferred tracker to ${trackerType.displayName}');
 
-    final currentState = await future;
+    final currentState = state.value ?? await future;
     state = AsyncData(currentState.copyWith(preferredTracker: trackerType));
 
-    _saveToDb();
+    await _saveToDb();
   }
 
   @Deprecated('Use setPreferredTracker instead')
@@ -283,7 +305,7 @@ class MediaPreferenceNotifier extends AsyncNotifier<MediaPreferenceState> {
     String matchedMediaId,
     String matchedMediaTitle,
   ) async {
-    final currentState = await future;
+    final currentState = state.value ?? await future;
     state = AsyncData(
       currentState.copyWith(
         sourceInfo: sourceInfo,
@@ -291,11 +313,11 @@ class MediaPreferenceNotifier extends AsyncNotifier<MediaPreferenceState> {
         matchedMediaTitle: matchedMediaTitle,
       ),
     );
-    _saveToDb();
+    await _saveToDb();
   }
 
   Future<void> _saveToDb() async {
-    final log = _log.child('_saveToDb');
+    final log = _log.child('saveToDb');
 
     final currentState = state.value;
     if (currentState == null) return;
@@ -313,27 +335,39 @@ class MediaPreferenceNotifier extends AsyncNotifier<MediaPreferenceState> {
 
       await _isar.writeTxn(() async => await _isar.mediaPreferences.put(pref));
 
-      log.s('Saved');
+      final matchSummary = currentState.matchedMediaTitle != null
+          ? 'match: "${currentState.matchedMediaTitle}" (${currentState.matchedMediaId})'
+          : 'match: none (reset)';
+      final trackerSummary = currentState.preferredTracker != null
+          ? ', tracker: ${currentState.preferredTracker!.displayName}'
+          : '';
+      log.s(
+        'Preferences saved: source="${currentState.sourceInfo.name}", $matchSummary$trackerSummary',
+      );
     } catch (e, st) {
-      log.e('Save failed', e, st);
+      log.e('Failed to save preferences for "${args.mediaTitle}"', e, st);
     }
   }
 
   Future<void> clearPreference() async {
+    final log = _log.child('clearPreference');
     try {
       await _isar.writeTxn(
         () async =>
             await _isar.mediaPreferences.deleteByMediaTitle(args.mediaTitle),
       );
 
+      log.s('Cleared saved preferences for "${args.mediaTitle}"');
+
       state = const AsyncLoading();
       state = await AsyncValue.guard(() => build());
     } catch (e, st) {
-      _log.e('Failed to clear overrides', e, st);
+      log.e('Failed to clear preferences', e, st);
     }
   }
 
   Future<void> setTrackerMediaId(String trackerMediaId) async {
+    final log = _log.child('setTrackerMediaId');
     try {
       final existing = await _isar.mediaPreferences.getByMediaTitle(
         args.mediaTitle,
@@ -352,8 +386,9 @@ class MediaPreferenceNotifier extends AsyncNotifier<MediaPreferenceState> {
       });
 
       state = AsyncData(state.value!.copyWith(trackerMediaId: trackerMediaId));
+      log.s('Saved tracker media ID: $trackerMediaId');
     } catch (e, st) {
-      _log.e('Failed to set tracker media id', e, st);
+      log.e('Failed to set tracker media ID', e, st);
     }
   }
 

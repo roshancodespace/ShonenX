@@ -320,48 +320,55 @@ class AnilistTracker extends BaseTracker
         if (pageData == null) return [];
 
         final mediaList = pageData['mediaList'] as List? ?? [];
+        final seenIds = <String>{};
+        final result = <LibraryEntry>[];
 
-        return mediaList
-            .map((entry) {
-              final media = entry['media'] as Map?;
+        for (final entry in mediaList) {
+          if (entry is! Map) continue;
+          final media = entry['media'] as Map?;
+          if (media == null) continue;
 
-              if (media == null) return null;
+          final providerId = media['id']?.toString();
+          if (providerId == null || providerId.isEmpty) continue;
+          if (!seenIds.add(providerId)) continue;
 
-              final userScore = (entry['score'] as num?)?.toDouble() ?? 0.0;
-              final avgScore = (media['averageScore'] as num?)?.toDouble();
-              final effectiveScore = userScore > 0
-                  ? userScore
-                  : (avgScore != null && avgScore > 0 ? avgScore / 10.0 : null);
+          final userScore = (entry['score'] as num?)?.toDouble() ?? 0.0;
+          final avgScore = (media['averageScore'] as num?)?.toDouble();
+          final effectiveScore = userScore > 0
+              ? userScore
+              : (avgScore != null && avgScore > 0 ? avgScore / 10.0 : null);
 
-              final rawGenres = media['genres'] as List?;
-              final genres = rawGenres?.map((g) => g.toString()).toList();
+          final rawGenres = media['genres'] as List?;
+          final genres = rawGenres?.map((g) => g.toString()).toList();
 
-              return LibraryEntry()
-                ..providerId = media['id']?.toString() ?? ''
-                ..type = mediaType.id
-                ..title =
-                    media['title']?['english'] ??
-                    media['title']?['romaji'] ??
-                    'Unknown'
-                ..format = media['format']?.toString() ?? ''
-                ..cover = media['coverImage']?['large'] ?? ''
-                ..banner = media['bannerImage']?.toString()
-                ..description = media['description']?.toString()
-                ..genres = genres
-                ..year = media['seasonYear'] as int?
-                ..status = _parseAnilistStatus(media['status']).id
-                ..score = effectiveScore
-                ..episodesWatched = (entry['progress'] as num?)?.toInt() ?? 0
-                ..episodes = (media['episodes'] ?? media['chapters']) as int?
-                ..externalIds = MediaExternalIds(
-                  mal: media['idMal']?.toString(),
-                  anilist: media['id']?.toString(),
-                )
-                ..sourceType = 'tracker'
-                ..sourceId = 'anilist';
-            })
-            .whereType<LibraryEntry>()
-            .toList();
+          result.add(
+            LibraryEntry()
+              ..providerId = providerId
+              ..type = mediaType.id
+              ..title =
+                  media['title']?['english'] ??
+                  media['title']?['romaji'] ??
+                  'Unknown'
+              ..format = media['format']?.toString() ?? ''
+              ..cover = media['coverImage']?['large'] ?? ''
+              ..banner = media['bannerImage']?.toString()
+              ..description = media['description']?.toString()
+              ..genres = genres
+              ..year = media['seasonYear'] as int?
+              ..status = _parseAnilistStatus(media['status']).id
+              ..score = effectiveScore
+              ..episodesWatched = (entry['progress'] as num?)?.toInt() ?? 0
+              ..episodes = (media['episodes'] ?? media['chapters']) as int?
+              ..externalIds = MediaExternalIds(
+                mal: media['idMal']?.toString(),
+                anilist: media['id']?.toString(),
+              )
+              ..sourceType = 'tracker'
+              ..sourceId = 'anilist',
+          );
+        }
+
+        return result;
       },
     );
   }

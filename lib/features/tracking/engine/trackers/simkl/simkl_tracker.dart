@@ -297,51 +297,53 @@ class SimklTracker extends BaseTracker
         list = jsonResponse;
       }
 
-      final entries = list
-          .whereType<Map>()
-          .map((item) {
-            final inner =
-                item['show'] as Map? ??
-                item['movie'] as Map? ??
-                item['anime'] as Map? ??
-                item[simklType] as Map?;
-            if (inner == null) return null;
+      final seenIds = <String>{};
+      final entries = <LibraryEntry>[];
 
-            final id = inner['ids']?['simkl']?.toString();
-            if (id == null) return null;
+      for (final item in list.whereType<Map>()) {
+        final inner =
+            item['show'] as Map? ??
+            item['movie'] as Map? ??
+            item['anime'] as Map? ??
+            item[simklType] as Map?;
+        if (inner == null) continue;
 
-            final poster = inner['poster']?.toString();
-            final coverUrl = poster != null
-                ? 'https://simkl.in/posters/${poster}_m.webp'
-                : '';
+        final id = inner['ids']?['simkl']?.toString();
+        if (id == null || id.isEmpty) continue;
+        if (!seenIds.add(id)) continue;
 
-            final lastWatchedStr =
-                item['last_watched_at']?.toString() ??
-                item['updated_at']?.toString();
-            final updatedAt = lastWatchedStr != null
-                ? DateTime.tryParse(lastWatchedStr) ?? DateTime.now()
-                : DateTime.now();
+        final poster = inner['poster']?.toString();
+        final coverUrl = poster != null
+            ? 'https://simkl.in/posters/${poster}_m.webp'
+            : '';
 
-            final rating = (item['user_rating'] as num?)?.toDouble();
-            final watchedEp =
-                (item['watched_episodes_count'] as num?)?.toInt() ?? 0;
+        final lastWatchedStr =
+            item['last_watched_at']?.toString() ??
+            item['updated_at']?.toString();
+        final updatedAt = lastWatchedStr != null
+            ? DateTime.tryParse(lastWatchedStr) ?? DateTime.now()
+            : DateTime.now();
 
-            return LibraryEntry()
-              ..providerId = id
-              ..type = mediaType.id
-              ..title = inner['title'] ?? 'Unknown'
-              ..cover = coverUrl
-              ..banner = coverUrl
-              ..status = status.id
-              ..score = rating != null && rating > 0 ? rating : null
-              ..episodesWatched = watchedEp
-              ..episodes = inner['total_episodes']
-              ..updatedAt = updatedAt
-              ..sourceType = 'tracker'
-              ..sourceId = 'simkl';
-          })
-          .whereType<LibraryEntry>()
-          .toList();
+        final rating = (item['user_rating'] as num?)?.toDouble();
+        final watchedEp =
+            (item['watched_episodes_count'] as num?)?.toInt() ?? 0;
+
+        entries.add(
+          LibraryEntry()
+            ..providerId = id
+            ..type = mediaType.id
+            ..title = inner['title'] ?? 'Unknown'
+            ..cover = coverUrl
+            ..banner = coverUrl
+            ..status = status.id
+            ..score = rating != null && rating > 0 ? rating : null
+            ..episodesWatched = watchedEp
+            ..episodes = inner['total_episodes']
+            ..updatedAt = updatedAt
+            ..sourceType = 'tracker'
+            ..sourceId = 'simkl',
+        );
+      }
 
       entries.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
       return entries;

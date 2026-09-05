@@ -10,6 +10,27 @@ class SeasonSelectorBar extends StatelessWidget {
 
   const SeasonSelectorBar({super.key, required this.currentMedia});
 
+  // Matches "Season 2", "S2"
+  static final _seasonRegex = RegExp(
+    r'\b(?:Season|S)\s*(\d+)\b',
+    caseSensitive: false,
+  );
+
+  // Matches ordinal names like "2nd Season", "3rd Season"
+  static final _ordinalSeasonRegex = RegExp(
+    r'\b(\d+)(?:st|nd|rd|th)\s*Season\b',
+    caseSensitive: false,
+  );
+
+  // Matches split-cours like "Part 2"
+  static final _partRegex = RegExp(r'\bPart\s*(\d+)\b', caseSensitive: false);
+
+  // Matches "Final Season"
+  static final _finalSeasonRegex = RegExp(
+    r'\bFinal\s*Season\b',
+    caseSensitive: false,
+  );
+
   @override
   Widget build(BuildContext context) {
     final relations = currentMedia.relations;
@@ -17,11 +38,15 @@ class SeasonSelectorBar extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    // Filter relevant relations (same media type, excluding non-media entries)
+    // Filter to valid prequel/sequel seasons of the same media type
     final validRelations = relations.where((r) {
       if (r.type != currentMedia.type) return false;
       final rel = r.relationType?.toUpperCase();
-      if (rel == 'CHARACTER' || rel == 'ADAPTATION') return false;
+      if (rel != 'PREQUEL' && rel != 'SEQUEL') return false;
+
+      final fmt = r.format?.toUpperCase();
+      if (fmt == 'MUSIC' || fmt == 'SPECIAL' || fmt == 'MOVIE') return false;
+
       return true;
     }).toList();
 
@@ -29,65 +54,46 @@ class SeasonSelectorBar extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    final prequels = validRelations
-        .where((r) => r.relationType?.toUpperCase() == 'PREQUEL')
-        .toList();
-    final sequels = validRelations
-        .where((r) => r.relationType?.toUpperCase() == 'SEQUEL')
-        .toList();
-    final others = validRelations.where((r) {
-      final t = r.relationType?.toUpperCase();
-      return t != 'PREQUEL' && t != 'SEQUEL';
-    }).toList();
+    // Sort chronologically by release year
+    final prequels =
+        validRelations
+            .where((r) => r.relationType?.toUpperCase() == 'PREQUEL')
+            .toList()
+          ..sort((a, b) => (a.year ?? 0).compareTo(b.year ?? 0));
 
-    final items = <Widget>[];
+    final sequels =
+        validRelations
+            .where((r) => r.relationType?.toUpperCase() == 'SEQUEL')
+            .toList()
+          ..sort((a, b) => (a.year ?? 0).compareTo(b.year ?? 0));
 
-    // 1. Prequels (chronologically before current media)
-    for (final rel in prequels) {
-      items.add(
+    // Hide if no other seasons exist
+    if (prequels.isEmpty && sequels.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final items = <Widget>[
+      for (final rel in prequels)
         _SeasonPill(
           icon: Icons.skip_previous_rounded,
-          tag: 'Prequel',
+          tag: _resolveSeasonTag(rel, fallback: 'Prequel'),
           title: rel.title.availableTitle,
           onTap: () => _navigateToRelation(context, rel),
         ),
-      );
-    }
-
-    // 2. Current Media (active)
-    items.add(
       _SeasonPill(
         icon: Icons.check_rounded,
-        tag: 'Current',
+        tag: _resolveSeasonTag(currentMedia, fallback: 'Current'),
         title: currentMedia.title.availableTitle,
         isCurrent: true,
       ),
-    );
-
-    // 3. Sequels (chronologically after current media)
-    for (final rel in sequels) {
-      items.add(
+      for (final rel in sequels)
         _SeasonPill(
           icon: Icons.skip_next_rounded,
-          tag: 'Sequel',
+          tag: _resolveSeasonTag(rel, fallback: 'Sequel'),
           title: rel.title.availableTitle,
           onTap: () => _navigateToRelation(context, rel),
         ),
-      );
-    }
-
-    // 4. Other related entries (Side stories, Spin-offs, Movies, etc.)
-    for (final rel in others) {
-      final (tag, icon) = _getRelationMeta(rel);
-      items.add(
-        _SeasonPill(
-          icon: icon,
-          tag: tag,
-          title: rel.title.availableTitle,
-          onTap: () => _navigateToRelation(context, rel),
-        ),
-      );
-    }
+    ];
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -108,27 +114,40 @@ class SeasonSelectorBar extends StatelessWidget {
   }
 
   void _navigateToRelation(BuildContext context, UnifiedMedia rel) {
-    context.pushDetails(mediaType: rel.type, media: rel, initialTabIndex: 1);
+    context.pushReplacementDetails(
+      mediaType: rel.type,
+      media: rel,
+      initialTabIndex: 1,
+    );
   }
 
-  (String, IconData) _getRelationMeta(UnifiedMedia rel) {
-    if (rel.format?.toUpperCase() == 'MOVIE') {
-      return ('Movie', Icons.movie_rounded);
+  String _resolveSeasonTag(UnifiedMedia media, {required String fallback}) {
+    final title = media.title.availableTitle;
+
+    // Check "Season 2" or "S2"
+    final seasonMatch = _seasonRegex.firstMatch(title);
+    if (seasonMatch != null) {
+      return 'Season ${seasonMatch.group(1)}';
     }
-    switch (rel.relationType?.toUpperCase()) {
-      case 'PARENT':
-        return ('Main Series', Icons.account_tree_rounded);
-      case 'SIDE_STORY':
-        return ('Side Story', Icons.alt_route_rounded);
-      case 'SPIN_OFF':
-        return ('Spin-off', Icons.hub_rounded);
-      case 'ALTERNATIVE':
-        return ('Alternative', Icons.shuffle_rounded);
-      case 'SUMMARY':
-        return ('Summary', Icons.summarize_rounded);
-      default:
-        return ('Related', Icons.layers_outlined);
+
+    // Check "2nd Season"
+    final ordSeasonMatch = _ordinalSeasonRegex.firstMatch(title);
+    if (ordSeasonMatch != null) {
+      return 'Season ${ordSeasonMatch.group(1)}';
     }
+
+    // Check "Part 2"
+    final partMatch = _partRegex.firstMatch(title);
+    if (partMatch != null) {
+      return 'Part ${partMatch.group(1)}';
+    }
+
+    // Check "Final Season"
+    if (_finalSeasonRegex.hasMatch(title)) {
+      return 'Final Season';
+    }
+
+    return fallback;
   }
 }
 

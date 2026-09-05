@@ -55,10 +55,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
         : (widget.mode.startPosition > 0 ? widget.mode.startPosition - 1 : 0);
     _pageController = PageController(initialPage: startPage);
 
-    _matchArgs = MediaArgs(
-      mediaTitle: widget.mode.media.title.availableTitle,
-      type: widget.mode.media.type,
-    );
+    _matchArgs = MediaArgs.fromMedia(widget.mode.media);
   }
 
   @override
@@ -81,7 +78,9 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     _pageController.dispose();
     _disableImmersiveMode();
     try {
-      ref.read(discordRpcProvider.notifier).updateMediaPresence(widget.mode.media);
+      ref
+          .read(discordRpcProvider.notifier)
+          .updateMediaPresence(widget.mode.media);
     } catch (_) {}
     try {
       WakelockPlus.disable();
@@ -90,13 +89,15 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   }
 
   void _updateDiscordRpc(ReaderState state) {
-    ref.read(discordRpcProvider.notifier).updateMangaPresence(
-      manga: widget.mode.media,
-      chapterNumber: widget.mode.episode.number.toInt(),
-      chapterTitle: widget.mode.episode.title,
-      currentPage: state.currentPage + 1,
-      totalPages: state.totalPages > 0 ? state.totalPages : null,
-    );
+    ref
+        .read(discordRpcProvider.notifier)
+        .updateMangaPresence(
+          manga: widget.mode.media,
+          chapterNumber: widget.mode.episode.number.toInt(),
+          chapterTitle: widget.mode.episode.title,
+          currentPage: state.currentPage + 1,
+          totalPages: state.totalPages > 0 ? state.totalPages : null,
+        );
   }
 
   // ──────────────── System UI ────────────────

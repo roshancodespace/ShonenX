@@ -106,9 +106,17 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
     setState(() {
       _isRetrying = true;
     });
-    ref.invalidate(matchedMediaProvider);
-    ref.invalidate(episodesListProvider);
-    ref.invalidate(sourceEpisodesProvider);
+    ref.invalidate(matchedMediaProvider(matchArgs));
+    ref.invalidate(episodesListProvider(matchArgs));
+    if (widget.media.sourceId != null) {
+      ref.invalidate(
+        sourceEpisodesProvider((
+          providerId: widget.media.id,
+          sourceId: widget.media.sourceId!,
+          type: widget.media.type,
+        )),
+      );
+    }
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) {
         setState(() {
@@ -151,6 +159,12 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
     final effectiveWatchedProgress = widget.watchedProgress > 0
         ? widget.watchedProgress
         : (trackedProgress > 0 ? trackedProgress : maxHistoryEp);
+
+    final effectiveCurrentEpisodeNumber =
+        widget.currentEpisodeNumber ??
+        (widget.media.type == MediaType.ANIME
+            ? watchHistoryEntries.firstOrNull?.episodeNumber
+            : readHistoryEntries.firstOrNull?.chapterNumber);
 
     return episodesAsync.when(
       loading: () {
@@ -296,7 +310,7 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
           _hasInitializedSort = true;
           final maxEpNum = uniqueNums.last;
           final currentProgress =
-              widget.currentEpisodeNumber ?? widget.watchedProgress;
+              effectiveCurrentEpisodeNumber ?? effectiveWatchedProgress;
           if (maxEpNum > 0 && currentProgress >= maxEpNum * 0.5) {
             _descending = true;
           }
@@ -320,10 +334,10 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
         }
 
         if (chunks.length > 1 &&
-            widget.currentEpisodeNumber != null &&
-            _lastAutoChunkEpisode != widget.currentEpisodeNumber?.toInt()) {
-          _lastAutoChunkEpisode = widget.currentEpisodeNumber?.toInt();
-          final target = widget.currentEpisodeNumber!;
+            effectiveCurrentEpisodeNumber != null &&
+            _lastAutoChunkEpisode != effectiveCurrentEpisodeNumber.toInt()) {
+          _lastAutoChunkEpisode = effectiveCurrentEpisodeNumber.toInt();
+          final target = effectiveCurrentEpisodeNumber;
           final autoIdx = chunks.indexWhere(
             (c) =>
                 c.min != null &&
@@ -572,8 +586,9 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
                   effectiveWatchedProgress: effectiveWatchedProgress,
                   historyWatchedSet: historyWatchedSet,
                   currentIndex: finalEpisodes.indexWhere(
-                    (ep) => ep.number == widget.currentEpisodeNumber,
+                    (ep) => ep.number == effectiveCurrentEpisodeNumber,
                   ),
+                  currentEpisodeNumber: effectiveCurrentEpisodeNumber,
                 ),
               ),
             ),
@@ -591,6 +606,7 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
     required double effectiveWatchedProgress,
     required Set<double> historyWatchedSet,
     int currentIndex = -1,
+    double? currentEpisodeNumber,
   }) {
     if (widget.isTv) {
       return TvEpisodeListPanel(
@@ -599,7 +615,7 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
         source: source,
         effectiveWatchedProgress: effectiveWatchedProgress,
         historyWatchedSet: historyWatchedSet,
-        currentEpisodeNumber: widget.currentEpisodeNumber,
+        currentEpisodeNumber: currentEpisodeNumber,
         onEpisodeTap: widget.onEpisodeTap,
       );
     }
@@ -718,7 +734,7 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
               itemCount: episodes.length,
               itemBuilder: (context, i) {
                 final ep = episodes[i];
-                final isCurrent = widget.currentEpisodeNumber == ep.number;
+                final isCurrent = currentEpisodeNumber == ep.number;
                 final isWatched =
                     effectiveWatchedProgress >= ep.number ||
                     historyWatchedSet.contains(ep.number);
@@ -753,7 +769,7 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
               itemCount: episodes.length,
               itemBuilder: (context, i) {
                 final ep = episodes[i];
-                final isCurrent = widget.currentEpisodeNumber == ep.number;
+                final isCurrent = currentEpisodeNumber == ep.number;
                 final isWatched =
                     effectiveWatchedProgress >= ep.number ||
                     historyWatchedSet.contains(ep.number);
@@ -809,7 +825,7 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
               itemCount: episodes.length,
               itemBuilder: (context, i) {
                 final ep = episodes[i];
-                final isCurrent = widget.currentEpisodeNumber == ep.number;
+                final isCurrent = currentEpisodeNumber == ep.number;
                 final isWatched =
                     effectiveWatchedProgress >= ep.number ||
                     historyWatchedSet.contains(ep.number);
@@ -865,7 +881,7 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
               itemCount: episodes.length,
               itemBuilder: (context, i) {
                 final ep = episodes[i];
-                final isCurrent = widget.currentEpisodeNumber == ep.number;
+                final isCurrent = currentEpisodeNumber == ep.number;
                 final isWatched =
                     effectiveWatchedProgress >= ep.number ||
                     historyWatchedSet.contains(ep.number);
@@ -919,7 +935,7 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
               itemCount: episodes.length,
               itemBuilder: (context, i) {
                 final ep = episodes[i];
-                final isCurrent = widget.currentEpisodeNumber == ep.number;
+                final isCurrent = currentEpisodeNumber == ep.number;
                 final isWatched =
                     effectiveWatchedProgress >= ep.number ||
                     historyWatchedSet.contains(ep.number);

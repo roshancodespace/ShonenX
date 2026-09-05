@@ -2,7 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/discovery/domain/media_args.dart';
 import 'package:shonenx/features/discovery/providers/matched_media_provider.dart';
-import 'package:shonenx/features/discovery/providers/media_preference_provider.dart';
 import 'package:shonenx/features/episode_metadata/providers/episode_metadata_providers.dart';
 import 'package:shonenx/shared/models/unified_episode.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
@@ -35,14 +34,11 @@ final episodesListProvider =
       final metadataService = ref.watch(episodeMetadataServiceProvider);
 
       try {
-        final sourcePrefs = await ref.watch(
-          mediaPreferenceProvider(args).future,
-        );
         final matchState = await ref.watch(matchedMediaProvider(args).future);
 
         if (matchState.matchedMedia == null) {
           return EpisodesListState(
-            source: sourcePrefs.sourceInfo,
+            source: matchState.sourceInfo,
             episodes: const [],
           );
         }
@@ -50,7 +46,7 @@ final episodesListProvider =
         final sourceEpisodesState = await ref.watch(
           sourceEpisodesProvider((
             providerId: matchState.matchedMedia!.id,
-            sourceId: sourcePrefs.sourceInfo.id,
+            sourceId: matchState.sourceInfo.id,
             type: args.type,
           )).future,
         );

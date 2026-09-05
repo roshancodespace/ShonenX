@@ -13,8 +13,6 @@ import 'package:shonenx/features/discovery/providers/media_preference_provider.d
 import 'package:shonenx/features/history/providers/read_history_provider.dart';
 import 'package:shonenx/features/player/domain/player_mode.dart';
 import 'package:shonenx/features/reader/domain/reader_mode.dart';
-import 'package:shonenx/features/tracking/providers/media_tracking_provider.dart';
-import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
 import 'package:shonenx/shared/models/unified_episode.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/features/discovery/providers/episodes_provider.dart';
@@ -49,20 +47,6 @@ class EpisodesTabWidget extends ConsumerWidget {
       return _NoExtensionsPlaceholder(mediaType: media.type);
     }
 
-    final primaryTracker = ref.watch(primaryTrackerProvider);
-    final trackingState = ref.watch(
-      mediaTrackingProvider(TrackingQuery(primaryTracker.type, media)),
-    );
-    final watchedProgress = trackingState.value?.progress.toDouble() ?? 0;
-
-    final watchHistoryEntries =
-        ref.watch(historyEpisodesProvider(media.id)).value ?? [];
-    final readHistoryEntries =
-        ref.watch(historyChaptersProvider(media.id)).value ?? [];
-    final currentEpisodeNumber = media.type == MediaType.ANIME
-        ? watchHistoryEntries.firstOrNull?.episodeNumber
-        : readHistoryEntries.firstOrNull?.chapterNumber;
-
     return Column(
       children: [
         if (media.sourceId == null && !isTv) ...[
@@ -81,12 +65,12 @@ class EpisodesTabWidget extends ConsumerWidget {
           child: EpisodeListPanel(
             media: media,
             isTv: isTv,
-            watchedProgress: watchedProgress,
-            currentEpisodeNumber: currentEpisodeNumber,
             useScrollController: false,
             onEpisodeTap: (UnifiedEpisode episode, SourceInfo sourceInfo) {
               if (media.type == MediaType.MANGA ||
                   media.type == MediaType.NOVEL) {
+                final readHistoryEntries =
+                    ref.read(historyChaptersProvider(media.id)).value ?? [];
                 final historyEntry = readHistoryEntries
                     .where((e) => e.chapterNumber == episode.number)
                     .firstOrNull;
@@ -109,6 +93,8 @@ class EpisodesTabWidget extends ConsumerWidget {
                   ),
                 );
               } else {
+                final watchHistoryEntries =
+                    ref.read(historyEpisodesProvider(media.id)).value ?? [];
                 final historyEntry = watchHistoryEntries
                     .where((e) => e.episodeNumber == episode.number)
                     .firstOrNull;
@@ -206,13 +192,7 @@ class EpisodesTabWidget extends ConsumerWidget {
                                   ref
                                           .read(
                                             mediaPreferenceProvider(
-                                              MediaArgs(
-                                                mediaTitle:
-                                                    media.title.availableTitle,
-                                                type: media.type,
-                                                sourceId: media.sourceId,
-                                                providerId: media.id,
-                                              ),
+                                              MediaArgs.fromMedia(media),
                                             ),
                                           )
                                           .value
@@ -256,12 +236,7 @@ class _EpisodesHeader extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    final matchArgs = MediaArgs(
-      mediaTitle: title,
-      type: media.type,
-      sourceId: media.sourceId,
-      providerId: media.id,
-    );
+    final matchArgs = MediaArgs.fromMedia(media);
     final sourceState = ref.watch(mediaPreferenceProvider(matchArgs)).value;
 
     final matchedMediaState = ref.watch(matchedMediaProvider(matchArgs));
@@ -278,7 +253,10 @@ class _EpisodesHeader extends ConsumerWidget {
           matchedMediaState.value?.matchedMedia?.title ?? 'No match found';
     }
 
-    final sourceName = sourceState?.sourceInfo.name ?? 'Unknown';
+    final sourceName =
+        matchedMediaState.value?.sourceInfo.name ??
+        sourceState?.sourceInfo.name ??
+        'Unknown';
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
@@ -374,7 +352,6 @@ class _EpisodesHeader extends ConsumerWidget {
     UnifiedMedia media,
     SourceInfo? currentSource,
   ) {
-    final title = media.title.availableTitle;
     final availableSources =
         ref.read(media.type.availableSourcesProvider).value ?? [];
 
@@ -386,37 +363,13 @@ class _EpisodesHeader extends ConsumerWidget {
         currentSource: currentSource,
         mediaType: media.type,
         onSourceSelected: (sheetContext, source) {
-          final matchArgs = MediaArgs(
-            mediaTitle: title,
-            type: media.type,
-            sourceId: media.sourceId,
-            providerId: media.id,
-          );
+          final matchArgs = MediaArgs.fromMedia(media);
           ref
               .read(mediaPreferenceProvider(matchArgs).notifier)
               .updateSource(source);
-          ref.invalidate(matchedMediaProvider(matchArgs));
-          ref.invalidate(episodesListProvider(matchArgs));
-          if (media.sourceId != null) {
-            ref.invalidate(
-              sourceEpisodesProvider((
-                providerId: media.id,
-                sourceId: media.sourceId!,
-                type: media.type,
-              )),
-            );
-          }
           Navigator.pop(sheetContext);
         },
         onSettingsClosed: () {
-          final matchArgs = MediaArgs(
-            mediaTitle: title,
-            type: media.type,
-            sourceId: media.sourceId,
-            providerId: media.id,
-          );
-          ref.invalidate(matchedMediaProvider(matchArgs));
-          ref.invalidate(episodesListProvider(matchArgs));
           if (media.sourceId != null) {
             ref.invalidate(
               sourceEpisodesProvider((

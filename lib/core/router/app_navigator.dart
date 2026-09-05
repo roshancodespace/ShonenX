@@ -74,6 +74,23 @@ extension AppNavigator on BuildContext {
     );
   }
 
+  void pushReplacementDetails({
+    required MediaType mediaType,
+    required UnifiedMedia media,
+    int initialTabIndex = 0,
+    Object? autoPlayMode,
+    String tag = 'details',
+  }) {
+    pushReplacement(
+      '/details/${mediaType.id}?tag=$tag',
+      extra: {
+        'media': media,
+        'initialTabIndex': initialTabIndex,
+        'autoPlayMode': autoPlayMode,
+      },
+    );
+  }
+
   // Player & Reader
   void pushPlayer(PlayerMode mode) => push('/player', extra: mode);
   void pushReader(ReaderModeOnline mode) => push('/reader', extra: mode);

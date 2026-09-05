@@ -2,14 +2,14 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/discovery/domain/media_args.dart';
-import 'package:shonenx/features/discovery/providers/episodes_provider.dart';
-import 'package:shonenx/features/discovery/providers/matched_media_provider.dart';
 import 'package:shonenx/features/discovery/providers/media_preference_provider.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/shared/widgets/manual_match_list.dart';
 import 'package:shonenx/source_engine/source_engine_provider.dart';
+import 'package:shonenx/source_engine/utils/media_type_extensions.dart';
 
 class ManualMatchSheet extends ConsumerStatefulWidget {
   final String mediaTitle;
@@ -36,7 +36,7 @@ class _ManualMatchSheetState extends ConsumerState<ManualMatchSheet> {
 
   MediaArgs get _effectiveArgs =>
       widget.matchArgs ??
-      MediaArgs(mediaTitle: widget.mediaTitle, type: widget.type);
+      MediaArgs.fromTitle(widget.mediaTitle, type: widget.type);
 
   @override
   void initState() {
@@ -72,12 +72,15 @@ class _ManualMatchSheetState extends ConsumerState<ManualMatchSheet> {
       final pref = await ref.read(
         mediaPreferenceProvider(_effectiveArgs).future,
       );
-      final source = widget.type == MediaType.ANIME
+      final source = widget.type.usesAnimeSources
           ? ref.read(animeSourceProvider(pref.sourceInfo))
           : ref.read(mangaSourceProvider(pref.sourceInfo));
       final results = await source.search(cleanQuery, widget.type);
       if (mounted) setState(() => _results = results);
-    } catch (_) {
+    } catch (e, st) {
+      AppLogger.scope(
+        'ManualMatchSheet',
+      ).e('Search failed for "$cleanQuery"', e, st);
       if (mounted) setState(() => _results = []);
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -90,9 +93,6 @@ class _ManualMatchSheetState extends ConsumerState<ManualMatchSheet> {
     ref
         .read(mediaPreferenceProvider(args).notifier)
         .setManualMatch(result.id, result.title.availableTitle);
-
-    ref.invalidate(matchedMediaProvider(args));
-    ref.invalidate(episodesListProvider(args));
 
     context.pop(true);
   }
@@ -108,7 +108,7 @@ class _ManualMatchSheetState extends ConsumerState<ManualMatchSheet> {
           TextField(
             controller: _controller,
             decoration: InputDecoration(
-              labelText: widget.type == MediaType.ANIME
+              labelText: widget.type.usesAnimeSources
                   ? 'Search Anime'
                   : 'Search Manga / Novel',
               border: const OutlineInputBorder(),

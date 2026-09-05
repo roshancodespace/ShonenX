@@ -224,12 +224,19 @@ abstract class BaseSourceAdapter implements MediaSource {
 
     final methodLog = log.child('search');
     try {
-      methodLog.i('query=$query page=$page genres=$genres tags=$tags');
+      final extraDetails = [
+        if (genres.isNotEmpty) 'genres=$genres',
+        if (tags.isNotEmpty) 'tags=$tags',
+      ];
+      final extraStr = extraDetails.isNotEmpty
+          ? ' (${extraDetails.join(', ')})'
+          : '';
+      methodLog.i('query="$query" page=$page$extraStr');
       final results = await source.methods.search(query, page, [
         ...genres,
         ...tags,
       ]);
-      methodLog.d('results=${results.list.length}');
+      methodLog.d('Found ${results.list.length} results');
 
       final parsed = results.list
           .map(

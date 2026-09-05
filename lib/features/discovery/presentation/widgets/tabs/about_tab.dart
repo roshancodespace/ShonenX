@@ -3,20 +3,20 @@ import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import 'package:shonenx/core/router/app_navigator.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'package:shonenx/core/router/app_navigator.dart';
 import 'package:shonenx/core/utils/formatting.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/cards/media_card.dart';
+import 'package:shonenx/features/discovery/presentation/widgets/rows/horizontal_section.dart';
+import 'package:shonenx/features/discovery/presentation/widgets/sheets/characters_sheet.dart';
 import 'package:shonenx/features/notifications/domain/models/notification_subscription.dart';
 import 'package:shonenx/features/notifications/presentation/widgets/notification_subscription_sheet.dart';
 import 'package:shonenx/features/notifications/providers/notification_subscriptions_provider.dart';
-import 'package:shonenx/features/discovery/presentation/widgets/sheets/characters_sheet.dart';
-import 'package:shonenx/source_engine/source_engine_provider.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/shared/widgets/staggered_fade_in.dart';
+import 'package:shonenx/source_engine/source_engine_provider.dart';
 
 class AboutTabWidget extends ConsumerWidget {
   final UnifiedMedia media;
@@ -1007,41 +1007,33 @@ class _RelationsList extends ConsumerWidget {
       children: grouped.entries.map((entry) {
         return Padding(
           padding: const EdgeInsets.only(bottom: 16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                entry.key,
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
+          child: HorizontalSection<UnifiedMedia>(
+            titleWidget: Text(
+              entry.key,
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.primary,
               ),
-              const SizedBox(height: 8),
-              SizedBox(
-                height: cardHeight,
-                child: ListView.separated(
-                  shrinkWrap: true,
-                  scrollDirection: Axis.horizontal,
-                  itemCount: entry.value.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 12),
-                  itemBuilder: (context, index) {
-                    final relation = entry.value[index];
-                    return MediaCard(
-                      tag: 'details-${relation.id}',
-                      title: relation.title.availableTitle,
-                      format: relation.format,
-                      imageUrl: relation.cover ?? relation.banner ?? '',
-                      onTap: () => context.pushReplacement(
-                        '/details/${relation.type.id}?tag=details-${relation.id}',
-                        extra: relation,
-                      ),
-                      style: style,
-                    );
-                  },
+            ),
+            headerPadding: const EdgeInsets.only(bottom: 8),
+            listPadding: EdgeInsets.zero,
+            data: AsyncValue.data(entry.value),
+            height: cardHeight,
+            gap: 12,
+            itemBuilder: (context, relation) {
+              return MediaCard(
+                tag: 'details-${relation.id}',
+                title: relation.title.availableTitle,
+                format: relation.format,
+                imageUrl: relation.cover ?? relation.banner ?? '',
+                onTap: () => context.pushReplacementDetails(
+                  mediaType: relation.type,
+                  media: relation,
+                  tag: 'details-${relation.id}',
                 ),
-              ),
-            ],
+                style: style,
+              );
+            },
           ),
         );
       }).toList(),
@@ -1062,28 +1054,25 @@ class _RecommendationsList extends ConsumerWidget {
     );
     final cardHeight = style.getLayout(isWideMode: isWide).height;
 
-    return SizedBox(
+    return HorizontalSection<UnifiedMedia>(
+      data: AsyncValue.data(recommendations),
       height: cardHeight,
-      child: ListView.separated(
-        shrinkWrap: true,
-        scrollDirection: Axis.horizontal,
-        itemCount: recommendations.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 12),
-        itemBuilder: (context, index) {
-          final rec = recommendations[index];
-          return MediaCard(
+      gap: 12,
+      listPadding: EdgeInsets.zero,
+      itemBuilder: (context, rec) {
+        return MediaCard(
+          tag: 'details-rec-${rec.id}',
+          title: rec.title.availableTitle,
+          format: rec.format,
+          imageUrl: rec.cover ?? rec.banner ?? '',
+          onTap: () => context.pushReplacementDetails(
+            mediaType: rec.type,
+            media: rec,
             tag: 'details-rec-${rec.id}',
-            title: rec.title.availableTitle,
-            format: rec.format,
-            imageUrl: rec.cover ?? rec.banner ?? '',
-            onTap: () => context.pushReplacement(
-              '/details/${rec.type.id}?tag=details-rec-${rec.id}',
-              extra: rec,
-            ),
-            style: style,
-          );
-        },
-      ),
+          ),
+          style: style,
+        );
+      },
     );
   }
 }

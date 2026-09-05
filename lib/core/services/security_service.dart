@@ -56,6 +56,12 @@ class SecurityService {
   static const _pinSaltKey = 'security_pin_salt';
   static const _pinHashKey = 'security_pin_hash';
 
+  bool _isAuthenticating = false;
+  bool get isAuthenticating => _isAuthenticating;
+
+  DateTime? _lastAuthSuccessAt;
+  DateTime? get lastAuthSuccessAt => _lastAuthSuccessAt;
+
   SecurityService({
     LocalAuthentication? localAuth,
     FlutterSecureStorage? secureStorage,
@@ -105,14 +111,21 @@ class SecurityService {
           await _localAuth.isDeviceSupported();
       if (!canAuth) return false;
 
-      return await _localAuth.authenticate(
+      _isAuthenticating = true;
+      final result = await _localAuth.authenticate(
         localizedReason: reason,
         biometricOnly: biometricOnly,
         persistAcrossBackgrounding: true,
       );
+      if (result) {
+        _lastAuthSuccessAt = DateTime.now();
+      }
+      return result;
     } catch (e, st) {
       _log.e('Biometric authentication error: $e', e, st);
       return false;
+    } finally {
+      _isAuthenticating = false;
     }
   }
 

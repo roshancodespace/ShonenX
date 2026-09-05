@@ -659,7 +659,25 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
               case EpisodeViewMode.compact:
                 offset = currentIndex * 52.0;
               case EpisodeViewMode.cover:
-                offset = currentIndex * 140.0;
+                final cols = panelTier.pick(
+                  compact: 1,
+                  medium: 1,
+                  expanded: 2,
+                  large: 2,
+                  ultraLarge: 3,
+                );
+                final pad = panelTier.pickOrFold(
+                  compact: 8.0,
+                  medium: 12.0,
+                  large: 16.0,
+                );
+                final spacing = panelTier.pickOrFold(
+                  compact: 8.0,
+                  medium: 10.0,
+                  large: 12.0,
+                );
+                final row = currentIndex ~/ cols;
+                offset = pad + row * (90.0 + spacing);
               case EpisodeViewMode.grid:
                 final cols = panelTier.pick(
                   compact: 2,
@@ -796,11 +814,11 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
 
           case EpisodeViewMode.cover:
             final coverColumns = panelTier.pick(
-              compact: 2,
-              medium: 3,
-              expanded: 4,
-              large: 5,
-              ultraLarge: 6,
+              compact: 1,
+              medium: 1,
+              expanded: 2,
+              large: 2,
+              ultraLarge: 3,
             );
             final coverPad = panelTier.pickOrFold(
               compact: 8.0,
@@ -810,7 +828,7 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
             final coverSpacing = panelTier.pickOrFold(
               compact: 8.0,
               medium: 10.0,
-              large: 14.0,
+              large: 12.0,
             );
 
             return GridView.builder(
@@ -820,7 +838,7 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
                 crossAxisCount: coverColumns,
                 crossAxisSpacing: coverSpacing,
                 mainAxisSpacing: coverSpacing,
-                childAspectRatio: 16 / 10,
+                mainAxisExtent: 90.0,
               ),
               itemCount: episodes.length,
               itemBuilder: (context, i) {
@@ -968,7 +986,7 @@ class _ViewModeToggle extends StatelessWidget {
     EpisodeViewMode.grid => Icons.grid_view_outlined,
     EpisodeViewMode.box => Icons.tag_outlined,
     EpisodeViewMode.compact => Icons.format_list_bulleted_rounded,
-    EpisodeViewMode.cover => Icons.movie_creation_outlined,
+    EpisodeViewMode.cover => Icons.video_library_outlined,
   };
 
   @override

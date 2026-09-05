@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shonenx/core/network/cf_client.dart';
 import 'package:shonenx/core/router/app_navigator.dart';
 import 'package:shonenx/core/services/notification_service.dart';
 import 'package:shonenx/features/discord/presentation/discord_login_page.dart';
@@ -23,20 +22,6 @@ class DebugSettingsScreen extends ConsumerWidget {
           SettingsSection(
             title: 'Web & Webview Debug',
             children: [
-              SettingsActionTile(
-                icon: Icons.web_rounded,
-                title: 'Test CFClient Webview (AnimePahe)',
-                subtitle: 'Launch CfSolverScreen to test Cloudflare webview',
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          const CfSolverScreen(baseUrl: 'https://animepahe.ru'),
-                    ),
-                  );
-                },
-              ),
               SettingsActionTile(
                 icon: Icons.discord,
                 title: 'Test Discord Webview Login',

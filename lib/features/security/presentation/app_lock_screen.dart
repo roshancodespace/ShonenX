@@ -59,11 +59,7 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen> {
         reason: 'Authenticate to unlock ShonenX',
       );
 
-      // hmm maybe
-      // if (success && mounted) {
-      //   ref.read(appLockProvider.notifier).unlock();
-      // }
-      if (success) {
+      if (success && mounted) {
         ref.read(appLockProvider.notifier).unlock();
       }
     } finally {

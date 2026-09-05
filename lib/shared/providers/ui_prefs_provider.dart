@@ -60,7 +60,7 @@ class UiPrefState {
   bool isMediaCardWide(String styleName) => isWideCardMode('media_$styleName');
 
   bool isContinueWatchingWide(String styleName) =>
-      isWideCardMode('cw_$styleName');
+      cardStyleWideModes['cw_$styleName'] ?? true;
 
   bool isContinueReadingWide(String styleName) =>
       isWideCardMode('cr_$styleName');
@@ -227,8 +227,10 @@ class UiPrefsNotifier extends Notifier<UiPrefState> {
   void toggleMediaCardWide(String styleName) =>
       _toggleWideCardMode('media_$styleName');
 
-  void toggleContinueWatchingWide(String styleName) =>
-      _toggleWideCardMode('cw_$styleName');
+  void toggleContinueWatchingWide(String styleName) {
+    final current = state.isContinueWatchingWide(styleName);
+    setWideCardMode('cw_$styleName', !current);
+  }
 
   void toggleContinueReadingWide(String styleName) =>
       _toggleWideCardMode('cr_$styleName');

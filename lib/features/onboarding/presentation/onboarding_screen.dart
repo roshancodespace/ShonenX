@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter/foundation.dart'; // FIXED: Added to access kIsWeb
+import 'package:flutter/foundation.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/material.dart';
@@ -24,11 +24,17 @@ import 'package:shonenx/shared/widgets/permission_sheet.dart';
 import 'package:shonenx/shared/widgets/svg_icon.dart';
 import 'package:anymex_extension_runtime_bridge/anymex_extension_runtime_bridge.dart'
     as bridge;
+import 'package:flex_color_scheme/flex_color_scheme.dart';
+import 'package:shonenx/features/discovery/presentation/widgets/cards/media_card.dart';
+import 'package:shonenx/features/discovery/presentation/widgets/continue/continue_card_layout.dart';
 import 'package:shonenx/features/discord/presentation/discord_login_page.dart';
 import 'package:shonenx/features/discord/presentation/widgets/discord_rpc_preview_card.dart';
 import 'package:shonenx/features/discord/providers/discord_provider.dart';
 import 'package:shonenx/features/discord/providers/discord_rpc_provider.dart';
 import 'package:shonenx/features/extensions/presentation/widgets/runtime_setup_sheet.dart';
+import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
+
+enum _CardTarget { browse, watching, reading }
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -40,13 +46,13 @@ class OnboardingScreen extends ConsumerStatefulWidget {
 class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentIndex = 0;
+  int _selectedContentFocus = 2;
+  _CardTarget _selectedCardTarget = _CardTarget.browse;
 
-  // FIXED: Added kIsWeb check to prevent UnsupportedError on Web
   bool get _isMobile => !kIsWeb && (Platform.isAndroid || Platform.isIOS);
-  int get _totalPages => _isMobile ? 7 : 6;
+  int get _totalPages => _isMobile ? 9 : 8;
 
   void _nextPage() {
-    // FIXED: Use actual PageController position instead of lagging _currentIndex state to prevent animation jitter on rapid taps
     if (_pageController.hasClients) {
       final int targetPage =
           (_pageController.page?.round() ?? _currentIndex) + 1;
@@ -95,22 +101,33 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      if (_currentIndex > 0 && _currentIndex < _totalPages - 1)
-                        TextButton(
-                          onPressed: _finishOnboarding,
-                          style: TextButton.styleFrom(
-                            foregroundColor: cs.onSurfaceVariant,
-                          ),
-                          child: const Text(
-                            'Skip',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 14,
+                      AnimatedOpacity(
+                        opacity:
+                            (_currentIndex > 0 &&
+                                _currentIndex < _totalPages - 1)
+                            ? 1.0
+                            : 0.0,
+                        duration: const Duration(milliseconds: 250),
+                        curve: Curves.easeInOut,
+                        child: IgnorePointer(
+                          ignoring:
+                              !(_currentIndex > 0 &&
+                                  _currentIndex < _totalPages - 1),
+                          child: TextButton(
+                            onPressed: _finishOnboarding,
+                            style: TextButton.styleFrom(
+                              foregroundColor: cs.onSurfaceVariant,
+                            ),
+                            child: const Text(
+                              'Skip',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                              ),
                             ),
                           ),
-                        )
-                      else
-                        const SizedBox(height: 36),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -123,7 +140,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     physics: const BouncingScrollPhysics(),
                     children: [
                       _buildWelcomePage(theme, cs),
+                      _buildContentFocusPage(theme, cs),
                       _buildThemePage(theme, cs),
+                      _buildCardStylePage(theme, cs),
                       _buildDiscoveryGuidePage(theme, cs),
                       _buildTrackersPage(theme, cs),
                       _buildExtensionsPage(theme, cs),
@@ -284,53 +303,456 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     );
   }
 
-  Widget _buildThemePage(ThemeData theme, ColorScheme cs) {
-    final themePrefs = ref.watch(themePrefsProvider);
-    final notifier = ref.read(themePrefsProvider.notifier);
-
+  Widget _buildContentFocusPage(ThemeData theme, ColorScheme cs) {
     return _buildPageLayout(
-      title: 'Choose Your Vibe',
+      title: 'What Are You Exploring?',
       description:
-          'Light or Dark mode? Tailor the app\'s look to perfectly match your environment.',
-      icon: Icons.palette_rounded,
+          'Pick your content focus. We\'ll curate your initial home feed accordingly.',
+      icon: Icons.explore_rounded,
       theme: theme,
       cs: cs,
       customWidget: Padding(
         padding: const EdgeInsets.only(top: 24),
-        child: SegmentedButton<ThemeMode>(
-          segments: const [
-            ButtonSegment(
-              value: ThemeMode.system,
-              label: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 12),
-                child: Text('System'),
+        child: Column(
+          children: [
+            SizedBox(
+              width: 340,
+              child: SegmentedButton<int>(
+                segments: const [
+                  ButtonSegment(
+                    value: 0,
+                    icon: Icon(Icons.tv_rounded),
+                    label: Text('Anime'),
+                  ),
+                  ButtonSegment(
+                    value: 1,
+                    icon: Icon(Icons.auto_stories_rounded),
+                    label: Text('Manga'),
+                  ),
+                  ButtonSegment(
+                    value: 2,
+                    icon: Icon(Icons.auto_awesome_rounded),
+                    label: Text('Both'),
+                  ),
+                ],
+                selected: {_selectedContentFocus},
+                onSelectionChanged: (Set<int> newSelection) {
+                  final val = newSelection.first;
+                  setState(() => _selectedContentFocus = val);
+                  ref
+                      .read(userHomeLayoutProvider.notifier)
+                      .setupHomeLayoutForContentPreference(
+                        includeAnime: val == 0 || val == 2,
+                        includeManga: val == 1 || val == 2,
+                      );
+                },
+                showSelectedIcon: false,
+                style: SegmentedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 12,
+                  ),
+                ),
               ),
             ),
-            ButtonSegment(
-              value: ThemeMode.light,
-              label: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 12),
-                child: Text('Light'),
-              ),
-            ),
-            ButtonSegment(
-              value: ThemeMode.dark,
-              label: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 12),
-                child: Text('Dark'),
+            const SizedBox(height: 20),
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              child: Text(
+                _selectedContentFocus == 0
+                    ? 'Curates your home feed for anime streaming and seasonal releases.'
+                    : _selectedContentFocus == 1
+                    ? 'Curates your home feed for manga reading and chapter tracking.'
+                    : 'Curates your home feed for both anime watching and manga reading.',
+                key: ValueKey(_selectedContentFocus),
+                style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant),
+                textAlign: TextAlign.center,
               ),
             ),
           ],
-          selected: {themePrefs.themeMode},
-          onSelectionChanged: (Set<ThemeMode> newSelection) {
-            notifier.updateTheme(
-              (p) => p.copyWith(themeMode: newSelection.first),
-            );
-          },
-          showSelectedIcon: false,
-          style: SegmentedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildThemePage(ThemeData theme, ColorScheme cs) {
+    final themePrefs = ref.watch(themePrefsProvider);
+    final notifier = ref.read(themePrefsProvider.notifier);
+
+    final isDark =
+        themePrefs.themeMode == ThemeMode.dark ||
+        (themePrefs.themeMode == ThemeMode.system &&
+            MediaQuery.platformBrightnessOf(context) == Brightness.dark);
+
+    final curatedSchemes = [
+      (FlexScheme.deepBlue, 'Deep Blue', const Color(0xFF1565C0)),
+      (FlexScheme.redM3, 'Crimson', const Color(0xFFB3261E)),
+      (FlexScheme.sakura, 'Sakura', const Color(0xFFCE5B78)),
+      (FlexScheme.greenM3, 'Emerald', const Color(0xFF2E6C38)),
+      (FlexScheme.deepPurple, 'Purple', const Color(0xFF6750A4)),
+      (FlexScheme.mandyRed, 'Sunset', const Color(0xFFCD5758)),
+    ];
+
+    return _buildPageLayout(
+      title: 'Choose Your Vibe',
+      description: isDark
+          ? 'Set your theme mode, pick your signature accent color, and enable pitch-black AMOLED.'
+          : 'Set your theme mode and pick your signature accent color.',
+      icon: Icons.palette_rounded,
+      theme: theme,
+      cs: cs,
+      customWidget: Padding(
+        padding: const EdgeInsets.only(top: 16),
+        child: Column(
+          children: [
+            SizedBox(
+              width: 260,
+              child: SegmentedButton<ThemeMode>(
+                segments: const [
+                  ButtonSegment(
+                    value: ThemeMode.system,
+                    icon: Icon(Icons.brightness_auto_rounded),
+                    tooltip: 'System',
+                  ),
+                  ButtonSegment(
+                    value: ThemeMode.light,
+                    icon: Icon(Icons.light_mode_rounded),
+                    tooltip: 'Light',
+                  ),
+                  ButtonSegment(
+                    value: ThemeMode.dark,
+                    icon: Icon(Icons.dark_mode_rounded),
+                    tooltip: 'Dark',
+                  ),
+                ],
+                selected: {themePrefs.themeMode},
+                onSelectionChanged: (Set<ThemeMode> newSelection) {
+                  notifier.updateTheme(
+                    (p) => p.copyWith(themeMode: newSelection.first),
+                  );
+                },
+                showSelectedIcon: false,
+                style: SegmentedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+            const SizedBox(height: 28),
+
+            Wrap(
+              spacing: 16,
+              runSpacing: 12,
+              alignment: WrapAlignment.center,
+              children: curatedSchemes.map((scheme) {
+                final isSelected = themePrefs.flexScheme == scheme.$1;
+                return Tooltip(
+                  message: scheme.$2,
+                  child: InkWell(
+                    onTap: () => notifier.setStandardScheme(scheme.$1),
+                    borderRadius: BorderRadius.circular(24),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: scheme.$3,
+                        shape: BoxShape.circle,
+                        border: isSelected
+                            ? Border.all(color: cs.onSurface, width: 3)
+                            : Border.all(
+                                color: cs.outlineVariant.withValues(alpha: 0.4),
+                                width: 1.5,
+                              ),
+                        boxShadow: isSelected
+                            ? [
+                                BoxShadow(
+                                  color: scheme.$3.withValues(alpha: 0.4),
+                                  blurRadius: 10,
+                                  spreadRadius: 2,
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: isSelected
+                          ? const Center(
+                              child: Icon(
+                                Icons.check_rounded,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                            )
+                          : null,
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+
+            AnimatedSize(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeInOut,
+              child: isDark
+                  ? Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const SizedBox(height: 28),
+                        SwitchListTile.adaptive(
+                          secondary: Icon(
+                            Icons.contrast_rounded,
+                            color: themePrefs.useAmoled
+                                ? cs.primary
+                                : cs.onSurfaceVariant,
+                          ),
+                          title: const Text(
+                            'Pure Black (AMOLED)',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 15,
+                            ),
+                          ),
+                          subtitle: Text(
+                            'Deep pitch-black backgrounds for OLED displays',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: cs.onSurfaceVariant,
+                            ),
+                          ),
+                          value: themePrefs.useAmoled,
+                          onChanged: (val) {
+                            notifier.updateTheme(
+                              (p) => p.copyWith(
+                                useAmoled: val,
+                                useGradients: val ? false : p.useGradients,
+                                useNoiseOverlay: val
+                                    ? false
+                                    : p.useNoiseOverlay,
+                                clearWallpaperSettings: val,
+                              ),
+                            );
+                          },
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 4,
+                          ),
+                        ),
+                      ],
+                    )
+                  : const SizedBox.shrink(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCardStylePage(ThemeData theme, ColorScheme cs) {
+    final uiPrefs = ref.watch(uiPrefsProvider);
+    final uiNotifier = ref.read(uiPrefsProvider.notifier);
+
+    final availableTargets = [
+      _CardTarget.browse,
+      if (_selectedContentFocus != 1) _CardTarget.watching,
+      if (_selectedContentFocus != 0) _CardTarget.reading,
+    ];
+
+    final effectiveTarget = availableTargets.contains(_selectedCardTarget)
+        ? _selectedCardTarget
+        : _CardTarget.browse;
+
+    final currentStyle = effectiveTarget == _CardTarget.watching
+        ? uiPrefs.continueWatchingStyle
+        : (effectiveTarget == _CardTarget.reading
+              ? uiPrefs.continueReadingStyle
+              : uiPrefs.cardStyle);
+
+    final isWide = effectiveTarget == _CardTarget.watching
+        ? uiPrefs.isContinueWatchingWide(currentStyle.name)
+        : (effectiveTarget == _CardTarget.reading
+              ? uiPrefs.isContinueReadingWide(currentStyle.name)
+              : uiPrefs.isMediaCardWide(currentStyle.name));
+
+    final styles = [
+      (MediaCardStyle.classic, 'Classic', Icons.grid_view_rounded),
+      (MediaCardStyle.minimal, 'Minimal', Icons.crop_portrait_rounded),
+      (MediaCardStyle.expressive, 'Expressive', Icons.bubble_chart_rounded),
+      (MediaCardStyle.neon, 'Neon', Icons.blur_on_rounded),
+      (MediaCardStyle.editorial, 'Editorial', Icons.newspaper_rounded),
+      (MediaCardStyle.material, 'Material', Icons.view_quilt_rounded),
+    ];
+
+    final scale = ref.watch(themePrefsProvider.select((s) => s.uiScaleFactor));
+    final isManga = _selectedContentFocus == 1;
+    final isWatching = effectiveTarget == _CardTarget.watching;
+    final isReading = effectiveTarget == _CardTarget.reading;
+
+    final layout = currentStyle.getScaledLayout(
+      scale,
+      isContinueWatching: isWatching,
+      isContinueReading: isReading,
+      isWideMode: isWide,
+    );
+
+    Widget previewCard;
+    if (isWatching) {
+      previewCard = ContinueCardLayout(
+        variant: currentStyle.name,
+        width: layout.width,
+        height: layout.height,
+        isActive: false,
+        isLoading: false,
+        isWideMode: isWide,
+        title: "Frieren: Beyond Journey's End",
+        subtitle: 'EP 18 • Well, It\'s a Long Journey',
+        progress: 0.65,
+        progressText: '14:20 / 24:00',
+        badgeText: 'EP 18',
+        imageUrl: 'https://cdn.myanimelist.net/images/anime/1015/138006.jpg',
+        fallbackIcon: Icons.play_circle_outline_rounded,
+        badgeType: 'WATCHING',
+      );
+    } else if (isReading) {
+      previewCard = ContinueCardLayout(
+        variant: currentStyle.name,
+        width: layout.width,
+        height: layout.height,
+        isActive: false,
+        isLoading: false,
+        isWideMode: isWide,
+        title: "Frieren: Beyond Journey's End",
+        subtitle: 'Ch 45 • The First-Class Exam',
+        progress: 0.75,
+        progressText: 'Ch 45/60',
+        badgeText: 'CH 45',
+        imageUrl: 'https://cdn.myanimelist.net/images/anime/1015/138006.jpg',
+        fallbackIcon: Icons.auto_stories_rounded,
+        badgeType: 'READING',
+      );
+    } else {
+      previewCard = MediaCard(
+        title: "Frieren: Beyond Journey's End",
+        tag: 'onboarding_preview_card',
+        imageUrl: 'https://cdn.myanimelist.net/images/anime/1015/138006.jpg',
+        format: isManga ? 'Manga' : 'TV',
+        score: 9.1,
+        year: '2023',
+        status: 'Finished',
+        genres: const ['Adventure', 'Fantasy'],
+        progress: 0.65,
+        progressText: isManga ? 'Ch 45/60' : 'Ep 18/28',
+        style: currentStyle,
+        onTap: () {},
+      );
+    }
+
+    return _buildPageLayout(
+      title: 'Card Presentation Style',
+      description: effectiveTarget == _CardTarget.watching
+          ? 'Customize how continue watching anime episode cards look on your feed.'
+          : (effectiveTarget == _CardTarget.reading
+                ? 'Customize how continue reading manga chapter cards look on your feed.'
+                : 'Customize how anime and manga discovery cards look throughout the app.'),
+      icon: Icons.dashboard_outlined,
+      theme: theme,
+      cs: cs,
+      customWidget: Padding(
+        padding: const EdgeInsets.only(top: 16),
+        child: Column(
+          children: [
+            SizedBox(
+              width: availableTargets.length == 3 ? 370 : 310,
+              child: SegmentedButton<_CardTarget>(
+                segments: [
+                  const ButtonSegment(
+                    value: _CardTarget.browse,
+                    icon: Icon(Icons.grid_view_rounded, size: 16),
+                    label: Text('Browse'),
+                  ),
+                  if (_selectedContentFocus != 1)
+                    const ButtonSegment(
+                      value: _CardTarget.watching,
+                      icon: Icon(Icons.play_circle_outline_rounded, size: 16),
+                      label: Text('Watching'),
+                    ),
+                  if (_selectedContentFocus != 0)
+                    const ButtonSegment(
+                      value: _CardTarget.reading,
+                      icon: Icon(Icons.auto_stories_rounded, size: 16),
+                      label: Text('Reading'),
+                    ),
+                ],
+                selected: {effectiveTarget},
+                onSelectionChanged: (set) {
+                  setState(() => _selectedCardTarget = set.first);
+                },
+                showSelectedIcon: false,
+                style: SegmentedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 10,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            SizedBox(
+              height: 250,
+              child: Center(
+                child: SizedBox(
+                  width: layout.width,
+                  height: layout.height,
+                  child: previewCard,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              alignment: WrapAlignment.center,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                ...styles.map((s) {
+                  final isSelected = currentStyle == s.$1;
+                  return ChoiceChip(
+                    avatar: Icon(s.$3, size: 16),
+                    label: Text(s.$2),
+                    selected: isSelected,
+                    onSelected: (selected) {
+                      if (selected) {
+                        if (effectiveTarget == _CardTarget.watching) {
+                          uiNotifier.updateContinueWatchingStyle(s.$1);
+                        } else if (effectiveTarget == _CardTarget.reading) {
+                          uiNotifier.updateContinueReadingStyle(s.$1);
+                        } else {
+                          uiNotifier.updateCardStyle(s.$1);
+                        }
+                      }
+                    },
+                  );
+                }),
+                FilterChip(
+                  avatar: Icon(
+                    isWide
+                        ? Icons.table_rows_rounded
+                        : Icons.crop_portrait_rounded,
+                    size: 16,
+                  ),
+                  label: Text(isWide ? 'Wide Mode' : 'Portrait Mode'),
+                  selected: isWide,
+                  onSelected: (_) {
+                    if (effectiveTarget == _CardTarget.watching) {
+                      uiNotifier.toggleContinueWatchingWide(currentStyle.name);
+                    } else if (effectiveTarget == _CardTarget.reading) {
+                      uiNotifier.toggleContinueReadingWide(currentStyle.name);
+                    } else {
+                      uiNotifier.toggleMediaCardWide(currentStyle.name);
+                    }
+                  },
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
@@ -342,6 +764,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final layoutNotifier = ref.read(userHomeLayoutProvider.notifier);
 
     final isTrackerMode = discPrefs.mode == MetadataMode.tracker;
+
+    final isMangaMode = _selectedContentFocus == 1;
+    final isBothMode = _selectedContentFocus == 2;
+    final defaultMedia = isMangaMode ? MediaType.MANGA : MediaType.ANIME;
+    final defaultLabel = isMangaMode ? 'Manga' : 'Anime';
 
     final hasContinue = homeSections.any(
       (s) => s.type == HomeSectionType.continueMedia,
@@ -441,24 +868,58 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     Icons.play_circle_outline_rounded,
                     size: 16,
                   ),
-                  label: const Text('Continue Watching / Reading'),
+                  label: Text(
+                    isMangaMode
+                        ? 'Continue Reading'
+                        : (isBothMode
+                              ? 'Continue Watching & Reading'
+                              : 'Continue Watching'),
+                  ),
                   selected: hasContinue,
                   onSelected: (val) {
                     if (val) {
-                      layoutNotifier.addSection(
-                        const HomeSection(
-                          id: 'continue_anime',
-                          title: 'Continue Watching',
-                          type: HomeSectionType.continueMedia,
-                          targetMediaType: MediaType.ANIME,
-                        ),
-                      );
+                      if (isMangaMode) {
+                        layoutNotifier.addSection(
+                          const HomeSection(
+                            id: 'continue_manga',
+                            title: 'Continue Reading',
+                            type: HomeSectionType.continueMedia,
+                            targetMediaType: MediaType.MANGA,
+                          ),
+                        );
+                      } else if (isBothMode) {
+                        layoutNotifier.addSection(
+                          const HomeSection(
+                            id: 'continue_anime',
+                            title: 'Continue Watching',
+                            type: HomeSectionType.continueMedia,
+                            targetMediaType: MediaType.ANIME,
+                          ),
+                        );
+                        layoutNotifier.addSection(
+                          const HomeSection(
+                            id: 'continue_manga',
+                            title: 'Continue Reading',
+                            type: HomeSectionType.continueMedia,
+                            targetMediaType: MediaType.MANGA,
+                          ),
+                        );
+                      } else {
+                        layoutNotifier.addSection(
+                          const HomeSection(
+                            id: 'continue_anime',
+                            title: 'Continue Watching',
+                            type: HomeSectionType.continueMedia,
+                            targetMediaType: MediaType.ANIME,
+                          ),
+                        );
+                      }
                     } else {
-                      final target = homeSections.firstWhereOrNull(
-                        (s) => s.type == HomeSectionType.continueMedia,
-                      );
-                      if (target != null) {
-                        layoutNotifier.removeSection(target.id);
+                      final targets = homeSections
+                          .where((s) => s.type == HomeSectionType.continueMedia)
+                          .toList();
+                      for (final t in targets) {
+                        layoutNotifier.removeSection(t.id);
                       }
                     }
                   },
@@ -481,22 +942,25 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               runSpacing: 8,
               children: selectableStatuses.map((status) {
                 final isSelected = hasLibraryStatus(status);
+                final label = isMangaMode
+                    ? status.getLabelForMedia(MediaType.MANGA)
+                    : status.getLabelForMedia(MediaType.ANIME);
                 return FilterChip(
                   avatar: const Icon(
                     Icons.collections_bookmark_rounded,
                     size: 16,
                   ),
-                  label: Text(status.getLabel()),
+                  label: Text(label),
                   selected: isSelected,
                   onSelected: (val) {
                     if (val) {
                       layoutNotifier.addSection(
                         HomeSection(
-                          id: 'library_${status.name}_anime',
-                          title: '${status.getLabel()} Anime',
+                          id: 'library_${status.name}_${defaultMedia.name}',
+                          title: '$label $defaultLabel',
                           type: HomeSectionType.libraryStatus,
                           libraryStatus: status,
-                          targetMediaType: MediaType.ANIME,
+                          targetMediaType: defaultMedia,
                         ),
                       );
                     } else {
@@ -569,17 +1033,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       Icons.local_fire_department_rounded,
                       size: 16,
                     ),
-                    label: const Text('Trending'),
+                    label: Text('Trending $defaultLabel'),
                     selected: hasTrending,
                     onSelected: (val) {
                       if (val) {
                         layoutNotifier.addSection(
-                          const HomeSection(
-                            id: 'trending_anime',
-                            title: 'Trending Anime',
+                          HomeSection(
+                            id: 'trending_${defaultMedia.name}',
+                            title: 'Trending $defaultLabel',
                             type: HomeSectionType.discovery,
                             trackerCategory: TrackerCategory.trending,
-                            targetMediaType: MediaType.ANIME,
+                            targetMediaType: defaultMedia,
                           ),
                         );
                       } else {
@@ -592,44 +1056,46 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       }
                     },
                   ),
-                  FilterChip(
-                    avatar: const Icon(Icons.rocket_launch_rounded, size: 16),
-                    label: const Text('Upcoming'),
-                    selected: hasUpcoming,
-                    onSelected: (val) {
-                      if (val) {
-                        layoutNotifier.addSection(
-                          const HomeSection(
-                            id: 'upcoming_anime',
-                            title: 'Upcoming Anime',
-                            type: HomeSectionType.discovery,
-                            trackerCategory: TrackerCategory.upcoming,
-                            targetMediaType: MediaType.ANIME,
-                          ),
-                        );
-                      } else {
-                        final target = homeSections.firstWhereOrNull(
-                          (s) => s.trackerCategory == TrackerCategory.upcoming,
-                        );
-                        if (target != null) {
-                          layoutNotifier.removeSection(target.id);
+                  if (!isMangaMode)
+                    FilterChip(
+                      avatar: const Icon(Icons.rocket_launch_rounded, size: 16),
+                      label: Text('Upcoming $defaultLabel'),
+                      selected: hasUpcoming,
+                      onSelected: (val) {
+                        if (val) {
+                          layoutNotifier.addSection(
+                            HomeSection(
+                              id: 'upcoming_${defaultMedia.name}',
+                              title: 'Upcoming $defaultLabel',
+                              type: HomeSectionType.discovery,
+                              trackerCategory: TrackerCategory.upcoming,
+                              targetMediaType: defaultMedia,
+                            ),
+                          );
+                        } else {
+                          final target = homeSections.firstWhereOrNull(
+                            (s) =>
+                                s.trackerCategory == TrackerCategory.upcoming,
+                          );
+                          if (target != null) {
+                            layoutNotifier.removeSection(target.id);
+                          }
                         }
-                      }
-                    },
-                  ),
+                      },
+                    ),
                   FilterChip(
                     avatar: const Icon(Icons.emoji_events_rounded, size: 16),
-                    label: const Text('Popular'),
+                    label: Text('Popular $defaultLabel'),
                     selected: hasPopular,
                     onSelected: (val) {
                       if (val) {
                         layoutNotifier.addSection(
-                          const HomeSection(
-                            id: 'popular_anime',
-                            title: 'Popular Anime',
+                          HomeSection(
+                            id: 'popular_${defaultMedia.name}',
+                            title: 'Popular $defaultLabel',
                             type: HomeSectionType.discovery,
                             trackerCategory: TrackerCategory.popular,
-                            targetMediaType: MediaType.ANIME,
+                            targetMediaType: defaultMedia,
                           ),
                         );
                       } else {
@@ -644,17 +1110,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   ),
                   FilterChip(
                     avatar: const Icon(Icons.star_rounded, size: 16),
-                    label: const Text('Top Rated'),
+                    label: Text('Top Rated $defaultLabel'),
                     selected: hasTopRated,
                     onSelected: (val) {
                       if (val) {
                         layoutNotifier.addSection(
-                          const HomeSection(
-                            id: 'top_rated_anime',
-                            title: 'Top Rated Anime',
+                          HomeSection(
+                            id: 'top_rated_${defaultMedia.name}',
+                            title: 'Top Rated $defaultLabel',
                             type: HomeSectionType.discovery,
                             trackerCategory: TrackerCategory.topRated,
-                            targetMediaType: MediaType.ANIME,
+                            targetMediaType: defaultMedia,
                           ),
                         );
                       } else {

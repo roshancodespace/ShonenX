@@ -71,6 +71,24 @@ class ProgressTracker {
     _initialCaptureDone = false;
   }
 
+  // Quickly updates history and syncs tracking before player closes without thumbnail capture delay.
+  Future<void> saveExitProgress({
+    required UnifiedMedia? media,
+    required UnifiedEpisode? activeEpisode,
+    required VideoServer? activeServer,
+    required SourceInfo? sourceInfo,
+  }) async {
+    await _saveCurrentProgress(
+      skipCapture: true,
+      ctx: ProgressContext(
+        media: media,
+        activeEpisode: activeEpisode,
+        activeServer: activeServer,
+        sourceInfo: sourceInfo,
+      ),
+    );
+  }
+
   // Captures one final thumbnail and updates history before player closes.
   Future<void> captureExitThumbnail({
     required UnifiedMedia? media,
@@ -147,11 +165,11 @@ class ProgressTracker {
       ..providerId = media.providerId != media.id ? media.providerId : null
       ..lastUpdated = DateTime.now();
 
-    _ref.read(watchHistoryRepositoryProvider).saveProgress(entry);
+    await _ref.read(watchHistoryRepositoryProvider).saveProgress(entry);
 
     // Also sync to tracking services (MAL, AniList, etc.)
     if (activeEpisode != null) {
-      _ref
+      await _ref
           .read(syncEngineProvider)
           .processPlayback(
             media: media,

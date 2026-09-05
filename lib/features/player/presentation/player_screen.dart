@@ -20,7 +20,6 @@ import 'package:shonenx/features/player/presentation/widgets/gesture_overlay.dar
 import 'package:shonenx/features/player/presentation/widgets/keyboard_shortcuts_sheet.dart';
 import 'package:shonenx/features/player/presentation/widgets/player_keyboard_listener.dart';
 import 'package:shonenx/features/player/presentation/widgets/top_controls.dart';
-import 'package:shonenx/features/player/providers/aniskip_provider.dart';
 import 'package:shonenx/features/player/providers/player_controller.dart';
 import 'package:shonenx/features/player/providers/player_prefs_provider.dart';
 import 'package:shonenx/features/player/providers/video_engine_provider.dart';
@@ -59,19 +58,6 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
       return (widget.mode as PlayerModeOnline).media.title.availableTitle;
     }
     return (widget.mode as PlayerModeOffline).title ?? 'Local Media';
-  }
-
-  /// Constructs [AniSkipArgs] from the current mode, or returns null for offline mode.
-  AniSkipArgs? _getAniSkipArgs(VideoEngine engine) {
-    if (widget.mode is PlayerModeOnline) {
-      final onlineMode = widget.mode as PlayerModeOnline;
-      return AniSkipArgs(
-        media: onlineMode.media,
-        episodeNumber: onlineMode.episode.number,
-        episodeLength: engine.currentDuration.inSeconds,
-      );
-    }
-    return null;
   }
 
   @override
@@ -340,20 +326,24 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     );
   }
 
-  void _handlePop(
+  bool _isExiting = false;
+
+  Future<void> _handlePop(
     bool didPop,
     VideoEngine engine,
     PlayerController controller,
-  ) {
+  ) async {
     if (_lockControls) {
       _unlockScreen();
       return;
     }
-    if (!didPop) {
-      try {
-        engine.pause();
-      } catch (_) {}
-      controller.captureExitThumbnail();
+    if (didPop || _isExiting) return;
+    _isExiting = true;
+    try {
+      engine.pause();
+    } catch (_) {}
+    await controller.saveExitProgress();
+    if (mounted) {
       context.pop();
     }
   }
@@ -415,7 +405,6 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     required VideoEngine engine,
     required PlayerState playerState,
     required PlayerController controller,
-    required AniSkipArgs? aniSkipArgs,
   }) {
     final mediaQuery = MediaQuery.of(context);
     final width = mediaQuery.size.width;
@@ -435,7 +424,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
           mode: widget.mode,
           playerState: playerState,
           controller: controller,
-          onBack: context.pop,
+          onBack: () => _handlePop(false, engine, controller),
           onComments: _showCommentsSheet,
         ),
         CenterControls(
@@ -446,7 +435,6 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
           engine: engine,
         ),
         BottomControls(
-          aniskipArgs: aniSkipArgs,
           showControls: _showControls,
           engine: engine,
           playerState: playerState,
@@ -488,7 +476,6 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     final playerState = ref.watch(playerControllerProvider);
     final controller = ref.read(playerControllerProvider.notifier);
     final engine = ref.watch(videoEngineProvider);
-    final aniSkipArgs = _getAniSkipArgs(engine);
 
     ref.listen(playerControllerProvider.select((s) => s.error), (prev, next) {
       if (next != null && next != prev && mounted) {
@@ -603,7 +590,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
             } else if (_isFullScreen) {
               _toggleFullScreen();
             } else {
-              context.pop();
+              _handlePop(false, engine, controller);
             }
           },
           child: MouseRegion(
@@ -638,7 +625,6 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                     engine: engine,
                     playerState: playerState,
                     controller: controller,
-                    aniSkipArgs: aniSkipArgs,
                   ),
               ],
             ),

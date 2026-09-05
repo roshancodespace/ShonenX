@@ -29,7 +29,6 @@ class BottomControls extends ConsumerStatefulWidget {
   final PlayerState playerState;
   final PlayerController controller;
   final ThemeData theme;
-  final AniSkipArgs? aniskipArgs;
   final PlayerMode mode;
   final bool? isFullScreen;
   final VoidCallback? onToggleFullScreen;
@@ -43,7 +42,6 @@ class BottomControls extends ConsumerStatefulWidget {
     required this.playerState,
     required this.controller,
     required this.theme,
-    this.aniskipArgs,
     required this.mode,
     this.isFullScreen,
     this.onToggleFullScreen,
@@ -104,11 +102,26 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final mediaQuery = MediaQuery.of(context);
-    final aniSkips = ref.watch(aniSkipProvider(widget.aniskipArgs));
+    final activeEpisode = widget.playerState.activeEpisode;
+    final malId = widget.playerState.malId;
+    final durationSec = ref.watch(
+      videoEngineStateProvider.select((s) => s.duration.inSeconds),
+    );
+    final aniskipArgs =
+        (malId != null &&
+            activeEpisode != null &&
+            activeEpisode.number % 1 == 0 &&
+            durationSec >= 50)
+        ? AniSkipArgs(
+            malId: malId,
+            episodeNumber: activeEpisode.number.toInt(),
+            episodeLength: durationSec,
+          )
+        : null;
+    final aniSkips = ref.watch(aniSkipProvider(aniskipArgs));
 
-    final isCompact = mediaQuery.size.width < 450;
-    final isVeryCompact = mediaQuery.size.width < 350;
+    final isCompact = MediaQuery.of(context).size.width < 450;
+    final isVeryCompact = MediaQuery.of(context).size.width < 350;
 
     final audioTracks = ref.watch(
       videoEngineStateProvider.select((s) => s.audioTracks),
@@ -150,7 +163,7 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
             ),
             Padding(
               padding: EdgeInsets.only(
-                bottom: mediaQuery.padding.bottom + 12,
+                bottom: MediaQuery.of(context).padding.bottom + 12,
                 top: 40,
               ),
               child: Column(

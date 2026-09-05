@@ -8,6 +8,7 @@ import 'package:shonenx/core/network/http_client.dart';
 import 'package:shonenx/features/discovery/domain/media_args.dart';
 import 'package:shonenx/features/discovery/providers/episodes_provider.dart';
 import 'package:shonenx/features/discord/providers/discord_rpc_provider.dart';
+import 'package:shonenx/features/player/data/aniskip_resolver.dart';
 import 'package:shonenx/features/player/domain/aniskip_prefs.dart';
 import 'package:shonenx/features/player/domain/player_mode.dart';
 import 'package:shonenx/features/player/providers/aniskip_prefs_provider.dart';
@@ -43,6 +44,7 @@ class PlayerState {
   final double playbackSpeed;
   final bool isLoading;
   final String? error;
+  final int? malId;
 
   const PlayerState({
     this.servers = const [],
@@ -57,6 +59,7 @@ class PlayerState {
     this.playbackSpeed = 1.0,
     this.isLoading = true,
     this.error,
+    this.malId,
   });
 
   PlayerState copyWith({
@@ -72,6 +75,7 @@ class PlayerState {
     double? playbackSpeed,
     bool? isLoading,
     Object? error = _keepError,
+    Object? malId = _keepError,
   }) {
     return PlayerState(
       servers: servers ?? this.servers,
@@ -86,6 +90,7 @@ class PlayerState {
       playbackSpeed: playbackSpeed ?? this.playbackSpeed,
       isLoading: isLoading ?? this.isLoading,
       error: identical(error, _keepError) ? this.error : error as String?,
+      malId: identical(malId, _keepError) ? this.malId : malId as int?,
     );
   }
 }
@@ -94,6 +99,7 @@ class PlayerState {
 class PlayerController extends Notifier<PlayerState> {
   UnifiedMedia? _media;
   UnifiedMedia? get media => _media;
+  int? get malId => state.malId;
   AnimeSource? _source;
   late ScreenshotController _screenshotController;
 
@@ -102,6 +108,8 @@ class PlayerController extends Notifier<PlayerState> {
 
   // Track auto-skipped segments to prevent repeat triggers when seeking backwards
   final Set<SkipType> _alreadyAutoSkipped = {};
+
+  List<AniSkipStamp> _currentSkips = [];
 
   // Prevents multiple skip triggers during episode loading transitions
   bool _isSkipping = false;
@@ -171,6 +179,16 @@ class PlayerController extends Notifier<PlayerState> {
       },
     );
 
+    // Fetch skips once when duration becomes known for the active episode
+    ref.listen(videoEngineStateProvider.select((s) => s.duration.inSeconds), (
+      prev,
+      durationSec,
+    ) {
+      if (durationSec >= 50 && prev != durationSec) {
+        _fetchSkipsIfNeeded(durationSec: durationSec);
+      }
+    });
+
     return const PlayerState();
   }
 
@@ -189,29 +207,20 @@ class PlayerController extends Notifier<PlayerState> {
     final seconds = position.inSeconds;
 
     // 1. Auto-Skip (Opening, Ending, Recap)
-    if (duration.inSeconds >= 50) {
-      final aniskipArgs = AniSkipArgs(
-        media: _media,
-        episodeNumber: state.activeEpisode!.number,
-        episodeLength: duration.inSeconds,
-      );
+    if (_currentSkips.isNotEmpty) {
+      final prefs = ref.read(aniskipPrefsProvider);
+      for (final skip in _currentSkips) {
+        if (prefs.mode(skip.type) != SkipMode.auto) continue;
 
-      final skips = ref.read(aniSkipProvider(aniskipArgs)).value ?? [];
-      if (skips.isNotEmpty) {
-        final prefs = ref.read(aniskipPrefsProvider);
-        for (final skip in skips) {
-          if (prefs.mode(skip.type) != SkipMode.auto) continue;
+        final isInside = seconds >= skip.startTime && seconds < skip.endTime;
+        if (isInside && _alreadyAutoSkipped.add(skip.type)) {
+          ref
+              .read(videoEngineProvider)
+              .seekTo(Duration(seconds: skip.endTime.ceil()));
 
-          final isInside = seconds >= skip.startTime && seconds < skip.endTime;
-          if (isInside && _alreadyAutoSkipped.add(skip.type)) {
-            ref
-                .read(videoEngineProvider)
-                .seekTo(Duration(seconds: skip.endTime.ceil()));
-
-            if (skip.type == SkipType.ending ||
-                skip.type == SkipType.mixedEnding) {
-              triggerEndingSkipCooldown();
-            }
+          if (skip.type == SkipType.ending ||
+              skip.type == SkipType.mixedEnding) {
+            triggerEndingSkipCooldown();
           }
         }
       }
@@ -243,11 +252,53 @@ class PlayerController extends Notifier<PlayerState> {
     if (mode is PlayerModeOnline) {
       _source = ref.read(animeSourceProvider(mode.sourceInfo));
       _media = mode.media;
+      final immediateMalId =
+          int.tryParse(mode.media.externalIds.mal ?? '') ??
+          int.tryParse(mode.media.idMal ?? '');
+      state = state.copyWith(malId: immediateMalId);
+      if (immediateMalId == null) {
+        unawaited(_resolveMalId(mode.media));
+      }
       await _loadData(mode.episode, startPosition: mode.startPosition);
     } else if (mode is PlayerModeOffline) {
       _source = null;
       _media = null;
+      state = state.copyWith(malId: null);
       await _loadOfflineData(mode);
+    }
+  }
+
+  Future<void> _resolveMalId(UnifiedMedia media) async {
+    try {
+      final id = await ref
+          .read(aniSkipResolverProvider)
+          .resolveMalId(media: media);
+      if (!_isDisposed && id != null) {
+        state = state.copyWith(malId: id);
+        _fetchSkipsIfNeeded();
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _fetchSkipsIfNeeded({int? durationSec}) async {
+    final duration =
+        durationSec ?? ref.read(videoEngineStateProvider).duration.inSeconds;
+    final malId = state.malId;
+    final ep = state.activeEpisode;
+    if (malId == null || ep == null || duration < 50 || ep.number % 1 != 0) {
+      return;
+    }
+
+    final args = AniSkipArgs(
+      malId: malId,
+      episodeNumber: ep.number.toInt(),
+      episodeLength: duration,
+    );
+
+    try {
+      _currentSkips = await ref.read(aniSkipProvider(args).future);
+    } catch (_) {
+      _currentSkips = [];
     }
   }
 
@@ -305,6 +356,7 @@ class PlayerController extends Notifier<PlayerState> {
 
     if (isNewEpisode) {
       _alreadyAutoSkipped.clear();
+      _currentSkips = [];
       _progressTracker.resetThumbnail();
       ref.read(videoEngineProvider).pause();
     }
@@ -387,6 +439,7 @@ class PlayerController extends Notifier<PlayerState> {
         ),
       );
       _updateDiscordRpc();
+      _fetchSkipsIfNeeded();
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
@@ -629,6 +682,7 @@ class PlayerController extends Notifier<PlayerState> {
       final targetIndex = currentIndex + (forward ? 1 : -1);
       if (targetIndex < 0 || targetIndex >= episodes.length) return;
 
+      await saveExitProgress();
       await loadEpisode(episodes[targetIndex]);
     } finally {
       _isSkipping = false;
@@ -686,6 +740,15 @@ class PlayerController extends Notifier<PlayerState> {
     return ScreenshotHelper.captureAndShare(
       _screenshotController,
       mediaTitle: _media?.title.availableTitle,
+    );
+  }
+
+  Future<void> saveExitProgress() async {
+    await _progressTracker.saveExitProgress(
+      media: _media,
+      activeEpisode: state.activeEpisode,
+      activeServer: state.activeServer,
+      sourceInfo: _source?.sourceInfo,
     );
   }
 

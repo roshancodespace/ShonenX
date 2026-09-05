@@ -18,6 +18,7 @@ import 'package:shonenx/features/history/providers/read_history_provider.dart';
 import 'package:shonenx/features/history/providers/watch_history_provider.dart';
 import 'package:shonenx/features/tracking/providers/media_tracking_provider.dart';
 import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
+import 'package:shonenx/features/tracking/providers/tracking_prefs_provider.dart';
 import 'package:shonenx/features/episode_metadata/providers/episode_metadata_providers.dart';
 import 'package:shonenx/features/tv_mode/presentation/widgets/tv_episode_list_panel.dart';
 
@@ -147,9 +148,26 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
     final readHistoryEntries =
         ref.watch(historyChaptersProvider(widget.media.id)).value ?? [];
 
+    final syncThreshold = ref.watch(trackingPrefsProvider).syncThreshold;
+
     final historyWatchedSet = widget.media.type == MediaType.ANIME
-        ? watchHistoryEntries.map((e) => e.episodeNumber).toSet()
-        : readHistoryEntries.map((e) => e.chapterNumber).toSet();
+        ? watchHistoryEntries
+              .where(
+                (e) =>
+                    e.durationInMilliseconds > 0 &&
+                    e.positionInMilliseconds >=
+                        e.durationInMilliseconds * syncThreshold,
+              )
+              .map((e) => e.episodeNumber)
+              .toSet()
+        : readHistoryEntries
+              .where(
+                (e) =>
+                    e.totalPages > 0 &&
+                    e.positionPage >= (e.totalPages * syncThreshold).ceil(),
+              )
+              .map((e) => e.chapterNumber)
+              .toSet();
 
     final maxHistoryEp = historyWatchedSet.fold<double>(
       0.0,

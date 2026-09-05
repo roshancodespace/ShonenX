@@ -52,7 +52,7 @@ class ClassicCard extends StatelessWidget {
               children: [
                 Text(
                   config.title,
-                  maxLines: config.progress != null ? 1 : 2,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.labelLarge?.copyWith(
                     fontWeight: FontWeight.w700,
@@ -60,29 +60,9 @@ class ClassicCard extends StatelessWidget {
                     height: 1.2,
                   ),
                 ),
-                if (config.effectiveSubtitle != null ||
-                    config.progress != null ||
-                    config.progressText != null) ...[
+                if (config.effectiveSubtitle != null) ...[
                   const SizedBox(height: 2),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      if (config.effectiveSubtitle != null)
-                        Expanded(child: PortraitMetadataRow(config: config)),
-                      if (config.progressText != null ||
-                          config.progress != null) ...[
-                        const SizedBox(width: 4),
-                        Text(
-                          config.progressText ??
-                              '${(config.progress!.clamp(0.0, 1.0) * 100).toInt()}%',
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: cs.primary,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
+                  PortraitMetadataRow(config: config),
                 ],
               ],
             ),

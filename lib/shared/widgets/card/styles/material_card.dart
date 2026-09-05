@@ -80,39 +80,11 @@ class MaterialCard extends StatelessWidget {
                 ),
               ),
             ),
-            if (config.effectiveSubtitle != null ||
-                config.progress != null ||
-                config.progressText != null) ...[
+            if (config.effectiveSubtitle != null) ...[
               const Spacer(),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    if (config.effectiveSubtitle != null)
-                      Expanded(child: PortraitMetadataRow(config: config)),
-                    if (config.progressText != null || config.progress != null)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: cs.secondaryContainer,
-                          borderRadius: BorderRadius.circular(100),
-                        ),
-                        child: Text(
-                          config.progressText ??
-                              '${(config.progress!.clamp(0.0, 1.0) * 100).toInt()}%',
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: cs.onSecondaryContainer,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 10,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
+                child: PortraitMetadataRow(config: config),
               ),
             ],
           ],

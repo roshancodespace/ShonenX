@@ -55,11 +55,9 @@ class EditorialCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (config.bottomLeftBadgeText != null ||
-                    config.badgeText != null)
+                if (config.badgeText != null)
                   Text(
-                    (config.bottomLeftBadgeText ?? config.badgeText!)
-                        .toUpperCase(),
+                    config.badgeText!.toUpperCase(),
                     style: theme.textTheme.labelSmall?.copyWith(
                       color: cs.primary,
                       fontWeight: FontWeight.w900,
@@ -69,7 +67,7 @@ class EditorialCard extends StatelessWidget {
                   ),
                 Text(
                   config.title,
-                  maxLines: config.progress != null ? 1 : 2,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w900,
@@ -77,27 +75,9 @@ class EditorialCard extends StatelessWidget {
                     height: 1.15,
                   ),
                 ),
-                if (config.effectiveSubtitle != null ||
-                    config.progress != null ||
-                    config.progressText != null) ...[
+                if (config.effectiveSubtitle != null) ...[
                   const SizedBox(height: 2),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      if (config.effectiveSubtitle != null)
-                        Expanded(child: PortraitMetadataRow(config: config)),
-                      if (config.progressText != null ||
-                          config.progress != null)
-                        Text(
-                          config.progressText ??
-                              '${(config.progress!.clamp(0.0, 1.0) * 100).toInt()}%',
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: cs.primary,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                    ],
-                  ),
+                  PortraitMetadataRow(config: config),
                 ],
               ],
             ),

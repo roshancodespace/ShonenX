@@ -131,17 +131,46 @@ class LibraryGridWidget extends ConsumerWidget {
                 itemCount: entries.length,
                 itemBuilder: (context, index) {
                   final entry = entries[index];
+                  final mediaType = entry.type != null
+                      ? MediaType.fromId(entry.type!)
+                      : viewState.mediaType;
+                  final isAnime = mediaType == MediaType.ANIME;
+                  final unit = isAnime ? 'Ep' : 'Ch';
+                  final watched = entry.episodesWatched;
+                  final total = entry.episodes;
+
+                  double? progress;
+                  String? progressText;
+
+                  if (watched > 0) {
+                    if (total != null && total > 0) {
+                      progress = (watched / total).clamp(0.0, 1.0);
+                      progressText = '$unit $watched/$total';
+                    } else {
+                      progressText = '$unit $watched';
+                    }
+                  }
+
+                  final cardTag =
+                      'library__${viewState.status.id}_${entry.providerId}_$index';
 
                   return MediaCard(
                     title: entry.title,
-                    tag: 'library__${viewState.status.id}_${entry.id}_$index',
+                    tag: cardTag,
                     imageUrl: entry.cover,
                     style: cardStyle,
+                    format: entry.format,
+                    score: entry.score,
+                    year: entry.year?.toString(),
+                    status: entry.status,
+                    genres: entry.genres,
+                    progress: progress,
+                    progressText: progressText,
                     onTap: () {
                       context.pushDetails(
-                        mediaType: MediaType.fromId(entry.type!),
+                        mediaType: mediaType,
                         media: entry.toUnifiedMedia(),
-                        tag: 'library-${entry.id}',
+                        tag: cardTag,
                       );
                     },
                   );

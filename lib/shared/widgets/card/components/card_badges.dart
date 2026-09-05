@@ -20,44 +20,229 @@ class CardBadgeOverlay extends StatelessWidget {
     final hasScore =
         config.score != null && config.score! > 0 && !isHorizontalLayout;
     final showBadgeText = config.badgeText != null;
+    final formattedScore = config.formattedScore;
 
-    if (!showBadgeText && config.topRightBadge == null && !hasScore) {
+    final hasTopBadges =
+        showBadgeText ||
+        config.topRightBadge != null ||
+        (hasScore && formattedScore != null);
+
+    final effectiveProgressText =
+        config.progressText ??
+        (config.bottomLeftBadgeText ??
+            (config.progress != null
+                ? '${(config.progress!.clamp(0.0, 1.0) * 100).toInt()}%'
+                : null));
+
+    final showBottomProgress =
+        !isHorizontalLayout &&
+        styleName != 'minimal' &&
+        styleName != 'wideBanner' &&
+        effectiveProgressText != null &&
+        effectiveProgressText.isNotEmpty;
+
+    if (!hasTopBadges && !showBottomProgress) {
       return const SizedBox.shrink();
     }
 
-    final formattedScore = config.formattedScore;
-
-    return Positioned(
-      top: 8,
-      left: 8,
-      right: 8,
-      child: Wrap(
-        spacing: 4,
-        runSpacing: 4,
-        alignment: WrapAlignment.spaceBetween,
-        crossAxisAlignment: WrapCrossAlignment.center,
+    return Positioned.fill(
+      child: Stack(
+        clipBehavior: Clip.none,
         children: [
-          if (showBadgeText)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-              decoration: BoxDecoration(
-                color: cs.primaryContainer.withValues(alpha: 0.92),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Text(
-                config.badgeText!.toUpperCase(),
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: cs.onPrimaryContainer,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.3,
-                  fontSize: 9.5,
-                ),
+          if (hasTopBadges)
+            Positioned(
+              top: 8,
+              left: 8,
+              right: 8,
+              child: Wrap(
+                spacing: 4,
+                runSpacing: 4,
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  if (showBadgeText)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 5,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: cs.primaryContainer.withValues(alpha: 0.92),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        config.badgeText!.toUpperCase(),
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: cs.onPrimaryContainer,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.3,
+                          fontSize: 9.5,
+                        ),
+                      ),
+                    ),
+                  if (config.topRightBadge != null)
+                    config.topRightBadge!
+                  else if (hasScore && formattedScore != null)
+                    buildStyleRatingBadge(theme, styleName, formattedScore),
+                ],
               ),
             ),
-          if (config.topRightBadge != null)
-            config.topRightBadge!
-          else if (hasScore && formattedScore != null)
-            buildStyleRatingBadge(theme, styleName, formattedScore),
+          if (showBottomProgress)
+            Positioned(
+              bottom: 6,
+              left: 6,
+              child: IgnorePointer(
+                child: _buildProgressBadge(theme, effectiveProgressText),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProgressBadge(ThemeData theme, String text) {
+    final cs = theme.colorScheme;
+    final isManga =
+        text.toLowerCase().contains('ch') ||
+        text.toLowerCase().contains('read') ||
+        text.toLowerCase().contains('vol');
+
+    final icon = isManga
+        ? Icons.auto_stories_rounded
+        : Icons.play_arrow_rounded;
+
+    BoxDecoration decoration;
+    Color textColor;
+    Color iconColor;
+
+    switch (styleName) {
+      case 'expressive':
+        decoration = BoxDecoration(
+          color: cs.primaryContainer.withValues(alpha: 0.95),
+          borderRadius: BorderRadius.circular(10),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.3),
+              blurRadius: 4,
+            ),
+          ],
+        );
+        textColor = cs.onPrimaryContainer;
+        iconColor = cs.onPrimaryContainer;
+        break;
+
+      case 'material':
+        decoration = BoxDecoration(
+          color: cs.secondaryContainer.withValues(alpha: 0.95),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: cs.outlineVariant.withValues(alpha: 0.3),
+            width: 1.0,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.3),
+              blurRadius: 4,
+            ),
+          ],
+        );
+        textColor = cs.onSecondaryContainer;
+        iconColor = cs.primary;
+        break;
+
+      case 'neon':
+        decoration = BoxDecoration(
+          color: cs.surface.withValues(alpha: 0.88),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: cs.primary, width: 1.2),
+          boxShadow: [
+            BoxShadow(color: cs.primary.withValues(alpha: 0.45), blurRadius: 6),
+          ],
+        );
+        textColor = cs.primary;
+        iconColor = cs.primary;
+        break;
+
+      case 'editorial':
+        decoration = BoxDecoration(
+          color: cs.surface.withValues(alpha: 0.95),
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(
+            color: cs.onSurface.withValues(alpha: 0.2),
+            width: 1.0,
+          ),
+        );
+        textColor = cs.onSurface;
+        iconColor = cs.primary;
+        break;
+
+      case 'cinematic':
+        decoration = BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.85),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: cs.primary.withValues(alpha: 0.5),
+            width: 1.0,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.4),
+              blurRadius: 4,
+            ),
+          ],
+        );
+        textColor = Colors.white;
+        iconColor = cs.primary;
+        break;
+
+      case 'classic':
+      default:
+        decoration = BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.78),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: cs.primary.withValues(alpha: 0.55),
+            width: 1.0,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.4),
+              blurRadius: 4,
+              offset: const Offset(0, 1),
+            ),
+          ],
+        );
+        textColor = Colors.white;
+        iconColor = cs.primary;
+        break;
+    }
+
+    final cardW = config.width.isFinite && config.width > 40
+        ? config.width - 24
+        : 140.0;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 5.5, vertical: 2.5),
+      decoration: decoration,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 10.5, color: iconColor),
+          const SizedBox(width: 3),
+          ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: cardW),
+            child: Text(
+              text,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: textColor,
+                fontWeight: FontWeight.w800,
+                fontSize: 9.5,
+                letterSpacing: 0.2,
+              ),
+            ),
+          ),
         ],
       ),
     );

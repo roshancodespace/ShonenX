@@ -57,7 +57,7 @@ Created and maintained by [Roshan Kumar](https://github.com/roshancodespace) wit
 - **Custom Reader & Player:** Low-latency media playback and reading with customizable flow controls and AMOLED dark mode support.
 - **Offline Availability:** Volume and episode downloading for offline viewing and reading.
 - **External Extensions:** Utilizes the AnymeX Extension Runtime Bridge for Aniyomi and Mangayomi extension support. The client ships bare-bones; all sources are user-managed.
-- **Cross-Platform:** Native builds for Android, Windows, and Linux.
+- **Cross-Platform:** Native builds for Android, Windows, and Linux (with experimental macOS and iOS support).
 
 ---
 
@@ -164,6 +164,11 @@ Run the following command in your terminal:
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/roshancodespace/ShonenX/main/install.sh)"
 ```
 *Note: You can run this same command again to uninstall ShonenX safely!*
+
+### macOS & iOS (⚠️ Highly Experimental)
+> [!WARNING]
+> **macOS and iOS builds are HIGHLY EXPERIMENTAL.**  
+> Builds for macOS and iOS might be present in releases or might not be available at all, even if a release is marked stable for other platforms (Android, Windows, Linux). Expect potential bugs, quirks, and manual sideloading/signing requirements if you test them.
 
 ### 🛠️ Build from Source
 **Prerequisites**: Flutter SDK ≥3.8.1, Git

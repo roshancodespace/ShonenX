@@ -302,9 +302,18 @@ class MalTracker extends BaseTracker with MalMetadata implements RemoteTracker {
         if (body['error'] != null) return [];
 
         final data = body['data'] as List? ?? [];
+        final seenIds = <String>{};
+        final result = <LibraryEntry>[];
 
-        return data.map((item) {
-          final node = item['node'];
+        for (final item in data) {
+          if (item is! Map) continue;
+          final node = item['node'] as Map?;
+          if (node == null) continue;
+
+          final providerId = node['id']?.toString();
+          if (providerId == null || providerId.isEmpty) continue;
+          if (!seenIds.add(providerId)) continue;
+
           final listStatus = item['list_status'];
 
           final rawScore = (listStatus?['score'] as num?)?.toDouble() ?? 0.0;
@@ -325,23 +334,28 @@ class MalTracker extends BaseTracker with MalMetadata implements RemoteTracker {
               node['main_picture']?['medium'] ??
               '';
 
-          return LibraryEntry()
-            ..providerId = node['id']?.toString() ?? ''
-            ..type = mediaType.id
-            ..title = node['title'] ?? 'Unknown'
-            ..cover = coverUrl
-            ..banner = coverUrl
-            ..description = node['synopsis']?.toString()
-            ..genres = genres
-            ..year = year
-            ..status = _parseMalStatus(listStatus?['status']).id
-            ..score = effectiveScore
-            ..episodesWatched = (listStatus?[progressKey] as num?)?.toInt() ?? 0
-            ..episodes = node[totalCountKey]
-            ..externalIds = MediaExternalIds(mal: node['id']?.toString())
-            ..sourceType = 'tracker'
-            ..sourceId = 'mal';
-        }).toList();
+          result.add(
+            LibraryEntry()
+              ..providerId = providerId
+              ..type = mediaType.id
+              ..title = node['title'] ?? 'Unknown'
+              ..cover = coverUrl
+              ..banner = coverUrl
+              ..description = node['synopsis']?.toString()
+              ..genres = genres
+              ..year = year
+              ..status = _parseMalStatus(listStatus?['status']).id
+              ..score = effectiveScore
+              ..episodesWatched =
+                  (listStatus?[progressKey] as num?)?.toInt() ?? 0
+              ..episodes = node[totalCountKey]
+              ..externalIds = MediaExternalIds(mal: providerId)
+              ..sourceType = 'tracker'
+              ..sourceId = 'mal',
+          );
+        }
+
+        return result;
       },
     );
   }

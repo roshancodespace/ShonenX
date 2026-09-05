@@ -191,11 +191,18 @@ class KitsuTracker extends BaseTracker
           if (id != null) mediaMap[id] = inc;
         }
 
-        return data.map((item) {
+        final seenIds = <String>{};
+        final result = <LibraryEntry>[];
+
+        for (final item in data) {
+          if (item is! Map) continue;
           final attr = item['attributes'] as Map? ?? {};
           final rels = item['relationships'] as Map? ?? {};
           final mediaRel = rels[kind]?['data'] as Map? ?? {};
           final mediaId = mediaRel['id']?.toString() ?? '';
+          if (mediaId.isEmpty) continue;
+          if (!seenIds.add(mediaId)) continue;
+
           final mediaObj = mediaMap[mediaId];
           final mediaAttr = mediaObj?['attributes'] as Map? ?? {};
           final titles = mediaAttr['titles'] as Map? ?? {};
@@ -231,21 +238,25 @@ class KitsuTracker extends BaseTracker
           final score = r20 > 0 ? r20 / 2.0 : 0.0;
           final progress = (attr['progress'] as num?)?.toInt() ?? 0;
 
-          return LibraryEntry()
-            ..providerId = mediaId
-            ..type = mediaType.id
-            ..title = title
-            ..cover = cover
-            ..banner = banner
-            ..description = description
-            ..year = year
-            ..status = _parseKitsuStatus(attr['status']?.toString()).id
-            ..score = score
-            ..episodesWatched = progress
-            ..episodes = totalCount
-            ..sourceType = 'tracker'
-            ..sourceId = 'kitsu';
-        }).toList();
+          result.add(
+            LibraryEntry()
+              ..providerId = mediaId
+              ..type = mediaType.id
+              ..title = title
+              ..cover = cover
+              ..banner = banner
+              ..description = description
+              ..year = year
+              ..status = _parseKitsuStatus(attr['status']?.toString()).id
+              ..score = score
+              ..episodesWatched = progress
+              ..episodes = totalCount
+              ..sourceType = 'tracker'
+              ..sourceId = 'kitsu',
+          );
+        }
+
+        return result;
       },
     );
   }

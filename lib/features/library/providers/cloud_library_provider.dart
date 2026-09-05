@@ -7,7 +7,11 @@ import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 
-typedef CloudLibraryParams = ({TrackedStatus status, TrackerType? trackerType, MediaType mediaType});
+typedef CloudLibraryParams = ({
+  TrackedStatus status,
+  TrackerType? trackerType,
+  MediaType mediaType,
+});
 
 final cloudLibraryProvider = AsyncNotifierProvider.autoDispose
     .family<CloudLibraryNotifier, List<LibraryEntry>, CloudLibraryParams>(
@@ -23,31 +27,63 @@ class CloudLibraryNotifier extends AsyncNotifier<List<LibraryEntry>> {
   bool _hasMore = true;
   bool _isLoadingMore = false;
 
+  static List<LibraryEntry> _deduplicateEntries(
+    Iterable<LibraryEntry> entries,
+  ) {
+    final seen = <String>{};
+    final unique = <LibraryEntry>[];
+    for (final entry in entries) {
+      final key = '${entry.providerId}_${entry.type}';
+      if (entry.providerId.isNotEmpty && seen.add(key)) {
+        unique.add(entry);
+      }
+    }
+    return unique;
+  }
+
   @override
   Future<List<LibraryEntry>> build() async {
     ref.keepAlive();
 
     _page = 1;
     _hasMore = true;
-    return _fetchPage(1);
+    final entries = await _fetchPage(1);
+    if (entries.length < 50) {
+      _hasMore = false;
+    }
+    return _deduplicateEntries(entries);
   }
 
   Future<void> loadMore() async {
     if (!_hasMore || _isLoadingMore) return;
 
     _isLoadingMore = true;
-    _page++;
+    final nextPage = _page + 1;
 
     try {
-      final newEntries = await _fetchPage(_page);
+      final newEntries = await _fetchPage(nextPage);
       if (newEntries.isEmpty) {
         _hasMore = false;
       } else {
+        _page = nextPage;
+        if (newEntries.length < 50) {
+          _hasMore = false;
+        }
         final currentList = state.value ?? [];
-        state = AsyncData([...currentList, ...newEntries]);
+        final existingKeys = currentList
+            .map((e) => '${e.providerId}_${e.type}')
+            .toSet();
+
+        final filteredNewEntries = newEntries.where((e) {
+          final key = '${e.providerId}_${e.type}';
+          return e.providerId.isNotEmpty && existingKeys.add(key);
+        }).toList();
+
+        if (filteredNewEntries.isNotEmpty) {
+          state = AsyncData([...currentList, ...filteredNewEntries]);
+        }
       }
     } catch (e, st) {
-      _page--;
       state = AsyncError(e, st);
     } finally {
       _isLoadingMore = false;
@@ -63,7 +99,11 @@ class CloudLibraryNotifier extends AsyncNotifier<List<LibraryEntry>> {
 
     if (!(await tracker.isAuthenticated)) return [];
 
-    return await tracker.fetchUserLibrary(status: params.status, page: page, mediaType: params.mediaType);
+    return await tracker.fetchUserLibrary(
+      status: params.status,
+      page: page,
+      mediaType: params.mediaType,
+    );
   }
 
   Future<void> removeEntry(String providerId, MediaType mediaType) async {
@@ -87,6 +127,10 @@ class CloudLibraryNotifier extends AsyncNotifier<List<LibraryEntry>> {
     _page = 1;
     _hasMore = true;
     state = const AsyncLoading();
-    state = AsyncData(await _fetchPage(1));
+    final entries = await _fetchPage(1);
+    if (entries.length < 50) {
+      _hasMore = false;
+    }
+    state = AsyncData(_deduplicateEntries(entries));
   }
 }

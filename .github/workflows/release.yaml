@@ -16,6 +16,12 @@ on:
       build_windows:
         type: boolean
         default: true
+      build_macos:
+        type: boolean
+        default: true
+      build_ios:
+        type: boolean
+        default: true
       notify_discord:
         description: "Send Discord Notification?"
         type: boolean
@@ -133,13 +139,13 @@ jobs:
         run: |
           CLEAN_VER="${{ needs.resolve-release-tag.outputs.tag_name }}"
           CLEAN_VER="${CLEAN_VER#v}" 
-          
+
           EXISTING_VER=$(grep '^version:' pubspec.yaml | awk '{print $2}')
           if [[ "$EXISTING_VER" == *"+"* ]] && [[ "$CLEAN_VER" != *"+"* ]]; then
             BUILD_NUM="+${EXISTING_VER#*+}"
             CLEAN_VER="${CLEAN_VER}${BUILD_NUM}"
           fi
-          
+
           echo "Overriding pubspec.yaml version to: $CLEAN_VER"
           sed -i -e "s/^version: .*/version: $CLEAN_VER/g" pubspec.yaml
 
@@ -231,13 +237,13 @@ jobs:
         run: |
           CLEAN_VER="${{ needs.resolve-release-tag.outputs.tag_name }}"
           CLEAN_VER="${CLEAN_VER#v}"
-          
+
           EXISTING_VER=$(grep '^version:' pubspec.yaml | awk '{print $2}')
           if [[ "$EXISTING_VER" == *"+"* ]] && [[ "$CLEAN_VER" != *"+"* ]]; then
             BUILD_NUM="+${EXISTING_VER#*+}"
             CLEAN_VER="${CLEAN_VER}${BUILD_NUM}"
           fi
-          
+
           echo "Overriding pubspec.yaml version to: $CLEAN_VER"
           sed -i -e "s/^version: .*/version: $CLEAN_VER/g" pubspec.yaml
 
@@ -304,13 +310,13 @@ jobs:
         run: |
           CLEAN_VER="${{ needs.resolve-release-tag.outputs.tag_name }}"
           CLEAN_VER="${CLEAN_VER#v}"
-          
+
           EXISTING_VER=$(grep '^version:' pubspec.yaml | awk '{print $2}')
           if [[ "$EXISTING_VER" == *"+"* ]] && [[ "$CLEAN_VER" != *"+"* ]]; then
             BUILD_NUM="+${EXISTING_VER#*+}"
             CLEAN_VER="${CLEAN_VER}${BUILD_NUM}"
           fi
-          
+
           echo "Overriding pubspec.yaml version to: $CLEAN_VER"
           sed -i -e "s/^version: .*/version: $CLEAN_VER/g" pubspec.yaml
 
@@ -362,8 +368,164 @@ jobs:
           # Explicitly only upload the built .exe
           path: build/windows/x64/installer/Release/*.exe
 
+  build-macos:
+    needs: resolve-release-tag
+    if: github.event_name == 'push' || github.event.inputs.build_macos == 'true'
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Init specific submodules
+        run: |
+          git submodule update --init packages/anymex_extension_bridge
+          git submodule update --init packages/commentum_client
+
+      - name: Override pubspec.yaml version
+        if: github.event_name == 'workflow_dispatch'
+        shell: bash
+        run: |
+          CLEAN_VER="${{ needs.resolve-release-tag.outputs.tag_name }}"
+          CLEAN_VER="${CLEAN_VER#v}"
+
+          EXISTING_VER=$(grep '^version:' pubspec.yaml | awk '{print $2}')
+          if [[ "$EXISTING_VER" == *"+"* ]] && [[ "$CLEAN_VER" != *"+"* ]]; then
+            BUILD_NUM="+${EXISTING_VER#*+}"
+            CLEAN_VER="${CLEAN_VER}${BUILD_NUM}"
+          fi
+
+          echo "Overriding pubspec.yaml version to: $CLEAN_VER"
+          # macOS requires empty string '' after -i for sed
+          sed -i '' -e "s/^version: .*/version: $CLEAN_VER/g" pubspec.yaml
+
+      - name: Setup Rust toolchain (macOS)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin, x86_64-apple-darwin
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.35.7
+          cache: true
+
+      - name: Enable macOS config
+        run: flutter config --enable-macos-desktop
+
+      - name: Create env file
+        run: |
+          cat > keys.json <<EOF
+          {
+            "ANILIST_CLIENT_ID": "${{ secrets.ANILIST_CLIENT_ID }}",
+            "ANILIST_CLIENT_SECRET": "${{ secrets.ANILIST_CLIENT_SECRET }}",
+            "MAL_CLIENT_ID": "${{ secrets.MAL_CLIENT_ID }}",
+            "MAL_CLIENT_SECRET": "${{ secrets.MAL_CLIENT_SECRET }}",
+            "SIMKL_CLIENT_ID": "${{ secrets.SIMKL_CLIENT_ID }}",
+            "SIMKL_CLIENT_SECRET": "${{ secrets.SIMKL_CLIENT_SECRET }}",
+            "COMMENTUM_API_URL": "${{ secrets.COMMENTUM_API_URL }}",
+            "RELEASE_REPO": "roshancodespace/ShonenX"
+          }
+          EOF
+
+      - name: Get Dependencies
+        run: flutter pub upgrade
+
+      - name: Build macOS app
+        run: flutter build macos --release --dart-define-from-file=keys.json
+
+      - name: Zip macOS bundle
+        run: |
+          cd build/macos/Build/Products/Release
+          zip -r ../../../../../ShonenX-macOS.zip *.app
+
+      - name: Upload macOS Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-bundle
+          path: ShonenX-macOS.zip
+
+  build-ios:
+    needs: resolve-release-tag
+    if: github.event_name == 'push' || github.event.inputs.build_ios == 'true'
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Init specific submodules
+        run: |
+          git submodule update --init packages/anymex_extension_bridge
+          git submodule update --init packages/commentum_client
+
+      - name: Override pubspec.yaml version
+        if: github.event_name == 'workflow_dispatch'
+        shell: bash
+        run: |
+          CLEAN_VER="${{ needs.resolve-release-tag.outputs.tag_name }}"
+          CLEAN_VER="${CLEAN_VER#v}"
+
+          EXISTING_VER=$(grep '^version:' pubspec.yaml | awk '{print $2}')
+          if [[ "$EXISTING_VER" == *"+"* ]] && [[ "$CLEAN_VER" != *"+"* ]]; then
+            BUILD_NUM="+${EXISTING_VER#*+}"
+            CLEAN_VER="${CLEAN_VER}${BUILD_NUM}"
+          fi
+
+          echo "Overriding pubspec.yaml version to: $CLEAN_VER"
+          sed -i '' -e "s/^version: .*/version: $CLEAN_VER/g" pubspec.yaml
+
+      - name: Setup Rust toolchain (iOS)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-ios, aarch64-apple-ios-sim
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.35.7
+          cache: true
+
+      - name: Create env file
+        run: |
+          cat > keys.json <<EOF
+          {
+            "ANILIST_CLIENT_ID": "${{ secrets.ANILIST_CLIENT_ID }}",
+            "ANILIST_CLIENT_SECRET": "${{ secrets.ANILIST_CLIENT_SECRET }}",
+            "MAL_CLIENT_ID": "${{ secrets.MAL_CLIENT_ID }}",
+            "MAL_CLIENT_SECRET": "${{ secrets.MAL_CLIENT_SECRET }}",
+            "SIMKL_CLIENT_ID": "${{ secrets.SIMKL_CLIENT_ID }}",
+            "SIMKL_CLIENT_SECRET": "${{ secrets.SIMKL_CLIENT_SECRET }}",
+            "COMMENTUM_API_URL": "${{ secrets.COMMENTUM_API_URL }}",
+            "RELEASE_REPO": "roshancodespace/ShonenX"
+          }
+          EOF
+
+      - name: Get Dependencies
+        run: flutter pub upgrade
+
+      - name: Build iOS app (Unsigned)
+        run: flutter build ios --release --no-codesign --dart-define-from-file=keys.json
+
+      - name: Package iOS IPA
+        run: |
+          cd build/ios/iphoneos
+          mkdir Payload
+          mv Runner.app Payload/
+          zip -qq -r ../../../ShonenX-iOS-Unsigned.ipa Payload
+
+      - name: Upload iOS Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-unsigned-ipa
+          path: ShonenX-iOS-Unsigned.ipa
+
   create-release:
-    needs: [resolve-release-tag, build-android, build-linux, build-windows]
+    needs:
+      [
+        resolve-release-tag,
+        build-android,
+        build-linux,
+        build-windows,
+        build-macos,
+        build-ios,
+      ]
     runs-on: ubuntu-latest
     if: always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled')
 
@@ -376,7 +538,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: release-artifacts
-          # This forces all downloaded files (.apk, .exe, .zip) into a single flat directory
+          # This forces all downloaded files (.apk, .exe, .zip, .ipa) into a single flat directory
           merge-multiple: true
 
       - name: Generate Release Notes
@@ -459,7 +621,15 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   notify:
-    needs: [resolve-release-tag, build-android, build-linux, build-windows]
+    needs:
+      [
+        resolve-release-tag,
+        build-android,
+        build-linux,
+        build-windows,
+        build-macos,
+        build-ios,
+      ]
     if: always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && (github.event_name == 'push' || github.event.inputs.notify_discord == 'true')
     uses: ./.github/workflows/Notify.yml
     with:

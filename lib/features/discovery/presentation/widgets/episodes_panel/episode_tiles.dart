@@ -249,6 +249,7 @@ class EpisodeClassicTile extends BaseEpisodeTile {
                   vertical: 10,
                 ),
                 child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Column(
                       mainAxisSize: MainAxisSize.min,
@@ -294,59 +295,31 @@ class EpisodeClassicTile extends BaseEpisodeTile {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  '${mediaType == MediaType.ANIME ? 'EPISODE' : 'CHAPTER'} $num',
-                                  style: theme.textTheme.labelSmall?.copyWith(
-                                    fontWeight: FontWeight.w800,
-                                    color: isFiller
-                                        ? Colors.amber.shade700
-                                        : labelColor,
-                                    height: 1,
-                                  ),
-                                ),
-                              ),
-                              if (actions.isNotEmpty)
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: actions,
-                                ),
-                            ],
-                          ),
-                          const SizedBox(height: 1),
-                          Row(
+                            mainAxisSize: MainAxisSize.min,
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
-                              Expanded(
-                                child: Text(
-                                  (episode.title == null ||
-                                          episode.title!.trim().isEmpty)
-                                      ? 'Episode $num'
-                                      : episode.title!,
-                                  style: theme.textTheme.titleMedium?.copyWith(
-                                    fontWeight: isCurrent
-                                        ? FontWeight.w800
-                                        : FontWeight.w600,
-                                    color: titleColor,
-                                    height: 1.1,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                              Text(
+                                '${mediaType == MediaType.ANIME ? 'EPISODE' : 'CHAPTER'} $num',
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                  color: isFiller
+                                      ? Colors.amber.shade700
+                                      : labelColor,
+                                  height: 1,
                                 ),
                               ),
                               if (isCurrent) ...[
                                 const SizedBox(width: 8),
                                 Container(
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 7,
-                                    vertical: 3,
+                                    horizontal: 6,
+                                    vertical: 2,
                                   ),
                                   decoration: BoxDecoration(
                                     color: isWatched
                                         ? theme.colorScheme.secondaryContainer
                                         : theme.colorScheme.primaryContainer,
-                                    borderRadius: BorderRadius.circular(10),
+                                    borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: Text(
                                     isWatched
@@ -371,6 +344,22 @@ class EpisodeClassicTile extends BaseEpisodeTile {
                                 ),
                               ],
                             ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            (episode.title == null ||
+                                    episode.title!.trim().isEmpty)
+                                ? 'Episode $num'
+                                : episode.title!,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: isCurrent
+                                  ? FontWeight.w800
+                                  : FontWeight.w600,
+                              color: titleColor,
+                              height: 1.15,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                           if (displayDate != null &&
                               displayDate!.isNotEmpty) ...[
@@ -420,6 +409,10 @@ class EpisodeClassicTile extends BaseEpisodeTile {
                         ],
                       ),
                     ),
+                    if (actions.isNotEmpty) ...[
+                      const SizedBox(width: 8),
+                      Row(mainAxisSize: MainAxisSize.min, children: actions),
+                    ],
                   ],
                 ),
               ),

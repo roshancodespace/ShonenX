@@ -251,7 +251,9 @@ mixin KitsuMetadata on BaseTracker implements RemoteTracker {
         if (query.trim().isNotEmpty) {
           queryParams['filter[text]'] = query.trim();
         } else {
-          queryParams['sort'] = '-userCount';
+          queryParams['sort'] = sort == SearchSort.score
+              ? '-averageRating'
+              : '-userCount';
         }
 
         final categoryFilters =
@@ -383,7 +385,7 @@ mixin KitsuMetadata on BaseTracker implements RemoteTracker {
     return TrackerFilterOptions(
       genres: genres,
       tags: const [],
-      sorts: const [SearchSort.popularity],
+      sorts: const [SearchSort.popularity, SearchSort.score],
       statuses: SearchStatusFilter.values,
       formats: const [],
     );

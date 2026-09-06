@@ -55,8 +55,10 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
     switch (category) {
       case TrackerCategory.popular:
       case TrackerCategory.popularThisSeason:
-      case TrackerCategory.topRated:
         sortOption = SearchSort.popularity;
+        break;
+      case TrackerCategory.topRated:
+        sortOption = SearchSort.score;
         break;
       case TrackerCategory.recentlyUpdated:
         sortOption = SearchSort.newest;
@@ -186,6 +188,9 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
     switch (sort) {
       case SearchSort.popularity:
         sortList = query.isNotEmpty ? ['SEARCH_MATCH'] : ['POPULARITY_DESC'];
+        break;
+      case SearchSort.score:
+        sortList = ['SCORE_DESC'];
         break;
       case SearchSort.newest:
         sortList = ['START_DATE_DESC'];

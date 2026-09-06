@@ -25,7 +25,7 @@ class AnimeSourceAdapter extends BaseSourceAdapter implements AnimeSource {
       return (detail.episodes ?? [])
           .map(
             (e) => UnifiedEpisode(
-              id: '${e.url!}|${e.episodeNumber}',
+              id: '${e.url ?? ''}|${e.episodeNumber}',
               season:
                   e.toMediaInfo()?.season ??
                   _parseSeasonFromScanlator(e.scanlator),
@@ -69,9 +69,9 @@ class AnimeSourceAdapter extends BaseSourceAdapter implements AnimeSource {
     final methodLog = log.child('getSources');
     try {
       methodLog.i('episodeId=$episodeId server=${server.name}');
-      final parts = episodeId.split('|');
-      final url = parts[0];
-      final epNum = parts.length > 1 ? parts[1] : '1';
+      final lastPipe = episodeId.lastIndexOf('|');
+      final url = lastPipe != -1 ? episodeId.substring(0, lastPipe) : episodeId;
+      final epNum = lastPipe != -1 ? episodeId.substring(lastPipe + 1) : '1';
 
       final videos = await source.methods.getVideoList(
         bridge.DEpisode(url: url, episodeNumber: epNum),
@@ -80,13 +80,24 @@ class AnimeSourceAdapter extends BaseSourceAdapter implements AnimeSource {
       methodLog.d('streams=${videos.length}');
 
       return videos
+          .where((e) => e.url.isNotEmpty)
           .map(
             (e) => VideoStream(
               url: e.url,
-              quality: e.title ?? e.quality,
+              quality: (e.title != null && e.title!.isNotEmpty)
+                  ? e.title!
+                  : (e.quality.isNotEmpty ? e.quality : 'Default'),
               headers: e.headers,
               subtitles: (e.subtitles ?? [])
-                  .map((s) => SubtitleTrack(url: s.file!, language: s.label!))
+                  .where((s) => s.file != null && s.file!.isNotEmpty)
+                  .map(
+                    (s) => SubtitleTrack(
+                      url: s.file!,
+                      language: (s.label != null && s.label!.isNotEmpty)
+                          ? s.label!
+                          : 'Sub',
+                    ),
+                  )
                   .toList(),
             ),
           )

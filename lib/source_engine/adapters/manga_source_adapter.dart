@@ -23,7 +23,7 @@ class MangaSourceAdapter extends BaseSourceAdapter implements MangaSource {
       return (detail.episodes ?? [])
           .map(
             (e) => UnifiedChapter(
-              id: '${e.url!}|${e.episodeNumber}',
+              id: '${e.url ?? ''}|${e.episodeNumber}',
               title: e.name,
               number: double.tryParse(e.episodeNumber) ?? 0.0,
               scanlator: e.scanlator,
@@ -42,9 +42,9 @@ class MangaSourceAdapter extends BaseSourceAdapter implements MangaSource {
     final methodLog = log.child('getPages');
     try {
       methodLog.i('chapterId=$chapterId');
-      final parts = chapterId.split('|');
-      final url = parts[0];
-      final epNum = parts.length > 1 ? parts[1] : '1';
+      final lastPipe = chapterId.lastIndexOf('|');
+      final url = lastPipe != -1 ? chapterId.substring(0, lastPipe) : chapterId;
+      final epNum = lastPipe != -1 ? chapterId.substring(lastPipe + 1) : '1';
 
       final pages = await source.methods.getPageList(
         bridge.DEpisode(url: url, episodeNumber: epNum),
@@ -54,7 +54,8 @@ class MangaSourceAdapter extends BaseSourceAdapter implements MangaSource {
       return pages.map((e) {
         final headers = {
           ...(e.headers ?? {}),
-          'referer': '${sourceInfo.baseUrl}/',
+          if (sourceInfo.baseUrl != null && sourceInfo.baseUrl!.isNotEmpty)
+            'referer': '${sourceInfo.baseUrl}/',
           'user-agent':
               'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36',
         };

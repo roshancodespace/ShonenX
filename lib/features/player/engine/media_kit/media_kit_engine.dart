@@ -194,7 +194,19 @@ class MediaKitEngine implements VideoEngine {
       }
     });
 
-    await completer.future;
+    try {
+      await completer.future.timeout(const Duration(seconds: 4));
+    } catch (_) {
+      // Timeout reached before position advanced (e.g. stream buffering/paused), run onReady and proceed
+      if (!handled) {
+        handled = true;
+        await _positionSubscription?.cancel();
+        _positionSubscription = null;
+        try {
+          await onReady();
+        } catch (_) {}
+      }
+    }
   }
 
   @override

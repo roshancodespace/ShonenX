@@ -239,14 +239,15 @@ abstract class BaseSourceAdapter implements MediaSource {
       methodLog.d('Found ${results.list.length} results');
 
       final parsed = results.list
+          .where((e) => e.url != null && e.url!.isNotEmpty)
           .map(
             (e) => UnifiedMedia(
-              id: '${e.url!}|${e.title!}',
+              id: '${e.url ?? ''}|${e.title ?? ''}',
               type: mediaType,
               sourceId: sourceInfo.id,
               sourceName: sourceInfo.name,
-              providerId: e.url!,
-              title: MediaTitle(english: e.title),
+              providerId: e.url ?? '',
+              title: MediaTitle(english: e.title ?? 'Unknown'),
               cover: e.cover,
               description: e.description,
             ),
@@ -279,14 +280,15 @@ abstract class BaseSourceAdapter implements MediaSource {
       methodLog.d('results=${results.list.length}');
 
       final list = results.list
+          .where((e) => e.url != null && e.url!.isNotEmpty)
           .map(
             (e) => UnifiedMedia(
-              id: '${e.url!}|${e.title!}',
+              id: '${e.url ?? ''}|${e.title ?? ''}',
               type: mediaType,
               sourceId: sourceInfo.id,
               sourceName: sourceInfo.name,
-              providerId: e.url!,
-              title: MediaTitle(english: e.title),
+              providerId: e.url ?? '',
+              title: MediaTitle(english: e.title ?? 'Unknown'),
               cover: e.cover,
               description: e.description,
             ),
@@ -322,9 +324,12 @@ abstract class BaseSourceAdapter implements MediaSource {
     final cached = _cache.get<bridge.DMedia>(cacheKey);
     if (cached != null) return cached;
 
-    final parts = providerId.split('|');
+    final lastPipe = providerId.lastIndexOf('|');
+    final url = lastPipe != -1 ? providerId.substring(0, lastPipe) : providerId;
+    final title = lastPipe != -1 ? providerId.substring(lastPipe + 1) : '';
+
     final detail = await source.methods.getDetail(
-      bridge.DMedia(url: parts[0], title: parts.length > 1 ? parts[1] : ''),
+      bridge.DMedia(url: url, title: title),
     );
     _cache.set(cacheKey, detail);
     return detail;
@@ -342,14 +347,15 @@ abstract class BaseSourceAdapter implements MediaSource {
 
       final extraInfo = detail.toMediaInfo();
 
-      final parts = providerId.split('|');
+      final lastPipe = providerId.lastIndexOf('|');
+      final url = lastPipe != -1 ? providerId.substring(0, lastPipe) : providerId;
       final parsed = UnifiedMedia(
         id: providerId,
         type: mediaType,
         idMal: extraInfo?.malId?.toString(),
         sourceId: sourceInfo.id,
         sourceName: sourceInfo.name,
-        providerId: parts[0],
+        providerId: url,
         title: MediaTitle(english: detail.title),
         cover: detail.cover,
         description: detail.description,

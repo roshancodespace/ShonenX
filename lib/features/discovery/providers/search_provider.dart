@@ -385,6 +385,9 @@ class SearchNotifier extends AsyncNotifier<PaginatedResult<UnifiedMedia>?> {
       case SearchSort.oldest:
         filtered.sort((a, b) => (a.season ?? '').compareTo(b.season ?? ''));
         break;
+      case SearchSort.score:
+        filtered.sort((a, b) => (b.score ?? 0).compareTo(a.score ?? 0));
+        break;
       case SearchSort.popularity:
         // default order
         break;

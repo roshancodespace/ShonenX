@@ -1,5 +1,6 @@
 enum SearchSort {
   popularity('Popularity'),
+  score('Rating (Highest)'),
   newest('Release Date (Newest)'),
   oldest('Release Date (Oldest)'),
   alphabeticalAZ('Alphabetical (A-Z)'),
@@ -10,8 +11,16 @@ enum SearchSort {
 
   static SearchSort tryFromId(String? id) {
     if (id == null || id.isEmpty) return SearchSort.popularity;
+    final clean = id.trim().toLowerCase();
     for (final val in values) {
-      if (val.name == id || val.label == id) return val;
+      if (val.name.toLowerCase() == clean || val.label.toLowerCase() == clean) {
+        return val;
+      }
+    }
+    if (clean.contains('score') ||
+        clean.contains('rate') ||
+        clean.contains('rating')) {
+      return SearchSort.score;
     }
     return SearchSort.popularity;
   }

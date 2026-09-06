@@ -124,6 +124,7 @@ final mediaTrackingProvider =
 Future<void> autoLinkTrackers({
   required WidgetRef ref,
   required UnifiedMedia media,
+  bool Function()? isMounted,
 }) async {
   final prefs = ref.read(trackingPrefsProvider);
   if (!prefs.autoTrackPrimary) return;
@@ -132,12 +133,15 @@ Future<void> autoLinkTrackers({
   final linksNotifier = ref.read(trackerLinkProvider(media.id).notifier);
   final currentLinks = await ref.read(trackerLinkProvider(media.id).future);
 
+  if (isMounted != null && !isMounted()) return;
+
   final toSave = <TrackerType, TrackerMapping>{};
 
   for (final tracker in allTrackers) {
     if (tracker.type == TrackerType.local) continue;
     if (!prefs.isTrackerEnabled(tracker.type)) continue;
     if (!(await tracker.isAuthenticated)) continue;
+    if (isMounted != null && !isMounted()) return;
     if (currentLinks.containsKey(tracker.type)) continue;
 
     final trackingId = resolveTrackingIdFromMedia(
@@ -154,6 +158,8 @@ Future<void> autoLinkTrackers({
     }
   }
 
+  if (isMounted != null && !isMounted()) return;
+
   if (toSave.isNotEmpty) {
     linksNotifier.saveLinks(toSave);
   }
@@ -165,45 +171,47 @@ void cleanupUnusedTrackerLinks({
   required ProviderContainer container,
   required UnifiedMedia media,
 }) {
-  final isar = container.read(databaseProvider);
+  Future(() {
+    final isar = container.read(databaseProvider);
 
-  // 1: Retain if user has watch or read history
-  final hasWatchHistory = isar.watchHistoryEntrys
-      .filter()
-      .animeIdEqualTo(media.id)
-      .isNotEmptySync();
-  if (hasWatchHistory) return;
+    // 1: Retain if user has watch or read history
+    final hasWatchHistory = isar.watchHistoryEntrys
+        .filter()
+        .animeIdEqualTo(media.id)
+        .isNotEmptySync();
+    if (hasWatchHistory) return;
 
-  final hasReadHistory = isar.readHistoryEntrys
-      .filter()
-      .mangaIdEqualTo(media.id)
-      .isNotEmptySync();
-  if (hasReadHistory) return;
+    final hasReadHistory = isar.readHistoryEntrys
+        .filter()
+        .mangaIdEqualTo(media.id)
+        .isNotEmptySync();
+    if (hasReadHistory) return;
 
-  // 2: Retain if saved to local library
-  final inLocalLibrary = isar.libraryEntrys
-      .filter()
-      .providerIdEqualTo(media.id)
-      .isNotEmptySync();
-  if (inLocalLibrary) return;
+    // 2: Retain if saved to local library
+    final inLocalLibrary = isar.libraryEntrys
+        .filter()
+        .providerIdEqualTo(media.id)
+        .isNotEmptySync();
+    if (inLocalLibrary) return;
 
-  // 3: Retain if media has active downloads
-  final hasDownloads = isar.downloadTasks
-      .filter()
-      .mediaIdEqualTo(media.id)
-      .isNotEmptySync();
-  if (hasDownloads) return;
+    // 3: Retain if media has active downloads
+    final hasDownloads = isar.downloadTasks
+        .filter()
+        .mediaIdEqualTo(media.id)
+        .isNotEmptySync();
+    if (hasDownloads) return;
 
-  // 4: Retain if any tracker has an active user list entry
-  final trackers = container.read(availableTrackersProvider);
-  for (final tracker in trackers) {
-    final query = TrackingQuery(tracker.type, media);
-    if (container.exists(mediaTrackingProvider(query))) {
-      final trackingState = container.read(mediaTrackingProvider(query));
-      if (trackingState.value != null) return;
+    // 4: Retain if any tracker has an active user list entry
+    final trackers = container.read(availableTrackersProvider);
+    for (final tracker in trackers) {
+      final query = TrackingQuery(tracker.type, media);
+      if (container.exists(mediaTrackingProvider(query))) {
+        final trackingState = container.read(mediaTrackingProvider(query));
+        if (trackingState.value != null) return;
+      }
     }
-  }
 
-  // 5: Unused and unadded -> delete auto-linked mapping
-  container.read(trackerLinkProvider(media.id).notifier).deleteLinks();
+    // 5: Unused and unadded -> delete auto-linked mapping
+    container.read(trackerLinkProvider(media.id).notifier).deleteLinks();
+  });
 }

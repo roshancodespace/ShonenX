@@ -140,9 +140,10 @@ class _AppFocusHoverState extends State<AppFocusHover> {
       if (!mounted) return;
       try {
         final scrollable = Scrollable.maybeOf(context);
-        if (scrollable != null && context.mounted) {
-          Scrollable.ensureVisible(
-            context,
+        final ro = context.findRenderObject();
+        if (scrollable != null && ro != null && ro.attached) {
+          scrollable.position.ensureVisible(
+            ro,
             alignment: widget.scrollAlignment,
             duration: const Duration(milliseconds: 240),
             curve: Curves.easeOutCubic,

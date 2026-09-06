@@ -66,7 +66,7 @@ class _TvDetailsScreenState extends ConsumerState<TvDetailsScreen> {
     super.initState();
     _container = ProviderScope.containerOf(context, listen: false);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      autoLinkTrackers(ref: ref, media: widget.media);
+      autoLinkTrackers(ref: ref, media: widget.media, isMounted: () => mounted);
       ref.read(discordRpcProvider.notifier).updateMediaPresence(widget.media);
     });
   }

@@ -154,12 +154,20 @@ class HorizontalSection<T> extends StatelessWidget {
                           canRequestFocus: false,
                           onFocusChange: (hasFocus) {
                             if (hasFocus) {
-                              Scrollable.ensureVisible(
+                              final scrollable = Scrollable.maybeOf(
                                 itemContext,
-                                alignment: 0.5,
-                                duration: const Duration(milliseconds: 250),
-                                curve: Curves.easeOutCubic,
                               );
+                              final ro = itemContext.findRenderObject();
+                              if (scrollable != null &&
+                                  ro != null &&
+                                  ro.attached) {
+                                scrollable.position.ensureVisible(
+                                  ro,
+                                  alignment: 0.5,
+                                  duration: const Duration(milliseconds: 250),
+                                  curve: Curves.easeOutCubic,
+                                );
+                              }
                             }
                           },
                           child: itemBuilder(itemContext, items[index]),

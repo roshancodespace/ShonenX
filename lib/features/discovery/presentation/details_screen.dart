@@ -125,7 +125,7 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen>
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _rpcNotifier.updateMediaPresence(widget.media);
-      autoLinkTrackers(ref: ref, media: widget.media);
+      autoLinkTrackers(ref: ref, media: widget.media, isMounted: () => mounted);
       if (!mounted) return;
       if (widget.autoPlayMode is PlayerMode) {
         context.pushPlayer(widget.autoPlayMode as PlayerMode);

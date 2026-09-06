@@ -98,6 +98,10 @@ class HomeScreen extends ConsumerWidget {
           }
         },
         child: CustomScrollView(
+          cacheExtent: 500,
+          physics: const AlwaysScrollableScrollPhysics(
+            parent: BouncingScrollPhysics(),
+          ),
           slivers: [
             // Top Header Bar
             SliverToBoxAdapter(
@@ -119,13 +123,28 @@ class HomeScreen extends ConsumerWidget {
               )
             else
               SliverList(
-                delegate: SliverChildBuilderDelegate((context, index) {
-                  final section = activeSections[index];
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 10.0),
-                    child: _buildSectionWidget(context, ref, section),
-                  );
-                }, childCount: activeSections.length),
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    final section = activeSections[index];
+                    return _KeepAliveSection(
+                      key: ValueKey(section.id),
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 10.0),
+                        child: _buildSectionWidget(context, ref, section),
+                      ),
+                    );
+                  },
+                  findChildIndexCallback: (Key key) {
+                    if (key is ValueKey<String>) {
+                      final index = activeSections.indexWhere(
+                        (s) => s.id == key.value,
+                      );
+                      return index == -1 ? null : index;
+                    }
+                    return null;
+                  },
+                  childCount: activeSections.length,
+                ),
               ),
 
             const SliverToBoxAdapter(child: SizedBox(height: 100)),
@@ -328,5 +347,25 @@ class HomeScreen extends ConsumerWidget {
           },
         );
     }
+  }
+}
+
+class _KeepAliveSection extends StatefulWidget {
+  final Widget child;
+  const _KeepAliveSection({super.key, required this.child});
+
+  @override
+  State<_KeepAliveSection> createState() => _KeepAliveSectionState();
+}
+
+class _KeepAliveSectionState extends State<_KeepAliveSection>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return widget.child;
   }
 }

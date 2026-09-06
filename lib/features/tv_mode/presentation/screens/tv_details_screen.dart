@@ -59,17 +59,21 @@ class TvDetailsScreen extends ConsumerStatefulWidget {
 class _TvDetailsScreenState extends ConsumerState<TvDetailsScreen> {
   final ScrollController _scrollController = ScrollController();
   final GlobalKey _episodesShelfKey = GlobalKey();
+  late final ProviderContainer _container;
 
   @override
   void initState() {
     super.initState();
+    _container = ProviderScope.containerOf(context, listen: false);
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      autoLinkTrackers(ref: ref, media: widget.media);
       ref.read(discordRpcProvider.notifier).updateMediaPresence(widget.media);
     });
   }
 
   @override
   void dispose() {
+    cleanupUnusedTrackerLinks(container: _container, media: widget.media);
     _scrollController.dispose();
     super.dispose();
   }

@@ -28,7 +28,6 @@ import 'package:shonenx/features/tracking/presentation/widgets/tracker_manager_s
 import 'package:shonenx/features/tracking/providers/media_tracking_provider.dart';
 import 'package:shonenx/features/tracking/providers/tracker_link_provider.dart';
 import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
-import 'package:shonenx/features/tracking/providers/tracking_prefs_provider.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
@@ -110,10 +109,12 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen>
   }
 
   late final DiscordRpcNotifier _rpcNotifier;
+  late final ProviderContainer _container;
 
   @override
   void initState() {
     super.initState();
+    _container = ProviderScope.containerOf(context, listen: false);
     _rpcNotifier = ref.read(discordRpcProvider.notifier);
     _tabController = TabController(
       length: 2,
@@ -124,7 +125,7 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen>
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _rpcNotifier.updateMediaPresence(widget.media);
-      _autoLinkPrimaryTracker();
+      autoLinkTrackers(ref: ref, media: widget.media);
       if (!mounted) return;
       if (widget.autoPlayMode is PlayerMode) {
         context.pushPlayer(widget.autoPlayMode as PlayerMode);
@@ -136,38 +137,11 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen>
 
   @override
   void dispose() {
+    cleanupUnusedTrackerLinks(container: _container, media: widget.media);
     _tabController.dispose();
     _keyboardFocusNode.dispose();
     _rpcNotifier.updateBrowsingPresence();
     super.dispose();
-  }
-
-  Future<void> _autoLinkPrimaryTracker() async {
-    final prefs = ref.read(trackingPrefsProvider);
-    if (!prefs.autoTrackPrimary) return;
-
-    final primaryType = prefs.primaryTracker;
-    if (primaryType == TrackerType.local) return;
-
-    final media = widget.media;
-    final trackingId = resolveTrackingIdFromMedia(
-      trackerType: primaryType,
-      media: media,
-    );
-
-    if (trackingId == null || trackingId.isEmpty) return;
-
-    final linksMap = await ref.read(trackerLinkProvider(media.id).future);
-    if (linksMap.containsKey(primaryType)) return;
-
-    final mapping = TrackerMapping()
-      ..trackerId = primaryType.id
-      ..trackingId = trackingId
-      ..trackingTitle = media.title.availableTitle;
-
-    ref
-        .read(trackerLinkProvider(media.id).notifier)
-        .saveLink(primaryType, mapping);
   }
 
   @override
@@ -703,15 +677,9 @@ class _TrackerAppBarButton extends ConsumerWidget {
       ),
       data: (listItem) {
         final links = trackerLinksAsync.value ?? {};
-        final resolvedId =
-            links[tracker.type]?.trackingId ??
-            resolveTrackingIdFromMedia(
-              trackerType: tracker.type,
-              media: media,
-              links: links,
-            );
-        final isTrackerLinked =
-            resolvedId != null || tracker.type == TrackerType.local;
+        final isTrackerLinked = tracker.type == TrackerType.local
+            ? true
+            : links.containsKey(tracker.type);
         final isAuthenticated = tracker.type.isAuthenticated(ref);
 
         String label = 'Add Tracker';

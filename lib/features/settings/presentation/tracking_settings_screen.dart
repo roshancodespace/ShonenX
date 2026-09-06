@@ -138,9 +138,9 @@ class _TrackingSettingsScreenState
             children: [
               SettingsSwitchTile(
                 icon: Icons.auto_awesome_outlined,
-                title: 'Auto Track Primary',
+                title: 'Auto-Link Trackers',
                 subtitle:
-                    'Automatically link media to your primary tracker if a matching ID is found',
+                    'Automatically create mappings with active trackers when matching IDs are found',
                 value: prefs.autoTrackPrimary,
                 onInfoCallback: () {
                   final theme = Theme.of(context);
@@ -149,7 +149,7 @@ class _TrackingSettingsScreenState
 
                   AppBottomSheet.show(
                     context: context,
-                    title: 'Auto Track Primary',
+                    title: 'Auto-Link Trackers',
                     child: Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
@@ -181,8 +181,8 @@ class _TrackingSettingsScreenState
                           const SizedBox(height: 16),
 
                           Text(
-                            'Normally you need to manually link anime and manga to your tracker. '
-                            'With Auto Track Primary enabled, ShonenX attempts to do that automatically whenever possible.',
+                            'Normally you need to manually link anime and manga to your trackers. '
+                            'With Auto-Link Trackers enabled, ShonenX automatically creates mappings with your active trackers whenever matching IDs are found.',
                             style: textTheme.bodyMedium,
                           ),
 
@@ -204,8 +204,9 @@ class _TrackingSettingsScreenState
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Text(
-                                    'If a title already exists on your primary tracker account, '
-                                    'its status, progress and other tracking information can appear instantly without manually linking it.',
+                                    'If a media is already in your cloud tracker library, '
+                                    'its status and progress will appear instantly without manual linking. '
+                                    'Watched episodes and read chapters will also sync progress automatically.',
                                     style: textTheme.bodyMedium?.copyWith(
                                       color: cs.onPrimaryContainer,
                                     ),
@@ -229,7 +230,7 @@ class _TrackingSettingsScreenState
                                 ),
                                 TextSpan(
                                   text:
-                                      'Use the same service for both your Metadata Provider and Primary Tracker (for example, AniList + AniList).',
+                                      'Use the same service for both your Discovery Source and Primary Tracker (for example, AniList + AniList).',
                                   style: TextStyle(color: cs.onSurfaceVariant),
                                 ),
                               ],
@@ -239,8 +240,7 @@ class _TrackingSettingsScreenState
                           const SizedBox(height: 12),
 
                           Text(
-                            'Auto Track Primary does not add titles to your tracker account. '
-                            'It only links titles that are already present on your tracker.',
+                            'When disabled, tracker mappings will never be created automatically and unlinked media will not sync.',
                             style: textTheme.bodySmall?.copyWith(
                               color: cs.onSurfaceVariant,
                             ),

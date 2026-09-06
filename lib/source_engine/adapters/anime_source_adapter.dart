@@ -79,6 +79,8 @@ class AnimeSourceAdapter extends BaseSourceAdapter implements AnimeSource {
 
       methodLog.d('streams=${videos.length}');
 
+      methodLog.w(videos.first.extraData.toString());
+
       return videos
           .map(
             (e) => VideoStream(

@@ -33,11 +33,13 @@ class TrackerLinkNotifier
     return currentLinks;
   }
 
-  void saveLink(TrackerType trackerType, TrackerMapping trackerMapping) {
+  void saveLinks(Map<TrackerType, TrackerMapping> linksToSave) {
+    if (linksToSave.isEmpty) return;
+
     final updatedLinks = Map<TrackerType, TrackerMapping>.from(
       state.value ?? {},
     );
-    updatedLinks[trackerType] = trackerMapping;
+    updatedLinks.addAll(linksToSave);
 
     final newMappings = updatedLinks.entries
         .map(
@@ -57,6 +59,10 @@ class TrackerLinkNotifier
     });
 
     state = AsyncData(updatedLinks);
+  }
+
+  void saveLink(TrackerType trackerType, TrackerMapping trackerMapping) {
+    saveLinks({trackerType: trackerMapping});
   }
 
   void removeLink(TrackerType trackerType) {
@@ -83,5 +89,12 @@ class TrackerLinkNotifier
     });
 
     state = AsyncData(updatedLinks);
+  }
+
+  void deleteLinks() {
+    _isar.writeTxnSync(() {
+      _isar.isarTrackerLinks.deleteByPrimaryMediaIdSync(mediaId);
+    });
+    state = const AsyncData({});
   }
 }

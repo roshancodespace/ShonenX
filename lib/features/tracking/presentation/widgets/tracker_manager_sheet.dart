@@ -35,14 +35,7 @@ class TrackerManagerSheet extends ConsumerWidget {
           ...activeTrackers.map((tracker) {
             final type = tracker.type;
             final isRemote = tracker is RemoteTracker;
-            final resolvedId =
-                trackerLinks[type]?.trackingId ??
-                resolveTrackingIdFromMedia(
-                  trackerType: type,
-                  media: media,
-                  links: trackerLinks,
-                );
-            final isLinked = isRemote ? resolvedId != null : true;
+            final isLinked = isRemote ? trackerLinks.containsKey(type) : true;
             final isAuthenticated = type.isAuthenticated(ref) || !isRemote;
 
             if (isLinked) {

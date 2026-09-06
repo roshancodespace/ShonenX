@@ -108,67 +108,62 @@ class SyncEngine {
         continue;
       }
 
-      String? actualTrackingId =
-          linkedIds[tracker.type]?.trackingId ??
-          resolveTrackingIdFromMedia(
-            trackerType: tracker.type,
-            media: media,
-            links: linkedIds,
-          );
+      final actualTrackingId = tracker.type == TrackerType.local
+          ? media.id
+          : linkedIds[tracker.type]?.trackingId;
 
-      if (actualTrackingId != null) {
-        final query = TrackingQuery(tracker.type, media);
-
-        TrackedListItem? currentData;
-
-        try {
-          currentData = await ref.read(mediaTrackingProvider(query).future);
-        } catch (e, st) {
-          log.w(
-            'Fetch current data failed (${tracker.type.displayName})',
-            e,
-            st,
-          );
-        }
-
-        if (currentData != null && currentData.progress >= episodeNumber) {
-          log.i(
-            'Skip ${tracker.type.displayName} → ${tracker.type == TrackerType.local ? 'local' : 'cloud'} ahead (${currentData.progress})',
-          );
-          continue;
-        }
-
-        TrackedStatus updateStatus = TrackedStatus.watching;
-        final totalCount = media.episodes;
-        final isFinishedAll =
-            totalCount != null && totalCount > 0 && episodeNumber >= totalCount;
-
-        if (currentData?.status == TrackedStatus.completed || isFinishedAll) {
-          updateStatus = TrackedStatus.completed;
-        }
-
-        syncTasks.add(
-          tracker
-              .updateListItem(
-                media: media,
-                trackingId: actualTrackingId,
-                progress: episodeNumber,
-                status: updateStatus,
-              )
-              .then((_) {
-                ref.invalidate(mediaTrackingProvider(query));
-
-                log.s(
-                  '${tracker.type.displayName} → Ep $episodeNumber ($updateStatus)',
-                );
-              })
-              .catchError((e, st) {
-                log.e('Sync failed (${tracker.type.displayName})', e, st);
-
-                _sessionSyncedCache.remove('${media.id}_$episodeNumber');
-              }),
-        );
+      if (actualTrackingId == null || actualTrackingId.isEmpty) {
+        log.d('Skip ${tracker.type.displayName} → not linked to media');
+        continue;
       }
+
+      final query = TrackingQuery(tracker.type, media);
+
+      TrackedListItem? currentData;
+
+      try {
+        currentData = await ref.read(mediaTrackingProvider(query).future);
+      } catch (e, st) {
+        log.w('Fetch current data failed (${tracker.type.displayName})', e, st);
+      }
+
+      if (currentData != null && currentData.progress >= episodeNumber) {
+        log.i(
+          'Skip ${tracker.type.displayName} → ${tracker.type == TrackerType.local ? 'local' : 'cloud'} ahead (${currentData.progress})',
+        );
+        continue;
+      }
+
+      TrackedStatus updateStatus = TrackedStatus.watching;
+      final totalCount = media.episodes;
+      final isFinishedAll =
+          totalCount != null && totalCount > 0 && episodeNumber >= totalCount;
+
+      if (currentData?.status == TrackedStatus.completed || isFinishedAll) {
+        updateStatus = TrackedStatus.completed;
+      }
+
+      syncTasks.add(
+        tracker
+            .updateListItem(
+              media: media,
+              trackingId: actualTrackingId,
+              progress: episodeNumber,
+              status: updateStatus,
+            )
+            .then((_) {
+              ref.invalidate(mediaTrackingProvider(query));
+
+              log.s(
+                '${tracker.type.displayName} → Ep $episodeNumber ($updateStatus)',
+              );
+            })
+            .catchError((e, st) {
+              log.e('Sync failed (${tracker.type.displayName})', e, st);
+
+              _sessionSyncedCache.remove('${media.id}_$episodeNumber');
+            }),
+      );
     }
 
     if (syncTasks.isNotEmpty) {

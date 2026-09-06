@@ -75,8 +75,7 @@ class CalendarEntry {
     return UnifiedMedia(
       id: mediaId,
       type: mediaType,
-      sourceId: source.name,
-      sourceName: source.displayName,
+      providerId: mediaId,
       title: MediaTitle(
         english: englishTitle ?? title,
         romaji: romajiTitle ?? title,

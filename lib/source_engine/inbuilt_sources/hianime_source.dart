@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:html/parser.dart' as html_parser;
 import 'package:http/http.dart' as http;
 import 'package:shonenx/core/utils/app_logger.dart';
@@ -12,7 +13,7 @@ import 'package:shonenx/source_engine/models/source_setting.dart';
 import 'package:shonenx/source_engine/providers/anime_source.dart';
 
 class HiAnimeSource implements AnimeSource {
-  static const String defaultBaseUrl = 'https://hianime.to';
+  static const String defaultBaseUrl = 'https://hianime.at';
   String _baseUrl = defaultBaseUrl;
 
   final http.Client _client = http.Client();
@@ -50,10 +51,10 @@ class HiAnimeSource implements AnimeSource {
         name: 'Mirror Domain',
         description: 'Primary domain for HiAnime streams',
         type: SettingType.select,
-        defaultValue: 'https://hianime.to',
+        defaultValue: 'https://hianime.at',
         options: const [
-          'https://hianime.to',
           'https://hianime.at',
+          'https://hianime.to',
           'https://aniwatchtv.to',
         ],
       ),
@@ -113,10 +114,22 @@ class HiAnimeSource implements AnimeSource {
           ? '$_baseUrl/top-airing?page=$page'
           : '$_baseUrl/search?keyword=${Uri.encodeQueryComponent(cleanQuery)}&page=$page';
 
-      final response = await _client.get(
-        Uri.parse(url),
-        headers: _defaultHeaders,
-      ).timeout(const Duration(seconds: 5));
+      http.Response response;
+      try {
+        response = await _client.get(
+          Uri.parse(url),
+          headers: _defaultHeaders,
+        ).timeout(const Duration(seconds: 6));
+      } catch (_) {
+        // Fallback to hianime.at if original domain timed out
+        final fallbackUrl = cleanQuery.isEmpty
+            ? 'https://hianime.at/top-airing?page=$page'
+            : 'https://hianime.at/search?keyword=${Uri.encodeQueryComponent(cleanQuery)}&page=$page';
+        response = await _client.get(
+          Uri.parse(fallbackUrl),
+          headers: _defaultHeaders,
+        ).timeout(const Duration(seconds: 6));
+      }
 
       if (response.statusCode != 200) return [];
 
@@ -138,7 +151,16 @@ class HiAnimeSource implements AnimeSource {
             posterEl?.attributes['src'] ??
             '';
 
-        final cleanSlug = href.startsWith('/') ? href.substring(1) : href;
+        String cleanSlug = href;
+        if (cleanSlug.startsWith('http')) {
+          final uri = Uri.tryParse(cleanSlug);
+          cleanSlug = (uri != null && uri.pathSegments.isNotEmpty)
+              ? uri.pathSegments.last
+              : cleanSlug;
+        } else if (cleanSlug.startsWith('/')) {
+          cleanSlug = cleanSlug.substring(1);
+        }
+
         if (cleanSlug.isEmpty) continue;
 
         results.add(
@@ -181,7 +203,7 @@ class HiAnimeSource implements AnimeSource {
       final response = await _client.get(
         Uri.parse(url),
         headers: _defaultHeaders,
-      ).timeout(const Duration(seconds: 5));
+      ).timeout(const Duration(seconds: 6));
 
       if (response.statusCode != 200) {
         throw Exception('Failed to fetch details (HTTP ${response.statusCode})');
@@ -242,6 +264,8 @@ class HiAnimeSource implements AnimeSource {
       final numericMatch = RegExp(r'-(\d+)$').firstMatch(cleanId);
       if (numericMatch != null) {
         rawId = numericMatch.group(1);
+      } else if (RegExp(r'^\d+$').hasMatch(cleanId)) {
+        rawId = cleanId;
       }
 
       if (rawId == null) {
@@ -249,19 +273,12 @@ class HiAnimeSource implements AnimeSource {
         final pageRes = await _client.get(
           Uri.parse(detailUrl),
           headers: _defaultHeaders,
-        ).timeout(const Duration(seconds: 4));
+        ).timeout(const Duration(seconds: 5));
 
         final doc = html_parser.parse(pageRes.body);
-        final syncData = doc.querySelector('#sync-data');
-        if (syncData != null) {
-          try {
-            final json = jsonDecode(syncData.text);
-            rawId = json['anime_id']?.toString();
-          } catch (_) {}
-        }
-
-        rawId ??= doc.querySelector('.anisc-detail')?.attributes['data-id'] ??
-            doc.querySelector('[data-id]')?.attributes['data-id'];
+        rawId = doc.querySelector('#ani_detail')?.attributes['data-anime-id'] ??
+            doc.querySelector('.anis-content')?.attributes['data-anime-id'] ??
+            doc.querySelector('.anisc-detail')?.attributes['data-id'];
       }
 
       if (rawId == null) {
@@ -269,18 +286,33 @@ class HiAnimeSource implements AnimeSource {
         return [];
       }
 
-      // 2. Fetch episodes list AJAX
-      final ajaxUrl = '$_baseUrl/ajax/v2/episode/list/$rawId';
-      final response = await _client.get(
-        Uri.parse(ajaxUrl),
-        headers: {
-          ..._defaultHeaders,
-          'X-Requested-With': 'XMLHttpRequest',
-          'Referer': '$_baseUrl/$cleanId',
-        },
-      ).timeout(const Duration(seconds: 4));
+      // 2. Fetch episodes list AJAX (supports both hianime.at and hianime.to)
+      final epEndpoints = [
+        '$_baseUrl/api/theme/episode/list/$rawId',
+        '$_baseUrl/ajax/v2/episode/list/$rawId',
+        'https://hianime.at/api/theme/episode/list/$rawId',
+      ];
 
-      if (response.statusCode != 200) return [];
+      http.Response? response;
+      for (final endpoint in epEndpoints) {
+        try {
+          final res = await _client.get(
+            Uri.parse(endpoint),
+            headers: {
+              ..._defaultHeaders,
+              'X-Requested-With': 'XMLHttpRequest',
+              'Referer': '$_baseUrl/$cleanId',
+            },
+          ).timeout(const Duration(seconds: 5));
+
+          if (res.statusCode == 200 && res.body.contains('ep-item')) {
+            response = res;
+            break;
+          }
+        } catch (_) {}
+      }
+
+      if (response == null || response.statusCode != 200) return [];
 
       final data = jsonDecode(response.body);
       final html = data['html'] as String? ?? '';
@@ -332,16 +364,32 @@ class HiAnimeSource implements AnimeSource {
 
     final methodLog = _log.child('getServers');
     try {
-      final ajaxUrl = '$_baseUrl/ajax/v2/episode/servers?episodeId=$epId';
-      final response = await _client.get(
-        Uri.parse(ajaxUrl),
-        headers: {
-          ..._defaultHeaders,
-          'X-Requested-With': 'XMLHttpRequest',
-        },
-      ).timeout(const Duration(seconds: 4));
+      final srvEndpoints = [
+        '$_baseUrl/api/theme/episode/servers?episodeId=$epId',
+        '$_baseUrl/ajax/v2/episode/servers?episodeId=$epId',
+        'https://hianime.at/api/theme/episode/servers?episodeId=$epId',
+      ];
 
-      if (response.statusCode != 200) return [];
+      http.Response? response;
+      for (final endpoint in srvEndpoints) {
+        try {
+          final res = await _client.get(
+            Uri.parse(endpoint),
+            headers: {
+              ..._defaultHeaders,
+              'X-Requested-With': 'XMLHttpRequest',
+              'Referer': '$_baseUrl/',
+            },
+          ).timeout(const Duration(seconds: 5));
+
+          if (res.statusCode == 200 && res.body.contains('server-item')) {
+            response = res;
+            break;
+          }
+        } catch (_) {}
+      }
+
+      if (response == null || response.statusCode != 200) return [];
 
       final data = jsonDecode(response.body);
       final html = data['html'] as String? ?? '';
@@ -353,22 +401,33 @@ class HiAnimeSource implements AnimeSource {
       final servers = <VideoServer>[];
 
       for (final item in serverItems) {
+        final serverHash = item.attributes['data-hash'];
         final serverId = item.attributes['data-id'];
         final serverTypeStr = item.attributes['data-type']?.toLowerCase() ?? 'sub';
-        final serverName = item.text.trim();
-
-        if (serverId == null) continue;
+        final serverName = item.attributes['data-server-name'] ?? item.text.trim();
 
         final isDub = serverTypeStr == 'dub';
         final serverType = isDub ? ServerType.dub : ServerType.sub;
 
-        servers.add(
-          VideoServer(
-            id: serverId,
-            name: '$serverName (${isDub ? 'Dub' : 'Sub'})',
-            type: serverType,
-          ),
-        );
+        if (serverHash != null && serverHash.isNotEmpty) {
+          // hianime.at direct embed hash
+          servers.add(
+            VideoServer(
+              id: 'hash:$serverHash',
+              name: '$serverName (${isDub ? 'Dub' : 'Sub'})',
+              type: serverType,
+            ),
+          );
+        } else if (serverId != null && serverId.isNotEmpty) {
+          // hianime.to server id
+          servers.add(
+            VideoServer(
+              id: serverId,
+              name: '$serverName (${isDub ? 'Dub' : 'Sub'})',
+              type: serverType,
+            ),
+          );
+        }
       }
 
       if (servers.isNotEmpty) {
@@ -388,7 +447,71 @@ class HiAnimeSource implements AnimeSource {
   ) async {
     final methodLog = _log.child('getSources');
     try {
-      // 1. Get embed sources iframe link
+      // 1. Direct embed resolution (e.g. zokoanime / megaplay on hianime.at)
+      if (server.id.startsWith('hash:')) {
+        final rawHash = server.id.substring(5);
+        final embedUrl = utf8.decode(base64.decode(base64.normalize(rawHash)));
+
+        final embedUri = Uri.parse(embedUrl);
+        final embedHost = '${embedUri.scheme}://${embedUri.host}';
+
+        final embedRes = await _client.get(
+          embedUri,
+          headers: {
+            ..._defaultHeaders,
+            'Referer': '$_baseUrl/',
+          },
+        ).timeout(const Duration(seconds: 5));
+
+        if (embedRes.statusCode != 200) return [];
+
+        final pMatch = RegExp(r'window\.__P\s*=\s*"([^"]+)"').firstMatch(embedRes.body);
+        if (pMatch != null) {
+          final blob = pMatch.group(1)!;
+          final bytes = base64.decode(base64.normalize(blob));
+          final xored = Uint8List(bytes.length);
+          const key = 'otaku-embed-v1';
+          for (int i = 0; i < bytes.length; i++) {
+            xored[i] = bytes[i] ^ key.codeUnitAt(i % key.length);
+          }
+
+          final jsonStr = utf8.decode(xored);
+          final streamData = jsonDecode(jsonStr);
+          final m3u8Url = streamData['src']?.toString();
+
+          if (m3u8Url != null && m3u8Url.isNotEmpty) {
+            final subtitles = <SubtitleTrack>[];
+            if (streamData['subtitles'] is List) {
+              for (final sub in streamData['subtitles']) {
+                if (sub is Map && sub['src'] != null) {
+                  final label = sub['label']?.toString() ?? sub['lang']?.toString() ?? 'English';
+                  subtitles.add(SubtitleTrack(
+                    url: sub['src'].toString(),
+                    language: label,
+                  ));
+                }
+              }
+            }
+
+            final isDub = server.type == ServerType.dub;
+            final defaultQuality = isDub ? 'Auto (Dub)' : 'Auto';
+
+            return [
+              VideoStream(
+                url: m3u8Url,
+                quality: defaultQuality,
+                headers: {
+                  'Referer': '$embedHost/',
+                  'User-Agent': _defaultHeaders['User-Agent']!,
+                },
+                subtitles: subtitles,
+              ),
+            ];
+          }
+        }
+      }
+
+      // 2. Fallback to Zorotheme / MegaCloud resolution (hianime.to)
       final sourcesUrl = '$_baseUrl/ajax/v2/episode/sources?id=${server.id}';
       final response = await _client.get(
         Uri.parse(sourcesUrl),
@@ -396,7 +519,7 @@ class HiAnimeSource implements AnimeSource {
           ..._defaultHeaders,
           'X-Requested-With': 'XMLHttpRequest',
         },
-      ).timeout(const Duration(seconds: 4));
+      ).timeout(const Duration(seconds: 5));
 
       if (response.statusCode != 200) return [];
 
@@ -404,7 +527,6 @@ class HiAnimeSource implements AnimeSource {
       final link = data['link'] as String?;
       if (link == null || link.isEmpty) return [];
 
-      // 2. Parse embed host & source ID (MegaCloud / RapidCloud)
       final embedUri = Uri.parse(link);
       final embedHost = '${embedUri.scheme}://${embedUri.host}';
       final pathSegments = embedUri.pathSegments;
@@ -412,7 +534,6 @@ class HiAnimeSource implements AnimeSource {
 
       if (sourceId.isEmpty) return [];
 
-      // 3. Resolve direct HLS stream manifest and subtitles
       final embedApiUrl = '$embedHost/embed-2/ajax/e-1/getSources?id=$sourceId';
       final streamResponse = await _client.get(
         Uri.parse(embedApiUrl),
@@ -421,7 +542,7 @@ class HiAnimeSource implements AnimeSource {
           'X-Requested-With': 'XMLHttpRequest',
           'Referer': link,
         },
-      ).timeout(const Duration(seconds: 4));
+      ).timeout(const Duration(seconds: 5));
 
       if (streamResponse.statusCode != 200) return [];
 

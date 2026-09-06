@@ -33,17 +33,11 @@ class _ManageReposSheetState extends ConsumerState<ManageReposSheet> {
   final _controller = TextEditingController();
   bool _isLoading = false;
   String? _clipboardText;
-  late String _selectedCategory;
   late String _selectedEngineId;
 
   @override
   void initState() {
     super.initState();
-    _selectedCategory = widget.autoAddType?.toLowerCase() ?? 'both';
-    if (!['both', 'anime', 'manga', 'novel'].contains(_selectedCategory)) {
-      _selectedCategory = 'both';
-    }
-
     if (widget.autoAddManager != null &&
         [
           'aniyomi',
@@ -152,30 +146,28 @@ class _ManageReposSheetState extends ConsumerState<ManageReposSheet> {
       final adapter = ref.read(extensionAdapterProvider);
       bool added = false;
 
-      if (_selectedCategory == 'both' || _selectedCategory == 'anime') {
-        if (await adapter.addRepo(
-          parsedUrl,
-          _selectedEngineId,
-          bridge.ItemType.anime,
-        )) {
-          added = true;
-        }
-      }
-      if (_selectedCategory == 'both' || _selectedCategory == 'manga') {
-        if (await adapter.addRepo(
-          parsedUrl,
-          _selectedEngineId,
-          bridge.ItemType.manga,
-        )) {
-          added = true;
-        }
-      }
-      if (_selectedCategory == 'both' || _selectedCategory == 'novel') {
-        if (await adapter.addRepo(
-          parsedUrl,
-          _selectedEngineId,
-          bridge.ItemType.novel,
-        )) {
+      final types =
+          (widget.autoAddType != null &&
+              [
+                'anime',
+                'manga',
+                'novel',
+              ].contains(widget.autoAddType!.toLowerCase()))
+          ? [
+              switch (widget.autoAddType!.toLowerCase()) {
+                'anime' => bridge.ItemType.anime,
+                'manga' => bridge.ItemType.manga,
+                _ => bridge.ItemType.novel,
+              },
+            ]
+          : [
+              bridge.ItemType.anime,
+              bridge.ItemType.manga,
+              bridge.ItemType.novel,
+            ];
+
+      for (final type in types) {
+        if (await adapter.addRepo(parsedUrl, _selectedEngineId, type)) {
           added = true;
         }
       }
@@ -352,55 +344,6 @@ class _ManageReposSheetState extends ConsumerState<ManageReposSheet> {
               ),
               enabled: !_isLoading,
               onSubmitted: (_) => _addRepo(),
-            ),
-            const SizedBox(height: 12),
-
-            // CATEGORY SEGMENTS
-            SegmentedButton<String>(
-              style: SegmentedButton.styleFrom(
-                backgroundColor: cs.surfaceContainerHighest.withValues(
-                  alpha: 0.1,
-                ),
-                selectedForegroundColor: cs.onPrimary,
-                selectedBackgroundColor: cs.primary,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              segments: const [
-                ButtonSegment(
-                  value: 'both',
-                  label: Text(
-                    'All',
-                    style: TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                ),
-                ButtonSegment(
-                  value: 'anime',
-                  label: Text(
-                    'Anime',
-                    style: TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                ),
-                ButtonSegment(
-                  value: 'manga',
-                  label: Text(
-                    'Manga',
-                    style: TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                ),
-                ButtonSegment(
-                  value: 'novel',
-                  label: Text(
-                    'Novel',
-                    style: TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                ),
-              ],
-              selected: {_selectedCategory},
-              onSelectionChanged: _isLoading
-                  ? null
-                  : (sel) => setState(() => _selectedCategory = sel.first),
             ),
             const SizedBox(height: 12),
 

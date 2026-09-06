@@ -334,16 +334,6 @@ class MediaPreferenceNotifier extends AsyncNotifier<MediaPreferenceState> {
         ..trackerMediaId = currentState.trackerMediaId;
 
       await _isar.writeTxn(() async => await _isar.mediaPreferences.put(pref));
-
-      final matchSummary = currentState.matchedMediaTitle != null
-          ? 'match: "${currentState.matchedMediaTitle}" (${currentState.matchedMediaId})'
-          : 'match: none (reset)';
-      final trackerSummary = currentState.preferredTracker != null
-          ? ', tracker: ${currentState.preferredTracker!.displayName}'
-          : '';
-      log.s(
-        'Preferences saved: source="${currentState.sourceInfo.name}", $matchSummary$trackerSummary',
-      );
     } catch (e, st) {
       log.e('Failed to save preferences for "${args.mediaTitle}"', e, st);
     }

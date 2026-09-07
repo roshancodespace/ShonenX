@@ -158,50 +158,38 @@ mixin MalMetadata on BaseTracker implements RemoteTracker {
   }) {
     final requestId = DateTime.now().microsecondsSinceEpoch;
 
-    return executeApi(
-      'TRENDING',
-      () async {
-        final limit = 20;
-        final offset = (page - 1) * limit;
-        final rankingType = type == MediaType.ANIME ? 'airing' : 'bypopularity';
-        final endpoint = type == MediaType.ANIME ? 'anime' : 'manga';
+    return executeApi('TRENDING', () async {
+      final limit = 20;
+      final offset = (page - 1) * limit;
+      final rankingType = type == MediaType.ANIME ? 'airing' : 'bypopularity';
+      final endpoint = type == MediaType.ANIME ? 'anime' : 'manga';
 
-        final response = await http.get(
-          '$_baseUrl/$endpoint/ranking',
-          queryParameters: {
-            'ranking_type': rankingType,
-            'limit': limit.toString(),
-            'offset': offset.toString(),
-            'fields': _fields,
-          },
-          headers: {'X-MAL-CLIENT-ID': clientId},
-          cacheDuration: cacheDuration ?? const Duration(hours: 1),
-        );
+      final response = await http.get(
+        '$_baseUrl/$endpoint/ranking',
+        queryParameters: {
+          'ranking_type': rankingType,
+          'limit': limit.toString(),
+          'offset': offset.toString(),
+          'fields': _fields,
+        },
+        headers: {'X-MAL-CLIENT-ID': clientId},
+        cacheDuration: cacheDuration ?? const Duration(hours: 1),
+      );
 
-        final data = _validateAndParseResponse(response.json, 'getTrending');
-        final rawList = data['data'] as List? ?? [];
-        final paging = data['paging'] as Map? ?? {};
-        final next = paging['next'] as String?;
+      final data = _validateAndParseResponse(response.json, 'getTrending');
+      final rawList = data['data'] as List? ?? [];
+      final paging = data['paging'] as Map? ?? {};
+      final next = paging['next'] as String?;
 
-        final hasNextPage = next != null && next.isNotEmpty;
+      final hasNextPage = next != null && next.isNotEmpty;
 
-        final items = rawList.whereType<Map>().map((item) {
-          final node = item['node'] as Map? ?? {};
-          return _mapToUnified(node, type, requestId);
-        }).toList();
+      final items = rawList.whereType<Map>().map((item) {
+        final node = item['node'] as Map? ?? {};
+        return _mapToUnified(node, type, requestId);
+      }).toList();
 
-        return PaginatedResult(items: items, hasNextPage: hasNextPage);
-      },
-      fallback: (error, stackTrace) {
-        log(
-          'Fallback triggered',
-          name: 'MalTracker.getTrending',
-          error: error,
-          stackTrace: stackTrace,
-        );
-        return PaginatedResult(items: [], hasNextPage: false);
-      },
-    );
+      return PaginatedResult(items: items, hasNextPage: hasNextPage);
+    });
   }
 
   @override
@@ -219,50 +207,38 @@ mixin MalMetadata on BaseTracker implements RemoteTracker {
   }) {
     final requestId = DateTime.now().microsecondsSinceEpoch;
 
-    return executeApi(
-      'SEARCH_METADATA',
-      () async {
-        final limit = 20;
-        final offset = (page - 1) * limit;
-        final endpoint = type == MediaType.ANIME ? 'anime' : 'manga';
+    return executeApi('SEARCH_METADATA', () async {
+      final limit = 20;
+      final offset = (page - 1) * limit;
+      final endpoint = type == MediaType.ANIME ? 'anime' : 'manga';
 
-        final response = await http.get(
-          '$_baseUrl/$endpoint',
-          queryParameters: {
-            'q': query,
-            'limit': limit.toString(),
-            'offset': offset.toString(),
-            'fields': _fields,
-            'nsfw': adultMode == AdultContentMode.safe ? 'false' : 'true',
-          },
-          headers: {'X-MAL-CLIENT-ID': clientId},
-          cacheDuration: cacheDuration,
-        );
+      final response = await http.get(
+        '$_baseUrl/$endpoint',
+        queryParameters: {
+          'q': query,
+          'limit': limit.toString(),
+          'offset': offset.toString(),
+          'fields': _fields,
+          'nsfw': adultMode == AdultContentMode.safe ? 'false' : 'true',
+        },
+        headers: {'X-MAL-CLIENT-ID': clientId},
+        cacheDuration: cacheDuration,
+      );
 
-        final data = _validateAndParseResponse(response.json, 'search');
-        final rawList = data['data'] as List? ?? [];
-        final paging = data['paging'] as Map? ?? {};
-        final next = paging['next'] as String?;
+      final data = _validateAndParseResponse(response.json, 'search');
+      final rawList = data['data'] as List? ?? [];
+      final paging = data['paging'] as Map? ?? {};
+      final next = paging['next'] as String?;
 
-        final hasNextPage = next != null && next.isNotEmpty;
+      final hasNextPage = next != null && next.isNotEmpty;
 
-        final items = rawList.whereType<Map>().map((item) {
-          final node = item['node'] as Map? ?? {};
-          return _mapToUnified(node, type, requestId);
-        }).toList();
+      final items = rawList.whereType<Map>().map((item) {
+        final node = item['node'] as Map? ?? {};
+        return _mapToUnified(node, type, requestId);
+      }).toList();
 
-        return PaginatedResult(items: items, hasNextPage: hasNextPage);
-      },
-      fallback: (error, stackTrace) {
-        log(
-          'Fallback triggered',
-          name: 'MalTracker.search',
-          error: error,
-          stackTrace: stackTrace,
-        );
-        return PaginatedResult(items: [], hasNextPage: false);
-      },
-    );
+      return PaginatedResult(items: items, hasNextPage: hasNextPage);
+    });
   }
 
   @override

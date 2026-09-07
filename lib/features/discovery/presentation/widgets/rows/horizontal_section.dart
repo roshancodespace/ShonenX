@@ -19,6 +19,12 @@ class HorizontalSection<T> extends StatelessWidget {
   final ScrollController? controller;
   final EdgeInsetsGeometry? headerPadding;
   final EdgeInsetsGeometry? listPadding;
+  final Widget Function(
+    BuildContext context,
+    Object error,
+    StackTrace? stackTrace,
+  )?
+  errorBuilder;
 
   const HorizontalSection({
     super.key,
@@ -38,6 +44,7 @@ class HorizontalSection<T> extends StatelessWidget {
     this.controller,
     this.headerPadding,
     this.listPadding,
+    this.errorBuilder,
   });
 
   @override
@@ -122,7 +129,9 @@ class HorizontalSection<T> extends StatelessWidget {
                     SizedBox(width: gap ?? 10.0),
               ),
             ),
-            error: (e, _) => Center(child: Text('Error: $e')),
+            error: (e, st) =>
+                errorBuilder?.call(context, e, st) ??
+                Center(child: Text('Error: $e')),
             data: (items) {
               if (items.isEmpty) {
                 return emptyWidget ??

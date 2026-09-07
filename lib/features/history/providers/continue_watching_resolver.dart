@@ -92,12 +92,10 @@ class ContinueWatchingResolver {
       media: UnifiedMedia(
         id: entry.animeId,
         idMal: entry.animeIdMal,
+        providerId: overrideId ?? entry.providerId,
         externalIds: entry.externalIds,
         cover: entry.cover,
         banner: entry.banner,
-        sourceId: entry.sourceId,
-        sourceName: entry.sourceName,
-        providerId: overrideId ?? entry.providerId,
         episodes: entry.totalEpisodes,
         type: MediaType.ANIME,
         title: MediaTitle(english: entry.animeTitle),

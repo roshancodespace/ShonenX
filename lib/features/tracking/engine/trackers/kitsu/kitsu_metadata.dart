@@ -164,61 +164,49 @@ mixin KitsuMetadata on BaseTracker implements RemoteTracker {
   }) {
     final requestId = DateTime.now().microsecondsSinceEpoch;
 
-    return executeApi(
-      'TRENDING',
-      () async {
-        final limit = 20;
-        final offset = (page - 1) * limit;
-        final endpoint = type == MediaType.ANIME ? 'anime' : 'manga';
+    return executeApi('TRENDING', () async {
+      final limit = 20;
+      final offset = (page - 1) * limit;
+      final endpoint = type == MediaType.ANIME ? 'anime' : 'manga';
 
-        final response = await http.get(
-          'https://kitsu.io/api/edge/$endpoint',
-          queryParameters: {
-            'sort': '-userCount',
-            'page[limit]': limit.toString(),
-            'page[offset]': offset.toString(),
-            'include': 'categories,genres',
-          },
-          cacheDuration: cacheDuration ?? const Duration(hours: 1),
-        );
+      final response = await http.get(
+        'https://kitsu.io/api/edge/$endpoint',
+        queryParameters: {
+          'sort': '-userCount',
+          'page[limit]': limit.toString(),
+          'page[offset]': offset.toString(),
+          'include': 'categories,genres',
+        },
+        cacheDuration: cacheDuration ?? const Duration(hours: 1),
+      );
 
-        final data = _validateAndParseResponse(response.json, 'getTrending');
-        final rawList = data['data'] as List? ?? [];
-        final includedMap = _buildIncludedMap(data['included']);
-        final links = data['links'] as Map? ?? {};
-        final next = links['next'] as String?;
+      final data = _validateAndParseResponse(response.json, 'getTrending');
+      final rawList = data['data'] as List? ?? [];
+      final includedMap = _buildIncludedMap(data['included']);
+      final links = data['links'] as Map? ?? {};
+      final next = links['next'] as String?;
 
-        final hasNextPage = next != null && next.isNotEmpty;
+      final hasNextPage = next != null && next.isNotEmpty;
 
-        final items = rawList
-            .whereType<Map>()
-            .map((item) {
-              try {
-                return _mapToUnified(
-                  item,
-                  type,
-                  requestId,
-                  includedMap: includedMap,
-                );
-              } catch (_) {
-                return null;
-              }
-            })
-            .whereType<UnifiedMedia>()
-            .toList();
+      final items = rawList
+          .whereType<Map>()
+          .map((item) {
+            try {
+              return _mapToUnified(
+                item,
+                type,
+                requestId,
+                includedMap: includedMap,
+              );
+            } catch (_) {
+              return null;
+            }
+          })
+          .whereType<UnifiedMedia>()
+          .toList();
 
-        return PaginatedResult(items: items, hasNextPage: hasNextPage);
-      },
-      fallback: (error, stackTrace) {
-        log(
-          'Fallback triggered',
-          name: 'KitsuTracker.getTrending',
-          error: error,
-          stackTrace: stackTrace,
-        );
-        return PaginatedResult(items: [], hasNextPage: false);
-      },
-    );
+      return PaginatedResult(items: items, hasNextPage: hasNextPage);
+    });
   }
 
   @override
@@ -236,117 +224,105 @@ mixin KitsuMetadata on BaseTracker implements RemoteTracker {
   }) {
     final requestId = DateTime.now().microsecondsSinceEpoch;
 
-    return executeApi(
-      'SEARCH_METADATA',
-      () async {
-        final limit = 20;
-        final offset = (page - 1) * limit;
-        final endpoint = type == MediaType.ANIME ? 'anime' : 'manga';
+    return executeApi('SEARCH_METADATA', () async {
+      final limit = 20;
+      final offset = (page - 1) * limit;
+      final endpoint = type == MediaType.ANIME ? 'anime' : 'manga';
 
-        final queryParams = <String, String>{
-          'page[limit]': limit.toString(),
-          'page[offset]': offset.toString(),
-          'include': 'categories,genres',
-        };
-        if (query.trim().isNotEmpty) {
-          queryParams['filter[text]'] = query.trim();
-        } else {
-          queryParams['sort'] = sort == SearchSort.score
-              ? '-averageRating'
-              : '-userCount';
-        }
+      final queryParams = <String, String>{
+        'page[limit]': limit.toString(),
+        'page[offset]': offset.toString(),
+        'include': 'categories,genres',
+      };
+      if (query.trim().isNotEmpty) {
+        queryParams['filter[text]'] = query.trim();
+      } else {
+        queryParams['sort'] = sort == SearchSort.score
+            ? '-averageRating'
+            : '-userCount';
+      }
 
-        final categoryFilters =
-            <String>[if (genres != null) ...genres, if (tags != null) ...tags]
-                .map((g) => g.toLowerCase().trim().replaceAll(' ', '-'))
-                .where((g) => g.isNotEmpty)
-                .toSet()
-                .toList();
+      final categoryFilters =
+          <String>[if (genres != null) ...genres, if (tags != null) ...tags]
+              .map((g) => g.toLowerCase().trim().replaceAll(' ', '-'))
+              .where((g) => g.isNotEmpty)
+              .toSet()
+              .toList();
 
-        if (categoryFilters.isNotEmpty) {
-          queryParams['filter[categories]'] = categoryFilters.join(',');
-        }
+      if (categoryFilters.isNotEmpty) {
+        queryParams['filter[categories]'] = categoryFilters.join(',');
+      }
 
-        List<String>? statusIn;
-        switch (status) {
-          case SearchStatusFilter.releasing:
-            statusIn = ['current'];
-            break;
-          case SearchStatusFilter.finished:
-            statusIn = ['finished'];
-            break;
-          case SearchStatusFilter.notYetReleased:
-            statusIn = ['upcoming'];
-            break;
-          case SearchStatusFilter.all:
-            statusIn = null;
-            break;
-        }
+      List<String>? statusIn;
+      switch (status) {
+        case SearchStatusFilter.releasing:
+          statusIn = ['current'];
+          break;
+        case SearchStatusFilter.finished:
+          statusIn = ['finished'];
+          break;
+        case SearchStatusFilter.notYetReleased:
+          statusIn = ['upcoming'];
+          break;
+        case SearchStatusFilter.all:
+          statusIn = null;
+          break;
+      }
 
-        if (statusIn != null && statusIn.isNotEmpty) {
-          final mappedStatuses = statusIn
-              .map((s) {
-                final lower = s.toLowerCase();
-                if (lower == 'not_yet_released' || lower == 'upcoming') {
-                  return 'upcoming';
-                }
-                if (lower == 'releasing' ||
-                    lower == 'ongoing' ||
-                    lower == 'current') {
-                  return 'current';
-                }
-                if (lower == 'finished' || lower == 'completed') {
-                  return 'finished';
-                }
-                return lower;
-              })
-              .join(',');
-          queryParams['filter[status]'] = mappedStatuses;
-        }
-
-        final response = await http.get(
-          'https://kitsu.io/api/edge/$endpoint',
-          queryParameters: queryParams,
-          cacheDuration: cacheDuration,
-        );
-
-        final data = _validateAndParseResponse(response.json, 'search');
-        final rawList = data['data'] as List? ?? [];
-        final includedMap = _buildIncludedMap(data['included']);
-        final links = data['links'] as Map? ?? {};
-        final next = links['next'] as String?;
-
-        final hasNextPage = next != null && next.isNotEmpty;
-
-        final items = rawList
-            .whereType<Map>()
-            .map((item) {
-              try {
-                return _mapToUnified(
-                  item,
-                  type,
-                  requestId,
-                  includedMap: includedMap,
-                );
-              } catch (_) {
-                return null;
+      if (statusIn != null && statusIn.isNotEmpty) {
+        final mappedStatuses = statusIn
+            .map((s) {
+              final lower = s.toLowerCase();
+              if (lower == 'not_yet_released' || lower == 'upcoming') {
+                return 'upcoming';
               }
+              if (lower == 'releasing' ||
+                  lower == 'ongoing' ||
+                  lower == 'current') {
+                return 'current';
+              }
+              if (lower == 'finished' || lower == 'completed') {
+                return 'finished';
+              }
+              return lower;
             })
-            .whereType<UnifiedMedia>()
-            .toList();
+            .join(',');
+        queryParams['filter[status]'] = mappedStatuses;
+      }
 
-        return PaginatedResult(items: items, hasNextPage: hasNextPage);
-      },
-      fallback: (error, stackTrace) {
-        log(
-          'Fallback triggered',
-          name: 'KitsuTracker.search',
-          error: error,
-          stackTrace: stackTrace,
-        );
-        return PaginatedResult(items: [], hasNextPage: false);
-      },
-    );
+      final response = await http.get(
+        'https://kitsu.io/api/edge/$endpoint',
+        queryParameters: queryParams,
+        cacheDuration: cacheDuration,
+      );
+
+      final data = _validateAndParseResponse(response.json, 'search');
+      final rawList = data['data'] as List? ?? [];
+      final includedMap = _buildIncludedMap(data['included']);
+      final links = data['links'] as Map? ?? {};
+      final next = links['next'] as String?;
+
+      final hasNextPage = next != null && next.isNotEmpty;
+
+      final items = rawList
+          .whereType<Map>()
+          .map((item) {
+            try {
+              return _mapToUnified(
+                item,
+                type,
+                requestId,
+                includedMap: includedMap,
+              );
+            } catch (_) {
+              return null;
+            }
+          })
+          .whereType<UnifiedMedia>()
+          .toList();
+
+      return PaginatedResult(items: items, hasNextPage: hasNextPage);
+    });
   }
 
   @override

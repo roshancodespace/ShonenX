@@ -1,6 +1,6 @@
 import 'package:shonenx/features/discovery/domain/models/search_filter_options.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_filter_options.dart';
-import 'dart:developer';
+import 'package:shonenx/core/utils/app_logger.dart';
 
 import 'package:shonenx/core/network/http_client.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_category.dart';
@@ -88,30 +88,26 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
     String operation,
   ) {
     if (body is! Map) {
-      log(
+      AppLogger.e(
+        'AnilistTracker.$operation',
         'Invalid response type: ${body.runtimeType}',
-        name: 'AnilistTracker.$operation',
-        error: body,
+        body,
       );
       throw AnilistException('Invalid response format');
     }
 
     if (body['errors'] != null) {
-      log(
+      AppLogger.e(
+        'AnilistTracker.$operation',
         'GraphQL Errors returned',
-        name: 'AnilistTracker.$operation',
-        error: body['errors'],
+        body['errors'],
       );
       throw AnilistException('GraphQL Error: ${body['errors']}');
     }
 
     final data = body['data'] as Map?;
     if (data == null) {
-      log(
-        'Response data is null',
-        name: 'AnilistTracker.$operation',
-        error: body,
-      );
+      AppLogger.e('AnilistTracker.$operation', 'Response data is null', body);
       throw AnilistException('Missing data field in response');
     }
 
@@ -127,46 +123,34 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
   }) {
     final requestId = DateTime.now().microsecondsSinceEpoch;
 
-    return executeApi(
-      'TRENDING',
-      () async {
-        final response = await http.post(
-          _endpoint,
-          body: {
-            'query': AnilistTrackerQueries.trending(adultMode),
-            'variables': {'page': page, 'type': type.name},
-          },
-          cacheDuration: cacheDuration ?? const Duration(days: 1),
-        );
+    return executeApi('TRENDING', () async {
+      final response = await http.post(
+        _endpoint,
+        body: {
+          'query': AnilistTrackerQueries.trending(adultMode),
+          'variables': {'page': page, 'type': type.name},
+        },
+        cacheDuration: cacheDuration ?? const Duration(days: 1),
+      );
 
-        final data = _validateAndParseResponse(response.json, 'getTrending');
-        final pageData = data['Page'] as Map?;
+      final data = _validateAndParseResponse(response.json, 'getTrending');
+      final pageData = data['Page'] as Map?;
 
-        if (pageData == null) {
-          log('Page data is null', name: 'AnilistTracker.getTrending');
-          return PaginatedResult(items: [], hasNextPage: false);
-        }
-
-        final hasNextPage = pageData['pageInfo']?['hasNextPage'] ?? false;
-        final rawList = pageData['media'] as List? ?? [];
-
-        final items = rawList
-            .whereType<Map>()
-            .map((json) => _mapToUnified(json, type, requestId))
-            .toList();
-
-        return PaginatedResult(items: items, hasNextPage: hasNextPage);
-      },
-      fallback: (error, stackTrace) {
-        log(
-          'Fallback triggered',
-          name: 'AnilistTracker.getTrending',
-          error: error,
-          stackTrace: stackTrace,
-        );
+      if (pageData == null) {
+        AppLogger.w('AnilistTracker.getTrending', 'Page data is null');
         return PaginatedResult(items: [], hasNextPage: false);
-      },
-    );
+      }
+
+      final hasNextPage = pageData['pageInfo']?['hasNextPage'] ?? false;
+      final rawList = pageData['media'] as List? ?? [];
+
+      final items = rawList
+          .whereType<Map>()
+          .map((json) => _mapToUnified(json, type, requestId))
+          .toList();
+
+      return PaginatedResult(items: items, hasNextPage: hasNextPage);
+    });
   }
 
   @override
@@ -244,69 +228,57 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
         break;
     }
 
-    return executeApi(
-      'SEARCH_METADATA',
-      () async {
-        final variables = <String, dynamic>{
-          'search': query.isEmpty ? null : query,
-          'page': page,
-          'type': type.name,
-          'sort': sortList,
-        };
+    return executeApi('SEARCH_METADATA', () async {
+      final variables = <String, dynamic>{
+        'search': query.isEmpty ? null : query,
+        'page': page,
+        'type': type.name,
+        'sort': sortList,
+      };
 
-        if (genres != null && genres.isNotEmpty) {
-          variables['genre_in'] = genres;
-        }
+      if (genres != null && genres.isNotEmpty) {
+        variables['genre_in'] = genres;
+      }
 
-        if (tags != null && tags.isNotEmpty) {
-          variables['tag_in'] = tags;
-        }
+      if (tags != null && tags.isNotEmpty) {
+        variables['tag_in'] = tags;
+      }
 
-        if (statusIn != null && statusIn.isNotEmpty) {
-          variables['status_in'] = statusIn;
-        }
+      if (statusIn != null && statusIn.isNotEmpty) {
+        variables['status_in'] = statusIn;
+      }
 
-        if (formatIn != null && formatIn.isNotEmpty) {
-          variables['format_in'] = formatIn;
-        }
+      if (formatIn != null && formatIn.isNotEmpty) {
+        variables['format_in'] = formatIn;
+      }
 
-        final response = await http.post(
-          _endpoint,
-          body: {
-            'query': AnilistTrackerQueries.metadataSearch(adultMode),
-            'variables': variables,
-          },
-          cacheDuration: cacheDuration ?? const Duration(hours: 12),
-        );
+      final response = await http.post(
+        _endpoint,
+        body: {
+          'query': AnilistTrackerQueries.metadataSearch(adultMode),
+          'variables': variables,
+        },
+        cacheDuration: cacheDuration ?? const Duration(hours: 12),
+      );
 
-        final data = _validateAndParseResponse(response.json, 'search');
-        final pageData = data['Page'] as Map?;
+      final data = _validateAndParseResponse(response.json, 'search');
+      final pageData = data['Page'] as Map?;
 
-        if (pageData == null) {
-          log('Page data is null', name: 'AnilistTracker.search');
-          return PaginatedResult(items: [], hasNextPage: false);
-        }
-
-        final hasNextPage = pageData['pageInfo']?['hasNextPage'] ?? false;
-        final rawList = pageData['media'] as List? ?? [];
-
-        final items = rawList
-            .whereType<Map>()
-            .map((json) => _mapToUnified(json, type, requestId))
-            .toList();
-
-        return PaginatedResult(items: items, hasNextPage: hasNextPage);
-      },
-      fallback: (error, stackTrace) {
-        log(
-          'Fallback triggered',
-          name: 'AnilistTracker.search',
-          error: error,
-          stackTrace: stackTrace,
-        );
+      if (pageData == null) {
+        AppLogger.w('AnilistTracker.search', 'Page data is null');
         return PaginatedResult(items: [], hasNextPage: false);
-      },
-    );
+      }
+
+      final hasNextPage = pageData['pageInfo']?['hasNextPage'] ?? false;
+      final rawList = pageData['media'] as List? ?? [];
+
+      final items = rawList
+          .whereType<Map>()
+          .map((json) => _mapToUnified(json, type, requestId))
+          .toList();
+
+      return PaginatedResult(items: items, hasNextPage: hasNextPage);
+    });
   }
 
   @override
@@ -316,9 +288,9 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
     return executeApi('DETAILS', () async {
       final id = int.tryParse(providerId);
       if (id == null) {
-        log(
+        AppLogger.e(
+          'AnilistTracker.getDetails',
           'Invalid providerId: $providerId',
-          name: 'AnilistTracker.getDetails',
         );
         throw AnilistException('Invalid providerId: $providerId');
       }
@@ -336,9 +308,9 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
       final json = data['Media'] as Map?;
 
       if (json == null) {
-        log(
+        AppLogger.e(
+          'AnilistTracker.getDetails',
           'Media not found for id: $providerId',
-          name: 'AnilistTracker.getDetails',
         );
         throw AnilistException('Media not found for id: $providerId');
       }
@@ -594,11 +566,11 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
         tags: tags,
       );
     } catch (e, stackTrace) {
-      log(
+      AppLogger.e(
+        'AnilistTracker._mapToUnified',
         'Error mapping UnifiedMedia',
-        name: 'AnilistTracker._mapToUnified',
-        error: e,
-        stackTrace: stackTrace,
+        e,
+        stackTrace,
       );
       rethrow;
     }
@@ -660,13 +632,13 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
         return PaginatedResult(items: items, hasNextPage: hasNextPage);
       },
       fallback: (error, stackTrace) {
-        log(
+        AppLogger.e(
+          'AnilistTracker.getCharacters',
           'Error fetching characters',
-          name: 'AnilistTracker.getCharacters',
-          error: error,
-          stackTrace: stackTrace,
+          error,
+          stackTrace,
         );
-        return PaginatedResult(items: [], hasNextPage: false);
+        throw error;
       },
     );
   }
@@ -705,11 +677,11 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
         );
       },
       fallback: (error, stackTrace) {
-        log(
+        AppLogger.e(
+          'AnilistTracker.getCharacterDetails',
           'Error fetching character details',
-          name: 'AnilistTracker.getCharacterDetails',
-          error: error,
-          stackTrace: stackTrace,
+          error,
+          stackTrace,
         );
         return null;
       },

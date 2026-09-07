@@ -79,7 +79,7 @@ final episodesListProvider =
         log.e('Failed to fetch episodes for "$title"', [e, st]);
         rethrow;
       }
-    });
+    }, retry: (retryCount, error) => null);
 
 final sourceEpisodesProvider =
     FutureProvider.family<EpisodesListState, SourceEpisodeArgs>((
@@ -129,4 +129,4 @@ final sourceEpisodesProvider =
         log.e('Failed to fetch episodes for source ${args.sourceId}', [e, st]);
         rethrow;
       }
-    });
+    }, retry: (retryCount, error) => null);

@@ -40,6 +40,7 @@ CLI_MODE=false
 ACTION=""
 DRY_RUN=false
 UNINSTALL_MODE="purge"
+SKIP_DEPS=false
 
 # load previous settings if they exist
 if [ -f "$CACHE_FILE" ]; then
@@ -54,9 +55,12 @@ warn() { echo -e "\033[33m[!]\033[0m $1"; }
 
 save_cache() {
     mkdir -p "$CACHE_DIR" 2>/dev/null || true
-    echo "REPO=\"$REPO\"" > "$CACHE_FILE"
-    echo "ICON_INPUT=\"$ICON_INPUT\"" >> "$CACHE_FILE"
-    echo "INSTALL_DIR=\"$INSTALL_DIR\"" >> "$CACHE_FILE"
+    {
+        echo "REPO=\"$REPO\""
+        echo "ICON_INPUT=\"$ICON_INPUT\""
+        echo "INSTALL_DIR=\"$INSTALL_DIR\""
+    } > "$CACHE_FILE" 2>/dev/null || true
+    return 0
 }
 
 declare -A PROCESSED_PATHS=()
@@ -140,6 +144,10 @@ fetch_and_select_tag() {
 }
 
 check_dependencies() {
+    if [ "$SKIP_DEPS" = true ]; then
+        return 0
+    fi
+
     log "checking system dependencies..."
     
     local missing=0
@@ -160,6 +168,14 @@ check_dependencies() {
     if [ "$missing" -eq 0 ]; then
         ok "all dependencies found."
         return 0
+    fi
+
+    # Non-interactive shell (in-app updater): skip sudo password prompt to avoid hanging/failing
+    if ! $IS_TERMUX && [ ! -t 0 ]; then
+        if [ -n "$SUDO" ] && ! sudo -n true 2>/dev/null; then
+            log "non-interactive environment: skipping sudo dependency checks."
+            return 0
+        fi
     fi
 
     warn "missing dependencies. attempting to auto-install..."
@@ -204,17 +220,24 @@ check_dependencies() {
 }
 
 setup_path() {
-    $IS_TERMUX && return
-    [[ ":$PATH:" == *":$BIN_DIR:"* ]] && return
+    $IS_TERMUX && return 0
+    [[ ":$PATH:" == *":$BIN_DIR:"* ]] && return 0
 
     log "adding $BIN_DIR to PATH in shell configs..."
-    [ -f "$HOME/.bashrc" ] && ! grep -q "$BIN_DIR" "$HOME/.bashrc" && echo -e "\nexport PATH=\"\$PATH:$BIN_DIR\"" >> "$HOME/.bashrc"
-    [ -f "$HOME/.zshrc" ] && ! grep -q "$BIN_DIR" "$HOME/.zshrc" && echo -e "\nexport PATH=\"\$PATH:$BIN_DIR\"" >> "$HOME/.zshrc"
+    if [ -f "$HOME/.bashrc" ] && ! grep -qF "$BIN_DIR" "$HOME/.bashrc"; then
+        echo -e "\nexport PATH=\"\$PATH:$BIN_DIR\"" >> "$HOME/.bashrc" || true
+    fi
+    if [ -f "$HOME/.zshrc" ] && ! grep -qF "$BIN_DIR" "$HOME/.zshrc"; then
+        echo -e "\nexport PATH=\"\$PATH:$BIN_DIR\"" >> "$HOME/.zshrc" || true
+    fi
     
     if [ -d "$HOME/.config/fish" ]; then
-        touch "$HOME/.config/fish/config.fish"
-        ! grep -q "$BIN_DIR" "$HOME/.config/fish/config.fish" && echo -e "\nfish_add_path $BIN_DIR" >> "$HOME/.config/fish/config.fish"
+        touch "$HOME/.config/fish/config.fish" 2>/dev/null || true
+        if ! grep -qF "$BIN_DIR" "$HOME/.config/fish/config.fish"; then
+            echo -e "\nfish_add_path $BIN_DIR" >> "$HOME/.config/fish/config.fish" || true
+        fi
     fi
+    return 0
 }
 
 core_install() {
@@ -248,7 +271,10 @@ core_install() {
     unzip -q -o "$tmp_zip" -d "$INSTALL_DIR"
     rm -f "$tmp_zip"
 
-    [ -d "$INSTALL_DIR/linux" ] && find "$INSTALL_DIR/linux" -maxdepth 1 -mindepth 1 -exec mv -t "$INSTALL_DIR" {} + && rmdir "$INSTALL_DIR/linux"
+    if [ -d "$INSTALL_DIR/linux" ]; then
+        find "$INSTALL_DIR/linux" -maxdepth 1 -mindepth 1 -exec mv -t "$INSTALL_DIR" {} + 2>/dev/null || true
+        rmdir "$INSTALL_DIR/linux" 2>/dev/null || true
+    fi
 
     local exe_path
     exe_path=$(find "$INSTALL_DIR" -type f -name "$EXE_NAME" | head -n 1)
@@ -535,6 +561,7 @@ while [[ $# -gt 0 ]]; do
     CLI_MODE=true
     case "$1" in
         --install)          ACTION="install" ;;
+        --skip-deps|--no-deps) SKIP_DEPS=true ;;
         --uninstall)        ACTION="uninstall" ;;
         --purge)            ACTION="uninstall"; UNINSTALL_MODE="purge" ;;
         --keep-downloads)   UNINSTALL_MODE="keep-downloads" ;;
@@ -555,6 +582,7 @@ while [[ $# -gt 0 ]]; do
             echo ""
             echo "Install Options:"
             echo "  --install           Run installation (default)"
+            echo "  --skip-deps         Skip dependency checking and installation"
             echo "  --repo <user/repo>  Specify custom GitHub repository"
             echo "  --tag <tag>         Specify release tag (default: latest)"
             echo "  --dir <path>        Specify custom installation directory"

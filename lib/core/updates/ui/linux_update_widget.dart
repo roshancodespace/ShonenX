@@ -1,18 +1,42 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:shonenx/core/updates/models/github_release.dart';
 import 'package:shonenx/core/utils/env.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 
 class LinuxUpdateWidget extends StatefulWidget {
-  const LinuxUpdateWidget({super.key});
+  final GitHubRelease? release;
+  final bool autoStart;
+  final VoidCallback? onDownloadStarted;
+  final bool isPreview;
 
-  static Future<void> show(BuildContext context) async {
+  const LinuxUpdateWidget({
+    super.key,
+    this.release,
+    this.autoStart = false,
+    this.onDownloadStarted,
+    this.isPreview = false,
+  });
+
+  static Future<void> show(
+    BuildContext context, {
+    GitHubRelease? release,
+    bool autoStart = false,
+    VoidCallback? onDownloadStarted,
+    bool isPreview = false,
+  }) async {
     await AppBottomSheet.show(
       context: context,
-      title: 'Linux Universal Installer',
+      title: isPreview ? 'Linux Update (Preview)' : 'Linux Update',
       useRootNavigator: true,
-      child: const LinuxUpdateWidget(),
+      child: LinuxUpdateWidget(
+        release: release,
+        autoStart: autoStart,
+        onDownloadStarted: onDownloadStarted,
+        isPreview: isPreview,
+      ),
     );
   }
 
@@ -21,258 +45,480 @@ class LinuxUpdateWidget extends StatefulWidget {
 }
 
 class _LinuxUpdateWidgetState extends State<LinuxUpdateWidget> {
-  bool _copied = false;
-  Timer? _timer;
+  bool _isUpdating = false;
+  bool _updateSuccess = false;
+  bool _hasError = false;
+  bool _isCancelled = false;
+  String _statusMessage = 'Ready to update';
+  double _downloadProgress = 0.0;
+  bool _showLogs = false;
 
-  void _copyToClipboard(String command) {
-    Clipboard.setData(ClipboardData(text: command));
-    _timer?.cancel();
+  final List<String> _logs = [];
+  final ScrollController _scrollController = ScrollController();
+  Process? _process;
+  Timer? _previewTimer;
+  StreamSubscription<String>? _stdoutSub;
+  StreamSubscription<String>? _stderrSub;
 
-    setState(() {
-      _copied = true;
-    });
-
-    _timer = Timer(const Duration(seconds: 2), () {
-      if (mounted) {
-        setState(() {
-          _copied = false;
-        });
-      }
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Installer command copied to clipboard!'),
-        duration: Duration(seconds: 2),
-      ),
-    );
+  @override
+  void initState() {
+    super.initState();
+    if (widget.autoStart) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _startUpdate();
+      });
+    }
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
+    _cancelUpdate();
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 50),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  void _addLog(String message) {
+    if (!mounted || _isCancelled) return;
+    setState(() {
+      _logs.add(message);
+    });
+    _scrollToBottom();
+  }
+
+  void _updateOrAddLog(String message) {
+    if (!mounted || _isCancelled) return;
+    setState(() {
+      if (_logs.isNotEmpty && _logs.last.contains('Downloading:')) {
+        _logs[_logs.length - 1] = message;
+      } else {
+        _logs.add(message);
+      }
+    });
+    _scrollToBottom();
+  }
+
+  void _processRawOutput(String rawData) {
+    if (!mounted || _isCancelled || !_isUpdating) return;
+
+    final lines = rawData.split(RegExp(r'[\r\n]+'));
+
+    for (final line in lines) {
+      if (!mounted || _isCancelled || !_isUpdating) return;
+
+      final clean = line
+          .replaceAll(RegExp(r'\x1B\[[0-?]*[ -/]*[@-~]'), '')
+          .trim();
+
+      if (clean.isEmpty) continue;
+
+      // Filter out pure curl progress hash lines
+      if (clean.replaceAll(RegExp(r'[#\s]'), '').isEmpty) {
+        continue;
+      }
+
+      // Extract curl percentage
+      final percentMatch = RegExp(r'(\d{1,3}(?:\.\d+)?)\s*%').firstMatch(clean);
+      if (percentMatch != null &&
+          (clean.contains('#') || clean.endsWith('%'))) {
+        final pct = double.tryParse(percentMatch.group(1) ?? '');
+        if (pct != null) {
+          final normalized = (pct / 100.0).clamp(0.0, 1.0);
+          setState(() {
+            _downloadProgress = normalized;
+            _statusMessage = 'Downloading: ${pct.toStringAsFixed(1)}%';
+          });
+          _updateOrAddLog('[*] Downloading: ${pct.toStringAsFixed(1)}%');
+        }
+        continue;
+      }
+
+      if (clean.contains('civis') || clean.contains('cnorm')) continue;
+
+      if (clean.contains('extracting to')) {
+        setState(() {
+          _statusMessage = 'Extracting update bundle...';
+        });
+      } else if (clean.contains('linked to')) {
+        setState(() {
+          _statusMessage = 'Updating executable symlink...';
+        });
+      }
+
+      _addLog(clean);
+    }
+  }
+
+  Future<void> _startUpdate() async {
+    if (_isUpdating) return;
+    widget.onDownloadStarted?.call();
+
+    setState(() {
+      _isUpdating = true;
+      _updateSuccess = false;
+      _hasError = false;
+      _isCancelled = false;
+      _downloadProgress = 0.0;
+      _statusMessage = 'Starting update...';
+      _logs.clear();
+      _showLogs = true;
+    });
+
+    final targetVersion = widget.release?.tagName ?? 'latest';
+
+    if (widget.isPreview) {
+      _addLog('[*] Updating to $targetVersion (simulated preview)...');
+      int step = 0;
+      _previewTimer = Timer.periodic(const Duration(milliseconds: 250), (
+        timer,
+      ) {
+        if (!mounted || _isCancelled) {
+          timer.cancel();
+          return;
+        }
+        step++;
+        setState(() {
+          if (step == 1) {
+            _downloadProgress = 0.25;
+            _statusMessage = 'Downloading update (25%)...';
+            _addLog('[*] Downloading: 25.0%');
+          } else if (step == 2) {
+            _downloadProgress = 0.65;
+            _statusMessage = 'Downloading update (65%)...';
+            _updateOrAddLog('[*] Downloading: 65.0%');
+          } else if (step == 3) {
+            _downloadProgress = 1.0;
+            _statusMessage = 'Extracting update bundle...';
+            _updateOrAddLog('[*] Downloading: 100.0%');
+            _addLog('[*] Extracting update bundle...');
+          } else if (step == 4) {
+            _statusMessage = 'Updating executable symlink...';
+            _addLog('[*] Symlinking ShonenX executable...');
+          } else if (step >= 5) {
+            timer.cancel();
+            _isUpdating = false;
+            _updateSuccess = true;
+            _statusMessage = 'Update complete! Restart ShonenX to apply.';
+            _addLog('[+] Update finished successfully. Ready to restart.');
+          }
+        });
+      });
+      return;
+    }
+
+    final repo = Env.RELEASE_REPO.trim().isNotEmpty
+        ? Env.RELEASE_REPO.trim()
+        : 'roshancodespace/ShonenX';
+    final tagArg = widget.release != null
+        ? '--tag ${widget.release!.tagName}'
+        : '';
+
+    _addLog('[*] Updating to $targetVersion ($repo)...');
+
+    try {
+      final localScript = File('${Directory.current.path}/install.sh');
+      final scriptCmd = localScript.existsSync()
+          ? 'bash "${localScript.path}" --install --skip-deps $tagArg'
+          : 'curl -fsSL https://raw.githubusercontent.com/$repo/main/install.sh | bash -s -- --install --skip-deps $tagArg';
+
+      // Use setsid so the entire subshell and children belong to a single killable process group
+      Process process;
+      try {
+        process = await Process.start('setsid', [
+          'bash',
+          '-c',
+          scriptCmd,
+        ], mode: ProcessStartMode.normal);
+      } catch (_) {
+        process = await Process.start('bash', [
+          '-c',
+          scriptCmd,
+        ], mode: ProcessStartMode.normal);
+      }
+
+      if (_isCancelled) {
+        try {
+          process.kill(ProcessSignal.sigkill);
+        } catch (_) {}
+        return;
+      }
+
+      _process = process;
+
+      _stdoutSub = process.stdout
+          .transform(utf8.decoder)
+          .listen(_processRawOutput);
+      _stderrSub = process.stderr
+          .transform(utf8.decoder)
+          .listen(_processRawOutput);
+
+      final exitCode = await process.exitCode;
+      _process = null;
+
+      if (!mounted || _isCancelled) return;
+
+      if (exitCode == 0) {
+        setState(() {
+          _isUpdating = false;
+          _downloadProgress = 1.0;
+          _updateSuccess = true;
+          _statusMessage = 'Update complete! Restart ShonenX to apply.';
+        });
+        _addLog('[+] Installation complete. Ready to restart.');
+      } else {
+        setState(() {
+          _isUpdating = false;
+          _hasError = true;
+          _statusMessage = 'Update failed (code $exitCode).';
+        });
+        _addLog('[!] Installer exited with code $exitCode.');
+      }
+    } catch (e) {
+      if (!mounted || _isCancelled) return;
+      setState(() {
+        _isUpdating = false;
+        _hasError = true;
+        _statusMessage = 'Failed to run updater: $e';
+      });
+      _addLog('[!] Error: $e');
+    }
+  }
+
+  Future<void> _cancelUpdate() async {
+    _isCancelled = true;
+    _previewTimer?.cancel();
+
+    // 1. Immediately detach stream listeners
+    await _stdoutSub?.cancel();
+    await _stderrSub?.cancel();
+    _stdoutSub = null;
+    _stderrSub = null;
+
+    final proc = _process;
+    _process = null;
+
+    if (proc != null) {
+      final pid = proc.pid;
+      // 2. Kill the process group (covers bash, subshells, curl, tar)
+      try {
+        await Process.run('kill', ['-TERM', '-$pid']);
+        await Process.run('kill', ['-9', '-$pid']);
+      } catch (_) {}
+
+      // 3. Kill direct child processes
+      try {
+        await Process.run('pkill', ['-9', '-P', '$pid']);
+      } catch (_) {}
+
+      // 4. Force kill the root process
+      try {
+        proc.kill(ProcessSignal.sigkill);
+      } catch (_) {}
+
+      // 5. Clean up any orphaned shonenx installer process
+      try {
+        await Process.run('pkill', ['-9', '-f', 'install.sh.*--install']);
+      } catch (_) {}
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _isUpdating = false;
+      _hasError = false;
+      _downloadProgress = 0.0;
+      _statusMessage = 'Update cancelled.';
+    });
+    _addLog('[!] Update cancelled by user.');
+  }
+
+  Future<void> _restartApp() async {
+    if (widget.isPreview) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            '[Preview Mode] On Linux, this launches the updated ShonenX binary and exits the current process.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    final home = Platform.environment['HOME'] ?? '';
+    final binPath = '$home/.local/bin/shonenx';
+    final installBinPath = '$home/.local/share/ShonenX/shonenx';
+
+    String targetExe = Platform.resolvedExecutable;
+    if (File(binPath).existsSync()) {
+      targetExe = binPath;
+    } else if (File(installBinPath).existsSync()) {
+      targetExe = installBinPath;
+    }
+
+    try {
+      await Process.start(targetExe, [], mode: ProcessStartMode.detached);
+      exit(0);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Failed to auto-restart: $e. Reopen ShonenX manually.',
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-    final repo = Env.RELEASE_REPO.trim();
-    final command =
-        'bash -c "\$(curl -fsSL https://raw.githubusercontent.com/$repo/main/install.sh)"';
+    final cs = Theme.of(context).colorScheme;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          'Run our interactive TUI installer in your terminal to update ShonenX, configure desktop entries, or manage shell shortcuts:',
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: cs.onSurfaceVariant,
-            height: 1.4,
-          ),
-        ),
-        const SizedBox(height: 16),
-        // Terminal Window Mockup
-        Container(
-          decoration: BoxDecoration(
-            color: const Color(0xFF0F1419), // Dark Obsidian background
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.15),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-            border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.1)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Terminal Top Window bar
-              Container(
-                height: 36,
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                decoration: const BoxDecoration(
-                  color: Color(0xFF151B23), // Lighter slate for title bar
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-                ),
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    // Red, Yellow, Green Window Dots (Left)
-                    Positioned(
-                      left: 0,
-                      child: Row(
-                        children: [
-                          _buildDot(const Color(0xFFFF5F56)),
-                          const SizedBox(width: 6),
-                          _buildDot(const Color(0xFFFFBD2E)),
-                          const SizedBox(width: 6),
-                          _buildDot(const Color(0xFF27C93F)),
-                        ],
-                      ),
-                    ),
-                    // Terminal Title (Center)
-                    Text(
-                      'shonenx-installer',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: cs.onSurfaceVariant.withValues(alpha: 0.8),
-                        fontFamily: 'monospace',
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              // Terminal Content Area
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Green Terminal Prompt Indicator
-                    const Text(
-                      r'$ ',
-                      style: TextStyle(
-                        color: Color(0xFF50FA7B), // Dracula Green
-                        fontFamily: 'monospace',
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                      ),
-                    ),
-                    // Command text itself
-                    Expanded(
-                      child: SelectableText(
-                        command,
-                        style: const TextStyle(
-                          color: Color(0xFFF8F8F2),
-                          fontFamily: 'monospace',
-                          fontSize: 13,
-                          height: 1.4,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    // Micro-interacting copy button
-                    IconButton.filledTonal(
-                      onPressed: () => _copyToClipboard(command),
-                      style: IconButton.styleFrom(
-                        backgroundColor: _copied
-                            ? const Color(0xFF27C93F).withValues(alpha: 0.2)
-                            : cs.surfaceContainerHighest.withValues(alpha: 0.4),
-                        foregroundColor: _copied
-                            ? const Color(0xFF27C93F)
-                            : cs.onSurfaceVariant,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        minimumSize: const Size(36, 36),
-                        padding: EdgeInsets.zero,
-                      ),
-                      icon: Icon(
-                        _copied
-                            ? Icons.check_circle_outline_rounded
-                            : Icons.copy_rounded,
-                        size: 18,
-                      ),
-                      tooltip: 'Copy Command',
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
+        // Clean info row matching AndroidUpdateWidget
+        Row(
           children: [
-            _buildTag(context, 'Interactive Menu', Icons.menu_open_rounded),
-            _buildTag(
-              context,
-              'Auto Desktop Shortcuts',
-              Icons.shortcut_rounded,
+            Icon(Icons.terminal_rounded, size: 30, color: cs.primary),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'ShonenX ${widget.release?.tagName ?? 'Linux Update'}',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Linux 64-bit • Quick Update',
+                    style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+                  ),
+                ],
+              ),
             ),
-            _buildTag(context, 'Custom Forks & Icons', Icons.palette_rounded),
-            _buildTag(
-              context,
-              'shonenx-manager Shortcut',
-              Icons.terminal_rounded,
-            ),
+            if (_logs.isNotEmpty)
+              IconButton(
+                icon: Icon(
+                  _showLogs
+                      ? Icons.expand_less_rounded
+                      : Icons.terminal_rounded,
+                  size: 20,
+                  color: cs.onSurfaceVariant,
+                ),
+                tooltip: _showLogs ? 'Hide Logs' : 'Show Logs',
+                onPressed: () {
+                  setState(() {
+                    _showLogs = !_showLogs;
+                  });
+                },
+              ),
           ],
         ),
         const SizedBox(height: 16),
-        // Dependencies / note container
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: cs.surfaceContainerHighest.withValues(alpha: 0.25),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: cs.outline.withValues(alpha: 0.1)),
+
+        // Smooth progress bar
+        if (_isUpdating) ...[
+          LinearProgressIndicator(
+            value: _downloadProgress > 0 ? _downloadProgress : null,
+            borderRadius: BorderRadius.circular(4),
           ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(
-                Icons.info_outline_rounded,
-                size: 16,
-                color: cs.onSurfaceVariant,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Note: Ensure that "curl" and "bash" are installed on your Linux distribution before running the command.',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: cs.onSurfaceVariant,
-                    height: 1.35,
-                  ),
-                ),
-              ),
-            ],
+          const SizedBox(height: 8),
+        ],
+
+        // Status text
+        Text(
+          _statusMessage,
+          style: TextStyle(
+            fontSize: 12.5,
+            color: _hasError ? cs.error : cs.onSurfaceVariant,
           ),
+          textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 8),
-      ],
-    );
-  }
 
-  Widget _buildDot(Color color) {
-    return Container(
-      width: 10,
-      height: 10,
-      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-    );
-  }
+        // Inline log console (only visible when updating/requested, clean minimal surface)
+        if (_showLogs && _logs.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          Container(
+            height: 120,
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: const Color(0xFF0F1419),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: ListView.builder(
+              controller: _scrollController,
+              itemCount: _logs.length,
+              itemBuilder: (context, index) {
+                final line = _logs[index];
+                Color color = const Color(0xFFF8F8F2);
+                if (line.contains('[+]')) {
+                  color = const Color(0xFF50FA7B);
+                } else if (line.contains('[!]')) {
+                  color = const Color(0xFFFF5555);
+                } else if (line.contains('[*]')) {
+                  color = const Color(0xFF8BE9FD);
+                }
 
-  Widget _buildTag(BuildContext context, String text, IconData icon) {
-    final cs = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: cs.secondaryContainer.withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: cs.secondaryContainer.withValues(alpha: 0.8)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: cs.onSecondaryContainer),
-          const SizedBox(width: 6),
-          Text(
-            text,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: cs.onSecondaryContainer,
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 1),
+                  child: Text(
+                    line,
+                    style: TextStyle(
+                      color: color,
+                      fontFamily: 'monospace',
+                      fontSize: 11,
+                      height: 1.3,
+                    ),
+                  ),
+                );
+              },
             ),
           ),
         ],
-      ),
+
+        const SizedBox(height: 16),
+
+        // Primary action buttons
+        if (_updateSuccess) ...[
+          FilledButton.icon(
+            onPressed: _restartApp,
+            icon: const Icon(Icons.restart_alt_rounded),
+            label: const Text('Restart ShonenX'),
+          ),
+        ] else if (_hasError) ...[
+          FilledButton.icon(
+            onPressed: _startUpdate,
+            icon: const Icon(Icons.refresh_rounded),
+            label: const Text('Retry Update'),
+          ),
+        ] else if (!_isUpdating) ...[
+          FilledButton.icon(
+            onPressed: _startUpdate,
+            icon: const Icon(Icons.system_update_alt_rounded),
+            label: const Text('Update Now'),
+          ),
+        ] else ...[
+          OutlinedButton(onPressed: _cancelUpdate, child: const Text('Cancel')),
+        ],
+      ],
     );
   }
 }

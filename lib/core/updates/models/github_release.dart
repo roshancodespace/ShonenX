@@ -59,8 +59,13 @@ class GitHubRelease {
     } else if (Platform.isWindows) {
       for (final a in assets) {
         final name = a.name.toLowerCase();
-        if (name.endsWith('.exe') ||
-            (name.contains('win') && name.endsWith('.zip'))) {
+        if (name.endsWith('.exe')) {
+          return a;
+        }
+      }
+      for (final a in assets) {
+        final name = a.name.toLowerCase();
+        if (name.contains('win') && name.endsWith('.zip')) {
           return a;
         }
       }
@@ -128,8 +133,13 @@ class GitHubRelease {
     } else if (Platform.isWindows) {
       for (final a in assets) {
         final name = a.name.toLowerCase();
-        if (name.endsWith('.exe') ||
-            (name.contains('win') && name.endsWith('.zip'))) {
+        if (name.endsWith('.exe')) {
+          return a.downloadUrl;
+        }
+      }
+      for (final a in assets) {
+        final name = a.name.toLowerCase();
+        if (name.contains('win') && name.endsWith('.zip')) {
           return a.downloadUrl;
         }
       }

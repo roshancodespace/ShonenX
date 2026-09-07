@@ -1,6 +1,5 @@
 import 'package:shonenx/features/discovery/domain/models/search_filter_options.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_filter_options.dart';
-import 'dart:developer';
 import 'dart:io';
 
 import 'package:shonenx/core/network/http_client.dart';
@@ -92,59 +91,48 @@ mixin SimklMetadata on BaseTracker implements RemoteTracker {
   }) {
     final requestId = DateTime.now().microsecondsSinceEpoch;
 
-    return executeApi(
-      'TRENDING',
-      () async {
-        final endpoint = _getEndpoint(type);
-        final limit = 50;
+    return executeApi('TRENDING', () async {
+      final endpoint = _getEndpoint(type);
+      final limit = 50;
 
-        final url =
-            'https://data.simkl.in/discover/trending/$endpoint/today_100.json';
+      final url =
+          'https://data.simkl.in/discover/trending/$endpoint/today_100.json';
 
-        final response = await http.get(
-          url,
-          queryParameters: {
-            'client_id': clientId,
-            'app-name': 'ShonenX',
-            'app-version': '1.0',
-          },
-          headers: _headers,
-          cacheDuration: cacheDuration ?? const Duration(hours: 1),
+      final response = await http.get(
+        url,
+        queryParameters: {
+          'client_id': clientId,
+          'app-name': 'ShonenX',
+          'app-version': '1.0',
+        },
+        headers: _headers,
+        cacheDuration: cacheDuration ?? const Duration(hours: 1),
+      );
+
+      final dataList = response.json as List? ?? [];
+
+      final start = (page - 1) * limit;
+      List itemsList;
+      bool hasNextPage;
+
+      if (start >= dataList.length) {
+        itemsList = [];
+        hasNextPage = false;
+      } else {
+        final end = start + limit;
+        itemsList = dataList.sublist(
+          start,
+          end > dataList.length ? dataList.length : end,
         );
+        hasNextPage = end < dataList.length;
+      }
 
-        final dataList = response.json as List? ?? [];
+      final items = itemsList.whereType<Map>().map((item) {
+        return _mapToUnified(item, type, requestId);
+      }).toList();
 
-        final start = (page - 1) * limit;
-        List itemsList;
-        bool hasNextPage;
-
-        if (start >= dataList.length) {
-          itemsList = [];
-          hasNextPage = false;
-        } else {
-          final end = start + limit;
-          itemsList = dataList.sublist(
-            start,
-            end > dataList.length ? dataList.length : end,
-          );
-          hasNextPage = end < dataList.length;
-        }
-
-        final items = itemsList.whereType<Map>().map((item) {
-          return _mapToUnified(item, type, requestId);
-        }).toList();
-
-        return PaginatedResult(items: items, hasNextPage: hasNextPage);
-      },
-      fallback: (error, stackTrace) {
-        log(
-          'Fallback triggered',
-          name: 'SimklTracker.getTrending',
-          error: error,
-        );
-        return PaginatedResult(items: [], hasNextPage: false);
-      },
-    );
+      return PaginatedResult(items: items, hasNextPage: hasNextPage);
+    });
   }
 
   @override
@@ -162,37 +150,30 @@ mixin SimklMetadata on BaseTracker implements RemoteTracker {
   }) {
     final requestId = DateTime.now().microsecondsSinceEpoch;
 
-    return executeApi(
-      'SEARCH',
-      () async {
-        final endpoint = _getEndpoint(type);
+    return executeApi('SEARCH', () async {
+      final endpoint = _getEndpoint(type);
 
-        final response = await http.get(
-          '$_baseUrl/search/$endpoint',
-          queryParameters: {
-            'q': query,
-            'page': page.toString(),
-            'limit': '50',
-            if (clientId.isNotEmpty) 'client_id': clientId,
-          },
-          headers: _headers,
-          cacheDuration: cacheDuration,
-        );
+      final response = await http.get(
+        '$_baseUrl/search/$endpoint',
+        queryParameters: {
+          'q': query,
+          'page': page.toString(),
+          'limit': '50',
+          if (clientId.isNotEmpty) 'client_id': clientId,
+        },
+        headers: _headers,
+        cacheDuration: cacheDuration,
+      );
 
-        final dataList = response.json as List? ?? [];
-        final hasNextPage = dataList.length == 50;
+      final dataList = response.json as List? ?? [];
+      final hasNextPage = dataList.length == 50;
 
-        final items = dataList.whereType<Map>().map((item) {
-          return _mapToUnified(item, type, requestId);
-        }).toList();
+      final items = dataList.whereType<Map>().map((item) {
+        return _mapToUnified(item, type, requestId);
+      }).toList();
 
-        return PaginatedResult(items: items, hasNextPage: hasNextPage);
-      },
-      fallback: (error, stackTrace) {
-        log('Fallback triggered', name: 'SimklTracker.search', error: error);
-        return PaginatedResult(items: [], hasNextPage: false);
-      },
-    );
+      return PaginatedResult(items: items, hasNextPage: hasNextPage);
+    });
   }
 
   @override

@@ -14,58 +14,62 @@ class MetadataTagsState {
   List<String> get tags => options.tags;
 }
 
-final metadataTagsProvider = FutureProvider.autoDispose<MetadataTagsState>((
-  ref,
-) async {
-  final source = ref.watch(metadataSourceProvider);
-  final options = await source.fetchFilterOptions();
-  return MetadataTagsState(options: options);
-});
+final metadataTagsProvider = FutureProvider.autoDispose<MetadataTagsState>(
+  retry: (retryCount, error) => null,
+  (ref) async {
+    final source = ref.watch(metadataSourceProvider);
+    final options = await source.fetchFilterOptions();
+    return MetadataTagsState(options: options);
+  },
+);
 
 typedef DiscoveryFilterArgs = ({MediaType type, String? sourceId});
 
 final discoveryFiltersProvider = FutureProvider.autoDispose
-    .family<MetadataTagsState, DiscoveryFilterArgs>((ref, args) async {
-      final prefs = ref.watch(discoveryPrefsProvider);
+    .family<MetadataTagsState, DiscoveryFilterArgs>(
+      retry: (retryCount, error) => null,
+      (ref, args) async {
+        final prefs = ref.watch(discoveryPrefsProvider);
 
-      if (args.sourceId != null || prefs.mode == MetadataMode.source) {
-        final allSources = await ref.watch(
-          args.type.availableSourcesProvider.future,
-        );
+        if (args.sourceId != null || prefs.mode == MetadataMode.source) {
+          final allSources = await ref.watch(
+            args.type.availableSourcesProvider.future,
+          );
 
-        final targetSourceIds = args.sourceId != null
-            ? [args.sourceId!]
-            : prefs.activeSources;
+          final targetSourceIds = args.sourceId != null
+              ? [args.sourceId!]
+              : prefs.activeSources;
 
-        final activeSources = allSources
-            .where((s) => targetSourceIds.contains(s.id))
-            .toList();
+          final activeSources = allSources
+              .where((s) => targetSourceIds.contains(s.id))
+              .toList();
 
-        final Set<String> allGenres = {};
-        final Set<String> allTags = {};
+          final Set<String> allGenres = {};
+          final Set<String> allTags = {};
 
-        for (final info in activeSources) {
-          try {
-            final source = args.type.usesAnimeSources
-                ? ref.read(animeSourceProvider(info))
-                : ref.read(mangaSourceProvider(info));
+          for (final info in activeSources) {
+            try {
+              final source = args.type.usesAnimeSources
+                  ? ref.read(animeSourceProvider(info))
+                  : ref.read(mangaSourceProvider(info));
 
-            final genres = await source.getFilterGenres();
-            final tags = await source.getFilterTags();
-            allGenres.addAll(genres);
-            allTags.addAll(tags);
-          } catch (_) {}
+              final genres = await source.getFilterGenres();
+              final tags = await source.getFilterTags();
+              allGenres.addAll(genres);
+              allTags.addAll(tags);
+            } catch (_) {}
+          }
+
+          return MetadataTagsState(
+            options: TrackerFilterOptions(
+              genres: allGenres.toList()..sort(),
+              tags: allTags.toList()..sort(),
+            ),
+          );
+        } else {
+          final tracker = ref.watch(metadataSourceProvider);
+          final options = await tracker.fetchFilterOptions(args.type);
+          return MetadataTagsState(options: options);
         }
-
-        return MetadataTagsState(
-          options: TrackerFilterOptions(
-            genres: allGenres.toList()..sort(),
-            tags: allTags.toList()..sort(),
-          ),
-        );
-      } else {
-        final tracker = ref.watch(metadataSourceProvider);
-        final options = await tracker.fetchFilterOptions(args.type);
-        return MetadataTagsState(options: options);
-      }
-    });
+      },
+    );

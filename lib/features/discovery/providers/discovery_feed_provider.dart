@@ -6,41 +6,45 @@ import 'package:shonenx/source_engine/models/source_info.dart';
 import 'package:shonenx/source_engine/source_engine_provider.dart';
 
 /// Provides a random selection of genres for the discovery feed
-final discoveryFeedGenresProvider = FutureProvider.autoDispose<List<String>>((
-  ref,
-) async {
-  ref.keepAlive();
-  final tagsState = await ref.watch(metadataTagsProvider.future);
+final discoveryFeedGenresProvider = FutureProvider.autoDispose<List<String>>(
+  retry: (retryCount, error) => null,
+  (ref) async {
+    ref.keepAlive();
+    final tagsState = await ref.watch(metadataTagsProvider.future);
 
-  if (tagsState.genres.isEmpty) return [];
+    if (tagsState.genres.isEmpty) return [];
 
-  final shuffledGenres = List<String>.from(tagsState.genres)..shuffle();
-  return shuffledGenres.take(7).toList();
-});
+    final shuffledGenres = List<String>.from(tagsState.genres)..shuffle();
+    return shuffledGenres.take(7).toList();
+  },
+);
 
 /// Argument for genre feed
 typedef GenreFeedArg = ({MediaType type, String genre});
 
 /// Provides the media items for a specific genre row in the feed
 final genreFeedProvider = FutureProvider.autoDispose
-    .family<List<UnifiedMedia>, GenreFeedArg>((ref, arg) async {
-      ref.keepAlive();
-      final source = ref.watch(metadataSourceProvider);
-      final adultMode = ref.watch(
-        contentPrefsProvider.select((p) => p.adultContentMode),
-      );
+    .family<List<UnifiedMedia>, GenreFeedArg>(
+      retry: (retryCount, error) => null,
+      (ref, arg) async {
+        ref.keepAlive();
+        final source = ref.watch(metadataSourceProvider);
+        final adultMode = ref.watch(
+          contentPrefsProvider.select((p) => p.adultContentMode),
+        );
 
-      final result = await source.search(
-        '', // empty query
-        page: 1,
-        type: arg.type,
-        genres: [arg.genre],
-        adultMode: adultMode,
-        cacheDuration: const Duration(hours: 6),
-      );
+        final result = await source.search(
+          '', // empty query
+          page: 1,
+          type: arg.type,
+          genres: [arg.genre],
+          adultMode: adultMode,
+          cacheDuration: const Duration(hours: 6),
+        );
 
-      return result.items;
-    });
+        return result.items;
+      },
+    );
 
 /// Provides media items for a specific source row in the source discovery feed
 final sourceDiscoverFeedProvider = FutureProvider.autoDispose

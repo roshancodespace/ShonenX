@@ -9,6 +9,7 @@ import 'package:shonenx/features/settings/presentation/widgets/settings_ui_compo
 import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
 import 'package:shonenx/features/tracking/engine/remote_tracker.dart';
 import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
+import 'package:shonenx/shared/models/ui_style_enums.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/shared/widgets/selection_card_group.dart';
@@ -17,6 +18,17 @@ import 'package:shonenx/source_engine/source_registry.dart';
 
 class DiscoveryModeSheet extends ConsumerStatefulWidget {
   const DiscoveryModeSheet({super.key});
+
+  static Future<T?> show<T>(BuildContext context) {
+    return showModalBottomSheet<T>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      useRootNavigator: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const DiscoveryModeSheet(),
+    );
+  }
 
   @override
   ConsumerState<DiscoveryModeSheet> createState() => _DiscoveryModeSheetState();
@@ -87,15 +99,15 @@ class _DiscoveryModeSheetState extends ConsumerState<DiscoveryModeSheet> {
                     filled: true,
                     fillColor: cs.surfaceContainerHigh.withValues(alpha: 0.5),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
                       borderSide: BorderSide.none,
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
                       borderSide: BorderSide.none,
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
                       borderSide: BorderSide.none,
                     ),
                     contentPadding: const EdgeInsets.symmetric(
@@ -132,7 +144,7 @@ class _DiscoveryModeSheetState extends ConsumerState<DiscoveryModeSheet> {
                 foregroundColor: cs.onPrimary,
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
                 ),
                 elevation: 1,
               ),
@@ -242,7 +254,9 @@ class _SourceConfig extends ConsumerWidget {
               : 'Extension',
           leading: source.iconUrl != null
               ? ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(
+                    GlobalUI.uiRoundness * 0.5,
+                  ),
                   child: CachedNetworkImage(
                     imageUrl: source.iconUrl!,
                     width: 28,
@@ -256,7 +270,9 @@ class _SourceConfig extends ConsumerWidget {
                     color: isActive
                         ? cs.primaryContainer
                         : cs.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.circular(
+                      GlobalUI.uiRoundness * 0.5,
+                    ),
                   ),
                   child: Icon(
                     source.type == SourceType.inbuilt
@@ -288,12 +304,12 @@ class _SourceConfig extends ConsumerWidget {
             context.pop();
             context.pushSettingsExtensions();
           },
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
               color: cs.surfaceContainerLow.withValues(alpha: 0.6),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
               border: Border.all(
                 color: cs.outline.withValues(alpha: 0.15),
                 width: 1.0,
@@ -457,7 +473,7 @@ class _CollapsibleSourceGroupState extends State<_CollapsibleSourceGroup> {
               _isExpanded = !_isExpanded;
             });
           },
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(GlobalUI.uiRoundness * 0.7),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
             child: Row(
@@ -478,7 +494,9 @@ class _CollapsibleSourceGroupState extends State<_CollapsibleSourceGroup> {
                   ),
                   decoration: BoxDecoration(
                     color: cs.primaryContainer,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(
+                      GlobalUI.uiRoundness * 0.5,
+                    ),
                   ),
                   child: Text(
                     '${widget.activeCount}/${widget.totalCount}',
@@ -528,7 +546,7 @@ class _EmptySourcesState extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 24),
       decoration: BoxDecoration(
         color: cs.surfaceContainerHighest.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
         border: Border.all(
           color: cs.outlineVariant.withValues(alpha: 0.5),
           style: BorderStyle.solid,

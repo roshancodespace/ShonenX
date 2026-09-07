@@ -397,6 +397,7 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
 
         int staggerIndex = 2;
         final cs = Theme.of(context).colorScheme;
+        final radius = BorderRadius.circular(GlobalUI.uiRoundness);
 
         // Helper for building minimalist dropdown capsules
         Widget buildFilterCapsule<T>({
@@ -416,9 +417,7 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
               initialValue: current,
               onSelected: onSelected,
               tooltip: '',
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+              shape: RoundedRectangleBorder(borderRadius: radius),
               color: cs.surfaceContainerHigh,
               position: PopupMenuPosition.under,
               itemBuilder: (context) {
@@ -458,7 +457,7 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
                 ),
                 decoration: BoxDecoration(
                   color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: radius,
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -492,7 +491,7 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
             StaggeredFadeIn(
               index: staggerIndex++,
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(016, 5, 16, 5),
+                padding: const EdgeInsets.fromLTRB(16, 5, 16, 5),
                 child: Row(
                   children: [
                     Expanded(
@@ -993,7 +992,7 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
   }
 }
 
-class _ViewModeToggle extends StatelessWidget {
+class _ViewModeToggle extends ConsumerWidget {
   final EpisodeViewMode current;
   final ValueChanged<EpisodeViewMode> onChanged;
 
@@ -1008,8 +1007,9 @@ class _ViewModeToggle extends StatelessWidget {
   };
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final cs = Theme.of(context).colorScheme;
+    final radius = BorderRadius.circular(GlobalUI.uiRoundness);
 
     return Theme(
       data: Theme.of(context).copyWith(
@@ -1021,9 +1021,7 @@ class _ViewModeToggle extends StatelessWidget {
         initialValue: current,
         onSelected: onChanged,
         tooltip: 'Episode View Mode',
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: radius),
         color: cs.surfaceContainerHigh,
         position: PopupMenuPosition.under,
         itemBuilder: (context) {
@@ -1062,7 +1060,7 @@ class _ViewModeToggle extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
             color: cs.surfaceContainerHighest.withValues(alpha: 0.6),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: radius,
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,

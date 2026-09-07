@@ -590,25 +590,36 @@ class _StreamRowItem extends StatelessWidget {
           Expanded(
             child: Align(
               alignment: Alignment.centerLeft,
-              child: RawChip(
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                avatar: Icon(
-                  Icons.video_library_rounded,
-                  size: 14,
-                  color: cs.onSecondaryContainer,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
                 ),
-                label: MarqueeText(
-                  text: labelText,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: cs.onSecondaryContainer,
-                  ),
+                decoration: ShapeDecoration(
+                  color: cs.secondaryContainer,
+                  shape: const StadiumBorder(),
                 ),
-                backgroundColor: cs.secondaryContainer,
-                shape: const StadiumBorder(),
-                side: BorderSide.none,
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.video_library_rounded,
+                      size: 14,
+                      color: cs.onSecondaryContainer,
+                    ),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: MarqueeText(
+                        text: labelText,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: cs.onSecondaryContainer,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:shonenx/core/updates/models/github_release.dart';
 import 'package:shonenx/core/updates/ui/android_update_widget.dart';
 import 'package:shonenx/core/updates/ui/linux_update_widget.dart';
+import 'package:shonenx/core/updates/ui/windows_update_widget.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 
 class UpdateUI {
@@ -167,17 +168,49 @@ class UpdateUI {
                 icon: const Icon(Icons.open_in_browser_rounded, size: 18),
                 label: const Text('GitHub'),
               ),
-              if (Platform.isLinux)
+              if (Platform.isLinux) ...[
                 OutlinedButton.icon(
                   onPressed: () {
                     onDownload?.call();
                     context.pop();
-                    LinuxUpdateWidget.show(context);
+                    LinuxUpdateWidget.show(
+                      context,
+                      release: release,
+                      autoStart: false,
+                    );
                   },
                   icon: const Icon(Icons.terminal_rounded, size: 18),
-                  label: const Text('Terminal Install'),
+                  label: const Text('Terminal Command'),
                 ),
-              if (Platform.isAndroid)
+                FilledButton.icon(
+                  onPressed: () {
+                    onDownload?.call();
+                    context.pop();
+                    LinuxUpdateWidget.show(
+                      context,
+                      release: release,
+                      autoStart: true,
+                      onDownloadStarted: onDownload,
+                    );
+                  },
+                  icon: const Icon(Icons.system_update_alt_rounded, size: 18),
+                  label: const Text('Quick Update'),
+                ),
+              ] else if (Platform.isWindows) ...[
+                FilledButton.icon(
+                  onPressed: () {
+                    onDownload?.call();
+                    context.pop();
+                    WindowsUpdateWidget.show(
+                      context,
+                      release: release,
+                      onDownloadStarted: onDownload,
+                    );
+                  },
+                  icon: const Icon(Icons.download_rounded, size: 18),
+                  label: const Text('Update Now'),
+                ),
+              ] else if (Platform.isAndroid) ...[
                 FilledButton.icon(
                   onPressed: () {
                     onDownload?.call();
@@ -190,9 +223,9 @@ class UpdateUI {
                   },
                   icon: const Icon(Icons.install_mobile_rounded, size: 18),
                   label: const Text('In-App Install'),
-                )
-              else if (release.downloadUrl != null ||
-                  release.htmlUrl.isNotEmpty)
+                ),
+              ] else if (release.downloadUrl != null ||
+                  release.htmlUrl.isNotEmpty) ...[
                 FilledButton.icon(
                   onPressed: () async {
                     onDownload?.call();
@@ -210,6 +243,7 @@ class UpdateUI {
                   icon: const Icon(Icons.download_rounded, size: 18),
                   label: const Text('Download'),
                 ),
+              ],
             ],
           ),
         ],

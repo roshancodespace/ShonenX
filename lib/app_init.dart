@@ -18,6 +18,7 @@ import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/discovery/domain/media_preference.dart';
 import 'package:shonenx/features/discovery/domain/media_source_preference.dart';
 import 'package:shonenx/features/downloads/domain/models/download_task.dart';
+import 'package:shonenx/features/extensions/providers/extension_service_provider.dart';
 import 'package:shonenx/features/history/domain/models/watch_history_entry.dart';
 import 'package:shonenx/features/history/domain/models/read_history_entry.dart';
 import 'package:shonenx/features/library/domain/models/library_entry.dart';
@@ -203,6 +204,8 @@ class AppInit {
         await Future.delayed(const Duration(milliseconds: 50));
         retryCount++;
       }
+
+      ref.read(extensionAdapterProvider).syncAllRepos();
 
       // await extManager.onRuntimeBridgeInitialization();
 

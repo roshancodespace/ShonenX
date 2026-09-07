@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/shared/models/ui_style_enums.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'manage_repos_sheet.dart';
@@ -36,9 +37,11 @@ class _ExtensionBeginnerSheetState
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+    final roundness = GlobalUI.uiRoundness;
 
     return AppBottomSheet(
       title: 'Beginner Extension Guide',
+      titleIcon: Icons.help_outline_rounded,
       child: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
         child: Column(
@@ -50,7 +53,7 @@ class _ExtensionBeginnerSheetState
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               decoration: BoxDecoration(
                 color: cs.errorContainer.withValues(alpha: 0.6),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(roundness),
               ),
               child: Row(
                 children: [
@@ -85,7 +88,7 @@ class _ExtensionBeginnerSheetState
                   final isSelected = _selectedEngine == engine;
                   return InkWell(
                     onTap: () => setState(() => _selectedEngine = engine),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(roundness * 0.75),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
                       padding: const EdgeInsets.symmetric(
@@ -96,7 +99,7 @@ class _ExtensionBeginnerSheetState
                         color: isSelected
                             ? cs.primary
                             : cs.surfaceContainerHighest.withValues(alpha: 0.5),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(roundness * 0.75),
                         border: Border.all(
                           color: isSelected
                               ? cs.primary
@@ -156,7 +159,7 @@ class _ExtensionBeginnerSheetState
                         horizontal: 16,
                       ),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(roundness),
                       ),
                     ),
                     icon: const Icon(Icons.search_rounded, size: 20),
@@ -192,7 +195,7 @@ class _ExtensionBeginnerSheetState
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: cs.secondaryContainer.withValues(alpha: 0.4),
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(roundness),
                       border: Border.all(
                         color: cs.secondary.withValues(alpha: 0.2),
                       ),
@@ -235,7 +238,7 @@ class _ExtensionBeginnerSheetState
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: cs.surfaceContainerHighest.withValues(alpha: 0.4),
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(roundness),
                       border: Border.all(
                         color: cs.outlineVariant.withValues(alpha: 0.3),
                       ),
@@ -290,7 +293,9 @@ class _ExtensionBeginnerSheetState
                               horizontal: 14,
                             ),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(
+                                roundness * 0.75,
+                              ),
                             ),
                           ),
                           icon: const Icon(Icons.settings_rounded, size: 18),
@@ -314,7 +319,7 @@ class _ExtensionBeginnerSheetState
               style: TextButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(roundness),
                 ),
               ),
               child: Text(

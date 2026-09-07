@@ -25,6 +25,7 @@ import 'package:shonenx/source_engine/utils/media_type_extensions.dart';
 import 'package:shonenx/features/history/providers/watch_history_provider.dart';
 import 'package:shonenx/features/comments/presentation/widgets/comments_tab.dart';
 import 'package:shonenx/features/tracking/providers/tracking_prefs_provider.dart';
+import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
 
 class EpisodesTabWidget extends ConsumerWidget {
   final UnifiedMedia media;
@@ -392,7 +393,7 @@ class _EpisodesHeader extends ConsumerWidget {
   }
 }
 
-class _HeaderButton extends StatelessWidget {
+class _HeaderButton extends ConsumerWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
@@ -404,9 +405,11 @@ class _HeaderButton extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final cs = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+    final r = ref.watch(themePrefsProvider.select((s) => s.uiRoundness));
+    final radius = BorderRadius.circular(r);
 
     return AppFocusHover(
       onTap: onTap,
@@ -417,11 +420,11 @@ class _HeaderButton extends StatelessWidget {
           color: active
               ? cs.primary
               : cs.surfaceContainerHighest.withValues(alpha: 0.6),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: radius,
           clipBehavior: Clip.antiAlias,
           child: Container(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: radius,
               border: Border.all(
                 color: active ? Colors.white : Colors.transparent,
                 width: 1.5,
@@ -453,14 +456,15 @@ class _HeaderButton extends StatelessWidget {
   }
 }
 
-class _NoExtensionsPlaceholder extends StatelessWidget {
+class _NoExtensionsPlaceholder extends ConsumerWidget {
   final MediaType mediaType;
   const _NoExtensionsPlaceholder({required this.mediaType});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final r = ref.watch(themePrefsProvider.select((s) => s.uiRoundness));
 
     return Center(
       child: Padding(
@@ -510,7 +514,7 @@ class _NoExtensionsPlaceholder extends StatelessWidget {
                   vertical: 14,
                 ),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(999),
+                  borderRadius: BorderRadius.circular(r),
                 ),
               ),
             ),

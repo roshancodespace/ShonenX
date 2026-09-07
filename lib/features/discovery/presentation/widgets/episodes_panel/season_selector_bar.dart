@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/router/app_navigator.dart';
-import 'package:shonenx/shared/models/ui_style_enums.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
+import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/shared/widgets/app_focus_hover.dart';
 import 'package:shonenx/shared/widgets/marquee_text.dart';
 
@@ -152,7 +153,7 @@ class SeasonSelectorBar extends StatelessWidget {
   }
 }
 
-class _SeasonPill extends StatelessWidget {
+class _SeasonPill extends ConsumerWidget {
   final IconData icon;
   final String tag;
   final String title;
@@ -168,11 +169,11 @@ class _SeasonPill extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final textTheme = theme.textTheme;
-    final radius = BorderRadius.circular(GlobalUI.uiRoundness.clamp(8.0, 20.0));
+    final radius = BorderRadius.circular(GlobalUI.uiRoundness);
 
     if (isCurrent) {
       return Material(

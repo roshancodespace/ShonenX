@@ -2,27 +2,12 @@
 set -euo pipefail
 
 # always restore cursor and exit cleanly if user hits Ctrl+C
-trap 'tput cnorm 2>/dev/null || true; echo -e "\n\033[31m[!] Installation aborted.\033[0m"; exit 130' INT TERM
+trap 'tput cnorm 2>/dev/null || true; echo -e "\n\033[31m[!] Operation aborted.\033[0m"; exit 130' INT TERM
 
 # defaults
 DEFAULT_REPO="roshancodespace/ShonenX"
 EXE_NAME="shonenx"
 DEFAULT_ICON_URL="https://raw.githubusercontent.com/roshancodespace/shonenx/main/assets/images/app_icon.png"
-DEFAULT_INSTALL_DIR="$HOME/.local/share/ShonenX"
-CACHE_DIR="$HOME/.config/ShonenX"
-CACHE_FILE="$CACHE_DIR/installer.cache"
-
-REPO="$DEFAULT_REPO"
-ICON_INPUT="$DEFAULT_ICON_URL"
-INSTALL_DIR="$DEFAULT_INSTALL_DIR"
-SELECTED_TAG="latest"
-CLI_MODE=false
-ACTION=""
-
-# load previous settings if they exist
-if [ -f "$CACHE_FILE" ]; then
-    source "$CACHE_FILE" 2>/dev/null || true
-fi
 
 # figure out paths depending on if we are on termux or normal linux
 IS_TERMUX=false
@@ -32,11 +17,33 @@ if [ -n "${TERMUX_VERSION:-}" ]; then
     BIN_DIR="$PREFIX/bin"
     DESKTOP_DIR=""
     ICON_DIR=""
+    DEFAULT_INSTALL_DIR="$HOME/.local/share/ShonenX"
+    CACHE_DIR="$HOME/.config/ShonenX"
+    DOCS_DIR="$HOME/storage/shared/Documents"
+    [ ! -d "$DOCS_DIR" ] && DOCS_DIR="$HOME/Documents"
 else
     command -v sudo >/dev/null 2>&1 || SUDO=""
     BIN_DIR="$HOME/.local/bin"
-    DESKTOP_DIR="$HOME/.local/share/applications"
-    ICON_DIR="$HOME/.local/share/icons/hicolor/512x512/apps"
+    DESKTOP_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/applications"
+    ICON_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/icons/hicolor/512x512/apps"
+    DEFAULT_INSTALL_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/ShonenX"
+    CACHE_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/ShonenX"
+    DOCS_DIR="$(command -v xdg-user-dir >/dev/null 2>&1 && xdg-user-dir DOCUMENTS 2>/dev/null || echo "$HOME/Documents")"
+fi
+
+CACHE_FILE="$CACHE_DIR/installer.cache"
+REPO="$DEFAULT_REPO"
+ICON_INPUT="$DEFAULT_ICON_URL"
+INSTALL_DIR="$DEFAULT_INSTALL_DIR"
+SELECTED_TAG="latest"
+CLI_MODE=false
+ACTION=""
+DRY_RUN=false
+UNINSTALL_MODE="purge"
+
+# load previous settings if they exist
+if [ -f "$CACHE_FILE" ]; then
+    source "$CACHE_FILE" 2>/dev/null || true
 fi
 
 # print helpers
@@ -50,6 +57,40 @@ save_cache() {
     echo "REPO=\"$REPO\"" > "$CACHE_FILE"
     echo "ICON_INPUT=\"$ICON_INPUT\"" >> "$CACHE_FILE"
     echo "INSTALL_DIR=\"$INSTALL_DIR\"" >> "$CACHE_FILE"
+}
+
+declare -A PROCESSED_PATHS=()
+
+remove_path() {
+    local target="$1"
+    local desc="${2:-}"
+    [ -z "$target" ] && return 0
+    [ -n "${PROCESSED_PATHS["$target"]:-}" ] && return 0
+    PROCESSED_PATHS["$target"]=1
+
+    if [ -e "$target" ] || [ -L "$target" ]; then
+        if [ "$DRY_RUN" = true ]; then
+            log "[dry-run] would remove: $target ${desc:+($desc)}"
+        else
+            rm -rf "$target"
+            ok "removed: $target ${desc:+($desc)}"
+        fi
+    fi
+}
+
+remove_glob() {
+    local pattern="$1"
+    local desc="${2:-}"
+    for item in $pattern; do
+        if [ -e "$item" ] || [ -L "$item" ]; then
+            if [ "$DRY_RUN" = true ]; then
+                log "[dry-run] would remove: $item ${desc:+($desc)}"
+            else
+                rm -rf "$item"
+                ok "removed: $item ${desc:+($desc)}"
+            fi
+        fi
+    done
 }
 
 # dynamically fetch and let user select a github release
@@ -201,7 +242,7 @@ core_install() {
     local tmp_zip="/tmp/shonenx.zip"
     
     curl -# -L "$download_url" -o "$tmp_zip"
-    
+
     log "extracting to $INSTALL_DIR..."
     rm -rf "$INSTALL_DIR" && mkdir -p "$INSTALL_DIR"
     unzip -q -o "$tmp_zip" -d "$INSTALL_DIR"
@@ -248,29 +289,129 @@ EOF
 
 core_uninstall() {
     $CLI_MODE || clear
-    log "removing ShonenX..."
-    rm -rf "$INSTALL_DIR" "/tmp/shonenx_install_latest.sh"
-    rm -f "$BIN_DIR/$EXE_NAME" "$BIN_DIR/shonenx-manager"
-
-    if [ -n "$DESKTOP_DIR" ]; then
-        rm -f "$DESKTOP_DIR/shonenx.desktop" "$ICON_DIR/shonenx.png"
-        command -v update-desktop-database >/dev/null 2>&1 && update-desktop-database "$DESKTOP_DIR" || true
+    
+    if [ "$DRY_RUN" = true ]; then
+        warn "=== DRY RUN MODE: No files will be deleted ==="
     fi
 
-    ok "uninstalled completely."
+    log "stopping any running ShonenX processes..."
+    if pgrep -f "(^|/)$EXE_NAME" >/dev/null 2>&1; then
+        if [ "$DRY_RUN" = true ]; then
+            log "[dry-run] would terminate running ShonenX processes"
+        else
+            pkill -f "(^|/)$EXE_NAME" 2>/dev/null || true
+            sleep 1
+            ok "terminated running ShonenX processes."
+        fi
+    fi
+
+    log "uninstall mode: $UNINSTALL_MODE"
+    log "removing ShonenX binaries and shortcuts..."
+
+    # 1. Binaries & installation folder
+    remove_path "$INSTALL_DIR" "installation directory"
+    remove_path "$BIN_DIR/$EXE_NAME" "binary symlink"
+    remove_path "$BIN_DIR/shonenx-manager" "manager symlink"
+    remove_path "$HOME/.local/bin/$EXE_NAME" "local binary symlink"
+    remove_path "$HOME/.local/bin/shonenx-manager" "local manager symlink"
+
+    # 2. Desktop entries & icons
+    if [ -n "$DESKTOP_DIR" ]; then
+        remove_path "$DESKTOP_DIR/shonenx.desktop" "desktop launcher"
+        remove_path "${XDG_DATA_HOME:-$HOME/.local/share}/applications/shonenx.desktop" "desktop launcher"
+        remove_path "$ICON_DIR/shonenx.png" "application icon"
+        remove_glob "${XDG_DATA_HOME:-$HOME/.local/share}/icons/hicolor/*/apps/shonenx.png" "icon theme"
+        remove_path "${XDG_DATA_HOME:-$HOME/.local/share}/pixmaps/shonenx.png" "pixmap icon"
+        if [ "$DRY_RUN" = false ]; then
+            command -v update-desktop-database >/dev/null 2>&1 && update-desktop-database "$DESKTOP_DIR" 2>/dev/null || true
+            command -v gtk-update-icon-cache >/dev/null 2>&1 && gtk-update-icon-cache -f -t "${XDG_DATA_HOME:-$HOME/.local/share}/icons/hicolor" 2>/dev/null || true
+        fi
+    fi
+
+    # 3. Temp files
+    remove_path "/tmp/shonenx.zip" "temporary download zip"
+    remove_path "/tmp/shonenx_install_latest.sh" "temporary installer script"
+    remove_glob "/tmp/shonenx*" "temporary runtime files"
+
+    # If keep-data was requested, exit early
+    if [ "$UNINSTALL_MODE" = "keep-data" ]; then
+        ok "uninstalled ShonenX binaries and shortcuts. user data preserved."
+        return 0
+    fi
+
+    log "cleaning user caches and configs..."
+    # 4. Installer cache & configs
+    remove_path "$CACHE_DIR" "installer cache & configs"
+    remove_path "${XDG_CONFIG_HOME:-$HOME/.config}/ShonenX" "config directory"
+    remove_path "${XDG_CONFIG_HOME:-$HOME/.config}/shonenx" "lowercase config directory"
+    remove_path "${XDG_CONFIG_HOME:-$HOME/.config}/com.roshancodespace.shonenx" "app config directory"
+
+    # 5. User cache directories (~/.cache)
+    remove_path "${XDG_CACHE_HOME:-$HOME/.cache}/com.roshancodespace.shonenx" "WebKit and app cache"
+    remove_path "${XDG_CACHE_HOME:-$HOME/.cache}/com.shonenx.anime" "legacy app cache"
+    remove_path "${XDG_CACHE_HOME:-$HOME/.cache}/com.example.shonenx" "legacy app cache"
+    remove_path "${XDG_CACHE_HOME:-$HOME/.cache}/ShonenX" "cache directory"
+    remove_path "${XDG_CACHE_HOME:-$HOME/.cache}/shonenx" "lowercase cache directory"
+    remove_path "${XDG_CACHE_HOME:-$HOME/.cache}/flutter_inappwebview/com.roshancodespace.shonenx" "webview cache"
+    remove_path "${XDG_CACHE_HOME:-$HOME/.cache}/flutter_inappwebview/com.shonenx.anime" "legacy webview cache"
+    remove_path "${XDG_CACHE_HOME:-$HOME/.cache}/flutter_inappwebview/com.example.shonenx" "legacy webview cache"
+    if [ "$DRY_RUN" = false ]; then
+        rmdir "${XDG_CACHE_HOME:-$HOME/.cache}/flutter_inappwebview" 2>/dev/null || true
+    fi
+
+    # 6. Local share data (~/.local/share)
+    remove_path "${XDG_DATA_HOME:-$HOME/.local/share}/com.roshancodespace.shonenx" "application data & storage"
+    remove_path "${XDG_DATA_HOME:-$HOME/.local/share}/com.shonenx.anime" "legacy application data"
+    remove_path "${XDG_DATA_HOME:-$HOME/.local/share}/com.example.shonenx" "legacy application data"
+    remove_path "${XDG_DATA_HOME:-$HOME/.local/share}/ShonenX" "share directory"
+    remove_path "${XDG_DATA_HOME:-$HOME/.local/share}/shonenx" "lowercase share directory"
+    remove_path "${XDG_DATA_HOME:-$HOME/.local/share}/flutter_inappwebview/com.roshancodespace.shonenx" "webview data"
+    remove_path "${XDG_DATA_HOME:-$HOME/.local/share}/flutter_inappwebview/com.shonenx.anime" "legacy webview data"
+    remove_path "${XDG_DATA_HOME:-$HOME/.local/share}/flutter_inappwebview/com.example.shonenx" "legacy webview data"
+    remove_path "${XDG_DATA_HOME:-$HOME/.local/share}/flutter_inappwebview/ShonenX" "webview data"
+    remove_path "${XDG_DATA_HOME:-$HOME/.local/share}/flutter_inappwebview/shonenx" "webview data"
+    if [ "$DRY_RUN" = false ]; then
+        rmdir "${XDG_DATA_HOME:-$HOME/.local/share}/flutter_inappwebview" 2>/dev/null || true
+    fi
+
+    # 7. User Documents Directory (Documents/ShonenX)
+    local target_docs="$DOCS_DIR/ShonenX"
+    if [ -d "$target_docs" ]; then
+        if [ "$UNINSTALL_MODE" = "keep-downloads" ]; then
+            log "cleaning $target_docs while preserving Downloads/..."
+            remove_path "$target_docs/databases" "Isar databases"
+            remove_path "$target_docs/Theme" "theme & wallpaper data"
+            remove_path "$target_docs/app_logs.txt" "application logs"
+            remove_path "$target_docs/dsl_providers" "DSL providers"
+            remove_path "$target_docs/Extensions" "downloaded extensions"
+            remove_path "$target_docs/Runtime" "runtime bridge data"
+            ok "preserved downloaded files in $target_docs/Downloads"
+        else
+            remove_path "$target_docs" "user documents (databases, theme, logs, extensions, downloads)"
+        fi
+    fi
+
+    if [ "$DRY_RUN" = true ]; then
+        ok "dry-run complete. no files were modified."
+    else
+        ok "ShonenX uninstalled completely! All residual data wiped."
+    fi
 }
 
 core_status() {
     $CLI_MODE || clear
     echo -e "\033[35m\033[1m--- System Status ---\033[0m\n"
-    if [ -f "$BIN_DIR/$EXE_NAME" ]; then
-        echo -e "App Status : \033[32mInstalled\033[0m"
-        echo -e "Binary     : $BIN_DIR/$EXE_NAME"
+    if [ -f "$BIN_DIR/$EXE_NAME" ] || [ -d "$INSTALL_DIR" ]; then
+        echo -e "App Status   : \033[32mInstalled\033[0m"
+        [ -f "$BIN_DIR/$EXE_NAME" ] && echo -e "Binary       : $BIN_DIR/$EXE_NAME"
     else
-        echo -e "App Status : \033[31mNot Installed\033[0m"
+        echo -e "App Status   : \033[31mNot Installed\033[0m"
     fi
-    echo -e "Target Repo: $REPO"
-    echo -e "Install Dir: $INSTALL_DIR\n"
+    echo -e "Target Repo  : $REPO"
+    echo -e "Install Dir  : $INSTALL_DIR"
+    echo -e "Config Dir   : $CACHE_DIR $([ -d "$CACHE_DIR" ] && echo -e "\033[32m(exists)\033[0m" || echo -e "\033[90m(none)\033[0m")"
+    echo -e "Docs Dir     : $DOCS_DIR/ShonenX $([ -d "$DOCS_DIR/ShonenX" ] && echo -e "\033[32m(exists)\033[0m" || echo -e "\033[90m(none)\033[0m")"
+    echo -e "Cache Dir    : ${XDG_CACHE_HOME:-$HOME/.cache}/com.roshancodespace.shonenx $([ -d "${XDG_CACHE_HOME:-$HOME/.cache}/com.roshancodespace.shonenx" ] && echo -e "\033[32m(exists)\033[0m" || echo -e "\033[90m(none)\033[0m")\n"
 }
 
 draw_menu() {
@@ -338,8 +479,46 @@ run_tui() {
                 3) core_status ;;
                 4) 
                    clear
-                   read -rp "Type YES to confirm uninstall: " confirm
-                   [ "$confirm" = "YES" ] && { core_uninstall; rm -rf "$CACHE_DIR"; } || warn "aborted."
+                   echo -e "\033[35m\033[1m--- Uninstall ShonenX ---\033[0m\n"
+                   echo "Choose uninstallation mode:"
+                   echo "  [1] Complete Purge (wipes app, databases, configs, caches, & all Documents/ShonenX)"
+                   echo "  [2] Clean Uninstall (wipes app, databases, configs, caches, but KEEPS Downloads)"
+                   echo "  [3] App Only (removes binary and shortcut only, keeps all user data)"
+                   echo "  [0] Cancel"
+                   echo ""
+                   read -rp "Select an option [0]: " u_mode
+                   case "$u_mode" in
+                       1)
+                           read -rp "Type YES to confirm COMPLETE PURGE: " confirm
+                           if [ "$confirm" = "YES" ]; then
+                               UNINSTALL_MODE="purge"
+                               core_uninstall
+                           else
+                               warn "uninstall aborted."
+                           fi
+                           ;;
+                       2)
+                           read -rp "Type YES to confirm uninstall (keeping downloads): " confirm
+                           if [ "$confirm" = "YES" ]; then
+                               UNINSTALL_MODE="keep-downloads"
+                               core_uninstall
+                           else
+                               warn "uninstall aborted."
+                           fi
+                           ;;
+                       3)
+                           read -rp "Type YES to confirm removing application only: " confirm
+                           if [ "$confirm" = "YES" ]; then
+                               UNINSTALL_MODE="keep-data"
+                               core_uninstall
+                           else
+                               warn "uninstall aborted."
+                           fi
+                           ;;
+                       *)
+                           log "uninstall cancelled."
+                           ;;
+                   esac
                    ;;
                 5) clear; echo "Goodbye!"; exit 0 ;;
             esac
@@ -355,13 +534,17 @@ run_tui() {
 while [[ $# -gt 0 ]]; do
     CLI_MODE=true
     case "$1" in
-        --install)   ACTION="install" ;;
-        --uninstall) ACTION="uninstall" ;;
-        --status)    ACTION="status" ;;
-        --repo)      REPO="$2"; shift ;;
-        --tag)       SELECTED_TAG="$2"; shift ;;
-        --dir)       INSTALL_DIR="$2"; shift ;;
-        --icon)      ICON_INPUT="$2"; shift ;;
+        --install)          ACTION="install" ;;
+        --uninstall)        ACTION="uninstall" ;;
+        --purge)            ACTION="uninstall"; UNINSTALL_MODE="purge" ;;
+        --keep-downloads)   UNINSTALL_MODE="keep-downloads" ;;
+        --keep-data)        UNINSTALL_MODE="keep-data" ;;
+        --dry-run)          DRY_RUN=true ;;
+        --status)           ACTION="status" ;;
+        --repo)             REPO="$2"; shift ;;
+        --tag)              SELECTED_TAG="$2"; shift ;;
+        --dir)              INSTALL_DIR="$2"; shift ;;
+        --icon)             ICON_INPUT="$2"; shift ;;
         --clear-cache) 
             rm -rf "$CACHE_DIR"
             ok "installer cache cleared."
@@ -370,15 +553,23 @@ while [[ $# -gt 0 ]]; do
         -h|--help)
             echo "Usage: $0 [options]"
             echo ""
-            echo "Options:"
-            echo "  --install           Run installation"
-            echo "  --uninstall         Remove application"
-            echo "  --status            Check current status"
+            echo "Install Options:"
+            echo "  --install           Run installation (default)"
             echo "  --repo <user/repo>  Specify custom GitHub repository"
             echo "  --tag <tag>         Specify release tag (default: latest)"
             echo "  --dir <path>        Specify custom installation directory"
             echo "  --icon <path|url>   Specify custom icon for desktop entry"
+            echo ""
+            echo "Uninstall & Cleanup Options:"
+            echo "  --uninstall         Remove application, residual data, caches, and Documents/ShonenX"
+            echo "  --purge             Full wipe of everything including downloads (default for uninstall)"
+            echo "  --keep-downloads    Wipe application, databases, and caches, but keep downloaded media"
+            echo "  --keep-data         Remove application binary and desktop entry only (preserve user data)"
+            echo "  --dry-run           Preview files and directories that would be removed without deleting"
             echo "  --clear-cache       Reset saved custom repo/dir configurations"
+            echo ""
+            echo "General:"
+            echo "  --status            Check current installation and data directories status"
             echo "  -h, --help          Show this help message"
             exit 0
             ;;

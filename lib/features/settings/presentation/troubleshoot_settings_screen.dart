@@ -12,6 +12,7 @@ import 'package:shonenx/features/discovery/domain/media_preference.dart';
 import 'package:shonenx/features/downloads/domain/models/download_task.dart';
 import 'package:shonenx/features/downloads/providers/download_prefs_provider.dart';
 import 'package:shonenx/features/downloads/providers/download_provider.dart';
+import 'package:shonenx/features/extensions/providers/extension_service_provider.dart';
 import 'package:shonenx/features/history/domain/models/read_history_entry.dart';
 import 'package:shonenx/features/history/domain/models/watch_history_entry.dart';
 import 'package:shonenx/features/library/domain/models/library_entry.dart';
@@ -22,7 +23,9 @@ import 'package:shonenx/features/tracking/providers/tracker_profile_provider.dar
 import 'package:shonenx/shared/providers/database_provider.dart';
 import 'package:shonenx/shared/providers/storage_provider.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
+import 'package:shonenx/shared/widgets/app_dialog.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
+import 'package:shonenx/source_engine/utils/source_invalidation.dart';
 
 class _CleanupItem {
   final String id;
@@ -326,6 +329,139 @@ class _TroubleshootSettingsScreenState
         );
       },
     );
+  }
+
+  Future<void> _clearAllExtensionRepos() async {
+    final confirmed = await AppDialog.show<bool>(
+      context: context,
+      title: 'Clear All Repositories?',
+      icon: Icon(
+        Icons.folder_delete_rounded,
+        color: Theme.of(context).colorScheme.error,
+      ),
+      child: Text(
+        'This will remove all added extension repository URLs across Aniyomi, Mangayomi, CloudStream, Kotatsu, and Sora.\n\nInstalled extensions will remain until uninstalled.',
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          style: FilledButton.styleFrom(
+            backgroundColor: Theme.of(context).colorScheme.error,
+            foregroundColor: Theme.of(context).colorScheme.onError,
+          ),
+          onPressed: () => Navigator.of(context).pop(true),
+          child: const Text('Clear All'),
+        ),
+      ],
+    );
+
+    if (confirmed == true) {
+      final adapter = ref.read(extensionAdapterProvider);
+      await adapter.clearAllRepos();
+      ref.invalidate(activeExtReposProvider);
+      ref.invalidateAllSources();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            behavior: SnackBarBehavior.floating,
+            content: Text('All extension repositories cleared.'),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _uninstallAllExtensions() async {
+    final confirmed = await AppDialog.show<bool>(
+      context: context,
+      title: 'Uninstall All Extensions?',
+      icon: Icon(
+        Icons.extension_off_rounded,
+        color: Theme.of(context).colorScheme.error,
+      ),
+      child: Text(
+        'This will remove all installed extension plugins across all engines.\n\nFixes crashes or broken sources caused by outdated/corrupted extension installs.',
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          style: FilledButton.styleFrom(
+            backgroundColor: Theme.of(context).colorScheme.error,
+            foregroundColor: Theme.of(context).colorScheme.onError,
+          ),
+          onPressed: () => Navigator.of(context).pop(true),
+          child: const Text('Uninstall All'),
+        ),
+      ],
+    );
+
+    if (confirmed == true) {
+      final adapter = ref.read(extensionAdapterProvider);
+      await adapter.uninstallAllExtensions();
+      ref.invalidateAllSources();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            behavior: SnackBarBehavior.floating,
+            content: Text('All installed extensions uninstalled.'),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _resetExtensionCacheAndPreferences() async {
+    final confirmed = await AppDialog.show<bool>(
+      context: context,
+      title: 'Reset Extension Cache & Preferences?',
+      icon: Icon(
+        Icons.restart_alt_rounded,
+        color: Theme.of(context).colorScheme.primary,
+      ),
+      child: Text(
+        'This will reset extension-specific settings, source preferences, and cached metadata, then reload active extension managers.',
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(context).pop(true),
+          child: const Text('Reset'),
+        ),
+      ],
+    );
+
+    if (confirmed == true) {
+      final adapter = ref.read(extensionAdapterProvider);
+      await adapter.resetExtensionPreferencesAndCache();
+      ref.invalidate(activeExtReposProvider);
+      ref.invalidateAllSources();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            behavior: SnackBarBehavior.floating,
+            content: Text('Extension cache and preferences reset.'),
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _clearMediaMappings() async {
@@ -1058,6 +1194,37 @@ class _TroubleshootSettingsScreenState
                           color: cs.onSurfaceVariant,
                         ),
                       ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+
+                // Extensions & Repositories
+                SettingsSection(
+                  title: 'Extensions & Repositories',
+                  children: [
+                    SettingsActionTile(
+                      icon: Icons.folder_delete_rounded,
+                      isDestructive: true,
+                      title: 'Clear All Extension Repositories',
+                      subtitle:
+                          'Wipe all repository URLs across Aniyomi, Mangayomi, CloudStream, Kotatsu, and Sora',
+                      onTap: _clearAllExtensionRepos,
+                    ),
+                    SettingsActionTile(
+                      icon: Icons.extension_off_rounded,
+                      isDestructive: true,
+                      title: 'Uninstall All Extensions',
+                      subtitle:
+                          'Uninstall all extension plugins across all engines to fix corrupted builds',
+                      onTap: _uninstallAllExtensions,
+                    ),
+                    SettingsActionTile(
+                      icon: Icons.restart_alt_rounded,
+                      title: 'Reset Extension Cache & Preferences',
+                      subtitle:
+                          'Clear custom source preferences, cached metadata, and refresh engines',
+                      onTap: _resetExtensionCacheAndPreferences,
                     ),
                   ],
                 ),

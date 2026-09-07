@@ -2,6 +2,7 @@ import 'package:anymex_extension_runtime_bridge/anymex_extension_runtime_bridge.
     as bridge;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'extension_beginner_sheet.dart';
 import 'runtime_setup_sheet.dart';
@@ -22,6 +23,7 @@ class ExtensionGuideSheet extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final cs = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+    final roundness = GlobalUI.uiRoundness;
     final isRuntimeReady = bridge.AnymeXRuntimeBridge.controller.isReady.value;
 
     return AppBottomSheet(
@@ -32,7 +34,14 @@ class ExtensionGuideSheet extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _buildRuntimeBanner(context, ref, cs, textTheme, isRuntimeReady),
+            _buildRuntimeBanner(
+              context,
+              ref,
+              cs,
+              textTheme,
+              isRuntimeReady,
+              roundness,
+            ),
             const SizedBox(height: 20),
             Text(
               'QUICK STEPS',
@@ -50,6 +59,7 @@ class ExtensionGuideSheet extends ConsumerWidget {
               description:
                   'Add repository URLs to discover and install external extensions from supported runtime engines (Mangayomi, Aniyomi, CloudStream, etc.).',
               icon: Icons.add_circle_outline_rounded,
+              roundness: roundness,
             ),
             _buildGuideStep(
               context: context,
@@ -58,6 +68,7 @@ class ExtensionGuideSheet extends ConsumerWidget {
               description:
                   'Tap the pin icon on any installed extension or inbuilt source to set it as your default streaming or reading provider.',
               icon: Icons.push_pin_outlined,
+              roundness: roundness,
             ),
             _buildGuideStep(
               context: context,
@@ -66,6 +77,7 @@ class ExtensionGuideSheet extends ConsumerWidget {
               description:
                   'Use the capsule pills right above the tabs to organize sources by specific language or extension engine.',
               icon: Icons.filter_list_rounded,
+              roundness: roundness,
             ),
             const SizedBox(height: 20),
             FilledButton.tonalIcon(
@@ -78,7 +90,7 @@ class ExtensionGuideSheet extends ConsumerWidget {
                 foregroundColor: cs.onErrorContainer,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(roundness),
                 ),
               ),
               icon: const Icon(Icons.help_outline_rounded),
@@ -93,7 +105,7 @@ class ExtensionGuideSheet extends ConsumerWidget {
               style: FilledButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(roundness),
                 ),
               ),
               child: const Text(
@@ -114,6 +126,7 @@ class ExtensionGuideSheet extends ConsumerWidget {
     ColorScheme cs,
     TextTheme textTheme,
     bool isRuntimeReady,
+    double roundness,
   ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -156,6 +169,11 @@ class ExtensionGuideSheet extends ConsumerWidget {
                 Navigator.pop(context);
                 showRuntimeSetupSheet(context, ref);
               },
+              style: TextButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(roundness * 0.5),
+                ),
+              ),
               child: Text(isRuntimeReady ? 'Manage' : 'Setup Now'),
             ),
           ],
@@ -172,6 +190,7 @@ class ExtensionGuideSheet extends ConsumerWidget {
     required String title,
     required String description,
     required IconData icon,
+    required double roundness,
   }) {
     final cs = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
@@ -186,7 +205,7 @@ class ExtensionGuideSheet extends ConsumerWidget {
             height: 32,
             decoration: BoxDecoration(
               color: cs.primaryContainer,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(roundness * 0.5),
             ),
             alignment: Alignment.center,
             child: Text(

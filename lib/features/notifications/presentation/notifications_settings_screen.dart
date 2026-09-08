@@ -10,18 +10,29 @@ class NotificationsSettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final subscriptions = ref.watch(notificationSubscriptionsProvider).values.toList();
+    final subscriptions = ref
+        .watch(notificationSubscriptionsProvider)
+        .values
+        .toList();
     final theme = Theme.of(context);
 
-    final upcoming = subscriptions.where((s) {
-      final scheduledTime = s.upcomingTime?.subtract(Duration(minutes: s.offsetMinutes));
-      return s.isEnabled && scheduledTime != null && scheduledTime.isAfter(DateTime.now());
-    }).toList()
-      ..sort((a, b) {
-        final timeA = a.upcomingTime!.subtract(Duration(minutes: a.offsetMinutes));
-        final timeB = b.upcomingTime!.subtract(Duration(minutes: b.offsetMinutes));
-        return timeA.compareTo(timeB);
-      });
+    final upcoming =
+        subscriptions.where((s) {
+          final scheduledTime = s.upcomingTime?.subtract(
+            Duration(minutes: s.offsetMinutes),
+          );
+          return s.isEnabled &&
+              scheduledTime != null &&
+              scheduledTime.isAfter(DateTime.now());
+        }).toList()..sort((a, b) {
+          final timeA = a.upcomingTime!.subtract(
+            Duration(minutes: a.offsetMinutes),
+          );
+          final timeB = b.upcomingTime!.subtract(
+            Duration(minutes: b.offsetMinutes),
+          );
+          return timeA.compareTo(timeB);
+        });
 
     return AppScaffold(
       title: 'Manage Anime Notifications',
@@ -35,7 +46,9 @@ class NotificationsSettingsScreen extends ConsumerWidget {
                     Icon(
                       Icons.notifications_off_outlined,
                       size: 64,
-                      color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                      color: theme.colorScheme.onSurfaceVariant.withValues(
+                        alpha: 0.5,
+                      ),
                     ),
                     const SizedBox(height: 16),
                     Text(
@@ -66,7 +79,9 @@ class NotificationsSettingsScreen extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  ...upcoming.map((sub) => _SubscriptionTile(subscription: sub)),
+                  ...upcoming.map(
+                    (sub) => _SubscriptionTile(subscription: sub),
+                  ),
                   const SizedBox(height: 24),
                 ],
                 Text(
@@ -77,7 +92,9 @@ class NotificationsSettingsScreen extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
-                ...subscriptions.map((sub) => _SubscriptionTile(subscription: sub)),
+                ...subscriptions.map(
+                  (sub) => _SubscriptionTile(subscription: sub),
+                ),
               ],
             ),
     );
@@ -93,7 +110,9 @@ class _SubscriptionTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final provider = ref.read(notificationSubscriptionsProvider.notifier);
-    final scheduledTime = subscription.upcomingTime?.subtract(Duration(minutes: subscription.offsetMinutes));
+    final scheduledTime = subscription.upcomingTime?.subtract(
+      Duration(minutes: subscription.offsetMinutes),
+    );
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -126,12 +145,16 @@ class _SubscriptionTile extends ConsumerWidget {
           children: [
             const SizedBox(height: 4),
             Text(
-              subscription.mode == SubscriptionMode.entireSeason ? 'Following Season' : 'Following Next Episode',
+              subscription.mode == SubscriptionMode.entireSeason
+                  ? 'Following Season'
+                  : 'Following Next Episode',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
-            if (subscription.isEnabled && scheduledTime != null && scheduledTime.isAfter(DateTime.now()))
+            if (subscription.isEnabled &&
+                scheduledTime != null &&
+                scheduledTime.isAfter(DateTime.now()))
               Text(
                 'Next reminder: ${formatDateWithTime(scheduledTime)}',
                 style: theme.textTheme.bodySmall?.copyWith(

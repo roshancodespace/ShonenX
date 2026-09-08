@@ -10,7 +10,7 @@ dependencies:
     sdk: flutter
   go_router: ^17.2.1
   flutter_riverpod: ^3.3.1
-  flex_color_scheme: ^8.3.1
+  flex_color_scheme: ^8.4.0
   logger: ^2.8.0
   path: ^1.9.1
   path_provider: ^2.1.5
@@ -19,7 +19,7 @@ dependencies:
   flutter_secure_storage: ^10.3.1
   flutter_web_auth_2:
     git:
-      url: https://github.com/roshancodespace/flutter_web_auth.git
+      url: https://github.com/aayush2622/flutter_web_auth.git
       path: flutter_web_auth_2
   anymex_extension_runtime_bridge:
     path: packages/anymex_extension_bridge
@@ -45,7 +45,6 @@ dependencies:
   google_fonts: ^8.0.2
   shared_preferences: ^2.5.5
   cached_network_image: ^3.4.1
-  rxdart: ^0.28.0
   volume_controller: ^3.4.4
   screen_brightness: ^2.1.7
   http: ^1.6.0
@@ -62,7 +61,7 @@ dependencies:
   url_launcher: ^6.3.0
   html: ^0.15.7
   flutter_svg: ^2.2.4
-  dynamic_color: ^1.9.0
+  dynamic_color: 1.9.0
   permission_handler: ^13.0.2
   file_picker: ^8.1.4
   encrypt: ^5.0.3
@@ -75,20 +74,18 @@ dependencies:
   share_plus: ^12.0.2
   collection: ^1.19.1
   app_links: ^6.4.1
-  flutter_launcher_icons: ^0.14.4
   video_player: ^2.10.1
   wakelock_plus: ^1.3.3
-  video_player_platform_interface: ^6.7.0
-  flutter_markdown: ^0.7.7+1
+  flutter_markdown_plus: ^1.0.12
   palette_generator: ^0.3.3+7
   skeletonizer: ^2.1.3
   flutter_discord_rpc: ^1.1.0
   rhttp: ^0.18.0
-  flutter_rust_bridge: ^2.13.0
   intl: ^0.20.3
   local_auth: ^3.0.1
   crypto: ^3.0.3
 
+  cupertino_ui: any
 dependency_overrides:
   flutter_inappwebview:
     git:
@@ -148,6 +145,7 @@ dev_dependencies:
   isar_community_generator: ^3.3.0
   package_rename: ^1.10.1
   inno_bundle: ^0.11.2
+  flutter_launcher_icons: ^0.14.4
 
 flutter:
   uses-material-design: true

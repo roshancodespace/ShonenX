@@ -27,10 +27,7 @@ class _StaggeredFadeInState extends State<StaggeredFadeIn>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: widget.duration,
-    );
+    _controller = AnimationController(vsync: this, duration: widget.duration);
 
     _fade = CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic);
 

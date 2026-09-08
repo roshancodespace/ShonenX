@@ -46,23 +46,17 @@ class ConfirmationBottomSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          message,
-          style: theme.textTheme.bodyMedium,
-        ),
+        Text(message, style: theme.textTheme.bodyMedium),
         const SizedBox(height: 24),
         Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            TextButton(
-              onPressed: () => context.pop(),
-              child: Text(cancelText),
-            ),
+            TextButton(onPressed: () => context.pop(), child: Text(cancelText)),
             const SizedBox(width: 8),
             FilledButton(
               onPressed: () {

@@ -286,11 +286,14 @@ class _TrackerProfileSheetState extends ConsumerState<TrackerProfileSheet> {
     final prefs = ref.watch(trackingPrefsProvider);
     final isPrimary = prefs.primaryTracker == widget.trackerType;
     final isRemote = widget.trackerType != TrackerType.local;
+    final profile = ref.watch(trackerProfileProvider)[widget.trackerType];
+    final isLoggingIn =
+        isRemote && ref.watch(authLoadingTrackerProvider) == widget.trackerType;
     final isLoggedIn =
         isRemote &&
         (ref.watch(authTokensProvider).value?.containsKey(widget.trackerType) ??
-            false);
-    final profile = ref.watch(trackerProfileProvider)[widget.trackerType];
+            false) &&
+        profile != null;
 
     final hasStats =
         profile != null &&
@@ -337,6 +340,7 @@ class _TrackerProfileSheetState extends ConsumerState<TrackerProfileSheet> {
                   isPrimary,
                   isRemote,
                   isLoggedIn,
+                  isLoggingIn,
                 ),
         ),
       ),
@@ -351,6 +355,7 @@ class _TrackerProfileSheetState extends ConsumerState<TrackerProfileSheet> {
     bool isPrimary,
     bool isRemote,
     bool isLoggedIn,
+    bool isLoggingIn,
   ) {
     final cleanBio = (profile?.bio ?? '')
         .replaceAll(RegExp(r'<[^>]*>'), '')
@@ -608,18 +613,52 @@ class _TrackerProfileSheetState extends ConsumerState<TrackerProfileSheet> {
             Padding(
               padding: const EdgeInsets.only(top: 8),
               child: FilledButton(
-                onPressed: () {
-                  final tracker = ref
-                      .read(availableTrackersProvider)
-                      .firstWhere((t) => t.type == widget.trackerType);
-                  if (tracker is RemoteTracker) {
-                    ref.read(authTokensProvider.notifier).login(tracker);
-                  }
-                },
+                onPressed: isLoggingIn
+                    ? null
+                    : () async {
+                        final tracker = ref
+                            .read(availableTrackersProvider)
+                            .firstWhere((t) => t.type == widget.trackerType);
+                        if (tracker is RemoteTracker) {
+                          try {
+                            await ref
+                                .read(authTokensProvider.notifier)
+                                .login(tracker);
+                          } catch (e) {
+                            if (!mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  e.toString().replaceAll('Exception: ', ''),
+                                ),
+                                backgroundColor: cs.error,
+                              ),
+                            );
+                          }
+                        }
+                      },
                 style: FilledButton.styleFrom(
                   minimumSize: const Size.fromHeight(48),
                 ),
-                child: Text('Connect ${widget.trackerType.displayName}'),
+                child: isLoggingIn
+                    ? Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: cs.onPrimary,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            'Connecting to ${widget.trackerType.displayName}...',
+                          ),
+                        ],
+                      )
+                    : Text('Connect ${widget.trackerType.displayName}'),
               ),
             ),
         ],

@@ -175,12 +175,20 @@ class TrackingPrefsNotifier extends Notifier<TrackingPrefsState> {
     String clientId,
     String clientSecret,
   ) {
+    final cleanId = clientId.trim();
+    final cleanSecret = clientSecret.trim();
+
+    if (cleanId.isEmpty && cleanSecret.isEmpty) {
+      clearCustomCredentials(type);
+      return;
+    }
+
     final updatedMap = Map<TrackerType, TrackerCredentials>.from(
       state.customCredentials,
     );
     updatedMap[type] = TrackerCredentials(
-      clientId: clientId,
-      clientSecret: clientSecret,
+      clientId: cleanId,
+      clientSecret: cleanSecret,
     );
     state = state.copyWith(customCredentials: updatedMap);
     _saveDb();

@@ -7,6 +7,21 @@ import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
 import 'package:shonenx/features/tracking/engine/remote_tracker.dart';
 import 'package:shonenx/features/tracking/engine/tracking_service.dart';
 import 'package:shonenx/features/tracking/providers/tracker_profile_provider.dart';
+import 'package:shonenx/shared/providers/storage_provider.dart';
+
+class AuthLoadingTrackerNotifier extends Notifier<TrackerType?> {
+  @override
+  TrackerType? build() => null;
+
+  void setLoading(TrackerType? type) {
+    state = type;
+  }
+}
+
+final authLoadingTrackerProvider =
+    NotifierProvider<AuthLoadingTrackerNotifier, TrackerType?>(
+      AuthLoadingTrackerNotifier.new,
+    );
 
 final authTokensProvider =
     AsyncNotifierProvider<AuthTokensNotifier, Map<TrackerType, String>>(
@@ -19,8 +34,22 @@ class AuthTokensNotifier extends AsyncNotifier<Map<TrackerType, String>> {
 
   @override
   Future<Map<TrackerType, String>> build() async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    final onboardingComplete = prefs.getBool('onboarding_complete') ?? false;
+
+    if (!onboardingComplete) {
+      final allKeys = await _storage.readAll();
+      for (final key in allKeys.keys) {
+        if (key.startsWith(_prefix)) {
+          await _storage.delete(key: key);
+        }
+      }
+      return {};
+    }
+
     final allKeys = await _storage.readAll();
     final tokens = <TrackerType, String>{};
+    final savedProfiles = ref.read(trackerProfileProvider);
 
     for (final entry in allKeys.entries) {
       final key = entry.key;
@@ -32,7 +61,12 @@ class AuthTokensNotifier extends AsyncNotifier<Map<TrackerType, String>> {
       try {
         final type = TrackerType.tryFromId(providerId);
         if (type != null) {
-          tokens[type] = entry.value;
+          final profile = savedProfiles[type];
+          if (profile == null || profile.username.isEmpty) {
+            await _storage.delete(key: key);
+          } else {
+            tokens[type] = entry.value;
+          }
         }
       } catch (_) {}
     }
@@ -43,21 +77,32 @@ class AuthTokensNotifier extends AsyncNotifier<Map<TrackerType, String>> {
   Map<TrackerType, String> _current() => state.value ?? const {};
 
   Future<void> login(RemoteTracker tracker) async {
-    final token = await tracker.authenticator.performLogin();
-    if (token.isEmpty) {
-      throw Exception('Failed to get token from ${tracker.type.displayName}');
+    ref.read(authLoadingTrackerProvider.notifier).setLoading(tracker.type);
+    try {
+      final token = await tracker.authenticator.performLogin();
+      if (token.isEmpty) {
+        throw Exception('Failed to get token from ${tracker.type.displayName}');
+      }
+
+      await _storage.write(key: '$_prefix${tracker.type.id}', value: token);
+      state = AsyncData({..._current(), tracker.type: token});
+
+      final profile = await tracker.fetchProfile();
+
+      ref
+          .read(trackerProfileProvider.notifier)
+          .saveProfile(tracker.type, profile);
+
+      tracker.toggleTracker(ref, true);
+    } catch (e) {
+      await _storage.delete(key: '$_prefix${tracker.type.id}');
+      final updated = Map<TrackerType, String>.from(_current())
+        ..remove(tracker.type);
+      state = AsyncData(updated);
+      rethrow;
+    } finally {
+      ref.read(authLoadingTrackerProvider.notifier).setLoading(null);
     }
-
-    await _storage.write(key: '$_prefix${tracker.type.id}', value: token);
-    state = AsyncData({..._current(), tracker.type: token});
-
-    final profile = await tracker.fetchProfile();
-
-    ref
-        .read(trackerProfileProvider.notifier)
-        .saveProfile(tracker.type, profile);
-
-    tracker.toggleTracker(ref, true);
   }
 
   Future<void> logout(RemoteTracker tracker) async {

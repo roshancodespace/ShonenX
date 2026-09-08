@@ -30,7 +30,13 @@ mixin SimklMetadata on BaseTracker implements RemoteTracker {
       ? Env.SIMKL_CLIENT_ID_LIST.last
       : Env.SIMKL_CLIENT_ID_LIST.first;
 
-  String get clientId => customCredentials?.clientId ?? defaultClientId;
+  String get clientId {
+    final custom = customCredentials?.clientId.trim();
+    if (custom != null && custom.isNotEmpty) {
+      return custom;
+    }
+    return defaultClientId;
+  }
 
   @override
   List<TrackerCategory> get supportedCategories => [

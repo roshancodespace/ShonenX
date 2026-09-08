@@ -1,15 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# always restore cursor and exit cleanly if user hits Ctrl+C
 trap 'tput cnorm 2>/dev/null || true; echo -e "\n\033[31m[!] Operation aborted.\033[0m"; exit 130' INT TERM
 
-# defaults
 DEFAULT_REPO="roshancodespace/ShonenX"
 EXE_NAME="shonenx"
 DEFAULT_ICON_URL="https://raw.githubusercontent.com/roshancodespace/shonenx/main/assets/images/app_icon.png"
 
-# figure out paths depending on if we are on termux or normal linux
 IS_TERMUX=false
 SUDO="sudo"
 if [ -n "${TERMUX_VERSION:-}" ]; then
@@ -42,12 +39,10 @@ DRY_RUN=false
 UNINSTALL_MODE="purge"
 SKIP_DEPS=false
 
-# load previous settings if they exist
 if [ -f "$CACHE_FILE" ]; then
     source "$CACHE_FILE" 2>/dev/null || true
 fi
 
-# print helpers
 log()  { echo -e "\033[36m[*]\033[0m $1"; }
 ok()   { echo -e "\033[32m[+]\033[0m $1"; }
 err()  { echo -e "\033[31m[!]\033[0m $1"; }
@@ -97,7 +92,6 @@ remove_glob() {
     done
 }
 
-# dynamically fetch and let user select a github release
 fetch_and_select_tag() {
     clear
     log "fetching recent versions from GitHub..."
@@ -153,7 +147,6 @@ check_dependencies() {
     local missing=0
     local missing_ffmpeg=0
 
-    # fast check to see if the libraries are already in the system cache
     if ! $IS_TERMUX; then
         ldconfig -p 2>/dev/null | grep -q "libmpv" || missing=1
         ldconfig -p 2>/dev/null | grep -q "libsecret" || missing=1
@@ -170,7 +163,6 @@ check_dependencies() {
         return 0
     fi
 
-    # Non-interactive shell (in-app updater): skip sudo password prompt to avoid hanging/failing
     if ! $IS_TERMUX && [ ! -t 0 ]; then
         if [ -n "$SUDO" ] && ! sudo -n true 2>/dev/null; then
             log "non-interactive environment: skipping sudo dependency checks."
@@ -184,7 +176,6 @@ check_dependencies() {
         log "If skipped, it will fallback to a raw, unsafe stitching method."
     fi
     
-    # Show cursor so sudo and pacman prompts are usable
     tput cnorm 2>/dev/null || true 
     echo ""
 
@@ -205,7 +196,6 @@ check_dependencies() {
     fi
 
     echo ""
-    # hide cursor again for the rest of the install process
     tput civis 2>/dev/null || true 
 
     if [ "$failed" -eq 1 ]; then
@@ -321,11 +311,11 @@ core_uninstall() {
     fi
 
     log "stopping any running ShonenX processes..."
-    if pgrep -f "(^|/)$EXE_NAME" >/dev/null 2>&1; then
+    if pgrep -x "$EXE_NAME" >/dev/null 2>&1; then
         if [ "$DRY_RUN" = true ]; then
             log "[dry-run] would terminate running ShonenX processes"
         else
-            pkill -f "(^|/)$EXE_NAME" 2>/dev/null || true
+            pkill -x "$EXE_NAME" 2>/dev/null || true
             sleep 1
             ok "terminated running ShonenX processes."
         fi
@@ -334,14 +324,12 @@ core_uninstall() {
     log "uninstall mode: $UNINSTALL_MODE"
     log "removing ShonenX binaries and shortcuts..."
 
-    # 1. Binaries & installation folder
     remove_path "$INSTALL_DIR" "installation directory"
     remove_path "$BIN_DIR/$EXE_NAME" "binary symlink"
     remove_path "$BIN_DIR/shonenx-manager" "manager symlink"
     remove_path "$HOME/.local/bin/$EXE_NAME" "local binary symlink"
     remove_path "$HOME/.local/bin/shonenx-manager" "local manager symlink"
 
-    # 2. Desktop entries & icons
     if [ -n "$DESKTOP_DIR" ]; then
         remove_path "$DESKTOP_DIR/shonenx.desktop" "desktop launcher"
         remove_path "${XDG_DATA_HOME:-$HOME/.local/share}/applications/shonenx.desktop" "desktop launcher"
@@ -354,25 +342,21 @@ core_uninstall() {
         fi
     fi
 
-    # 3. Temp files
     remove_path "/tmp/shonenx.zip" "temporary download zip"
     remove_path "/tmp/shonenx_install_latest.sh" "temporary installer script"
     remove_glob "/tmp/shonenx*" "temporary runtime files"
 
-    # If keep-data was requested, exit early
     if [ "$UNINSTALL_MODE" = "keep-data" ]; then
         ok "uninstalled ShonenX binaries and shortcuts. user data preserved."
         return 0
     fi
 
     log "cleaning user caches and configs..."
-    # 4. Installer cache & configs
     remove_path "$CACHE_DIR" "installer cache & configs"
     remove_path "${XDG_CONFIG_HOME:-$HOME/.config}/ShonenX" "config directory"
     remove_path "${XDG_CONFIG_HOME:-$HOME/.config}/shonenx" "lowercase config directory"
     remove_path "${XDG_CONFIG_HOME:-$HOME/.config}/com.roshancodespace.shonenx" "app config directory"
 
-    # 5. User cache directories (~/.cache)
     remove_path "${XDG_CACHE_HOME:-$HOME/.cache}/com.roshancodespace.shonenx" "WebKit and app cache"
     remove_path "${XDG_CACHE_HOME:-$HOME/.cache}/com.shonenx.anime" "legacy app cache"
     remove_path "${XDG_CACHE_HOME:-$HOME/.cache}/com.example.shonenx" "legacy app cache"
@@ -385,7 +369,6 @@ core_uninstall() {
         rmdir "${XDG_CACHE_HOME:-$HOME/.cache}/flutter_inappwebview" 2>/dev/null || true
     fi
 
-    # 6. Local share data (~/.local/share)
     remove_path "${XDG_DATA_HOME:-$HOME/.local/share}/com.roshancodespace.shonenx" "application data & storage"
     remove_path "${XDG_DATA_HOME:-$HOME/.local/share}/com.shonenx.anime" "legacy application data"
     remove_path "${XDG_DATA_HOME:-$HOME/.local/share}/com.example.shonenx" "legacy application data"
@@ -400,7 +383,6 @@ core_uninstall() {
         rmdir "${XDG_DATA_HOME:-$HOME/.local/share}/flutter_inappwebview" 2>/dev/null || true
     fi
 
-    # 7. User Documents Directory (Documents/ShonenX)
     local target_docs="$DOCS_DIR/ShonenX"
     if [ -d "$target_docs" ]; then
         if [ "$UNINSTALL_MODE" = "keep-downloads" ]; then
@@ -546,7 +528,7 @@ run_tui() {
                            ;;
                    esac
                    ;;
-                5) clear; echo "Goodbye!"; exit 0 ;;
+                5) clear; exit 0 ;;
             esac
             
             echo -e "\n\033[90mPress any key to return to menu...\033[0m"
@@ -556,7 +538,6 @@ run_tui() {
     done
 }
 
-# parse arguments for power users
 while [[ $# -gt 0 ]]; do
     CLI_MODE=true
     case "$1" in

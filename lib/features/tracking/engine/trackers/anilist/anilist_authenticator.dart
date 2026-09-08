@@ -16,17 +16,25 @@ class AnilistAuthenticator implements Authenticator {
   static final HTTP _http = HTTP();
   static final _isDesktop = Platform.isWindows || Platform.isLinux;
 
-  String get _clientId =>
-      customCredentials?.clientId ??
-      (_isDesktop
-          ? Env.ANILIST_CLIENT_ID_LIST.last
-          : Env.ANILIST_CLIENT_ID_LIST.first);
+  String get _clientId {
+    final custom = customCredentials?.clientId.trim();
+    if (custom != null && custom.isNotEmpty) {
+      return custom;
+    }
+    return _isDesktop
+        ? Env.ANILIST_CLIENT_ID_LIST.last
+        : Env.ANILIST_CLIENT_ID_LIST.first;
+  }
 
-  String get _clientSecret =>
-      customCredentials?.clientSecret ??
-      (_isDesktop
-          ? Env.ANILIST_CLIENT_SECRET_LIST.last
-          : Env.ANILIST_CLIENT_SECRET_LIST.first);
+  String get _clientSecret {
+    final custom = customCredentials?.clientSecret.trim();
+    if (custom != null && custom.isNotEmpty) {
+      return custom;
+    }
+    return _isDesktop
+        ? Env.ANILIST_CLIENT_SECRET_LIST.last
+        : Env.ANILIST_CLIENT_SECRET_LIST.first;
+  }
 
   @override
   String get redirectUri => _isDesktop

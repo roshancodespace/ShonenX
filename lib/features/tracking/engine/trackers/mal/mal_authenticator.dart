@@ -4,12 +4,12 @@ import 'dart:math';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
+
 import 'package:shonenx/core/network/auth/authenticator.dart';
 import 'package:shonenx/core/network/http_client.dart';
 import 'package:shonenx/core/utils/env.dart';
-import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
-
 import 'package:shonenx/features/tracking/domain/models/tracker_credentials.dart';
+import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
 
 class MalAuthenticator implements Authenticator {
   final TrackerCredentials? customCredentials;
@@ -24,15 +24,25 @@ class MalAuthenticator implements Authenticator {
   static const String _codeVerifierKey = 'mal_code_verifier';
   static const String _authStateKey = 'mal_auth_state';
 
-  String get _clientId =>
-      customCredentials?.clientId ??
-      (_isDesktop ? Env.MAL_CLIENT_ID_LIST.last : Env.MAL_CLIENT_ID_LIST.first);
+  String get _clientId {
+    final custom = customCredentials?.clientId.trim();
+    if (custom != null && custom.isNotEmpty) {
+      return custom;
+    }
+    return _isDesktop
+        ? Env.MAL_CLIENT_ID_LIST.last
+        : Env.MAL_CLIENT_ID_LIST.first;
+  }
 
-  String get _clientSecret =>
-      customCredentials?.clientSecret ??
-      (_isDesktop
-          ? Env.MAL_CLIENT_SECRET_LIST.last
-          : Env.MAL_CLIENT_SECRET_LIST.first);
+  String get _clientSecret {
+    final custom = customCredentials?.clientSecret.trim();
+    if (custom != null && custom.isNotEmpty) {
+      return custom;
+    }
+    return _isDesktop
+        ? Env.MAL_CLIENT_SECRET_LIST.last
+        : Env.MAL_CLIENT_SECRET_LIST.first;
+  }
 
   @override
   String get redirectUri => _isDesktop
@@ -171,7 +181,7 @@ class MalAuthenticator implements Authenticator {
         throw Exception('MyAnimeList Auth Error ($error): $message');
       }
       return accessToken;
-    } catch (e, _) {
+    } catch (e) {
       await _cleanupSecureStorage();
       rethrow;
     }

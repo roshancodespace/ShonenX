@@ -151,6 +151,9 @@ check_dependencies() {
         ldconfig -p 2>/dev/null | grep -q "libmpv" || missing=1
         ldconfig -p 2>/dev/null | grep -q "libsecret" || missing=1
         ldconfig -p 2>/dev/null | grep -q -i "webkit2gtk\|webkitgtk" || missing=1
+        if command -v pacman >/dev/null 2>&1; then
+            ldconfig -p 2>/dev/null | grep -q -i "wpewebkit" || missing=1
+        fi
     else
         command -v mpv >/dev/null 2>&1 || missing=1
     fi
@@ -186,7 +189,7 @@ check_dependencies() {
         $SUDO apt-get update -qq || true
         $SUDO apt-get install -y libmpv-dev mpv libsecret-1-0 libwebkit2gtk-4.1-0 ffmpeg || failed=1
     elif command -v pacman >/dev/null 2>&1; then
-        $SUDO pacman -S --needed --noconfirm mpv libsecret webkit2gtk-4.1 ffmpeg || failed=1
+        $SUDO pacman -S --needed --noconfirm mpv libsecret webkit2gtk-4.1 wpewebkit ffmpeg || failed=1
     elif command -v dnf >/dev/null 2>&1; then
         $SUDO dnf install -y mpv-libs mpv libsecret webkit2gtk4.1 ffmpeg || failed=1
     elif command -v zypper >/dev/null 2>&1; then

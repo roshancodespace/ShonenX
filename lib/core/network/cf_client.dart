@@ -224,7 +224,9 @@ class _CfSolverScreenState extends State<CfSolverScreen> {
 
   void _poll(InAppWebViewController controller) async {
     _pollingTimer?.cancel();
-    _pollingTimer = Timer.periodic(const Duration(milliseconds: 1000), (timer) async {
+    _pollingTimer = Timer.periodic(const Duration(milliseconds: 1000), (
+      timer,
+    ) async {
       if (!mounted) {
         timer.cancel();
         return;

@@ -19,29 +19,32 @@ class LibraryFiltersWidget extends ConsumerWidget {
         children: TrackedStatus.values
             .where((s) => s != TrackedStatus.unknown)
             .map((status) {
-          final isActive = viewState.status == status;
-          return Padding(
-            padding: const EdgeInsets.only(right: 8.0),
-            child: ChoiceChip(
-              label: Text(
-                status.getLabelForMedia(viewState.mediaType),
-                style: TextStyle(
-                  color: isActive
-                      ? theme.colorScheme.onSecondaryContainer
-                      : theme.colorScheme.onSurface,
+              final isActive = viewState.status == status;
+              return Padding(
+                padding: const EdgeInsets.only(right: 8.0),
+                child: ChoiceChip(
+                  label: Text(
+                    status.getLabelForMedia(viewState.mediaType),
+                    style: TextStyle(
+                      color: isActive
+                          ? theme.colorScheme.onSecondaryContainer
+                          : theme.colorScheme.onSurface,
+                    ),
+                  ),
+                  selected: isActive,
+                  selectedColor: theme.colorScheme.secondaryContainer,
+                  checkmarkColor: theme.colorScheme.onSecondaryContainer,
+                  onSelected: (selected) {
+                    if (selected) {
+                      ref
+                          .read(libraryViewStateProvider.notifier)
+                          .setStatus(status);
+                    }
+                  },
                 ),
-              ),
-              selected: isActive,
-              selectedColor: theme.colorScheme.secondaryContainer,
-              checkmarkColor: theme.colorScheme.onSecondaryContainer,
-              onSelected: (selected) {
-                if (selected) {
-                  ref.read(libraryViewStateProvider.notifier).setStatus(status);
-                }
-              },
-            ),
-          );
-        }).toList(),
+              );
+            })
+            .toList(),
       ),
     );
   }

@@ -61,11 +61,10 @@ dependencies:
   url_launcher: ^6.3.0
   html: ^0.15.7
   flutter_svg: ^2.2.4
-  dynamic_color: 1.9.0
+  dynamic_color: 1.8.1
   permission_handler: ^13.0.2
   file_picker: ^8.1.4
   encrypt: ^5.0.3
-  device_apps: ^2.2.0
   android_intent_plus: ^6.0.0
   open_file: ^3.5.11
   device_info_plus: ^12.4.0
@@ -86,6 +85,7 @@ dependencies:
   crypto: ^3.0.3
 
   cupertino_ui: any
+  flutter_device_apps: ^0.8.1
 dependency_overrides:
   flutter_inappwebview:
     git:

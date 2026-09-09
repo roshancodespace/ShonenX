@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:android_intent_plus/android_intent.dart';
-import 'package:device_apps/device_apps.dart';
+import 'package:flutter_device_apps/flutter_device_apps.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -27,7 +27,7 @@ class OneDMService {
     }
 
     for (final package in _packages) {
-      final installed = await DeviceApps.isAppInstalled(package);
+      final installed = (await FlutterDeviceApps.getApp(package)) != null;
 
       if (installed) {
         _cachedPackage = package;

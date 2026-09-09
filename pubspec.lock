@@ -485,14 +485,15 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.7.0"
-  flutter_discord_rpc:
+  flutter_discord_rpc_fork:
     dependency: "direct main"
     description:
-      name: flutter_discord_rpc
-      sha256: "7ee12a3ff928e85e5e0a60c7c23417a2f1f4e604e4983fc0789ff6562fb15f2b"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.1.0"
+      path: "."
+      ref: update_frb
+      resolved-ref: "6b9771302cfa2893bb02fc5da8f3a3fd6b8444dc"
+      url: "https://github.com/kodjodevf/flutter-discord-rpc.git"
+    source: git
+    version: "1.0.5"
   flutter_inappwebview:
     dependency: "direct main"
     description:
@@ -660,10 +661,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_secure_storage
-      sha256: "7686b1d6a29985dcbb808c59518226e603e3bfa7c0ddfd1a0d00e4cda77c868e"
+      sha256: "2670c2a81a032080e779c015f4f775373605c4a364643ed371e78dea7781822c"
       url: "https://pub.dev"
     source: hosted
-    version: "10.3.1"
+    version: "10.3.2"
   flutter_secure_storage_darwin:
     dependency: transitive
     description:
@@ -685,10 +686,10 @@ packages:
     dependency: transitive
     description:
       name: flutter_secure_storage_platform_interface
-      sha256: "788060052712555182aba55ecb5f8b6e5cb9cfe8f776c83249a61fe3ce877db4"
+      sha256: "4bc033841169d07f690d46d89dbc3f5305b6562820822445384c82e0866e2719"
       url: "https://pub.dev"
     source: hosted
-    version: "2.0.3"
+    version: "2.1.0"
   flutter_secure_storage_web:
     dependency: transitive
     description:

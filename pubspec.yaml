@@ -87,6 +87,11 @@ dependencies:
   cupertino_ui: any
   flutter_device_apps: ^0.8.1
 dependency_overrides:
+  flutter_secure_storage_linux:
+    git:
+      url: https://github.com/EchoEllet/flutter_secure_storage.git
+      path: flutter_secure_storage_linux
+      ref: feat/linux-rewrite
   flutter_inappwebview:
     git:
       url: https://github.com/roshancodespace/flutter_inappwebview.git

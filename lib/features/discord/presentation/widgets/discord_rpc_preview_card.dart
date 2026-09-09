@@ -46,10 +46,10 @@ class _DiscordRpcPreviewCardState extends State<DiscordRpcPreviewCard> {
         break;
 
       case RpcPreviewTab.watching:
-        headerText = 'Watching ShonenX';
+        headerText = 'Watching';
         mainTitle = 'One Piece';
         subTitle1 = 'Episode 7 – Orewa Kaizoku Ou Ni Naru!';
-        subTitle2 = 'ShonenX';
+        subTitle2 = 'Viewing Episode';
         startTime = '12:00';
         endTime = '20:00';
         progressRatio = 0.6;
@@ -58,10 +58,10 @@ class _DiscordRpcPreviewCardState extends State<DiscordRpcPreviewCard> {
         break;
 
       case RpcPreviewTab.reading:
-        headerText = 'Reading ShonenX';
+        headerText = 'Reading';
         mainTitle = 'One Piece';
         subTitle1 = 'Chapter 236 • Page 14/20';
-        subTitle2 = 'ShonenX Reader';
+        subTitle2 = 'Reading Chapter';
         startTime = '12:00';
         endTime = '--:--';
         progressRatio = 0.7;

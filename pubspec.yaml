@@ -85,7 +85,6 @@ dependencies:
   crypto: ^3.0.3
   flutter_device_apps: ^0.8.1
   cupertino_ui: any
-  dart_discord_presence: ^1.2.0
 
 dependency_overrides:
   flutter_secure_storage_linux:

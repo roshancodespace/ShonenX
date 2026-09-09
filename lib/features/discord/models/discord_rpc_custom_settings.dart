@@ -6,8 +6,8 @@ class DiscordRpcCustomSettings {
   final bool enableReaderPresence;
 
   const DiscordRpcCustomSettings({
-    this.idleActivity = 'Glazing ShonenX',
-    this.idleDetails = 'Browsing Catalog',
+    this.idleActivity = 'Browsing Catalog',
+    this.idleDetails = 'Exploring Anime & Manga',
     this.enableDetailsPresence = true,
     this.enablePlayerPresence = true,
     this.enableReaderPresence = true,
@@ -31,17 +31,17 @@ class DiscordRpcCustomSettings {
   }
 
   Map<String, dynamic> toJson() => {
-        'idleActivity': idleActivity,
-        'idleDetails': idleDetails,
-        'enableDetailsPresence': enableDetailsPresence,
-        'enablePlayerPresence': enablePlayerPresence,
-        'enableReaderPresence': enableReaderPresence,
-      };
+    'idleActivity': idleActivity,
+    'idleDetails': idleDetails,
+    'enableDetailsPresence': enableDetailsPresence,
+    'enablePlayerPresence': enablePlayerPresence,
+    'enableReaderPresence': enableReaderPresence,
+  };
 
   factory DiscordRpcCustomSettings.fromJson(Map<String, dynamic> json) {
     return DiscordRpcCustomSettings(
-      idleActivity: json['idleActivity'] as String? ?? 'Glazing ShonenX',
-      idleDetails: json['idleDetails'] as String? ?? 'Browsing Catalog',
+      idleActivity: json['idleActivity'] as String? ?? 'Browsing Catalog',
+      idleDetails: json['idleDetails'] as String? ?? 'Exploring Anime & Manga',
       enableDetailsPresence: json['enableDetailsPresence'] as bool? ?? true,
       enablePlayerPresence: json['enablePlayerPresence'] as bool? ?? true,
       enableReaderPresence: json['enableReaderPresence'] as bool? ?? true,

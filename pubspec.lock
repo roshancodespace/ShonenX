@@ -335,14 +335,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.7.15"
-  device_apps:
-    dependency: "direct main"
-    description:
-      name: device_apps
-      sha256: e84dc74d55749993fd671148cc0bd53096e1be0c268fc364285511b1d8a4c19b
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.2.0"
   device_info_plus:
     dependency: "direct main"
     description:
@@ -363,10 +355,10 @@ packages:
     dependency: "direct main"
     description:
       name: dynamic_color
-      sha256: "4aeb76de323e8eb660bab5557d826ad7ebbf1434a598f0c6aa8a11a9696a6757"
+      sha256: "43a5a6679649a7731ab860334a5812f2067c2d9ce6452cf069c5e0c25336c17c"
       url: "https://pub.dev"
     source: hosted
-    version: "1.9.0"
+    version: "1.8.1"
   encrypt:
     dependency: "direct main"
     description:
@@ -469,6 +461,30 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.4.2"
+  flutter_device_apps:
+    dependency: "direct main"
+    description:
+      name: flutter_device_apps
+      sha256: "16c9184521f37477c49f7c12e19db02b55454d5e0fc6de72b65c65acbac028fa"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.8.1"
+  flutter_device_apps_android:
+    dependency: transitive
+    description:
+      name: flutter_device_apps_android
+      sha256: "68ad605d7fb9f1b31e0d7e1d9ad5e08cb092af086fae2a7ba046ae2bfcb706d0"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.8.0"
+  flutter_device_apps_platform_interface:
+    dependency: transitive
+    description:
+      name: flutter_device_apps_platform_interface
+      sha256: "776edb31e55f470ba4d3af3b1b476ebef313e39f7536fd5afb4b61854f525943"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.7.0"
   flutter_discord_rpc:
     dependency: "direct main"
     description:

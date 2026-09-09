@@ -49,8 +49,10 @@ class MalTracker extends BaseTracker with MalMetadata implements RemoteTracker {
       .customCredentials[TrackerType.myanimelist];
 
   @override
-  Authenticator get authenticator =>
-      MalAuthenticator(customCredentials: customCredentials);
+  Authenticator get authenticator => MalAuthenticator(
+    customCredentials: customCredentials,
+    authMode: ref.read(trackingPrefsProvider).authMode,
+  );
 
   @override
   Future<List<TrackerSearchResult>> searchMedia(

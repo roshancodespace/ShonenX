@@ -1,8 +1,11 @@
+import 'dart:io';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/features/auth/providers/auth_provider.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
+import 'package:shonenx/features/tracking/domain/models/tracker_auth_mode.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
 import 'package:shonenx/features/tracking/engine/remote_tracker.dart';
 import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
@@ -65,6 +68,38 @@ class _TrackingSettingsScreenState
           Text(
             'Provide your own API Client ID and Secret. This overrides the default bundled credentials.\nLeave blank or click Reset to use the default credentials.',
             style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Active Redirect URI (${prefs.authMode.displayName} mode):',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 2),
+                SelectableText(
+                  prefs.authMode == TrackerAuthMode.browser ||
+                          (prefs.authMode == TrackerAuthMode.auto &&
+                              (Platform.isWindows || Platform.isLinux))
+                      ? 'http://localhost:43824/success?code=1337'
+                      : 'shonenx://callback',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontFamily: 'monospace',
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 16),
           TextField(
@@ -149,6 +184,47 @@ class _TrackingSettingsScreenState
           SettingsSection(
             title: 'General',
             children: [
+              SettingsSegmentedTile<TrackerAuthMode>(
+                title: 'OAuth Authentication Method',
+                segments: const [
+                  ButtonSegment(
+                    value: TrackerAuthMode.auto,
+                    label: Text('Auto'),
+                    icon: Icon(Icons.auto_mode_outlined),
+                  ),
+                  ButtonSegment(
+                    value: TrackerAuthMode.browser,
+                    label: Text('Browser'),
+                    icon: Icon(Icons.open_in_browser_outlined),
+                  ),
+                  ButtonSegment(
+                    value: TrackerAuthMode.webview,
+                    label: Text('WebView'),
+                    icon: Icon(Icons.web_outlined),
+                  ),
+                ],
+                selected: {prefs.authMode},
+                onSelectionChanged: (set) {
+                  if (set.isNotEmpty) {
+                    ref
+                        .read(trackingPrefsProvider.notifier)
+                        .setAuthMode(set.first);
+                  }
+                },
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                child: Text(
+                  prefs.authMode.description,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
               SettingsSliderTile(
                 icon: Icons.percent,
                 title: 'Sync Threshold',

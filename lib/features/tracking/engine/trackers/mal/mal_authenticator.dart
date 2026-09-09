@@ -2,19 +2,26 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 
 import 'package:shonenx/core/network/auth/authenticator.dart';
 import 'package:shonenx/core/network/http_client.dart';
+import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/core/utils/env.dart';
+import 'package:shonenx/features/tracking/domain/models/tracker_auth_mode.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_credentials.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
 
 class MalAuthenticator implements Authenticator {
   final TrackerCredentials? customCredentials;
+  final TrackerAuthMode authMode;
 
-  MalAuthenticator({this.customCredentials});
+  MalAuthenticator({
+    this.customCredentials,
+    this.authMode = TrackerAuthMode.auto,
+  });
 
   static final HTTP _http = HTTP();
   static final _isDesktop = Platform.isWindows || Platform.isLinux;
@@ -24,34 +31,50 @@ class MalAuthenticator implements Authenticator {
   static const String _codeVerifierKey = 'mal_code_verifier';
   static const String _authStateKey = 'mal_auth_state';
 
-  String get _clientId {
-    final custom = customCredentials?.clientId.trim();
-    if (custom != null && custom.isNotEmpty) {
-      return custom;
-    }
-    return _isDesktop
-        ? Env.MAL_CLIENT_ID_LIST.last
-        : Env.MAL_CLIENT_ID_LIST.first;
-  }
+  static const String _desktopRedirectUri =
+      'http://localhost:43824/success?code=1337';
+  static const String _desktopCallbackScheme = 'http://localhost:43824';
+  static const String _mobileRedirectUri = 'shonenx://callback';
+  static const String _mobileCallbackScheme = 'shonenx';
 
-  String get _clientSecret {
-    final custom = customCredentials?.clientSecret.trim();
-    if (custom != null && custom.isNotEmpty) {
-      return custom;
+  String get _mobileClientId =>
+      customCredentials?.clientId.trim().isNotEmpty == true
+      ? customCredentials!.clientId.trim()
+      : Env.MAL_CLIENT_ID_LIST.first;
+
+  String get _desktopClientId =>
+      customCredentials?.clientId.trim().isNotEmpty == true
+      ? customCredentials!.clientId.trim()
+      : Env.MAL_CLIENT_ID_LIST.last;
+
+  String get _mobileClientSecret =>
+      customCredentials?.clientSecret.trim().isNotEmpty == true
+      ? customCredentials!.clientSecret.trim()
+      : Env.MAL_CLIENT_SECRET_LIST.first;
+
+  String get _desktopClientSecret =>
+      customCredentials?.clientSecret.trim().isNotEmpty == true
+      ? customCredentials!.clientSecret.trim()
+      : Env.MAL_CLIENT_SECRET_LIST.last;
+
+  bool get _shouldUseWebview {
+    switch (authMode) {
+      case TrackerAuthMode.webview:
+        return true;
+      case TrackerAuthMode.browser:
+        return false;
+      case TrackerAuthMode.auto:
+        return !_isDesktop;
     }
-    return _isDesktop
-        ? Env.MAL_CLIENT_SECRET_LIST.last
-        : Env.MAL_CLIENT_SECRET_LIST.first;
   }
 
   @override
-  String get redirectUri => _isDesktop
-      ? 'http://localhost:43824/success?code=1337'
-      : 'shonenx://callback';
+  String get redirectUri =>
+      _shouldUseWebview ? _mobileRedirectUri : _desktopRedirectUri;
 
   @override
   String get callbackScheme =>
-      _isDesktop ? 'http://localhost:43824' : 'shonenx';
+      _shouldUseWebview ? _mobileCallbackScheme : _desktopCallbackScheme;
 
   @override
   String get providerName => TrackerType.myanimelist.name;
@@ -85,8 +108,13 @@ class MalAuthenticator implements Authenticator {
     await _secureStorage.delete(key: _authStateKey);
   }
 
-  @override
-  Future<String> performLogin() async {
+  Future<String> _loginWith({
+    required String clientId,
+    required String clientSecret,
+    required String redirectUri,
+    required String callbackScheme,
+    required bool useWebview,
+  }) async {
     try {
       final codeVerifier = _generateCodeVerifier();
       final state = _generateState();
@@ -97,7 +125,7 @@ class MalAuthenticator implements Authenticator {
 
       final authUri = Uri.https('myanimelist.net', '/v1/oauth2/authorize', {
         'response_type': 'code',
-        'client_id': _clientId,
+        'client_id': clientId,
         'redirect_uri': redirectUri,
         'code_challenge': codeVerifier, // PKCE plain method
         'code_challenge_method': 'plain',
@@ -107,7 +135,7 @@ class MalAuthenticator implements Authenticator {
       final result = await FlutterWebAuth2.authenticate(
         url: authUri.toString(),
         callbackUrlScheme: callbackScheme,
-        options: FlutterWebAuth2Options(useWebview: !_isDesktop),
+        options: FlutterWebAuth2Options(useWebview: useWebview),
       );
 
       final parsedUrl = Uri.parse(result);
@@ -141,15 +169,15 @@ class MalAuthenticator implements Authenticator {
       }
 
       final bodyParams = {
-        'client_id': _clientId,
+        'client_id': clientId,
         'grant_type': 'authorization_code',
         'code': code,
         'code_verifier': codeVerifier,
         'redirect_uri': redirectUri,
       };
 
-      if (_clientSecret.isNotEmpty) {
-        bodyParams['client_secret'] = _clientSecret;
+      if (clientSecret.isNotEmpty) {
+        bodyParams['client_secret'] = clientSecret;
       }
 
       final bodyString = bodyParams.entries
@@ -185,5 +213,66 @@ class MalAuthenticator implements Authenticator {
       await _cleanupSecureStorage();
       rethrow;
     }
+  }
+
+  @override
+  Future<String> performLogin() async {
+    // 1. Forced In-App WebView (Mobile client credentials & deep-link)
+    if (authMode == TrackerAuthMode.webview) {
+      return await _loginWith(
+        clientId: _mobileClientId,
+        clientSecret: _mobileClientSecret,
+        redirectUri: _mobileRedirectUri,
+        callbackScheme: _mobileCallbackScheme,
+        useWebview: true,
+      );
+    }
+
+    // 2. Forced External Browser (Desktop client credentials & localhost redirect)
+    if (authMode == TrackerAuthMode.browser) {
+      return await _loginWith(
+        clientId: _desktopClientId,
+        clientSecret: _desktopClientSecret,
+        redirectUri: _desktopRedirectUri,
+        callbackScheme: _desktopCallbackScheme,
+        useWebview: false,
+      );
+    }
+
+    // 3. Auto Mode: Desktop tries browser first with fallback; mobile uses WebView
+    if (_isDesktop) {
+      try {
+        return await _loginWith(
+          clientId: _desktopClientId,
+          clientSecret: _desktopClientSecret,
+          redirectUri: _desktopRedirectUri,
+          callbackScheme: _desktopCallbackScheme,
+          useWebview: false,
+        );
+      } catch (e) {
+        if (e is PlatformException && e.code == 'CANCELED') {
+          rethrow;
+        }
+        AppLogger.w(
+          'MalAuthenticator',
+          'Desktop browser auth failed ($e). Falling back to in-app WebView...',
+        );
+        return await _loginWith(
+          clientId: _mobileClientId,
+          clientSecret: _mobileClientSecret,
+          redirectUri: _mobileRedirectUri,
+          callbackScheme: _mobileCallbackScheme,
+          useWebview: true,
+        );
+      }
+    }
+
+    return await _loginWith(
+      clientId: _mobileClientId,
+      clientSecret: _mobileClientSecret,
+      redirectUri: _mobileRedirectUri,
+      callbackScheme: _mobileCallbackScheme,
+      useWebview: true,
+    );
   }
 }

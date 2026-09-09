@@ -78,7 +78,10 @@ dependencies:
   flutter_markdown_plus: ^1.0.12
   palette_generator: ^0.3.3+7
   skeletonizer: ^2.1.3
-  flutter_discord_rpc: ^1.1.0
+  flutter_discord_rpc_fork:
+    git:
+      url: https://github.com/kodjodevf/flutter-discord-rpc.git
+      ref: update_frb
   rhttp: ^0.18.0
   intl: ^0.20.3
   local_auth: ^3.0.1

@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter_discord_rpc/flutter_discord_rpc.dart';
+import 'package:flutter_discord_rpc_fork/flutter_discord_rpc.dart';
 import 'package:http/http.dart' as http;
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
@@ -96,8 +96,8 @@ class DiscordRpcService {
     final startMs = isPlaying ? (pos > 0 ? now - pos : now) : null;
     final endMs =
         (isPlaying && dur > 0 && pos > 0 && dur > pos && startMs != null)
-            ? startMs + dur
-            : null;
+        ? startMs + dur
+        : null;
 
     _log.i('Anime presence: $title ($stateText)');
 
@@ -141,14 +141,13 @@ class DiscordRpcService {
     int? positionMs,
     int? durationMs,
     int? timeStampMs,
-  }) =>
-      updateAnimePresence(
-        anime: anime,
-        episodeNumber: episodeNumber,
-        positionMs: positionMs ?? timeStampMs,
-        durationMs: durationMs,
-        isPlaying: false,
-      );
+  }) => updateAnimePresence(
+    anime: anime,
+    episodeNumber: episodeNumber,
+    positionMs: positionMs ?? timeStampMs,
+    durationMs: durationMs,
+    isPlaying: false,
+  );
 
   /// Updates presence for manga reading.
   Future<void> updateMangaPresence({
@@ -164,8 +163,9 @@ class DiscordRpcService {
 
     final title = manga.title.availableTitle;
     final chTotal = totalChapters != null ? '/$totalChapters' : '';
-    final chLabel =
-        chapterNumber != null ? 'Chapter $chapterNumber$chTotal' : 'Reading';
+    final chLabel = chapterNumber != null
+        ? 'Chapter $chapterNumber$chTotal'
+        : 'Reading';
     final pageLabel = (currentPage != null && totalPages != null)
         ? 'Page $currentPage/$totalPages'
         : null;

@@ -121,7 +121,7 @@ const ReadHistoryEntrySchema = CollectionSchema(
   getId: _readHistoryEntryGetId,
   getLinks: _readHistoryEntryGetLinks,
   attach: _readHistoryEntryAttach,
-  version: '3.3.0',
+  version: '3.3.2',
 );
 
 int _readHistoryEntryEstimateSize(

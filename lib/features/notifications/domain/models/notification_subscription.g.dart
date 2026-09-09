@@ -95,7 +95,7 @@ const NotificationSubscriptionSchema = CollectionSchema(
   getId: _notificationSubscriptionGetId,
   getLinks: _notificationSubscriptionGetLinks,
   attach: _notificationSubscriptionAttach,
-  version: '3.3.0',
+  version: '3.3.2',
 );
 
 int _notificationSubscriptionEstimateSize(

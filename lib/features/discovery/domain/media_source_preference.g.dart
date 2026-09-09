@@ -76,7 +76,7 @@ const MediaSourcePreferenceSchema = CollectionSchema(
   getId: _mediaSourcePreferenceGetId,
   getLinks: _mediaSourcePreferenceGetLinks,
   attach: _mediaSourcePreferenceAttach,
-  version: '3.3.0',
+  version: '3.3.2',
 );
 
 int _mediaSourcePreferenceEstimateSize(

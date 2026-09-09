@@ -101,7 +101,7 @@ const DownloadTaskSchema = CollectionSchema(
   getId: _downloadTaskGetId,
   getLinks: _downloadTaskGetLinks,
   attach: _downloadTaskAttach,
-  version: '3.3.0',
+  version: '3.3.2',
 );
 
 int _downloadTaskEstimateSize(

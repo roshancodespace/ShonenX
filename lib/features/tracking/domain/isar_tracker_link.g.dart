@@ -57,7 +57,7 @@ const IsarTrackerLinkSchema = CollectionSchema(
   getId: _isarTrackerLinkGetId,
   getLinks: _isarTrackerLinkGetLinks,
   attach: _isarTrackerLinkAttach,
-  version: '3.3.0',
+  version: '3.3.2',
 );
 
 int _isarTrackerLinkEstimateSize(

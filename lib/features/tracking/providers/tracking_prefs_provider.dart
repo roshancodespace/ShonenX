@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/shared/providers/storage_provider.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_credentials.dart';
+import 'package:shonenx/features/tracking/domain/models/tracker_auth_mode.dart';
 
 class TrackingPrefsState {
   final bool isIncognito;
@@ -12,6 +13,7 @@ class TrackingPrefsState {
   final bool autoTrackPrimary;
   final double syncThreshold;
   final Map<TrackerType, TrackerCredentials> customCredentials;
+  final TrackerAuthMode authMode;
 
   TrackingPrefsState({
     this.isIncognito = false,
@@ -20,6 +22,7 @@ class TrackingPrefsState {
     this.autoTrackPrimary = false,
     this.syncThreshold = 0.8,
     this.customCredentials = const {},
+    this.authMode = TrackerAuthMode.auto,
   });
 
   TrackingPrefsState copyWith({
@@ -29,6 +32,7 @@ class TrackingPrefsState {
     bool? autoTrackPrimary,
     double? syncThreshold,
     Map<TrackerType, TrackerCredentials>? customCredentials,
+    TrackerAuthMode? authMode,
   }) {
     return TrackingPrefsState(
       isIncognito: isIncognito ?? this.isIncognito,
@@ -37,6 +41,7 @@ class TrackingPrefsState {
       autoTrackPrimary: autoTrackPrimary ?? this.autoTrackPrimary,
       syncThreshold: syncThreshold ?? this.syncThreshold,
       customCredentials: customCredentials ?? this.customCredentials,
+      authMode: authMode ?? this.authMode,
     );
   }
 
@@ -57,6 +62,7 @@ class TrackingPrefsState {
       'customCredentials': customCredentials.map(
         (key, value) => MapEntry(key.id, value.toMap()),
       ),
+      'authMode': authMode.name,
     };
   }
 
@@ -93,6 +99,10 @@ class TrackingPrefsState {
             ),
           ) ??
           {},
+      authMode: TrackerAuthMode.values.firstWhere(
+        (e) => e.name == map['authMode'],
+        orElse: () => TrackerAuthMode.auto,
+      ),
     );
   }
 
@@ -200,6 +210,11 @@ class TrackingPrefsNotifier extends Notifier<TrackingPrefsState> {
     );
     updatedMap.remove(type);
     state = state.copyWith(customCredentials: updatedMap);
+    _saveDb();
+  }
+
+  void setAuthMode(TrackerAuthMode mode) {
+    state = state.copyWith(authMode: mode);
     _saveDb();
   }
 

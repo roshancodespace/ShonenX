@@ -83,9 +83,10 @@ dependencies:
   intl: ^0.20.3
   local_auth: ^3.0.1
   crypto: ^3.0.3
-
-  cupertino_ui: any
   flutter_device_apps: ^0.8.1
+  cupertino_ui: any
+  dart_discord_presence: ^1.2.0
+
 dependency_overrides:
   flutter_secure_storage_linux:
     git:

@@ -36,8 +36,10 @@ class SimklTracker extends BaseTracker
       ref.read(trackingPrefsProvider).customCredentials[TrackerType.simkl];
 
   @override
-  Authenticator get authenticator =>
-      SimklAuthenticator(customCredentials: customCredentials);
+  Authenticator get authenticator => SimklAuthenticator(
+    customCredentials: customCredentials,
+    authMode: ref.read(trackingPrefsProvider).authMode,
+  );
 
   Future<String?> _getToken() async {
     final tokens = await ref.read(authTokensProvider.future);

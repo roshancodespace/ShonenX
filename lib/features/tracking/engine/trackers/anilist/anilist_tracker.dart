@@ -47,10 +47,12 @@ class AnilistTracker extends BaseTracker
 
   @override
   Authenticator get authenticator {
-    final credentials = ref
-        .read(trackingPrefsProvider)
-        .customCredentials[TrackerType.anilist];
-    return AnilistAuthenticator(customCredentials: credentials);
+    final prefs = ref.read(trackingPrefsProvider);
+    final credentials = prefs.customCredentials[TrackerType.anilist];
+    return AnilistAuthenticator(
+      customCredentials: credentials,
+      authMode: prefs.authMode,
+    );
   }
 
   @override

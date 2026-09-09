@@ -673,13 +673,14 @@ packages:
     source: hosted
     version: "0.3.2"
   flutter_secure_storage_linux:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
-      name: flutter_secure_storage_linux
-      sha256: "76fa9c841b3b1619fc5b5bc36efc7d158fa2356f223b6caeb1d0c80a54168546"
-      url: "https://pub.dev"
-    source: hosted
-    version: "3.0.2"
+      path: flutter_secure_storage_linux
+      ref: "feat/linux-rewrite"
+      resolved-ref: "5f33b62fe4836a616744dd83b14a744192d6b1d6"
+      url: "https://github.com/EchoEllet/flutter_secure_storage.git"
+    source: git
+    version: "3.0.1"
   flutter_secure_storage_platform_interface:
     dependency: transitive
     description:
@@ -755,6 +756,14 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  freedesktop_secret:
+    dependency: transitive
+    description:
+      name: freedesktop_secret
+      sha256: "19ffc3520c7488ec4a21530b13f87b4549a1dc16c9fb823cbaa65163706bf768"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.1.2"
   freezed_annotation:
     dependency: transitive
     description:
@@ -1050,6 +1059,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "5.1.1"
+  linux_application_id:
+    dependency: transitive
+    description:
+      name: linux_application_id
+      sha256: "325827b93fec808cadf7308cd711f064f68569e1f030d1a9623b2afabaf19012"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.3"
   local_auth:
     dependency: "direct main"
     description:

@@ -170,9 +170,11 @@ class DiscordRpcNotifier extends Notifier<DiscordRpcState>
     required UnifiedMedia anime,
     required int episodeNumber,
     String? episodeTitle,
-    int? timeStampMs,
+    int? positionMs,
     int? durationMs,
+    int? timeStampMs,
     int? totalEpisodes,
+    bool isPlaying = true,
   }) async {
     if (!state.isEnabled) return;
     if (!state.customSettings.enablePlayerPresence) return;
@@ -181,9 +183,10 @@ class DiscordRpcNotifier extends Notifier<DiscordRpcState>
       anime: anime,
       episodeNumber: episodeNumber,
       episodeTitle: episodeTitle,
-      timeStampMs: timeStampMs,
+      positionMs: positionMs ?? timeStampMs,
       durationMs: durationMs,
       totalEpisodes: totalEpisodes,
+      isPlaying: isPlaying,
     );
     state = state.copyWith(isConnected: _rpcService.isConnected);
   }
@@ -191,19 +194,17 @@ class DiscordRpcNotifier extends Notifier<DiscordRpcState>
   Future<void> updateAnimePresencePaused({
     required UnifiedMedia anime,
     required int episodeNumber,
-    int? timeStampMs,
+    int? positionMs,
     int? durationMs,
+    int? timeStampMs,
   }) async {
-    if (!state.isEnabled) return;
-    if (!state.customSettings.enablePlayerPresence) return;
-    await _ensureConnected();
-    await _rpcService.updateAnimePresencePaused(
+    await updateAnimePresence(
       anime: anime,
       episodeNumber: episodeNumber,
-      timeStampMs: timeStampMs,
+      positionMs: positionMs ?? timeStampMs,
       durationMs: durationMs,
+      isPlaying: false,
     );
-    state = state.copyWith(isConnected: _rpcService.isConnected);
   }
 
   Future<void> updateMangaPresence({

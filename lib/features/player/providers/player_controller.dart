@@ -768,30 +768,18 @@ class PlayerController extends Notifier<PlayerState> {
 
     final engine = ref.read(videoEngineProvider);
     final isPlaying = ref.read(videoEngineStateProvider).isPlaying;
-    final positionMs = engine.currentPosition.inMilliseconds;
-    final durationMs = engine.currentDuration.inMilliseconds;
 
-    if (isPlaying) {
-      ref
-          .read(discordRpcProvider.notifier)
-          .updateAnimePresence(
-            anime: _media!,
-            episodeNumber: activeEp.number.toInt(),
-            episodeTitle: activeEp.title,
-            timeStampMs: positionMs > 0 ? positionMs : null,
-            durationMs: durationMs > 0 ? durationMs : null,
-            totalEpisodes: _media!.episodes,
-          );
-    } else {
-      ref
-          .read(discordRpcProvider.notifier)
-          .updateAnimePresencePaused(
-            anime: _media!,
-            episodeNumber: activeEp.number.toInt(),
-            timeStampMs: positionMs > 0 ? positionMs : null,
-            durationMs: durationMs > 0 ? durationMs : null,
-          );
-    }
+    ref
+        .read(discordRpcProvider.notifier)
+        .updateAnimePresence(
+          anime: _media!,
+          episodeNumber: activeEp.number.toInt(),
+          episodeTitle: activeEp.title,
+          positionMs: engine.currentPosition.inMilliseconds,
+          durationMs: engine.currentDuration.inMilliseconds,
+          totalEpisodes: _media!.episodes,
+          isPlaying: isPlaying,
+        );
   }
 }
 

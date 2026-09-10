@@ -129,7 +129,8 @@ class _UpdateSettingsScreenState extends ConsumerState<UpdateSettingsScreen> {
                 SettingsSwitchTile(
                   icon: Icons.new_releases_outlined,
                   title: 'Include Pre-releases',
-                  subtitle: 'Receive early alpha, beta, and hotfix builds',
+                  subtitle:
+                      'Receive early builds marked as pre-release on GitHub',
                   value: prefs.includePrerelease,
                   onChanged: (v) => notifier.setIncludePrerelease(v),
                 ),

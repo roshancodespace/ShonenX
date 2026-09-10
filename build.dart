@@ -43,12 +43,11 @@ Future<void> main(List<String> args) async {
 
       case 'linux':
         await run(['flutter', 'build', 'linux', ...common]);
-        await run([
-          'zip',
-          '-r',
-          'linux-bundle.zip',
-          'build/linux/x64/release/bundle',
-        ]);
+        // Run zip inside the bundle directory to avoid nesting paths
+        await run(
+          ['zip', '-r', '../../../../../linux-bundle.zip', '.'],
+          workingDirectory: 'build/linux/x64/release/bundle',
+        );
         break;
 
       case 'windows':
@@ -66,13 +65,14 @@ Future<void> main(List<String> args) async {
   }
 }
 
-Future<void> run(List<String> cmd) async {
+Future<void> run(List<String> cmd, {String? workingDirectory}) async {
   stdout.writeln('> ${cmd.join(' ')}\n');
 
   _currentProcess = await Process.start(
     cmd.first,
     cmd.sublist(1),
     runInShell: true,
+    workingDirectory: workingDirectory,
   );
 
   _currentProcess!.stdout.listen(stdout.add);

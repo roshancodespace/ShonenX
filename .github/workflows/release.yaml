@@ -30,10 +30,6 @@ on:
         description: "Ping @everyone on Discord?"
         type: boolean
         default: true
-      include_logs:
-        description: "Include run logs link in notification?"
-        type: boolean
-        default: true
       is_prerelease:
         description: "Is this a pre-release?"
         type: boolean
@@ -621,7 +617,7 @@ jobs:
           2. Focus ONLY on user-facing app features, bug fixes, UI/UX enhancements, and app improvements. Completely EXCLUDE any CI/CD, GitHub Actions, workflow, build configuration, or internal script changes.
           3. Group related user-facing changes logically (e.g., Features, Bug Fixes, Improvements) if applicable, or use clean bullet points.
           4. DO NOT deviate significantly from what the commit messages say. Do not invent features or exaggerate changes.
-          5. Avoid using too many emojis (at most 1-2 subtle section icons, or none at all).
+          5. STRICT NO EMOJI POLICY: Do NOT output a single emoji whatsoever. 0 emojis.
           6. Return ONLY the Markdown text for the release notes without any introductory or concluding remarks from the AI.
 
           Commits:
@@ -665,22 +661,42 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  notify:
-    needs:
-      [
-        resolve-release-tag,
-        build-android,
-        build-linux,
-        build-windows,
-        build-macos,
-        build-ios,
-      ]
-    if: always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && (github.event_name == 'push' || github.event.inputs.notify_discord == 'true')
-    uses: ./.github/workflows/Notify.yml
-    with:
-      notify_everyone: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.notify_everyone == 'true' || true }}
-      include_logs: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.include_logs == 'true' || true }}
-      is_prerelease: ${{ needs.resolve-release-tag.outputs.is_prerelease == 'true' }}
-      tag_name: ${{ needs.resolve-release-tag.outputs.tag_name }}
-    secrets:
-      DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+      - name: Send Discord Notification
+        if: github.event_name == 'push' || github.event.inputs.notify_discord == 'true'
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          TAG: ${{ needs.resolve-release-tag.outputs.tag_name }}
+          NOTIFY_EVERYONE: ${{ github.event.inputs.notify_everyone }}
+        run: |
+          if [ -z "$DISCORD_WEBHOOK" ]; then
+            echo "Skipping Discord notification: Webhook missing."
+            exit 0
+          fi
+          
+          REPO_URL="https://github.com/${{ github.repository }}"
+          RELEASE_URL="${REPO_URL}/releases/download/${TAG}"
+          
+          # Truncate changelog to safely fit under Discord's 2000 character payload limit
+          CHANGELOG=$(cat release_notes.md | head -c 1500)
+          
+          # Build Download Links strictly from the artifacts we just released
+          LINKS=""
+          cd release-artifacts
+          for f in *; do
+            if [ -f "$f" ]; then
+              LINKS="${LINKS}\n• [${f}](${RELEASE_URL}/${f})"
+            fi
+          done
+          
+          MENTION=""
+          if [ "$NOTIFY_EVERYONE" = "true" ] || [ "${{ github.event_name }}" = "push" ]; then
+            MENTION="@everyone "
+          fi
+          
+          # Assemble clean Markdown structure
+          BODY="${MENTION}**ShonenX Release Compiled: ${TAG}**\n\n**Changelog:**\n${CHANGELOG}\n\n**Direct Asset Downloads:**${LINKS}"
+          
+          # Escape securely via jq
+          PAYLOAD=$(jq -n --arg content "$BODY" '{content: $content}')
+          
+          curl -s -X POST -H "Content-Type: application/json" -d "$PAYLOAD" "$DISCORD_WEBHOOK"

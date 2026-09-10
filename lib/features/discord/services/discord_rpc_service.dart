@@ -10,7 +10,7 @@ import 'package:shonenx/shared/models/unified_media.dart';
 
 /// Manages Discord presence across Desktop IPC and Gateway WebSocket.
 class DiscordRpcService {
-  static const String applicationId = '1435544312296505394';
+  static const String applicationId = '1519961030078234666';
   static const String _appIconUrl =
       'https://raw.githubusercontent.com/roshancodespace/ShonenX/refs/heads/main/assets/images/app_icon.png';
 

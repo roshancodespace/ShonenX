@@ -154,6 +154,13 @@ final homeSectionFeedProvider =
         if (hs == null || hs.type != HomeSectionType.discovery) return const [];
 
         final tracker = ref.watch(metadataSourceProvider);
+
+        // Guard: don't call a tracker with a media type it doesn't support.
+        // This prevents e.g. AniList receiving TV/MOVIE from stale section definitions.
+        if (!tracker.supportsMediaType(section.mediaType)) {
+          return const [];
+        }
+
         final adultMode = ref.watch(contentPrefsProvider).adultContentMode;
         final category = hs.trackerCategory ?? TrackerCategory.trending;
         final prefs = ref.watch(discoveryPrefsProvider);

@@ -34,12 +34,7 @@ class DiscoveryTrackerErrorNotifier
     extends Notifier<DiscoveryTrackerErrorInfo?> {
   @override
   DiscoveryTrackerErrorInfo? build() {
-    // Reset tracker error whenever metadata source changes (e.g. user switches source)
-    ref.listen(metadataSourceProvider, (previous, next) {
-      if (previous?.type != next.type) {
-        state = null;
-      }
-    });
+    ref.watch(metadataSourceProvider);
 
     return null;
   }

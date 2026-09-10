@@ -38,8 +38,12 @@ final metadataSourceProvider = Provider<RemoteTracker>((ref) {
     return primary;
   }
 
+  // Local tracker (or any non-remote primary) defaults to AniList for metadata discovery
   final trackers = ref.watch(availableTrackersProvider);
-  return trackers.firstWhere((t) => t is RemoteTracker) as RemoteTracker;
+  return trackers.whereType<RemoteTracker>().firstWhere(
+    (t) => t.type == TrackerType.anilist,
+    orElse: () => trackers.whereType<RemoteTracker>().first,
+  );
 }, name: 'metadataSourceProvider');
 
 final animeSourceProvider = Provider.family<AnimeSource, SourceInfo>((

@@ -1,5 +1,7 @@
 // ignore_for_file: constant_identifier_names
 
+import 'package:shonenx/shared/models/content_category.dart';
+
 enum MediaType {
   ANIME,
   MANGA,
@@ -28,6 +30,19 @@ enum MediaType {
     (t) => t.id == id,
     orElse: () => throw ArgumentError('Invalid MediaType id: $id'),
   );
+
+  /// Maps tracker-specific media types to app-level content categories.
+  ContentCategory get contentCategory {
+    switch (this) {
+      case MediaType.ANIME:
+      case MediaType.TV:
+      case MediaType.MOVIE:
+        return ContentCategory.watching;
+      case MediaType.MANGA:
+      case MediaType.NOVEL:
+        return ContentCategory.reading;
+    }
+  }
 }
 
 enum TitlePreference {

@@ -24,24 +24,35 @@ import 'package:shonenx/shared/widgets/app_scaffold.dart';
 import 'package:shonenx/shared/widgets/tracker_avatar.dart';
 
 class _HeaderButton extends StatelessWidget {
-  final IconData icon;
+  final IconData? icon;
+  final Widget? iconWidget;
+  final Widget Function(BuildContext context, Color color)? iconBuilder;
   final VoidCallback onTap;
   final String tooltip;
   final bool active;
   final double? borderRadius;
 
   const _HeaderButton({
-    required this.icon,
+    this.icon,
+    this.iconWidget,
+    this.iconBuilder,
     required this.onTap,
     required this.tooltip,
     this.active = false,
     this.borderRadius,
-  });
+  }) : assert(icon != null || iconWidget != null || iconBuilder != null);
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final radius = BorderRadius.circular(borderRadius ?? GlobalUI.uiRoundness);
+    final iconColor = active
+        ? theme.colorScheme.onPrimaryContainer
+        : theme.colorScheme.onSurface;
+
+    final Widget childWidget = iconBuilder != null
+        ? iconBuilder!(context, iconColor)
+        : (iconWidget ?? Icon(icon, size: 20, color: iconColor));
 
     return Tooltip(
       message: tooltip,
@@ -56,12 +67,10 @@ class _HeaderButton extends StatelessWidget {
           borderRadius: radius,
           child: Padding(
             padding: const EdgeInsets.all(8),
-            child: Icon(
-              icon,
-              size: 20,
-              color: active
-                  ? theme.colorScheme.onPrimaryContainer
-                  : theme.colorScheme.onSurface,
+            child: SizedBox(
+              width: 20,
+              height: 20,
+              child: Center(child: childWidget),
             ),
           ),
         ),
@@ -285,21 +294,35 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Consumer(
-              builder: (context, modeRef, _) {
-                final mode = modeRef.watch(
-                  discoveryPrefsProvider.select((p) => p.mode),
-                );
-                final isTracker = mode == MetadataMode.tracker;
+              builder: (context, ref, _) {
+                final prefs = ref.watch(discoveryPrefsProvider);
+                final isTracker = prefs.mode == MetadataMode.tracker;
 
-                return _HeaderButton(
-                  tooltip: 'Discovery Mode',
-                  borderRadius: uiRoundness,
-                  onTap: () => DiscoveryModeSheet.show(context),
-                  icon: isTracker
-                      ? Icons.cloud_outlined
-                      : Icons.extension_outlined,
-                  active: isTracker,
-                );
+                if (isTracker) {
+                  final metadataTracker = ref.watch(metadataSourceProvider);
+                  final trackerType = metadataTracker.type;
+                  final isAuto = prefs.metadataTrackerId == null;
+                  final tooltip = isAuto
+                      ? 'Discovery Mode: Auto (${trackerType.displayName})'
+                      : 'Discovery Mode: ${trackerType.displayName}';
+
+                  return _HeaderButton(
+                    tooltip: tooltip,
+                    borderRadius: uiRoundness,
+                    onTap: () => DiscoveryModeSheet.show(context),
+                    iconBuilder: (context, color) =>
+                        trackerType.getIconWidget(size: 20, color: color),
+                    active: true,
+                  );
+                } else {
+                  return _HeaderButton(
+                    tooltip: 'Discovery Mode: Extensions',
+                    borderRadius: uiRoundness,
+                    onTap: () => DiscoveryModeSheet.show(context),
+                    icon: Icons.extension_rounded,
+                    active: false,
+                  );
+                }
               },
             ),
             const SizedBox(width: 8),
@@ -605,6 +628,10 @@ class _DiscoverySectionErrorWidget extends ConsumerWidget {
     final isAuto = prefs.metadataTrackerId == null;
     final primaryTracker = ref.watch(primaryTrackerProvider);
     final primaryType = primaryTracker.type;
+    final isLocalPrimary = primaryType == TrackerType.local;
+    final effectiveAutoType = isLocalPrimary
+        ? TrackerType.anilist
+        : primaryType;
 
     final otherTrackers = ref
         .watch(availableTrackersProvider)
@@ -650,7 +677,7 @@ class _DiscoverySectionErrorWidget extends ConsumerWidget {
                         size: 14,
                         color: cs.primary,
                       ),
-                      label: 'Auto (${primaryType.displayName})',
+                      label: 'Auto (${effectiveAutoType.displayName})',
                       onTap: () => _switchSource(
                         context: context,
                         ref: ref,
@@ -662,7 +689,7 @@ class _DiscoverySectionErrorWidget extends ConsumerWidget {
                           size: 16,
                           color: Colors.white,
                         ),
-                        label: 'Auto (${primaryType.displayName})',
+                        label: 'Auto (${effectiveAutoType.displayName})',
                         roundness: r,
                       ),
                     ),

@@ -33,7 +33,17 @@ class UserHomeLayoutNotifier extends Notifier<List<HomeSection>> {
     final json = _storage.getStringList(key);
 
     if (json != null && json.isNotEmpty) {
-      return json.map((e) => HomeSection.fromJson(e)).toList();
+      final saved = json.map((e) => HomeSection.fromJson(e)).toList();
+      if (tracker != null) {
+        return saved.where((s) {
+          final mt = s.targetMediaType;
+          if (mt == null) return true;
+          // Continue/library sections use local history, not tracker APIs
+          if (s.type != HomeSectionType.discovery) return true;
+          return tracker!.supportsMediaType(mt);
+        }).toList();
+      }
+      return saved;
     }
 
     if (prefs.mode == MetadataMode.source || tracker == null) {
@@ -71,25 +81,27 @@ class UserHomeLayoutNotifier extends Notifier<List<HomeSection>> {
 
       for (final media in tracker.supportedMediaTypes) {
         if (tracker.supportedCategories.contains(TrackerCategory.trending)) {
-          sections.add(HomeSection(
-            id: (idCounter++).toString(),
-            title: '${TrackerCategory.trending.label} ${media.displayName}',
-            type: HomeSectionType.discovery,
-            targetMediaType: media,
-            trackerCategory: TrackerCategory.trending,
-          ));
+          sections.add(
+            HomeSection(
+              id: (idCounter++).toString(),
+              title: '${TrackerCategory.trending.label} ${media.displayName}',
+              type: HomeSectionType.discovery,
+              targetMediaType: media,
+              trackerCategory: TrackerCategory.trending,
+            ),
+          );
         }
       }
 
       for (final media in tracker.supportedMediaTypes) {
-        sections.add(HomeSection(
-          id: (idCounter++).toString(),
-          title: (media == MediaType.MANGA || media == MediaType.NOVEL)
-              ? 'Continue Reading'
-              : 'Continue Watching',
-          type: HomeSectionType.continueMedia,
-          targetMediaType: media,
-        ));
+        sections.add(
+          HomeSection(
+            id: (idCounter++).toString(),
+            title: 'Continue ${media.displayName}',
+            type: HomeSectionType.continueMedia,
+            targetMediaType: media,
+          ),
+        );
       }
 
       return sections;
@@ -142,13 +154,13 @@ class UserHomeLayoutNotifier extends Notifier<List<HomeSection>> {
     // Generate default layout based on current tracker, then filter by user preferences
     _storage.remove(_dataKey);
     final defaults = build();
-    
+
     state = defaults.where((s) {
       if (!includeAnime && s.targetMediaType == MediaType.ANIME) return false;
       if (!includeManga && s.targetMediaType == MediaType.MANGA) return false;
       return true;
     }).toList();
-    
+
     _saveDb();
   }
 

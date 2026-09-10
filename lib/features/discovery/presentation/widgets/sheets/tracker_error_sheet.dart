@@ -173,6 +173,7 @@ class TrackerErrorSheet extends ConsumerWidget {
 
     final isSyncPaused = primaryType == trackerType;
     final isLocal = primaryType == TrackerType.local;
+    final effectiveAutoType = isLocal ? TrackerType.anilist : primaryType;
 
     return AppBottomSheet(
       title: '${trackerType.displayName} Status',
@@ -476,7 +477,7 @@ class TrackerErrorSheet extends ConsumerWidget {
                             size: 16,
                             color: cs.primary,
                           ),
-                          label: 'Auto (${primaryType.displayName})',
+                          label: 'Auto (${effectiveAutoType.displayName})',
                           onTap: () => _switchSource(
                             context: context,
                             ref: ref,
@@ -488,7 +489,7 @@ class TrackerErrorSheet extends ConsumerWidget {
                               size: 18,
                               color: Colors.white,
                             ),
-                            label: 'Auto (${primaryType.displayName})',
+                            label: 'Auto (${effectiveAutoType.displayName})',
                             roundness: r,
                           ),
                         ),

@@ -284,12 +284,62 @@ jobs:
           cd build/linux/x64/release/bundle
           zip -r ../../../../../ShonenX-linux.zip .
 
+      - name: Create Linux AppImage
+        run: |
+          BUNDLE_DIR="build/linux/x64/release/bundle"
+          APPDIR="AppDir"
+          
+          # Dynamically find the executable to prevent naming mismatches
+          EXE_PATH=$(find $BUNDLE_DIR -maxdepth 1 -type f -executable -not -name "*.so")
+          EXE_NAME=$(basename "$EXE_PATH")
+          echo "Found executable: $EXE_NAME"
+          
+          mkdir -p $APPDIR
+          cp -r $BUNDLE_DIR/* $APPDIR/
+          
+          # Create AppRun script (Routes library paths properly for Flutter)
+          cat << EOF > $APPDIR/AppRun
+          #!/bin/sh
+          HERE="\$(dirname "\$(readlink -f "\${0}")")"
+          export LD_LIBRARY_PATH="\${HERE}/lib:\${LD_LIBRARY_PATH}"
+          exec "\${HERE}/$EXE_NAME" "\$@"
+          EOF
+          chmod +x $APPDIR/AppRun
+          
+          # Create .desktop file
+          cat << EOF > $APPDIR/$EXE_NAME.desktop
+          [Desktop Entry]
+          Version=1.0
+          Name=ShonenX
+          Exec=$EXE_NAME
+          Icon=$EXE_NAME
+          Type=Application
+          Terminal=false
+          Categories=Utility;
+          EOF
+          
+          # Ensure an icon exists (Appimagetool fails otherwise)
+          if [ -f "linux/application_icon.png" ]; then
+            cp linux/application_icon.png $APPDIR/$EXE_NAME.png
+          else
+            # Creates a 1x1 transparent PNG if no icon exists
+            echo "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" | base64 -d > $APPDIR/$EXE_NAME.png
+          fi
+          
+          # Download appimagetool
+          curl -sLO https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x appimagetool-x86_64.AppImage
+          
+          # Run appimagetool (using extract-and-run to bypass FUSE requirements in the Arch container)
+          ./appimagetool-x86_64.AppImage --appimage-extract-and-run $APPDIR ShonenX-linux-x86_64.AppImage
+
       - name: Upload Linux Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: linux-bundle
-          # Upload only the finished zip file, NOT the raw directory
-          path: ShonenX-linux.zip
+          name: linux-artifacts
+          path: |
+            ShonenX-linux.zip
+            ShonenX-linux-x86_64.AppImage
 
   build-windows:
     needs: resolve-release-tag
@@ -358,15 +408,22 @@ jobs:
             flutter build windows --release --dart-define-from-file=keys.json
           }
 
+      - name: Create Windows Portable Zip
+        shell: bash
+        run: |
+          cd build/windows/x64/runner/Release
+          zip -r ../../../../../ShonenX-windows-portable.zip .
+
       - name: Build installer (InnoBundle)
         run: dart run inno_bundle --release --no-app
 
       - name: Upload Windows Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: windows-installer
-          # Explicitly only upload the built .exe
-          path: build/windows/x64/installer/Release/*.exe
+          name: windows-artifacts
+          path: |
+            build/windows/x64/installer/Release/*.exe
+            ShonenX-windows-portable.zip
 
   build-macos:
     needs: resolve-release-tag
@@ -507,7 +564,8 @@ jobs:
         run: |
           cd build/ios/iphoneos
           mkdir Payload
-          mv Runner.app Payload/
+          # Uses *.app to prevent packaging from failing if the bundle isn't named strictly "Runner.app"
+          mv *.app Payload/
           zip -qq -r ../../../ShonenX-iOS-Unsigned.ipa Payload
 
       - name: Upload iOS Artifacts
@@ -538,7 +596,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: release-artifacts
-          # This forces all downloaded files (.apk, .exe, .zip, .ipa) into a single flat directory
+          # This forces all downloaded files (.apk, .exe, .zip, .AppImage, .ipa) into a single flat directory
           merge-multiple: true
 
       - name: Generate Release Notes

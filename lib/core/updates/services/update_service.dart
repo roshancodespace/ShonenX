@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shonenx/core/updates/models/app_version.dart';
 import 'package:shonenx/core/updates/models/github_release.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/core/utils/env.dart';
@@ -78,9 +79,10 @@ class UpdatePrefsNotifier extends Notifier<UpdatePreferences> {
   }
 }
 
-final updatePrefsProvider = NotifierProvider<UpdatePrefsNotifier, UpdatePreferences>(
-  UpdatePrefsNotifier.new,
-);
+final updatePrefsProvider =
+    NotifierProvider<UpdatePrefsNotifier, UpdatePreferences>(
+      UpdatePrefsNotifier.new,
+    );
 
 class UpdateService {
   final Ref _ref;
@@ -98,7 +100,9 @@ class UpdateService {
     final prefs = _ref.read(updatePrefsProvider);
     final apiUrl = 'https://api.github.com/repos/$repo/releases';
 
-    _log.i('Checking for updates from $apiUrl (includePrerelease: ${prefs.includePrerelease})...');
+    _log.i(
+      'Checking for updates from $apiUrl (includePrerelease: ${prefs.includePrerelease})...',
+    );
 
     try {
       final response = await http.get(
@@ -126,17 +130,30 @@ class UpdateService {
         return null;
       }
 
-      // Sort releases by published date descending (newest first)
-      releases.sort((a, b) => b.publishedAt.compareTo(a.publishedAt));
+      // Sort releases by Version descending (highest version first), then date, then ID
+      releases.sort((a, b) {
+        final verA = AppVersion.parse(a.tagName);
+        final verB = AppVersion.parse(b.tagName);
+        final cmp = verB.compareTo(verA);
+        if (cmp != 0) return cmp;
+        final dateCmp = b.publishedAt.compareTo(a.publishedAt);
+        if (dateCmp != 0) return dateCmp;
+        return b.id.compareTo(a.id);
+      });
       final latestRelease = releases.first;
 
       final packageInfo = await PackageInfo.fromPlatform();
-      final currentVersion = '${packageInfo.version}+${packageInfo.buildNumber}';
+      final currentVersionStr =
+          '${packageInfo.version}+${packageInfo.buildNumber}';
+      final currentVersion = AppVersion.parse(currentVersionStr);
+      final latestVersion = AppVersion.parse(latestRelease.tagName);
 
-      _log.i('Current version: $currentVersion, Latest release tag: ${latestRelease.tagName} (id: ${latestRelease.id})');
+      _log.i(
+        'Current version: $currentVersionStr ($currentVersion), Latest release tag: ${latestRelease.tagName} ($latestVersion, id: ${latestRelease.id})',
+      );
 
       // Compare versions
-      final cmp = _compareVersions(latestRelease.tagName, currentVersion);
+      final cmp = latestVersion.compareTo(currentVersion);
       if (cmp > 0) {
         // Tag version is strictly newer
         if (!force && latestRelease.id == prefs.lastDismissedReleaseId) {
@@ -154,13 +171,17 @@ class UpdateService {
           if (!force && latestRelease.id == prefs.lastDismissedReleaseId) {
             return null;
           }
-          _log.i('Same tag version but higher release ID (${latestRelease.id} > ${prefs.lastSeenReleaseId}).');
+          _log.i(
+            'Same tag version but higher release ID (${latestRelease.id} > ${prefs.lastSeenReleaseId}).',
+          );
           return latestRelease;
         }
       } else {
         // App version is newer or equal to latest release tag. Record as seen.
         if (prefs.lastSeenReleaseId != latestRelease.id) {
-          await _ref.read(updatePrefsProvider.notifier).setLastSeenReleaseId(latestRelease.id);
+          await _ref
+              .read(updatePrefsProvider.notifier)
+              .setLastSeenReleaseId(latestRelease.id);
         }
       }
     } catch (e, st) {
@@ -170,61 +191,8 @@ class UpdateService {
     return null;
   }
 
-  int _compareVersions(String tag, String currentVersion) {
-    final cleanTag = tag.trim().replaceFirst(RegExp(r'^v', caseSensitive: false), '');
-    final cleanCurrent = currentVersion.trim().replaceFirst(RegExp(r'^v', caseSensitive: false), '');
-
-    final tagParts = cleanTag.split('-');
-    final currentParts = cleanCurrent.split('-');
-
-    final tagMainAndBuild = tagParts[0].split('+');
-    final currentMainAndBuild = currentParts[0].split('+');
-
-    final tagNums = tagMainAndBuild[0].split('.').map((e) => int.tryParse(e) ?? 0).toList();
-    final currentNums = currentMainAndBuild[0].split('.').map((e) => int.tryParse(e) ?? 0).toList();
-
-    for (var i = 0; i < 3; i++) {
-      final a = i < tagNums.length ? tagNums[i] : 0;
-      final b = i < currentNums.length ? currentNums[i] : 0;
-      if (a > b) return 1;
-      if (a < b) return -1;
-    }
-
-    // Main versions are equal. Check pre-release tags.
-    final tagPre = tagParts.length > 1 ? tagParts.sublist(1).join('-').split('+')[0] : '';
-    final currentPre = currentParts.length > 1 ? currentParts.sublist(1).join('-').split('+')[0] : '';
-
-    if (tagPre.isEmpty && currentPre.isNotEmpty) return 1; // 2.0.0 > 2.0.0-alpha
-    if (tagPre.isNotEmpty && currentPre.isEmpty) return -1; // 2.0.0-alpha < 2.0.0
-
-    if (tagPre != currentPre) {
-      final tagSegments = tagPre.split('.');
-      final currentSegments = currentPre.split('.');
-      final len = tagSegments.length > currentSegments.length ? tagSegments.length : currentSegments.length;
-      for (var i = 0; i < len; i++) {
-        final segA = i < tagSegments.length ? tagSegments[i] : '';
-        final segB = i < currentSegments.length ? currentSegments[i] : '';
-        final numA = int.tryParse(segA);
-        final numB = int.tryParse(segB);
-        if (numA != null && numB != null) {
-          if (numA > numB) return 1;
-          if (numA < numB) return -1;
-        } else {
-          final cmp = segA.compareTo(segB);
-          if (cmp != 0) return cmp;
-        }
-      }
-    }
-
-    // Check build number (+number)
-    final tagBuildStr = tag.contains('+') ? tag.split('+').last : (tagMainAndBuild.length > 1 ? tagMainAndBuild[1] : '');
-    final currentBuildStr = currentVersion.contains('+') ? currentVersion.split('+').last : (currentMainAndBuild.length > 1 ? currentMainAndBuild[1] : '');
-    final tagBuild = int.tryParse(tagBuildStr) ?? 0;
-    final currentBuild = int.tryParse(currentBuildStr) ?? 0;
-    if (tagBuild > currentBuild) return 1;
-    if (tagBuild < currentBuild) return -1;
-
-    return 0;
+  static int compareVersions(String tag, String currentVersion) {
+    return AppVersion.compare(tag, currentVersion);
   }
 
   Future<List<GitHubRelease>> fetchAllReleases() async {
@@ -245,7 +213,13 @@ class UpdateService {
           .map((item) => GitHubRelease.fromJson(item as Map<String, dynamic>))
           .where((r) => !r.draft)
           .toList();
-      releases.sort((a, b) => b.publishedAt.compareTo(a.publishedAt));
+      releases.sort((a, b) {
+        final verA = AppVersion.parse(a.tagName);
+        final verB = AppVersion.parse(b.tagName);
+        final cmp = verB.compareTo(verA);
+        if (cmp != 0) return cmp;
+        return b.publishedAt.compareTo(a.publishedAt);
+      });
       return releases;
     } catch (e, st) {
       _log.e('Error fetching all releases', e, st);
@@ -262,4 +236,3 @@ final releasesListProvider = FutureProvider<List<GitHubRelease>>((ref) async {
   final service = ref.watch(updateServiceProvider);
   return service.fetchAllReleases();
 });
-

@@ -49,10 +49,10 @@ class GitHubRelease {
     if (Platform.isLinux) {
       for (final a in assets) {
         final name = a.name.toLowerCase();
-        if (name.contains('linux') &&
-            (name.endsWith('.zip') ||
-                name.endsWith('.tar.gz') ||
-                name.endsWith('.appimage'))) {
+        if (name.endsWith('.appimage') ||
+            name.endsWith('.flatpak') ||
+            (name.contains('linux') &&
+                (name.endsWith('.zip') || name.endsWith('.tar.gz')))) {
           return a;
         }
       }
@@ -123,10 +123,10 @@ class GitHubRelease {
     if (Platform.isLinux) {
       for (final a in assets) {
         final name = a.name.toLowerCase();
-        if (name.contains('linux') &&
-            (name.endsWith('.zip') ||
-                name.endsWith('.tar.gz') ||
-                name.endsWith('.appimage'))) {
+        if (name.endsWith('.appimage') ||
+            name.endsWith('.flatpak') ||
+            (name.contains('linux') &&
+                (name.endsWith('.zip') || name.endsWith('.tar.gz')))) {
           return a.downloadUrl;
         }
       }

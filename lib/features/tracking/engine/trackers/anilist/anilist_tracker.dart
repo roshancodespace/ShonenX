@@ -84,6 +84,7 @@ class AnilistTracker extends BaseTracker
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
+          'Referer': 'https://anilist.co',
         },
       );
 
@@ -140,6 +141,7 @@ class AnilistTracker extends BaseTracker
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
+          'Referer': 'https://anilist.co',
         },
       );
 
@@ -162,6 +164,7 @@ class AnilistTracker extends BaseTracker
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
+          'Referer': 'https://anilist.co',
         },
       );
 
@@ -250,6 +253,7 @@ class AnilistTracker extends BaseTracker
           headers: {
             'Authorization': 'Bearer $token',
             'Content-Type': 'application/json',
+            'Referer': 'https://anilist.co',
           },
         );
 
@@ -309,6 +313,7 @@ class AnilistTracker extends BaseTracker
           headers: {
             'Authorization': 'Bearer $token',
             'Content-Type': 'application/json',
+            'Referer': 'https://anilist.co',
           },
         );
 
@@ -402,6 +407,7 @@ class AnilistTracker extends BaseTracker
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
+          'Referer': 'https://anilist.co',
         },
       );
     });
@@ -421,6 +427,7 @@ class AnilistTracker extends BaseTracker
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
+          'Referer': 'https://anilist.co',
         },
       );
     });

@@ -130,6 +130,7 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
           'query': AnilistTrackerQueries.trending(adultMode),
           'variables': {'page': page, 'type': type.name},
         },
+        headers: {'Referer': 'https://anilist.co'},
         cacheDuration: cacheDuration ?? const Duration(days: 1),
       );
 
@@ -258,6 +259,7 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
           'query': AnilistTrackerQueries.metadataSearch(adultMode),
           'variables': variables,
         },
+        headers: {'Referer': 'https://anilist.co'},
         cacheDuration: cacheDuration ?? const Duration(hours: 12),
       );
 
@@ -301,6 +303,7 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
           'query': AnilistTrackerQueries.details,
           'variables': {'id': id, 'type': type.name},
         },
+        headers: {'Referer': 'https://anilist.co'},
         cacheDuration: const Duration(days: 1),
       );
 
@@ -358,6 +361,7 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
       final response = await http.post(
         _endpoint,
         body: {'query': AnilistTrackerQueries.genres},
+        headers: {'Referer': 'https://anilist.co'},
         cacheDuration: const Duration(days: 7),
       );
 
@@ -597,7 +601,10 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
             'query': AnilistTrackerQueries.characters,
             'variables': {'id': numericId, 'page': page, 'perPage': perPage},
           },
-          headers: {'Content-Type': 'application/json'},
+          headers: {
+            'Content-Type': 'application/json',
+            'Referer': 'https://anilist.co',
+          },
           cacheDuration: const Duration(days: 7),
         );
 
@@ -657,7 +664,10 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
             'query': AnilistTrackerQueries.characterDetails,
             'variables': {'id': numericId},
           },
-          headers: {'Content-Type': 'application/json'},
+          headers: {
+            'Content-Type': 'application/json',
+            'Referer': 'https://anilist.co',
+          },
           cacheDuration: const Duration(days: 7),
         );
 

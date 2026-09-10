@@ -171,6 +171,10 @@ class _TrackerConfig extends ConsumerWidget {
     final targetId = prefs.metadataTrackerId;
 
     final primaryTracker = ref.watch(primaryTrackerProvider);
+    final isLocalPrimary = primaryTracker.type == TrackerType.local;
+    final autoTrackerType = isLocalPrimary
+        ? TrackerType.anilist
+        : primaryTracker.type;
     final trackers = ref
         .watch(availableTrackersProvider)
         .whereType<RemoteTracker>()
@@ -183,8 +187,10 @@ class _TrackerConfig extends ConsumerWidget {
       children: [
         SelectionCardTile(
           isSelected: targetId == null,
-          title: 'Auto (${primaryTracker.type.displayName})',
-          subtitle: 'Matches your primary tracker',
+          title: 'Auto (${autoTrackerType.displayName})',
+          subtitle: isLocalPrimary
+              ? 'Local tracker defaults to ${autoTrackerType.displayName} for metadata'
+              : 'Matches your primary tracker',
           leading: Icon(
             Icons.sync_rounded,
             size: 24,

@@ -2,18 +2,18 @@ import 'dart:async';
 
 import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
+
+import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/player/domain/media_kit_prefs.dart';
 import 'package:shonenx/features/player/domain/subtitle_prefs.dart';
 import 'package:shonenx/features/player/engine/video_engine.dart';
 import 'package:shonenx/features/player/presentation/widgets/media_kit/media_kit_settings.dart';
-import 'package:shonenx/shared/models/video_stream.dart' as stream;
-import 'package:shonenx/core/utils/app_logger.dart';
-
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shonenx/features/player/providers/video_engine_provider.dart';
 import 'package:shonenx/features/player/providers/subtitle_prefs_provider.dart';
+import 'package:shonenx/features/player/providers/video_engine_provider.dart';
+import 'package:shonenx/shared/models/video_stream.dart' as stream;
 
 class MediaKitEngine implements VideoEngine {
   static final _log = AppLogger.scope('MediaKitEngine');
@@ -291,8 +291,10 @@ class MediaKitEngine implements VideoEngine {
   }
 
   stream.AudioTrack _mapAudioTrack(AudioTrack track) {
-    if (track.id == 'auto') return stream.AudioTrack.auto;
-    if (track.id == 'no') return stream.AudioTrack.none;
+    if (track.id == 'auto' && track.title == null && track.language == null)
+      return stream.AudioTrack.auto;
+    if (track.id == 'no' && track.title == null && track.language == null)
+      return stream.AudioTrack.none;
 
     final title = track.title?.trim();
     final lang = track.language?.trim();
@@ -317,10 +319,10 @@ class MediaKitEngine implements VideoEngine {
 
   @override
   Future<void> setAudioTrack(stream.AudioTrack track) async {
-    if (track.id == 'auto') {
+    if (track == stream.AudioTrack.auto) {
       _log.d('Setting audio track: auto');
       await _player.setAudioTrack(AudioTrack.auto());
-    } else if (track.id == 'no') {
+    } else if (track == stream.AudioTrack.none) {
       _log.d('Disabling audio track');
       await _player.setAudioTrack(AudioTrack.no());
     } else {

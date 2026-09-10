@@ -95,3 +95,6 @@ android/app/build/
 
 *.js
 *.zip
+*.flatpak
+*.AppImage
+.flatpak-builder/

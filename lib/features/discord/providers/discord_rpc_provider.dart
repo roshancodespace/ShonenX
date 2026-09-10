@@ -94,8 +94,12 @@ class DiscordRpcNotifier extends Notifier<DiscordRpcState>
     await updateBrowsingPresence();
   }
 
-  Future<void> _connect([String? token]) async {
-    await _rpcService.connect(token);
+  Future<void> _connect([String? token, bool force = false]) async {
+    try {
+      await _rpcService.connect(token, force);
+    } catch (e) {
+      _log.d('Discord RPC connect suppressed: $e');
+    }
     state = state.copyWith(isConnected: _rpcService.isConnected);
   }
 
@@ -111,8 +115,8 @@ class DiscordRpcNotifier extends Notifier<DiscordRpcState>
     final discordState = ref.read(discordProvider);
 
     if (state == AppLifecycleState.resumed && !_rpcService.isConnected) {
-      _log.i('App resumed, reconnecting Discord RPC');
-      _connect(discordState.token);
+      _log.d('App resumed, checking Discord RPC connection');
+      _connect(discordState.token, true);
     }
   }
 
@@ -123,7 +127,7 @@ class DiscordRpcNotifier extends Notifier<DiscordRpcState>
 
     if (value) {
       final discordState = ref.read(discordProvider);
-      await _connect(discordState.token);
+      await _connect(discordState.token, true);
     } else {
       await _rpcService.clearPresence();
       await _rpcService.disconnect();

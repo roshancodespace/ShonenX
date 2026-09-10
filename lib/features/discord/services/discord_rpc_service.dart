@@ -32,7 +32,7 @@ class DiscordRpcService {
       !kIsWeb && (Platform.isLinux || Platform.isMacOS || Platform.isWindows);
 
   bool get isConnected =>
-      _gateway.isConnected || (isDesktopPlatform && _desktop.isInitialized);
+      _gateway.isConnected || (isDesktopPlatform && _desktop.isConnected);
 
   Map<String, dynamic>? get lastPresencePayload => _lastGatewayPayload;
 
@@ -40,26 +40,38 @@ class DiscordRpcService {
   // Lifecycle
   // ---------------------------------------------------------------------------
 
-  Future<void> connect([String? token]) async {
+  Future<void> connect([String? token, bool force = false]) async {
     _token = token ?? _token;
 
     if (isDesktopPlatform) {
-      await _desktop.init(applicationId);
-      await _desktop.connect();
-      if (_lastDesktopActivity != null) {
-        _desktop.setActivity(_lastDesktopActivity!);
+      try {
+        await _desktop.init(applicationId);
+        await _desktop.connect(force: force);
+        if (_desktop.isConnected && _lastDesktopActivity != null) {
+          _desktop.setActivity(_lastDesktopActivity!);
+        }
+      } catch (e) {
+        _log.d('Desktop RPC connect skipped: $e');
       }
     }
 
     if (_token != null && _token!.isNotEmpty) {
-      await _gateway.connect();
+      try {
+        await _gateway.connect();
+      } catch (e) {
+        _log.d('Gateway connect skipped: $e');
+      }
     }
   }
 
   Future<void> disconnect() async {
     _log.i('Disconnecting Discord RPC');
-    _desktop.disconnect();
-    await _gateway.disconnect();
+    try {
+      _desktop.disconnect();
+    } catch (_) {}
+    try {
+      await _gateway.disconnect();
+    } catch (_) {}
   }
 
   // ---------------------------------------------------------------------------
@@ -278,8 +290,14 @@ class DiscordRpcService {
   Future<void> clearPresence() async {
     _log.i('Clearing presence');
     resetPresenceState();
-    _desktop.clearActivity();
-    _gateway.sendPresenceUpdate({'activities': [], 'status': 'online'});
+    try {
+      _desktop.clearActivity();
+    } catch (_) {}
+    if (_gateway.isConnected) {
+      try {
+        _gateway.sendPresenceUpdate({'activities': [], 'status': 'online'});
+      } catch (_) {}
+    }
   }
 
   /// Resets cached presence state without dispatching updates.
@@ -315,15 +333,18 @@ class DiscordRpcService {
   }) async {
     _lastDesktopActivity = desktop;
 
-    if (isDesktopPlatform && _desktop.isInitialized) {
-      _desktop.setActivity(desktop);
+    if (isDesktopPlatform && _desktop.isConnected) {
+      try {
+        _desktop.setActivity(desktop);
+      } catch (_) {}
     }
 
-    final payload = await gateway;
-    _lastGatewayPayload = payload;
-
     if (_gateway.isConnected) {
-      _gateway.send(payload);
+      try {
+        final payload = await gateway;
+        _lastGatewayPayload = payload;
+        _gateway.send(payload);
+      } catch (_) {}
     }
   }
 
@@ -437,8 +458,12 @@ class DiscordRpcService {
 class _DesktopRpc {
   final _log = AppLogger.scope(_DesktopRpc);
   bool _initialized = false;
+  bool _connected = false;
+  DateTime? _lastConnectAttempt;
+  static const Duration _retryCooldown = Duration(seconds: 30);
 
   bool get isInitialized => _initialized;
+  bool get isConnected => _connected;
 
   Future<void> init(String appId) async {
     if (_initialized) return;
@@ -447,43 +472,60 @@ class _DesktopRpc {
       _initialized = true;
       _log.s('Desktop IPC initialized');
     } catch (e, s) {
-      _log.e('Failed to init Desktop IPC', e, s);
+      _log.e('Failed to init Desktop IPC:', e, s);
     }
   }
 
-  Future<void> connect() async {
+  Future<void> connect({bool force = false}) async {
     if (!_initialized) return;
+    if (_connected) return;
+
+    final now = DateTime.now();
+    if (!force &&
+        _lastConnectAttempt != null &&
+        now.difference(_lastConnectAttempt!) < _retryCooldown) {
+      return;
+    }
+    _lastConnectAttempt = now;
+
     try {
       await FlutterDiscordRPC.instance.connect();
+      _connected = true;
+      _log.s('Desktop IPC connected');
     } catch (e, s) {
-      _log.e('Desktop IPC connect failed', e, s);
+      _connected = false;
+      _log.e('Desktop IPC connect skipped (Discord client not running):', e, s);
     }
   }
 
   void setActivity(RPCActivity activity) {
-    if (!_initialized) return;
+    if (!_initialized || !_connected) return;
     try {
       FlutterDiscordRPC.instance.setActivity(activity: activity);
     } catch (e, s) {
-      _log.e('Failed to set desktop activity', e, s);
+      _log.e('Failed to set desktop activity:', e, s);
+      _connected = false;
     }
   }
 
   void clearActivity() {
-    if (!_initialized) return;
+    if (!_initialized || !_connected) return;
     try {
       FlutterDiscordRPC.instance.clearActivity();
-    } catch (e, s) {
-      _log.e('Failed to clear desktop activity', e, s);
+    } catch (e) {
+      _log.d('Failed to clear desktop activity: $e');
+      _connected = false;
     }
   }
 
   void disconnect() {
-    if (!_initialized) return;
+    if (!_initialized || !_connected) return;
     try {
       FlutterDiscordRPC.instance.disconnect();
     } catch (e, s) {
-      _log.e('Desktop IPC disconnect failed', e, s);
+      _log.e('Desktop IPC disconnect failed:', e, s);
+    } finally {
+      _connected = false;
     }
   }
 }

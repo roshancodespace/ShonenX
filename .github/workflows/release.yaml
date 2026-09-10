@@ -202,7 +202,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: android-apks
-          # Explicitly only upload APK files, no random build junk
           path: build/app/outputs/flutter-apk/*-release.apk
 
   build-linux:
@@ -289,7 +288,6 @@ jobs:
           BUNDLE_DIR="build/linux/x64/release/bundle"
           APPDIR="AppDir"
           
-          # Dynamically find the executable to prevent naming mismatches
           EXE_PATH=$(find $BUNDLE_DIR -maxdepth 1 -type f -executable -not -name "*.so")
           EXE_NAME=$(basename "$EXE_PATH")
           echo "Found executable: $EXE_NAME"
@@ -297,7 +295,6 @@ jobs:
           mkdir -p $APPDIR
           cp -r $BUNDLE_DIR/* $APPDIR/
           
-          # Create AppRun script (Routes library paths properly for Flutter)
           cat << EOF > $APPDIR/AppRun
           #!/bin/sh
           HERE="\$(dirname "\$(readlink -f "\${0}")")"
@@ -306,7 +303,6 @@ jobs:
           EOF
           chmod +x $APPDIR/AppRun
           
-          # Create .desktop file
           cat << EOF > $APPDIR/$EXE_NAME.desktop
           [Desktop Entry]
           Version=1.0
@@ -318,19 +314,15 @@ jobs:
           Categories=Utility;
           EOF
           
-          # Ensure an icon exists (Appimagetool fails otherwise)
           if [ -f "linux/application_icon.png" ]; then
             cp linux/application_icon.png $APPDIR/$EXE_NAME.png
           else
-            # Creates a 1x1 transparent PNG if no icon exists
             echo "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" | base64 -d > $APPDIR/$EXE_NAME.png
           fi
           
-          # Download appimagetool
           curl -sLO https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
           chmod +x appimagetool-x86_64.AppImage
           
-          # Run appimagetool (using extract-and-run to bypass FUSE requirements in the Arch container)
           ./appimagetool-x86_64.AppImage --appimage-extract-and-run $APPDIR ShonenX-linux-x86_64.AppImage
 
       - name: Upload Linux Artifacts
@@ -409,10 +401,9 @@ jobs:
           }
 
       - name: Create Windows Portable Zip
-        shell: bash
+        shell: pwsh
         run: |
-          cd build/windows/x64/runner/Release
-          zip -r ../../../../../ShonenX-windows-portable.zip .
+          Compress-Archive -Path "build/windows/x64/runner/Release/*" -DestinationPath "ShonenX-windows-portable.zip" -Force
 
       - name: Build installer (InnoBundle)
         run: dart run inno_bundle --release --no-app
@@ -452,7 +443,6 @@ jobs:
           fi
 
           echo "Overriding pubspec.yaml version to: $CLEAN_VER"
-          # macOS requires empty string '' after -i for sed
           sed -i '' -e "s/^version: .*/version: $CLEAN_VER/g" pubspec.yaml
 
       - name: Setup Rust toolchain (macOS)
@@ -564,7 +554,6 @@ jobs:
         run: |
           cd build/ios/iphoneos
           mkdir Payload
-          # Uses *.app to prevent packaging from failing if the bundle isn't named strictly "Runner.app"
           mv *.app Payload/
           zip -qq -r ../../../ShonenX-iOS-Unsigned.ipa Payload
 
@@ -596,7 +585,6 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: release-artifacts
-          # This forces all downloaded files (.apk, .exe, .zip, .AppImage, .ipa) into a single flat directory
           merge-multiple: true
 
       - name: Generate Release Notes
@@ -673,7 +661,6 @@ jobs:
           name: ${{ needs.resolve-release-tag.outputs.tag_name }}
           prerelease: ${{ needs.resolve-release-tag.outputs.is_prerelease == 'true' }}
           body_path: release_notes.md
-          # Simply upload everything in our clean artifact folder
           files: release-artifacts/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

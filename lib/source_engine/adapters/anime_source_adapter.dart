@@ -245,28 +245,28 @@ class AnimeSourceAdapter extends BaseSourceAdapter implements AnimeSource {
 
       return videos.map((e) {
         String finalUrl = e.url;
-        // if (finalUrl.startsWith('http://127.0.0.1') ||
-        //     finalUrl.startsWith('http://localhost')) {
-        //   final uri = Uri.tryParse(finalUrl);
+        if (finalUrl.startsWith('http://127.0.0.1') ||
+            finalUrl.startsWith('http://localhost')) {
+          final uri = Uri.tryParse(finalUrl);
 
-        //   if (uri != null &&
-        //       uri.path == '/m3u8' &&
-        //       uri.queryParameters.containsKey('url')) {
-        //     final extractedUrl = uri.queryParameters['url'];
+          if (uri != null &&
+              uri.path == '/m3u8' &&
+              uri.queryParameters.containsKey('url')) {
+            final extractedUrl = uri.queryParameters['url'];
 
-        //     if (extractedUrl != null) {
-        //       final extractedUri = Uri.tryParse(extractedUrl);
-        //       final isTorrent =
-        //           extractedUri != null &&
-        //           (extractedUri.scheme == 'magnet' ||
-        //               extractedUri.scheme == 'torrent');
+            if (extractedUrl != null) {
+              final extractedUri = Uri.tryParse(extractedUrl);
+              final isTorrent =
+                  extractedUri != null &&
+                  (extractedUri.scheme == 'magnet' ||
+                      extractedUri.scheme == 'torrent');
 
-        //       if (!isTorrent) {
-        //         finalUrl = extractedUrl;
-        //       }
-        //     }
-        //   }
-        // }
+              if (!isTorrent) {
+                finalUrl = extractedUrl;
+              }
+            }
+          }
+        }
 
         return VideoStream(
           url: finalUrl,

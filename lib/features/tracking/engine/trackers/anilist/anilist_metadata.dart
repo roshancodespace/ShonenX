@@ -377,6 +377,7 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
       final response = await http.post(
         _endpoint,
         body: {'query': AnilistTrackerQueries.tags},
+        headers: {'Referer': 'https://anilist.co'},
         cacheDuration: const Duration(days: 7),
       );
 

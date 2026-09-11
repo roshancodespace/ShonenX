@@ -24,6 +24,11 @@ extension HttpX on HTTP {
     String url, {
     Map<String, String>? headers,
   }) async {
+    final uri = Uri.tryParse(url);
+    if (uri != null && (uri.host == 'localhost' || uri.host == '127.0.0.1')) {
+      return [];
+    }
+
     if (!await isHLS(url, headers: headers)) {
       return [];
     }

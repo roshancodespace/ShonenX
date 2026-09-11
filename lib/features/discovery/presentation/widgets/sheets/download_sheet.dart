@@ -13,6 +13,7 @@ import 'package:shonenx/core/utils/http_x.dart';
 import 'package:shonenx/features/downloads/domain/models/download_task.dart';
 import 'package:shonenx/features/downloads/providers/download_prefs_provider.dart';
 import 'package:shonenx/features/downloads/providers/download_provider.dart';
+import 'package:shonenx/features/downloads/utils/download_url_helper.dart';
 import 'package:shonenx/shared/models/unified_episode.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/models/video_server.dart';
@@ -348,6 +349,20 @@ class _DownloadSheetState extends ConsumerState<DownloadSheet> {
   }
 
   Future<void> _startDownload(VideoStream stream, VideoServer server) async {
+    final downloadUrl = DownloadUrlHelper.extractDownloadUrl(stream.url);
+    if (downloadUrl == null || DownloadUrlHelper.isTorrent(stream.url)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Torrents are not supported by the internal downloader. Please use 1DM.',
+            ),
+          ),
+        );
+      }
+      return;
+    }
+
     if (Platform.isAndroid) {
       final permission = await DeviceInfo.isAndroid10OrBelow()
           ? Permission.storage
@@ -407,10 +422,15 @@ class _DownloadSheetState extends ConsumerState<DownloadSheet> {
       }
     }
 
+    final mergedHeaders = DownloadUrlHelper.extractHeadersFromUrl(
+      stream.url,
+      stream.headers,
+    );
+
     final task = DownloadTask()
-      ..url = stream.url
+      ..url = downloadUrl
       ..mediaId = widget.media.id
-      ..headersMap = stream.headers
+      ..headersMap = mergedHeaders
       ..episodeNumber = widget.episode.number
       ..savePath = '$targetDir/$fileName'
       ..fileName = fileName;
@@ -426,16 +446,23 @@ class _DownloadSheetState extends ConsumerState<DownloadSheet> {
   }
 
   Future<void> _start1DMDownload(VideoStream stream) async {
+    final downloadUrl = DownloadUrlHelper.extractUrl(stream.url);
+
     final epNum = widget.episode.number.toString().contains('.0')
         ? widget.episode.number.toInt().toString()
         : widget.episode.number.toString();
     final fileName =
         '${widget.media.title.availableTitle} - Episode $epNum.mp4';
 
+    final mergedHeaders = DownloadUrlHelper.extractHeadersFromUrl(
+      stream.url,
+      stream.headers,
+    );
+
     final success = await OneDMService.instance.download(
-      url: stream.url,
+      url: downloadUrl,
       fileName: fileName,
-      headers: stream.headers,
+      headers: mergedHeaders,
     );
 
     if (mounted) {
@@ -453,7 +480,8 @@ class _DownloadSheetState extends ConsumerState<DownloadSheet> {
   }
 
   void _copyStreamUrl(VideoStream stream) {
-    Clipboard.setData(ClipboardData(text: stream.url));
+    final copyUrl = DownloadUrlHelper.extractUrl(stream.url);
+    Clipboard.setData(ClipboardData(text: copyUrl));
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

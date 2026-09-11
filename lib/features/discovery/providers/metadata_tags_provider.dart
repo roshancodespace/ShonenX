@@ -17,6 +17,7 @@ class MetadataTagsState {
 final metadataTagsProvider = FutureProvider.autoDispose<MetadataTagsState>(
   retry: (retryCount, error) => null,
   (ref) async {
+    ref.keepAlive();
     final source = ref.watch(metadataSourceProvider);
     final options = await source.fetchFilterOptions();
     return MetadataTagsState(options: options);
@@ -29,6 +30,7 @@ final discoveryFiltersProvider = FutureProvider.autoDispose
     .family<MetadataTagsState, DiscoveryFilterArgs>(
       retry: (retryCount, error) => null,
       (ref, args) async {
+        ref.keepAlive();
         final prefs = ref.watch(discoveryPrefsProvider);
 
         if (args.sourceId != null || prefs.mode == MetadataMode.source) {

@@ -129,7 +129,7 @@ extension AppNavigator on BuildContext {
     }
 
     final uri = Uri(
-      path: '/discover/results',
+      path: '/discover',
       queryParameters: queryParams.isEmpty ? null : queryParams,
     );
     push(uri.toString());

@@ -154,6 +154,7 @@ class _UnifiedSearchBarState extends State<UnifiedSearchBar> {
     Color iconColor,
     double targetWidth,
   ) {
+    final colorScheme = theme.colorScheme;
     Widget content = Row(
       children: [
         const SizedBox(width: 4),
@@ -227,17 +228,23 @@ class _UnifiedSearchBarState extends State<UnifiedSearchBar> {
               children: [
                 if (hasText)
                   IconButton(
-                    icon: const Icon(
-                      Icons.clear_rounded,
-                      size: 18,
-                      color: Colors.white70,
-                    ),
+                    icon: Icon(Icons.clear_rounded, size: 18, color: iconColor),
                     tooltip: 'Clear search',
                     onPressed: widget.onClearPressed,
                   ),
-                if (widget.hasFilters && widget.onFilterPressed != null)
+                if (widget.onFilterPressed != null)
                   IconButton(
-                    icon: Icon(Icons.tune_rounded, size: 18, color: iconColor),
+                    icon: Badge(
+                      isLabelVisible: widget.hasFilters,
+                      backgroundColor: colorScheme.primary,
+                      child: Icon(
+                        Icons.tune_rounded,
+                        size: 18,
+                        color: widget.hasFilters
+                            ? colorScheme.primary
+                            : iconColor,
+                      ),
+                    ),
                     tooltip: 'Filters',
                     onPressed: widget.onFilterPressed,
                   ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/features/discovery/domain/models/search_filter_options.dart';
 import 'package:shonenx/features/discovery/providers/metadata_tags_provider.dart';
+import 'package:shonenx/shared/models/ui_style_enums.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/shared/widgets/unified_search_bar.dart';
@@ -138,6 +139,7 @@ class _AdvancedSearchSheetState extends ConsumerState<AdvancedSearchSheet> {
     required ValueChanged<bool> onSelected,
     required ThemeData theme,
     required ColorScheme colorScheme,
+    required double uiRoundness,
   }) {
     return ChoiceChip(
       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -158,7 +160,9 @@ class _AdvancedSearchSheetState extends ConsumerState<AdvancedSearchSheet> {
             ? colorScheme.primary
             : colorScheme.outline.withValues(alpha: 0.2),
       ),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(uiRoundness),
+      ),
     );
   }
 
@@ -168,6 +172,7 @@ class _AdvancedSearchSheetState extends ConsumerState<AdvancedSearchSheet> {
     required ValueChanged<bool> onSelected,
     required ThemeData theme,
     required ColorScheme colorScheme,
+    required double uiRoundness,
   }) {
     return FilterChip(
       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -189,7 +194,9 @@ class _AdvancedSearchSheetState extends ConsumerState<AdvancedSearchSheet> {
             ? colorScheme.primary
             : colorScheme.outline.withValues(alpha: 0.2),
       ),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(uiRoundness),
+      ),
     );
   }
 
@@ -197,6 +204,7 @@ class _AdvancedSearchSheetState extends ConsumerState<AdvancedSearchSheet> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final uiRoundness = GlobalUI.uiRoundness;
     final tagsState = ref.watch(
       discoveryFiltersProvider((type: widget.type, sourceId: widget.sourceId)),
     );
@@ -283,6 +291,7 @@ class _AdvancedSearchSheetState extends ConsumerState<AdvancedSearchSheet> {
                                       setState(() => _selectedSort = sortOpt),
                                   theme: theme,
                                   colorScheme: colorScheme,
+                                  uiRoundness: uiRoundness,
                                 );
                               }).toList(),
                             ),
@@ -304,6 +313,7 @@ class _AdvancedSearchSheetState extends ConsumerState<AdvancedSearchSheet> {
                                   ),
                                   theme: theme,
                                   colorScheme: colorScheme,
+                                  uiRoundness: uiRoundness,
                                 );
                               }).toList(),
                             ),
@@ -324,6 +334,7 @@ class _AdvancedSearchSheetState extends ConsumerState<AdvancedSearchSheet> {
                                       setState(() => _selectedFormat = fmtOpt),
                                   theme: theme,
                                   colorScheme: colorScheme,
+                                  uiRoundness: uiRoundness,
                                 );
                               }).toList(),
                             ),
@@ -342,6 +353,7 @@ class _AdvancedSearchSheetState extends ConsumerState<AdvancedSearchSheet> {
                                       onSelected: (_) => _toggleGenre(g),
                                       theme: theme,
                                       colorScheme: colorScheme,
+                                      uiRoundness: uiRoundness,
                                     ),
                                   )
                                   .toList(),
@@ -373,7 +385,7 @@ class _AdvancedSearchSheetState extends ConsumerState<AdvancedSearchSheet> {
                                             ),
                                         shape: RoundedRectangleBorder(
                                           borderRadius: BorderRadius.circular(
-                                            16,
+                                            uiRoundness,
                                           ),
                                         ),
                                       ),
@@ -403,7 +415,9 @@ class _AdvancedSearchSheetState extends ConsumerState<AdvancedSearchSheet> {
                                   vertical: 10,
                                 ),
                                 border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
+                                  borderRadius: BorderRadius.circular(
+                                    uiRoundness,
+                                  ),
                                 ),
                               ),
                             ),
@@ -431,7 +445,7 @@ class _AdvancedSearchSheetState extends ConsumerState<AdvancedSearchSheet> {
                                             ),
                                         shape: RoundedRectangleBorder(
                                           borderRadius: BorderRadius.circular(
-                                            16,
+                                            uiRoundness,
                                           ),
                                         ),
                                       ),
@@ -457,7 +471,7 @@ class _AdvancedSearchSheetState extends ConsumerState<AdvancedSearchSheet> {
             style: FilledButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 12),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(uiRoundness),
               ),
             ),
           ),

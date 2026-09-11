@@ -1,8 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/router/app_navigator.dart';
 import 'package:shonenx/core/utils/focus_hover_detector.dart';
-
-import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
+import 'package:shonenx/features/discovery/presentation/widgets/sheets/discovery_mode_sheet.dart';
+import 'package:shonenx/features/discovery/providers/discovery_prefs_provider.dart';
+import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
+import 'package:shonenx/features/tracking/presentation/widgets/tracker_profile_sheet.dart';
+import 'package:shonenx/features/tracking/providers/tracker_profile_provider.dart';
+import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
+import 'package:shonenx/shared/models/ui_style_enums.dart';
+import 'package:shonenx/shared/widgets/tracker_avatar.dart';
+import 'package:shonenx/source_engine/source_engine_provider.dart';
 
 class TvNavBar extends StatelessWidget {
   final int selectedIndex;
@@ -22,7 +30,7 @@ class TvNavBar extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
         child: Row(
           children: [
-            Text(
+            const Text(
               'ShonenX TV',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
             ),
@@ -50,9 +58,179 @@ class TvNavBar extends StatelessWidget {
               isSelected: false,
               onTap: () => context.pushSettings(),
             ),
+            const Spacer(),
+            const _TvDiscoveryModeButton(),
+            const SizedBox(width: 12),
+            const _TvProfileButton(),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _TvDiscoveryModeButton extends ConsumerWidget {
+  const _TvDiscoveryModeButton();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final prefs = ref.watch(discoveryPrefsProvider);
+    final isTracker = prefs.mode == MetadataMode.tracker;
+    final cs = ColorScheme.of(context);
+    final radius = GlobalUI.uiRoundness;
+
+    final String label;
+    if (isTracker) {
+      final metadataTracker = ref.watch(metadataSourceProvider);
+      final trackerType = metadataTracker.type;
+      label = prefs.metadataTrackerId == null
+          ? 'Auto (${trackerType.displayName})'
+          : trackerType.displayName;
+    } else {
+      label = 'Extensions';
+    }
+
+    return AppFocusHover(
+      onTap: () => DiscoveryModeSheet.show(context),
+      builder: (context, isFocused, isHovered) {
+        final active = isFocused || isHovered;
+        final fgColor = isFocused ? cs.surface : cs.onSurface;
+        final iconColor = isFocused ? cs.surface : cs.primary;
+
+        return InkWell(
+          onTap: () => DiscoveryModeSheet.show(context),
+          borderRadius: BorderRadius.circular(radius),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: isFocused
+                  ? cs.onSurface
+                  : (isHovered
+                        ? cs.surfaceContainerHighest
+                        : cs.surfaceContainerHighest.withValues(alpha: 0.5)),
+              borderRadius: BorderRadius.circular(radius),
+              border: isFocused
+                  ? Border.all(
+                      color: cs.primary,
+                      width: 2,
+                      strokeAlign: BorderSide.strokeAlignOutside,
+                    )
+                  : Border.all(
+                      color: cs.outlineVariant.withValues(alpha: 0.25),
+                      width: 1,
+                    ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (isTracker)
+                  ref
+                      .watch(metadataSourceProvider)
+                      .type
+                      .getIconWidget(size: 16, color: iconColor)
+                else
+                  Icon(Icons.extension_rounded, size: 16, color: iconColor),
+                const SizedBox(width: 8),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: active ? FontWeight.bold : FontWeight.w600,
+                    color: fgColor,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _TvProfileButton extends ConsumerWidget {
+  const _TvProfileButton();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final profiles = ref.watch(trackerProfileProvider);
+    final primaryTrackerType = ref.watch(
+      primaryTrackerProvider.select((s) => s.type),
+    );
+    final profile = profiles[primaryTrackerType];
+    final cs = ColorScheme.of(context);
+    final radius = GlobalUI.uiRoundness;
+
+    final username = profile?.username.isNotEmpty == true
+        ? profile!.username
+        : 'Guest';
+    final avatarUrl = profile?.avatarUrl;
+
+    void openProfile() {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        useRootNavigator: true,
+        useSafeArea: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => TrackerProfileSheet(trackerType: primaryTrackerType),
+      );
+    }
+
+    return AppFocusHover(
+      onTap: openProfile,
+      builder: (context, isFocused, isHovered) {
+        final active = isFocused || isHovered;
+        final fgColor = isFocused ? cs.surface : cs.onSurface;
+
+        return InkWell(
+          onTap: openProfile,
+          borderRadius: BorderRadius.circular(radius),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: isFocused
+                  ? cs.onSurface
+                  : (isHovered
+                        ? cs.surfaceContainerHighest
+                        : cs.surfaceContainerHighest.withValues(alpha: 0.5)),
+              borderRadius: BorderRadius.circular(radius),
+              border: isFocused
+                  ? Border.all(
+                      color: cs.primary,
+                      width: 2,
+                      strokeAlign: BorderSide.strokeAlignOutside,
+                    )
+                  : Border.all(
+                      color: cs.outlineVariant.withValues(alpha: 0.25),
+                      width: 1,
+                    ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(
+                    (radius * 0.5).clamp(2.0, 16.0),
+                  ),
+                  child: TrackerAvatarWidget(imageUrl: avatarUrl, size: 26),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  username,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: active ? FontWeight.bold : FontWeight.w600,
+                    color: fgColor,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

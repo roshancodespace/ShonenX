@@ -4,13 +4,13 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shonenx/core/utils/focus_hover_detector.dart';
-import 'package:skeletonizer/skeletonizer.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:shonenx/core/router/app_navigator.dart';
+import 'package:shonenx/core/utils/focus_hover_detector.dart';
 import 'package:shonenx/core/utils/formatting.dart';
 import 'package:shonenx/features/discord/providers/discord_rpc_provider.dart';
 import 'package:shonenx/features/discovery/domain/media_args.dart';
@@ -36,7 +36,7 @@ import 'package:shonenx/features/tracking/providers/tracker_link_provider.dart';
 import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
 import 'package:shonenx/features/tracking/providers/tracking_prefs_provider.dart';
 import 'package:shonenx/features/tv_mode/presentation/widgets/tv_episode_shelf.dart';
-
+import 'package:shonenx/features/tv_mode/presentation/widgets/tv_manual_match_dialog.dart';
 import 'package:shonenx/features/tv_mode/presentation/widgets/tv_media_card.dart';
 import 'package:shonenx/features/tv_mode/presentation/widgets/tv_source_dialog.dart';
 import 'package:shonenx/shared/models/ui_style_enums.dart';
@@ -387,6 +387,7 @@ class _TvDetailsScreenState extends ConsumerState<TvDetailsScreen> {
   ) {
     final posterUrl = media.cover ?? media.banner ?? '';
     final effectiveSource = currentSource ?? activeSource;
+    final mediaArgs = MediaArgs.fromMedia(media);
     final cleanSynopsis = (media.description ?? '')
         .replaceAll(RegExp(r'<[^>]*>'), '')
         .replaceAll('\n', ' ')
@@ -688,6 +689,50 @@ class _TvDetailsScreenState extends ConsumerState<TvDetailsScreen> {
                               const SizedBox(width: 6),
                               Text(
                                 effectiveSource.name,
+                                style: TextStyle(
+                                  color: active ? Colors.black : Colors.white,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  if (effectiveSource != null)
+                    AppFocusHover(
+                      onTap: () => TvManualMatchDialog.show(
+                        context,
+                        mediaTitle: media.title.availableTitle,
+                        type: media.type,
+                        matchArgs: mediaArgs,
+                        currentSource: effectiveSource,
+                      ),
+                      builder: (context, isFocused, isHovered) {
+                        final active = isFocused || isHovered;
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 11,
+                          ),
+                          decoration: BoxDecoration(
+                            color: active
+                                ? Colors.white
+                                : Colors.white.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(radius),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.auto_fix_high_rounded,
+                                size: 14,
+                                color: active ? Colors.black : cs.primary,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Fix Match',
                                 style: TextStyle(
                                   color: active ? Colors.black : Colors.white,
                                   fontSize: 13,

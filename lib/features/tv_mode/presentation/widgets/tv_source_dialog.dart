@@ -338,176 +338,189 @@ class _TvSourceGroupCardState extends State<_TvSourceGroupCard> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        AppFocusHover(
-          onTap: () => widget.onSelectSource(activeVariant),
-          scaleFactor: 1.02,
-          builder: (context, isFocused, isHovered) {
-            final active = isFocused || isHovered;
+        Row(
+          children: [
+            Expanded(
+              child: AppFocusHover(
+                onTap: () => widget.onSelectSource(activeVariant),
+                scaleFactor: 1.02,
+                builder: (context, isFocused, isHovered) {
+                  final active = isFocused || isHovered;
 
-            return AnimatedContainer(
-              duration: const Duration(milliseconds: 160),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color: active
-                    ? Colors.white
-                    : isSelected
-                    ? widget.cs.primary.withValues(alpha: 0.14)
-                    : Colors.white.withValues(alpha: 0.04),
-                borderRadius: BorderRadius.circular(widget.radius),
-                border: Border.all(
-                  color: active
-                      ? Colors.white
-                      : isSelected
-                      ? widget.cs.primary.withValues(alpha: 0.45)
-                      : Colors.white.withValues(alpha: 0.08),
-                  width: active ? 1.8 : 1.0,
-                ),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 34,
-                    height: 34,
-                    padding: const EdgeInsets.all(5),
+                  return AnimatedContainer(
+                    duration: const Duration(milliseconds: 160),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
                     decoration: BoxDecoration(
                       color: active
-                          ? Colors.black.withValues(alpha: 0.08)
+                          ? Colors.white
                           : isSelected
-                          ? widget.cs.primary.withValues(alpha: 0.2)
-                          : Colors.white.withValues(alpha: 0.06),
-                      borderRadius: BorderRadius.circular(
-                        (widget.radius * 0.6).clamp(0.0, widget.radius),
+                          ? widget.cs.primary.withValues(alpha: 0.14)
+                          : Colors.white.withValues(alpha: 0.04),
+                      borderRadius: BorderRadius.circular(widget.radius),
+                      border: Border.all(
+                        color: active
+                            ? Colors.white
+                            : isSelected
+                            ? widget.cs.primary.withValues(alpha: 0.45)
+                            : Colors.white.withValues(alpha: 0.08),
+                        width: active ? 1.8 : 1.0,
                       ),
                     ),
-                    child:
-                        activeVariant.iconUrl != null &&
-                            activeVariant.iconUrl!.isNotEmpty
-                        ? CachedNetworkImage(
-                            imageUrl: activeVariant.iconUrl!,
-                            fit: BoxFit.contain,
-                            errorWidget: (_, __, ___) => Icon(
-                              Icons.extension_rounded,
-                              size: 18,
-                              color: active
-                                  ? Colors.black
-                                  : (isSelected
-                                        ? widget.cs.primary
-                                        : Colors.white70),
-                            ),
-                          )
-                        : Icon(
-                            Icons.extension_rounded,
-                            size: 18,
-                            color: active
-                                ? Colors.black
-                                : (isSelected
-                                      ? widget.cs.primary
-                                      : Colors.white70),
-                          ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
+                    child: Row(
                       children: [
-                        Text(
-                          activeVariant.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: active ? Colors.black : Colors.white,
-                            fontWeight: isSelected || active
-                                ? FontWeight.bold
-                                : FontWeight.w600,
-                            fontSize: 13.5,
+                        Container(
+                          width: 34,
+                          height: 34,
+                          padding: const EdgeInsets.all(5),
+                          decoration: BoxDecoration(
+                            color: active
+                                ? Colors.black.withValues(alpha: 0.08)
+                                : isSelected
+                                ? widget.cs.primary.withValues(alpha: 0.2)
+                                : Colors.white.withValues(alpha: 0.06),
+                            borderRadius: BorderRadius.circular(
+                              (widget.radius * 0.6).clamp(0.0, double.infinity),
+                            ),
                           ),
+                          child:
+                              activeVariant.iconUrl != null &&
+                                  activeVariant.iconUrl!.isNotEmpty
+                              ? CachedNetworkImage(
+                                  imageUrl: activeVariant.iconUrl!,
+                                  fit: BoxFit.contain,
+                                  errorWidget: (_, __, ___) => Icon(
+                                    Icons.extension_rounded,
+                                    size: 18,
+                                    color: active
+                                        ? Colors.black
+                                        : (isSelected
+                                              ? widget.cs.primary
+                                              : Colors.white70),
+                                  ),
+                                )
+                              : Icon(
+                                  Icons.extension_rounded,
+                                  size: 18,
+                                  color: active
+                                      ? Colors.black
+                                      : (isSelected
+                                            ? widget.cs.primary
+                                            : Colors.white70),
+                                ),
                         ),
-                        const SizedBox(height: 2),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 5,
-                                vertical: 1,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                activeVariant.name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: active ? Colors.black : Colors.white,
+                                  fontWeight: isSelected || active
+                                      ? FontWeight.bold
+                                      : FontWeight.w600,
+                                  fontSize: 13.5,
+                                ),
                               ),
-                              decoration: BoxDecoration(
-                                color: active
-                                    ? Colors.black.withValues(alpha: 0.1)
-                                    : Colors.white.withValues(alpha: 0.08),
-                                borderRadius: BorderRadius.circular(
-                                  (widget.radius * 0.4).clamp(
-                                    0.0,
-                                    widget.radius,
+                              const SizedBox(height: 2),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 5,
+                                  vertical: 1,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: active
+                                      ? Colors.black.withValues(alpha: 0.1)
+                                      : Colors.white.withValues(alpha: 0.08),
+                                  borderRadius: BorderRadius.circular(
+                                    (widget.radius * 0.4).clamp(
+                                      0.0,
+                                      double.infinity,
+                                    ),
+                                  ),
+                                ),
+                                child: Text(
+                                  '${widget.sources.length} VARIANTS • ${(activeVariant.lang ?? activeVariant.type.name).toUpperCase()}',
+                                  style: TextStyle(
+                                    color: active
+                                        ? Colors.black87
+                                        : Colors.white60,
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
                               ),
-                              child: Text(
-                                '${widget.sources.length} VARIANTS • ${(activeVariant.lang ?? activeVariant.type.name).toUpperCase()}',
-                                style: TextStyle(
-                                  color: active
-                                      ? Colors.black87
-                                      : Colors.white60,
-                                  fontSize: 9.5,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (isSelected) ...[
-                    Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: active ? Colors.black : widget.cs.primary,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.check_rounded,
-                        size: 13,
-                        color: active ? Colors.white : Colors.black,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                  ],
-                  AppFocusHover(
-                    onTap: () {
-                      setState(() {
-                        _isExpanded = !_isExpanded;
-                      });
-                    },
-                    scaleFactor: 1.1,
-                    builder: (context, isArrowFocused, isArrowHovered) {
-                      final arrowActive = isArrowFocused || isArrowHovered;
-                      return Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: arrowActive
-                              ? (active ? Colors.black26 : Colors.white24)
-                              : Colors.transparent,
-                          shape: BoxShape.circle,
-                        ),
-                        child: AnimatedRotation(
-                          turns: _isExpanded ? 0.5 : 0.0,
-                          duration: const Duration(milliseconds: 180),
-                          child: Icon(
-                            Icons.keyboard_arrow_down_rounded,
-                            size: 20,
-                            color: active ? Colors.black : Colors.white70,
+                            ],
                           ),
                         ),
-                      );
-                    },
-                  ),
-                ],
+                        if (isSelected)
+                          Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: active ? Colors.black : widget.cs.primary,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.check_rounded,
+                              size: 13,
+                              color: active ? Colors.white : Colors.black,
+                            ),
+                          ),
+                      ],
+                    ),
+                  );
+                },
               ),
-            );
-          },
+            ),
+            const SizedBox(width: 8),
+            AppFocusHover(
+              onTap: () {
+                setState(() {
+                  _isExpanded = !_isExpanded;
+                });
+              },
+              scaleFactor: 1.05,
+              builder: (context, isArrowFocused, isArrowHovered) {
+                final arrowActive = isArrowFocused || isArrowHovered;
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 160),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 14,
+                  ),
+                  decoration: BoxDecoration(
+                    color: arrowActive
+                        ? Colors.white
+                        : Colors.white.withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(widget.radius),
+                    border: Border.all(
+                      color: arrowActive
+                          ? Colors.white
+                          : Colors.white.withValues(alpha: 0.1),
+                      width: arrowActive ? 1.8 : 1.0,
+                    ),
+                  ),
+                  child: AnimatedRotation(
+                    turns: _isExpanded ? 0.5 : 0.0,
+                    duration: const Duration(milliseconds: 180),
+                    child: Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      size: 22,
+                      color: arrowActive ? Colors.black : Colors.white70,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
         ),
         AnimatedSize(
           duration: const Duration(milliseconds: 220),

@@ -17,6 +17,8 @@ import 'package:shonenx/features/reader/providers/preferred_scanlator_provider.d
 import 'package:shonenx/features/tracking/providers/media_tracking_provider.dart';
 import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
 import 'package:shonenx/features/tracking/providers/tracking_prefs_provider.dart';
+import 'package:shonenx/features/discovery/providers/media_preference_provider.dart';
+import 'package:shonenx/features/tv_mode/presentation/widgets/tv_manual_match_dialog.dart';
 import 'package:shonenx/features/tv_mode/presentation/widgets/tv_source_dialog.dart';
 import 'package:shonenx/shared/models/ui_style_enums.dart';
 import 'package:shonenx/shared/models/unified_episode.dart';
@@ -75,15 +77,26 @@ class _TvEpisodeShelfState extends ConsumerState<TvEpisodeShelf> {
     );
     final trackedProgress = trackingState.value?.progress.toDouble() ?? 0.0;
 
+    final prefSource = ref
+        .watch(mediaPreferenceProvider(mediaArgs))
+        .value
+        ?.sourceInfo;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         episodesState.when(
           loading: () => _buildLoadingState(cs),
-          error: (err, _) => _buildErrorState(context, err, mediaArgs, radius),
+          error: (err, _) =>
+              _buildErrorState(context, err, mediaArgs, radius, prefSource),
           data: (state) {
             if (state.episodes.isEmpty) {
-              return _buildEmptyState(context, mediaArgs, radius);
+              return _buildEmptyState(
+                context,
+                mediaArgs,
+                radius,
+                prefSource ?? state.source,
+              );
             }
 
             final uniqueSeasons =
@@ -429,6 +442,54 @@ class _TvEpisodeShelfState extends ConsumerState<TvEpisodeShelf> {
                             );
                           },
                         ),
+                        const SizedBox(width: 8),
+                        AppFocusHover(
+                          onTap: () => TvManualMatchDialog.show(
+                            context,
+                            mediaTitle: widget.media.title.availableTitle,
+                            type: widget.media.type,
+                            matchArgs: mediaArgs,
+                            currentSource: state.source,
+                          ),
+                          builder: (context, isFocused, isHovered) {
+                            final active = isFocused || isHovered;
+                            return Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: active
+                                    ? Colors.white
+                                    : Colors.white.withValues(alpha: 0.08),
+                                borderRadius: BorderRadius.circular(radius),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.auto_fix_high_rounded,
+                                    size: 13,
+                                    color: active
+                                        ? Colors.black
+                                        : Colors.white70,
+                                  ),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    'Fix Match',
+                                    style: TextStyle(
+                                      color: active
+                                          ? Colors.black
+                                          : Colors.white70,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
                       ],
                     ),
                   ),
@@ -670,6 +731,7 @@ class _TvEpisodeShelfState extends ConsumerState<TvEpisodeShelf> {
     BuildContext context,
     MediaArgs mediaArgs,
     double radius,
+    SourceInfo? currentSource,
   ) {
     return Container(
       width: double.infinity,
@@ -685,37 +747,88 @@ class _TvEpisodeShelfState extends ConsumerState<TvEpisodeShelf> {
             style: TextStyle(color: Colors.white70, fontSize: 14),
           ),
           const SizedBox(height: 14),
-          AppFocusHover(
-            onTap: () {
-              if (widget.onOpenSourceSelector != null) {
-                widget.onOpenSourceSelector!();
-              } else {
-                TvSourceDialog.show(context, media: widget.media);
-              }
-            },
-            builder: (context, isFocused, isHovered) {
-              final active = isFocused || isHovered;
-              return Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: active
-                      ? Colors.white
-                      : Colors.white.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(radius),
-                ),
-                child: Text(
-                  'Switch Source',
-                  style: TextStyle(
-                    color: active ? Colors.black : Colors.white,
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AppFocusHover(
+                onTap: () {
+                  if (widget.onOpenSourceSelector != null) {
+                    widget.onOpenSourceSelector!();
+                  } else {
+                    TvSourceDialog.show(context, media: widget.media);
+                  }
+                },
+                builder: (context, isFocused, isHovered) {
+                  final active = isFocused || isHovered;
+                  return Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: active
+                          ? Colors.white
+                          : Colors.white.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(radius),
+                    ),
+                    child: Text(
+                      'Switch Source',
+                      style: TextStyle(
+                        color: active ? Colors.black : Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              if (currentSource != null) ...[
+                const SizedBox(width: 12),
+                AppFocusHover(
+                  onTap: () => TvManualMatchDialog.show(
+                    context,
+                    mediaTitle: widget.media.title.availableTitle,
+                    type: widget.media.type,
+                    matchArgs: mediaArgs,
+                    currentSource: currentSource,
                   ),
+                  builder: (context, isFocused, isHovered) {
+                    final active = isFocused || isHovered;
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: active
+                            ? Colors.white
+                            : Colors.white.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(radius),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.auto_fix_high_rounded,
+                            size: 15,
+                            color: active ? Colors.black : Colors.amberAccent,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Fix Match',
+                            style: TextStyle(
+                              color: active ? Colors.black : Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
                 ),
-              );
-            },
+              ],
+            ],
           ),
         ],
       ),
@@ -727,6 +840,7 @@ class _TvEpisodeShelfState extends ConsumerState<TvEpisodeShelf> {
     Object error,
     MediaArgs mediaArgs,
     double radius,
+    SourceInfo? currentSource,
   ) {
     return Container(
       width: double.infinity,
@@ -808,6 +922,52 @@ class _TvEpisodeShelfState extends ConsumerState<TvEpisodeShelf> {
                   );
                 },
               ),
+              if (currentSource != null) ...[
+                const SizedBox(width: 12),
+                AppFocusHover(
+                  onTap: () => TvManualMatchDialog.show(
+                    context,
+                    mediaTitle: widget.media.title.availableTitle,
+                    type: widget.media.type,
+                    matchArgs: mediaArgs,
+                    currentSource: currentSource,
+                  ),
+                  builder: (context, isFocused, isHovered) {
+                    final active = isFocused || isHovered;
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 7,
+                      ),
+                      decoration: BoxDecoration(
+                        color: active
+                            ? Colors.white
+                            : Colors.white.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(radius),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.auto_fix_high_rounded,
+                            size: 14,
+                            color: active ? Colors.black : Colors.amberAccent,
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            'Fix Match',
+                            style: TextStyle(
+                              color: active ? Colors.black : Colors.white,
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ],
             ],
           ),
         ],

@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class SettingsSection extends StatelessWidget {
   final String title;
@@ -311,7 +312,7 @@ class SettingsRadioTile<T> extends StatelessWidget {
   }
 }
 
-class SettingsSliderTile extends StatelessWidget {
+class SettingsSliderTile extends StatefulWidget {
   final IconData icon;
   final String title;
   final String subtitle;
@@ -321,6 +322,7 @@ class SettingsSliderTile extends StatelessWidget {
   final int divisions;
   final String label;
   final ValueChanged<double>? onChanged;
+  final FocusNode? focusNode;
 
   const SettingsSliderTile({
     super.key,
@@ -333,7 +335,82 @@ class SettingsSliderTile extends StatelessWidget {
     this.divisions = 10,
     required this.label,
     this.onChanged,
+    this.focusNode,
   });
+
+  @override
+  State<SettingsSliderTile> createState() => _SettingsSliderTileState();
+}
+
+class _SettingsSliderTileState extends State<SettingsSliderTile> {
+  FocusNode? _internalFocusNode;
+
+  FocusNode get _effectiveFocusNode =>
+      widget.focusNode ?? (_internalFocusNode ??= _createFocusNode());
+
+  FocusNode _createFocusNode() {
+    return FocusNode(
+      debugLabel: 'SettingsSliderTile_${widget.title}',
+      onKeyEvent: _handleKeyEvent,
+    );
+  }
+
+  @override
+  void dispose() {
+    _internalFocusNode?.dispose();
+    super.dispose();
+  }
+
+  double _calculateNewValue(double delta) {
+    final range = widget.max - widget.min;
+    if (range <= 0) return widget.value;
+
+    final step = widget.divisions > 0 ? range / widget.divisions : range / 20.0;
+    final rawNewValue = (widget.value + delta * step).clamp(
+      widget.min,
+      widget.max,
+    );
+
+    if (widget.divisions > 0) {
+      final fraction = (rawNewValue - widget.min) / range;
+      final roundedFraction =
+          (fraction * widget.divisions).round() / widget.divisions;
+      final stepped = widget.min + roundedFraction * range;
+      return double.parse(
+        stepped.clamp(widget.min, widget.max).toStringAsFixed(4),
+      );
+    }
+    return rawNewValue;
+  }
+
+  KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
+    if (event is KeyDownEvent || event is KeyRepeatEvent) {
+      if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+        node.focusInDirection(TraversalDirection.up);
+        return KeyEventResult.handled;
+      } else if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+        node.focusInDirection(TraversalDirection.down);
+        return KeyEventResult.handled;
+      } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
+        if (widget.onChanged != null) {
+          final next = _calculateNewValue(1.0);
+          if (next != widget.value) {
+            widget.onChanged!(next);
+          }
+        }
+        return KeyEventResult.handled;
+      } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+        if (widget.onChanged != null) {
+          final next = _calculateNewValue(-1.0);
+          if (next != widget.value) {
+            widget.onChanged!(next);
+          }
+        }
+        return KeyEventResult.handled;
+      }
+    }
+    return KeyEventResult.ignored;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -341,26 +418,30 @@ class SettingsSliderTile extends StatelessWidget {
 
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 10.0),
-      leading: Icon(icon, color: theme.colorScheme.primary),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
+      leading: Icon(widget.icon, color: theme.colorScheme.primary),
+      title: Text(
+        widget.title,
+        style: const TextStyle(fontWeight: FontWeight.w600),
+      ),
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 2),
           Text(
-            subtitle,
+            widget.subtitle,
             style: TextStyle(
               fontSize: 12,
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
           Slider.adaptive(
-            value: value,
-            min: min,
-            max: max,
-            divisions: divisions,
-            label: label,
-            onChanged: onChanged,
+            focusNode: _effectiveFocusNode,
+            value: widget.value,
+            min: widget.min,
+            max: widget.max,
+            divisions: widget.divisions,
+            label: widget.label,
+            onChanged: widget.onChanged,
           ),
         ],
       ),

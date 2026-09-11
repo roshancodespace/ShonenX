@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:anymex_extension_runtime_bridge/anymex_extension_runtime_bridge.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:screenshot/screenshot.dart';
 
@@ -139,6 +140,7 @@ class PlayerController extends Notifier<PlayerState> {
       _isDisposed = true;
       _endingSkipCooldownTimer?.cancel();
       _progressTracker.cancel();
+      TorrentStreamResolver.dispose();
     });
 
     // Re-apply native subtitle when the "use custom subtitle" pref toggles
@@ -418,16 +420,12 @@ class PlayerController extends Notifier<PlayerState> {
       );
 
       // Step 8: Initialize video engine with selected quality and subtitle track
-      final useCustomSub = ref.read(subtitlePrefsProvider).useCustomSubtitle;
-      await ref
-          .read(videoEngineProvider)
-          .initialize(
-            qualityResult.active,
-            subtitle: useCustomSub || activeSubtitle.url.isEmpty
-                ? null
-                : activeSubtitle,
-            startAt: startPosition,
-          );
+      await _initVideoPlayer(
+        qualityResult.active,
+        subtitle: activeSubtitle,
+        startAt: startPosition,
+        episode: episode,
+      );
 
       // Step 9: Start progress tracking timer & update Discord Rich Presence
       _progressTracker.start(
@@ -522,8 +520,7 @@ class PlayerController extends Notifier<PlayerState> {
 
   // Switch stream mirror and parse available qualities
   Future<void> changeStream(VideoStream newStream) async {
-    final engine = ref.read(videoEngineProvider);
-    final currentPos = engine.currentPosition;
+    final currentPos = ref.read(videoEngineProvider).currentPosition;
 
     state = state.copyWith(
       isLoading: true,
@@ -546,12 +543,11 @@ class PlayerController extends Notifier<PlayerState> {
         isLoading: false,
       );
 
-      await engine.initialize(
+      await _initVideoPlayer(
         qualityResult.active,
-        subtitle: ref.read(subtitlePrefsProvider).useCustomSubtitle
-            ? null
-            : newStream.subtitles.firstOrNull,
+        subtitle: state.activeSubtitle,
         startAt: currentPos,
+        episode: state.activeEpisode,
       );
     } catch (e) {
       state = state.copyWith(
@@ -573,8 +569,7 @@ class PlayerController extends Notifier<PlayerState> {
         .read(playerPrefsProvider.notifier)
         .setDefaultQuality(newQuality.quality);
 
-    final engine = ref.read(videoEngineProvider);
-    final currentPos = engine.currentPosition;
+    final currentPos = ref.read(videoEngineProvider).currentPosition;
 
     state = state.copyWith(
       activeQuality: newQuality,
@@ -583,13 +578,11 @@ class PlayerController extends Notifier<PlayerState> {
     );
 
     try {
-      final useCustomSub = ref.read(subtitlePrefsProvider).useCustomSubtitle;
-      await engine.initialize(
+      await _initVideoPlayer(
         newQuality,
-        subtitle: useCustomSub || state.activeSubtitle?.url.isEmpty == true
-            ? null
-            : state.activeSubtitle,
+        subtitle: state.activeSubtitle,
         startAt: currentPos,
+        episode: state.activeEpisode,
       );
       state = state.copyWith(isLoading: false);
     } catch (e) {
@@ -598,6 +591,50 @@ class PlayerController extends Notifier<PlayerState> {
         error: 'Failed to switch quality: $e',
       );
     }
+  }
+
+  /// Resolves a video stream for playback (converting torrent URLs to local HTTP stream URLs if needed).
+  Future<VideoStream> _resolveStream(
+    VideoStream stream, {
+    UnifiedEpisode? episode,
+  }) async {
+    if (!isTorrentUrl(stream.url)) return stream;
+
+    final ep = episode ?? state.activeEpisode;
+    final epString = ep != null
+        ? (ep.number % 1 == 0 ? '${ep.number.toInt()}' : '${ep.number}')
+        : null;
+
+    final resolved = await TorrentStreamResolver.resolve(
+      stream.url,
+      episode: epString,
+    );
+
+    if (resolved.streamUrl.isEmpty) {
+      throw Exception('Failed to resolve torrent stream URL.');
+    }
+
+    return stream.copyWith(url: resolved.streamUrl);
+  }
+
+  /// Resolves a video stream and initializes the video engine with subtitles and position.
+  Future<void> _initVideoPlayer(
+    VideoStream stream, {
+    SubtitleTrack? subtitle,
+    Duration? startAt,
+    UnifiedEpisode? episode,
+  }) async {
+    final streamToPlay = await _resolveStream(stream, episode: episode);
+    if (_isDisposed) return;
+
+    final useCustomSub = ref.read(subtitlePrefsProvider).useCustomSubtitle;
+    final activeSub = (useCustomSub || subtitle == null || subtitle.url.isEmpty)
+        ? null
+        : subtitle;
+
+    await ref
+        .read(videoEngineProvider)
+        .initialize(streamToPlay, subtitle: activeSub, startAt: startAt);
   }
 
   // Update active subtitle track and save language preference

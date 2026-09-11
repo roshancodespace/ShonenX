@@ -618,7 +618,10 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
             onChanged: (v) {
               widget.controller.changeStream(v);
             },
-            displayText: widget.playerState.activeStream?.quality ?? 'Auto',
+            displayText: trimText(
+              widget.playerState.activeStream?.quality ?? 'Auto',
+              maxLength: 40,
+            ),
           ),
         ],
 

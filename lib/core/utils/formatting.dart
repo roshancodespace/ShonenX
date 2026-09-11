@@ -21,11 +21,10 @@ String formatCountdown(DateTime target) {
 String trimText(String? text, {int maxLength = 100, String suffix = '...'}) {
   if (text == null || text.isEmpty) return '';
 
-  if (text.length <= maxLength) {
-    return text;
-  }
+  final cleaned = text.replaceAll('\n', '');
+  if (cleaned.length <= maxLength) return cleaned;
 
-  return '${text.substring(0, maxLength).trim()}$suffix';
+  return '${cleaned.substring(0, maxLength).trim()}$suffix';
 }
 
 String? formatAirDate(String? dateString) {

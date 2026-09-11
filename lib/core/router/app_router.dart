@@ -11,7 +11,6 @@ import 'package:shonenx/features/discovery/presentation/home_screen.dart';
 import 'package:shonenx/features/settings/presentation/discord_settings_screen.dart';
 import 'package:shonenx/features/splash/presentation/splash_screen.dart';
 import 'package:shonenx/features/calendar/presentation/calendar_screen.dart';
-import 'package:shonenx/features/discovery/presentation/filtered_discover_screen.dart';
 import 'package:shonenx/features/discovery/presentation/discover_screen.dart';
 import 'package:shonenx/features/downloads/presentation/downloads_screen.dart';
 import 'package:shonenx/features/extensions/presentation/extensions_settings_screen.dart';
@@ -178,16 +177,43 @@ final routerProvider = Provider<GoRouter>((ref) {
                     (e) => e.id == state.uri.queryParameters['type'],
                     orElse: () => MediaType.ANIME,
                   );
-                  final genres = state.uri.queryParametersAll['genres'] ?? [];
-                  final tags = state.uri.queryParametersAll['tags'] ?? [];
+                  final genres =
+                      state.uri.queryParametersAll['genres']
+                          ?.expand((e) => e.split(','))
+                          .map((e) => e.trim())
+                          .where((e) => e.isNotEmpty)
+                          .toList() ??
+                      [];
+                  final tags =
+                      state.uri.queryParametersAll['tags']
+                          ?.expand((e) => e.split(','))
+                          .map((e) => e.trim())
+                          .where((e) => e.isNotEmpty)
+                          .toList() ??
+                      [];
+                  final category = state.uri.queryParameters['category'];
+                  final sortParam = SearchSort.tryFromId(
+                    state.uri.queryParameters['sort'],
+                  );
+                  final statusParam = SearchStatusFilter.tryFromId(
+                    state.uri.queryParameters['status'],
+                  );
+                  final formatParam = SearchFormatFilter.tryFromId(
+                    state.uri.queryParameters['format'],
+                  );
 
                   return DiscoverScreen(
-                    query: query,
-                    category: state.uri.queryParameters['category'],
+                    key: ValueKey(state.uri.toString()),
+                    initialQuery: query,
+                    category: category,
                     type: type,
-                    genres: genres,
-                    tags: tags,
+                    initialGenres: genres,
+                    initialTags: tags,
                     source: source,
+                    customTitle: state.uri.queryParameters['title'],
+                    initialSort: sortParam,
+                    initialStatus: statusParam,
+                    initialFormat: formatParam,
                   );
                 },
               ),
@@ -223,8 +249,20 @@ final routerProvider = Provider<GoRouter>((ref) {
             (e) => e.id == state.uri.queryParameters['type'],
             orElse: () => MediaType.ANIME,
           );
-          final genres = state.uri.queryParametersAll['genres'] ?? [];
-          final tags = state.uri.queryParametersAll['tags'] ?? [];
+          final genres =
+              state.uri.queryParametersAll['genres']
+                  ?.expand((e) => e.split(','))
+                  .map((e) => e.trim())
+                  .where((e) => e.isNotEmpty)
+                  .toList() ??
+              [];
+          final tags =
+              state.uri.queryParametersAll['tags']
+                  ?.expand((e) => e.split(','))
+                  .map((e) => e.trim())
+                  .where((e) => e.isNotEmpty)
+                  .toList() ??
+              [];
           final category = state.uri.queryParameters['category'];
           final sortParam = SearchSort.tryFromId(
             state.uri.queryParameters['sort'],
@@ -236,7 +274,8 @@ final routerProvider = Provider<GoRouter>((ref) {
             state.uri.queryParameters['format'],
           );
 
-          return FilteredDiscoverScreen(
+          return DiscoverScreen(
+            key: ValueKey(state.uri.toString()),
             initialQuery: query,
             category: category,
             type: type,

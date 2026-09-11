@@ -98,6 +98,8 @@ class AboutTabWidget extends ConsumerWidget {
           child: _GenresAndTagsSection(
             genres: media.genres ?? [],
             tags: media.tags ?? [],
+            mediaType: media.type,
+            uiRoundness: uiRoundness,
             textTheme: textTheme,
           ),
         ),
@@ -135,7 +137,10 @@ class AboutTabWidget extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 10),
-              _ExternalLinksList(links: media.externalLinks!),
+              _ExternalLinksList(
+                links: media.externalLinks!,
+                uiRoundness: uiRoundness,
+              ),
             ],
           ),
         ),
@@ -412,12 +417,16 @@ class _AlternativeTitlesTileState extends State<_AlternativeTitlesTile> {
 class _GenresAndTagsSection extends StatelessWidget {
   final List<String> genres;
   final List<MediaTag> tags;
+  final MediaType? mediaType;
+  final double uiRoundness;
   final TextTheme textTheme;
 
   const _GenresAndTagsSection({
     required this.genres,
     required this.tags,
+    required this.uiRoundness,
     required this.textTheme,
+    this.mediaType,
   });
 
   @override
@@ -441,6 +450,9 @@ class _GenresAndTagsSection extends StatelessWidget {
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 labelPadding: EdgeInsets.zero,
                 padding: const EdgeInsets.symmetric(horizontal: 10),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(uiRoundness),
+                ),
                 side: BorderSide.none,
                 backgroundColor: cs.primaryContainer.withValues(alpha: 0.6),
                 label: Text(
@@ -452,7 +464,7 @@ class _GenresAndTagsSection extends StatelessWidget {
                   ),
                 ),
                 onPressed: () {
-                  context.goDiscover(genres: [genre]);
+                  context.goDiscover(genres: [genre], type: mediaType);
                 },
               );
             }).toList(),
@@ -468,7 +480,15 @@ class _GenresAndTagsSection extends StatelessWidget {
           Wrap(
             spacing: 4,
             runSpacing: 4,
-            children: tags.map((tag) => _TagChip(label: tag.name)).toList(),
+            children: tags
+                .map(
+                  (tag) => _TagChip(
+                    label: tag.name,
+                    uiRoundness: uiRoundness,
+                    mediaType: mediaType,
+                  ),
+                )
+                .toList(),
           ),
         ],
       ],
@@ -732,8 +752,9 @@ class _CharactersListState extends ConsumerState<_CharactersList> {
 
 class _ExternalLinksList extends StatelessWidget {
   final List<MediaExternalLink> links;
+  final double uiRoundness;
 
-  const _ExternalLinksList({required this.links});
+  const _ExternalLinksList({required this.links, required this.uiRoundness});
 
   @override
   Widget build(BuildContext context) {
@@ -747,6 +768,9 @@ class _ExternalLinksList extends StatelessWidget {
           materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
           labelPadding: EdgeInsets.zero,
           padding: const EdgeInsets.symmetric(horizontal: 10),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(uiRoundness),
+          ),
           avatar: const Icon(Icons.open_in_new_rounded, size: 13),
           side: BorderSide.none,
           backgroundColor: cs.surfaceContainerHigh.withValues(alpha: 0.5),
@@ -943,8 +967,14 @@ class _AiringBanner extends ConsumerWidget {
 
 class _TagChip extends StatelessWidget {
   final String label;
+  final double uiRoundness;
+  final MediaType? mediaType;
 
-  const _TagChip({required this.label});
+  const _TagChip({
+    required this.label,
+    required this.uiRoundness,
+    this.mediaType,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -954,6 +984,9 @@ class _TagChip extends StatelessWidget {
       labelPadding: EdgeInsets.zero,
       padding: const EdgeInsets.symmetric(horizontal: 10),
       backgroundColor: theme.colorScheme.surfaceContainerLow,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(uiRoundness),
+      ),
       side: BorderSide.none,
       label: Text(
         label,
@@ -962,7 +995,7 @@ class _TagChip extends StatelessWidget {
         ),
       ),
       onPressed: () {
-        context.goDiscover(tags: [label]);
+        context.goDiscover(tags: [label], type: mediaType);
       },
     );
   }

@@ -667,6 +667,9 @@ class _FilterChipItem extends StatelessWidget {
       label: Text(label),
       selected: selected,
       onSelected: (_) => onTap(),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
+      ),
       labelStyle: TextStyle(
         fontSize: 11,
         fontWeight: selected ? FontWeight.w800 : FontWeight.w600,

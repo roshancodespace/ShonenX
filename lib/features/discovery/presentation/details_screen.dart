@@ -343,6 +343,12 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen>
                                                 materialTapTargetSize:
                                                     MaterialTapTargetSize
                                                         .shrinkWrap,
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                        uiRoundness,
+                                                      ),
+                                                ),
                                                 side: BorderSide.none,
                                                 color: WidgetStatePropertyAll(
                                                   colorScheme
@@ -371,6 +377,12 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen>
                                                 materialTapTargetSize:
                                                     MaterialTapTargetSize
                                                         .shrinkWrap,
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                        uiRoundness,
+                                                      ),
+                                                ),
                                                 side: BorderSide.none,
                                                 color: WidgetStatePropertyAll(
                                                   colorScheme
@@ -398,6 +410,12 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen>
                                                 materialTapTargetSize:
                                                     MaterialTapTargetSize
                                                         .shrinkWrap,
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                        uiRoundness,
+                                                      ),
+                                                ),
                                                 side: BorderSide.none,
                                                 color: WidgetStatePropertyAll(
                                                   colorScheme
@@ -431,6 +449,12 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen>
                                               materialTapTargetSize:
                                                   MaterialTapTargetSize
                                                       .shrinkWrap,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(
+                                                      uiRoundness,
+                                                    ),
+                                              ),
                                               side: BorderSide.none,
                                               color: WidgetStatePropertyAll(
                                                 colorScheme
@@ -465,6 +489,12 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen>
                                                 materialTapTargetSize:
                                                     MaterialTapTargetSize
                                                         .shrinkWrap,
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                        uiRoundness,
+                                                      ),
+                                                ),
                                                 side: BorderSide.none,
                                                 color: WidgetStatePropertyAll(
                                                   colorScheme

@@ -105,60 +105,13 @@ extension AppNavigator on BuildContext {
     List<String>? genres,
     List<String>? tags,
     String? category,
-    SearchSort? sort,
-    SearchStatusFilter? status,
-    SearchFormatFilter? format,
-  }) {
-    final queryParams = <String, dynamic>{};
-    if (query != null) queryParams['query'] = query;
-    if (source != null) queryParams['source'] = source;
-    if (type != null) queryParams['type'] = type.id;
-    if (genres != null && genres.isNotEmpty) queryParams['genres'] = genres;
-    if (tags != null && tags.isNotEmpty) queryParams['tags'] = tags;
-    if (category != null) queryParams['category'] = category;
-    if (sort != null && sort != SearchSort.popularity) {
-      queryParams['sort'] = sort.name;
-    }
-    if (status != null && status != SearchStatusFilter.all) {
-      queryParams['status'] = status.name;
-    }
-    if (format != null && format != SearchFormatFilter.all) {
-      queryParams['format'] = format.name;
-    }
-
-    // If filters/category are present, push to results screen so Back pops it
-    final hasFilters =
-        query != null ||
-        source != null ||
-        (genres != null && genres.isNotEmpty) ||
-        (tags != null && tags.isNotEmpty) ||
-        category != null ||
-        sort != null ||
-        status != null ||
-        format != null;
-    final path = hasFilters ? '/discover/results' : '/discover';
-
-    final uri = Uri(
-      path: path,
-      queryParameters: queryParams.isEmpty ? null : queryParams,
-    );
-    push(uri.toString());
-  }
-
-  void pushFilteredDiscover({
-    String? query,
-    String? source,
-    MediaType? type,
-    List<String>? genres,
-    List<String>? tags,
-    String? category,
     String? title,
     SearchSort? sort,
     SearchStatusFilter? status,
     SearchFormatFilter? format,
   }) {
     final queryParams = <String, dynamic>{};
-    if (query != null) queryParams['query'] = query;
+    if (query != null && query.isNotEmpty) queryParams['query'] = query;
     if (source != null) queryParams['source'] = source;
     if (type != null) queryParams['type'] = type.id;
     if (genres != null && genres.isNotEmpty) queryParams['genres'] = genres;
@@ -182,6 +135,30 @@ extension AppNavigator on BuildContext {
     push(uri.toString());
   }
 
+  void pushFilteredDiscover({
+    String? query,
+    String? source,
+    MediaType? type,
+    List<String>? genres,
+    List<String>? tags,
+    String? category,
+    String? title,
+    SearchSort? sort,
+    SearchStatusFilter? status,
+    SearchFormatFilter? format,
+  }) => pushDiscover(
+    query: query,
+    source: source,
+    type: type,
+    genres: genres,
+    tags: tags,
+    category: category,
+    title: title,
+    sort: sort,
+    status: status,
+    format: format,
+  );
+
   void goDiscover({
     String? query,
     String? source,
@@ -191,7 +168,7 @@ extension AppNavigator on BuildContext {
     String? category,
   }) {
     final queryParams = <String, dynamic>{};
-    if (query != null) queryParams['query'] = query;
+    if (query != null && query.isNotEmpty) queryParams['query'] = query;
     if (source != null) queryParams['source'] = source;
     if (type != null) queryParams['type'] = type.id;
     if (genres != null && genres.isNotEmpty) queryParams['genres'] = genres;

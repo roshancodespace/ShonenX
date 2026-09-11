@@ -13,6 +13,7 @@ import 'package:shonenx/features/downloads/engine/direct_download_engine.dart';
 import 'package:shonenx/features/downloads/engine/download_engine.dart';
 import 'package:shonenx/features/downloads/engine/m3u8_download_engine.dart';
 import 'package:shonenx/features/downloads/providers/download_prefs_provider.dart';
+import 'package:shonenx/features/downloads/utils/download_url_helper.dart';
 
 final downloadRepositoryProvider = Provider<DownloadRepository>((ref) {
   return DownloadRepository(ref.watch(databaseProvider));
@@ -86,6 +87,14 @@ class DownloadManagerNotifier extends AsyncNotifier<DownloadManagerNotifier> {
   Future<void> startDownload(DownloadTask task) async {
     final prefs = await ref.read(downloadPrefsProvider.future);
 
+    // Unwrap local server/bridge URL to target URL
+    final unwrapUrl = DownloadUrlHelper.extractUrl(task.url);
+    task.headersMap = DownloadUrlHelper.extractHeadersFromUrl(
+      task.url,
+      task.headersMap,
+    );
+    task.url = unwrapUrl;
+
     if (prefs.useOneDM) {
       final success = await OneDMService.instance.download(
         url: task.url,
@@ -95,6 +104,13 @@ class DownloadManagerNotifier extends AsyncNotifier<DownloadManagerNotifier> {
         ),
       );
       if (success) return;
+    }
+
+    // For internal downloader, torrent streams cannot be downloaded
+    if (DownloadUrlHelper.isTorrent(task.url)) {
+      throw Exception(
+        'Torrent streams cannot be downloaded by the internal download service. Please use 1DM.',
+      );
     }
 
     _cancelledTaskIds.remove(task.id);

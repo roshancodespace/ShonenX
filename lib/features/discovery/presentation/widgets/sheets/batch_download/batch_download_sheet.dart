@@ -11,6 +11,7 @@ import 'package:shonenx/core/utils/http_x.dart';
 import 'package:shonenx/features/downloads/domain/models/download_task.dart';
 import 'package:shonenx/features/downloads/providers/download_prefs_provider.dart';
 import 'package:shonenx/features/downloads/providers/download_provider.dart';
+import 'package:shonenx/features/downloads/utils/download_url_helper.dart';
 import 'package:shonenx/shared/models/unified_episode.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/models/video_server.dart';
@@ -392,15 +393,32 @@ class BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
           await dir.create(recursive: true);
         }
 
+        final extractedUrl = DownloadUrlHelper.extractUrl(matchedStream.url);
+        final mergedHeaders = DownloadUrlHelper.extractHeadersFromUrl(
+          matchedStream.url,
+          matchedStream.headers,
+        );
+
         if (use1DM) {
-          oneDmUrls.add(matchedStream.url);
+          oneDmUrls.add(extractedUrl);
           oneDmFileNames.add(fileName);
-          oneDmHeaders ??= matchedStream.headers;
+          oneDmHeaders ??= mergedHeaders;
         } else {
+          final downloadUrl = DownloadUrlHelper.extractDownloadUrl(
+            matchedStream.url,
+          );
+          if (downloadUrl == null ||
+              DownloadUrlHelper.isTorrent(matchedStream.url)) {
+            failedEpisodes.add(ep);
+            failureReasons[ep] = 'Torrents require 1DM downloader';
+            currentIndex++;
+            continue;
+          }
+
           final task = DownloadTask()
-            ..url = matchedStream.url
+            ..url = downloadUrl
             ..mediaId = widget.media.id
-            ..headersMap = matchedStream.headers
+            ..headersMap = mergedHeaders
             ..episodeNumber = ep.number
             ..savePath = '$targetDir/$fileName'
             ..fileName = fileName;

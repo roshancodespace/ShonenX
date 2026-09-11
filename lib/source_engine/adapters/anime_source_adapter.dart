@@ -245,33 +245,17 @@ class AnimeSourceAdapter extends BaseSourceAdapter implements AnimeSource {
 
       return videos.map((e) {
         String finalUrl = e.url;
-        if (finalUrl.startsWith('http://127.0.0.1') ||
-            finalUrl.startsWith('http://localhost')) {
-          final uri = Uri.tryParse(finalUrl);
 
-          if (uri != null &&
-              uri.path == '/m3u8' &&
-              uri.queryParameters.containsKey('url')) {
-            final extractedUrl = uri.queryParameters['url'];
-
-            if (extractedUrl != null) {
-              final extractedUri = Uri.tryParse(extractedUrl);
-              final isTorrent =
-                  extractedUri != null &&
-                  (extractedUri.scheme == 'magnet' ||
-                      extractedUri.scheme == 'torrent');
-
-              if (!isTorrent) {
-                finalUrl = extractedUrl;
-              }
-            }
-          }
-        }
+        final finalHeaders = {
+          ...(e.headers ?? {}),
+          'User-Agent':
+              'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36',
+        };
 
         return VideoStream(
           url: finalUrl,
           quality: e.title ?? e.quality,
-          headers: e.headers,
+          headers: finalHeaders,
           subtitles: (e.subtitles ?? [])
               .map((s) => SubtitleTrack(url: s.file!, language: s.label!))
               .toList(),

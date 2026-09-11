@@ -14,8 +14,8 @@ dependencies:
   logger: ^2.8.0
   path: ^1.9.1
   path_provider: ^2.1.5
-  isar_community: ^3.3.0
-  isar_community_flutter_libs: ^3.3.0
+  isar_community: 3.3.2
+  isar_community_flutter_libs: 3.3.2
   flutter_secure_storage: ^10.3.1
   flutter_web_auth_2:
     git:
@@ -150,7 +150,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
-  isar_community_generator: ^3.3.0
+  isar_community_generator: 3.3.2
   package_rename: ^1.10.1
   inno_bundle: ^0.11.2
   flutter_launcher_icons: ^0.14.4

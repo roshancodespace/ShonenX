@@ -239,56 +239,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
         ],
       ),
-      GoRoute(
-        path: '/discover/results',
-        builder: (context, state) {
-          final query = state.uri.queryParameters['query'];
-          final title = state.uri.queryParameters['title'];
-          final source = state.uri.queryParameters['source'];
-          final type = MediaType.values.firstWhere(
-            (e) => e.id == state.uri.queryParameters['type'],
-            orElse: () => MediaType.ANIME,
-          );
-          final genres =
-              state.uri.queryParametersAll['genres']
-                  ?.expand((e) => e.split(','))
-                  .map((e) => e.trim())
-                  .where((e) => e.isNotEmpty)
-                  .toList() ??
-              [];
-          final tags =
-              state.uri.queryParametersAll['tags']
-                  ?.expand((e) => e.split(','))
-                  .map((e) => e.trim())
-                  .where((e) => e.isNotEmpty)
-                  .toList() ??
-              [];
-          final category = state.uri.queryParameters['category'];
-          final sortParam = SearchSort.tryFromId(
-            state.uri.queryParameters['sort'],
-          );
-          final statusParam = SearchStatusFilter.tryFromId(
-            state.uri.queryParameters['status'],
-          );
-          final formatParam = SearchFormatFilter.tryFromId(
-            state.uri.queryParameters['format'],
-          );
 
-          return DiscoverScreen(
-            key: ValueKey(state.uri.toString()),
-            initialQuery: query,
-            category: category,
-            type: type,
-            initialGenres: genres,
-            initialTags: tags,
-            source: source,
-            customTitle: title,
-            initialSort: sortParam,
-            initialStatus: statusParam,
-            initialFormat: formatParam,
-          );
-        },
-      ),
       GoRoute(
         path: '/details/:mediaType',
         builder: (context, state) {

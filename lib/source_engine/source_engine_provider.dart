@@ -67,8 +67,11 @@ final animeSourceProvider = Provider.family<AnimeSource, SourceInfo>((
       id: ext.id!,
       name: ext.name!,
       type: SourceType.extension,
+      lang: ext.lang,
+      isNsfw: ext.isNsfw ?? false,
       mediaType: MediaType.ANIME,
       iconUrl: ext.iconUrl,
+      baseUrl: ext.baseUrl,
     ),
     source: ext,
   );
@@ -97,6 +100,8 @@ final mangaSourceProvider = Provider.family<MangaSource, SourceInfo>((
     sourceInfo: SourceInfo(
       id: ext.id!,
       name: ext.name!,
+      lang: ext.lang,
+      isNsfw: ext.isNsfw ?? false,
       type: SourceType.extension,
       mediaType: MediaType.MANGA,
       iconUrl: ext.iconUrl,

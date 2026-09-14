@@ -3,6 +3,7 @@ import 'package:anymex_extension_runtime_bridge/anymex_extension_runtime_bridge.
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:get/get.dart';
 import 'package:shonenx/core/utils/snackbar_utils.dart';
 import 'package:shonenx/features/extensions/providers/extension_service_provider.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
@@ -33,6 +34,7 @@ class _ManageReposSheetState extends ConsumerState<ManageReposSheet> {
   bool _isLoading = false;
   String? _clipboardText;
   late String _selectedEngineId;
+  late bridge.ItemType _selectedType;
 
   @override
   void initState() {
@@ -73,6 +75,18 @@ class _ManageReposSheetState extends ConsumerState<ManageReposSheet> {
       'sora',
     ].contains(_selectedEngineId)) {
       _selectedEngineId = 'aniyomi';
+    }
+
+    if (widget.autoAddType != null &&
+        widget.autoAddType!.toLowerCase() == 'manga') {
+      _selectedType = bridge.ItemType.manga;
+    } else if (widget.autoAddType != null &&
+        widget.autoAddType!.toLowerCase() == 'anime') {
+      _selectedType = bridge.ItemType.anime;
+    } else if (_selectedEngineId == 'kotatsu') {
+      _selectedType = bridge.ItemType.manga;
+    } else {
+      _selectedType = bridge.ItemType.anime;
     }
 
     _checkClipboard();
@@ -130,54 +144,37 @@ class _ManageReposSheetState extends ConsumerState<ManageReposSheet> {
       return;
     }
 
-    // Check if repository already exists in active repositories
-    final currentRepos = ref.read(activeExtReposProvider);
-    final isAlreadyAdded = currentRepos.any((r) {
-      final cleanCurrent = r.url.trim().toLowerCase();
-      final cleanParsed = parsedUrl.trim().toLowerCase();
-      return cleanCurrent == cleanParsed &&
-          (r.managerId.replaceAll('-desktop', '') ==
-              _selectedEngineId.replaceAll('-desktop', ''));
-    });
-
-    if (isAlreadyAdded) {
-      _showSnackBar(
-        'Repository is already in your active list for ${_getEngineName(_selectedEngineId)}.',
-        isError: true,
-      );
-      return;
-    }
+    // Check if repository already exists in active repositories for selected type
+    try {
+      final bridgeManager = Get.find<bridge.ExtensionManager>();
+      final targetManager =
+          bridgeManager.findById(_selectedEngineId) ??
+          bridgeManager.findById('$_selectedEngineId-desktop');
+      if (targetManager != null) {
+        final existingRepos = targetManager.getReposRx(_selectedType).value;
+        if (existingRepos.any(
+          (r) => r.url.trim().toLowerCase() == parsedUrl.trim().toLowerCase(),
+        )) {
+          final typeName = _selectedType == bridge.ItemType.anime
+              ? 'Anime'
+              : 'Manga';
+          _showSnackBar(
+            '$typeName repository is already in your active list for ${_getEngineName(_selectedEngineId)}.',
+            isError: true,
+          );
+          return;
+        }
+      }
+    } catch (_) {}
 
     setState(() => _isLoading = true);
     try {
       final adapter = ref.read(extensionAdapterProvider);
-      bool added = false;
-
-      final types =
-          (widget.autoAddType != null &&
-              [
-                'anime',
-                'manga',
-                'novel',
-              ].contains(widget.autoAddType!.toLowerCase()))
-          ? [
-              switch (widget.autoAddType!.toLowerCase()) {
-                'anime' => bridge.ItemType.anime,
-                'manga' => bridge.ItemType.manga,
-                _ => bridge.ItemType.novel,
-              },
-            ]
-          : [
-              bridge.ItemType.anime,
-              bridge.ItemType.manga,
-              bridge.ItemType.novel,
-            ];
-
-      for (final type in types) {
-        if (await adapter.addRepo(parsedUrl, _selectedEngineId, type)) {
-          added = true;
-        }
-      }
+      final added = await adapter.addRepo(
+        parsedUrl,
+        _selectedEngineId,
+        _selectedType,
+      );
 
       if (mounted) {
         if (added) {
@@ -187,8 +184,11 @@ class _ManageReposSheetState extends ConsumerState<ManageReposSheet> {
           ref.invalidate(availableAnimeSourcesProvider);
           ref.invalidate(availableMangaSourcesProvider);
           ref.invalidate(availableNovelSourcesProvider);
+          final typeName = _selectedType == bridge.ItemType.anime
+              ? 'Anime'
+              : 'Manga';
           _showSnackBar(
-            'Repository added to ${_getEngineName(_selectedEngineId)} successfully!',
+            '$typeName repository added to ${_getEngineName(_selectedEngineId)} successfully!',
             isSuccess: true,
           );
         } else {
@@ -392,7 +392,18 @@ class _ManageReposSheetState extends ConsumerState<ManageReposSheet> {
   }) {
     final cs = Theme.of(context).colorScheme;
     return InkWell(
-      onTap: _isLoading ? null : () => setState(() => _selectedEngineId = id),
+      onTap: _isLoading
+          ? null
+          : () {
+              setState(() {
+                _selectedEngineId = id;
+                if (id == 'kotatsu') {
+                  _selectedType = bridge.ItemType.manga;
+                } else if (id == 'cloudstream') {
+                  _selectedType = bridge.ItemType.anime;
+                }
+              });
+            },
       borderRadius: BorderRadius.circular(roundness * 0.7),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
@@ -585,10 +596,65 @@ class _ManageReposSheetState extends ConsumerState<ManageReposSheet> {
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 14),
             ] else ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: 14),
             ],
+
+            // Section 3: Repository Type
+            _buildSectionHeader(context, 'REPOSITORY TYPE'),
+            const SizedBox(height: 2),
+
+            SizedBox(
+              width: double.infinity,
+              child: SegmentedButton<bridge.ItemType>(
+                showSelectedIcon: false,
+                style: SegmentedButton.styleFrom(
+                  selectedForegroundColor: cs.onPrimary,
+                  selectedBackgroundColor: cs.primary,
+                  backgroundColor: cs.surfaceContainerHigh.withValues(
+                    alpha: 0.6,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(roundness * 0.7),
+                  ),
+                  side: BorderSide.none,
+                ),
+                segments: [
+                  ButtonSegment<bridge.ItemType>(
+                    value: bridge.ItemType.anime,
+                    enabled: !_isLoading && _selectedEngineId != 'kotatsu',
+                    icon: const Icon(Icons.movie_filter_rounded, size: 18),
+                    label: const Text(
+                      'Anime',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                  ButtonSegment<bridge.ItemType>(
+                    value: bridge.ItemType.manga,
+                    enabled: !_isLoading && _selectedEngineId != 'cloudstream',
+                    icon: const Icon(Icons.menu_book_rounded, size: 18),
+                    label: const Text(
+                      'Manga',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ],
+                selected: {_selectedType},
+                onSelectionChanged: _isLoading
+                    ? null
+                    : (newSelection) {
+                        setState(() => _selectedType = newSelection.first);
+                      },
+              ),
+            ),
+            const SizedBox(height: 16),
 
             // Add Repository Button
             FilledButton.icon(
@@ -622,7 +688,7 @@ class _ManageReposSheetState extends ConsumerState<ManageReposSheet> {
 
             const SizedBox(height: 28),
 
-            // Section 3: Active Repositories Header
+            // Section 4: Active Repositories Header
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [

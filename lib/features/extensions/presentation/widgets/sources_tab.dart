@@ -317,84 +317,17 @@ class _GroupHeaderTile extends ConsumerWidget {
                         ),
                       ),
                     ),
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        final width = constraints.maxWidth;
-                        int crossAxisCount = 1;
-                        if (width >= 1050) {
-                          crossAxisCount = 4;
-                        } else if (width >= 720) {
-                          crossAxisCount = 3;
-                        } else if (width >= 420) {
-                          crossAxisCount = 2;
-                        }
-
-                        if (crossAxisCount == 1) {
-                          return Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: groupSources.map((source) {
-                              return _buildVariantSubItem(
-                                context,
-                                source,
-                                controller,
-                                availableList,
-                              );
-                            }).toList(),
-                          );
-                        }
-
-                        final columns = List.generate(
-                          crossAxisCount,
-                          (_) => <UnifiedSource>[],
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: groupSources.map((source) {
+                        return _buildVariantSubItem(
+                          context,
+                          source,
+                          controller,
+                          availableList,
                         );
-                        for (int i = 0; i < groupSources.length; i++) {
-                          columns[i % crossAxisCount].add(groupSources[i]);
-                        }
-
-                        final rowChildren = <Widget>[];
-                        for (int i = 0; i < crossAxisCount; i++) {
-                          rowChildren.add(
-                            Expanded(
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: columns[i].map((source) {
-                                  return _buildVariantSubItem(
-                                    context,
-                                    source,
-                                    controller,
-                                    availableList,
-                                  );
-                                }).toList(),
-                              ),
-                            ),
-                          );
-
-                          if (i < crossAxisCount - 1) {
-                            rowChildren.add(
-                              Container(
-                                width: 1.5,
-                                margin: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: theme.colorScheme.outline.withValues(
-                                    alpha: 0.6,
-                                  ),
-                                  borderRadius: BorderRadius.circular(1),
-                                ),
-                              ),
-                            );
-                          }
-                        }
-
-                        return IntrinsicHeight(
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: rowChildren,
-                          ),
-                        );
-                      },
+                      }).toList(),
                     ),
                   ),
                 )
@@ -436,189 +369,123 @@ class _GroupHeaderTile extends ConsumerWidget {
       }
     }
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 1),
-      child: Row(
-        children: [
-          // Left Pill: Info Container (Lang + Version + Engine)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(
-              color: isDefault
-                  ? theme.colorScheme.primaryContainer.withValues(alpha: 0.3)
-                  : theme.colorScheme.surfaceContainerHigh.withValues(
-                      alpha: 0.5,
-                    ),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: isDefault
-                    ? theme.colorScheme.primary.withValues(alpha: 0.5)
-                    : theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
-                width: 1.0,
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Language Tag Badge
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    langStr,
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.5,
-                      color: theme.colorScheme.onPrimaryContainer,
-                    ),
-                  ),
-                ),
-                // Version Badge (if available)
-                if (versionStr != null && versionStr.isNotEmpty) ...[
-                  const SizedBox(width: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.secondaryContainer,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      source.hasUpdate &&
-                              source.versionLast != null &&
-                              source.version != null &&
-                              source.version != source.versionLast
-                          ? 'v${source.version} → v${source.versionLast}'
-                          : 'v$versionStr',
-                      style: TextStyle(
-                        fontSize: 9,
-                        fontWeight: FontWeight.w700,
-                        color: theme.colorScheme.onSecondaryContainer,
-                      ),
-                    ),
-                  ),
-                ],
-                // Extension Engine Badge (if available)
-                if (engineStr != null) ...[
-                  const SizedBox(width: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.tertiaryContainer,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      engineStr,
-                      style: TextStyle(
-                        fontSize: 9,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.3,
-                        color: theme.colorScheme.onTertiaryContainer,
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
+    final infoParts = [langStr];
+    if (versionStr != null && versionStr.isNotEmpty) {
+      infoParts.add(
+        source.hasUpdate &&
+                source.versionLast != null &&
+                source.version != null &&
+                source.version != source.versionLast
+            ? 'v${source.version} → v${source.versionLast}'
+            : 'v$versionStr',
+      );
+    }
+    if (engineStr != null) {
+      infoParts.add(engineStr);
+    }
+    final titleText = infoParts.join(' • ');
 
-          const Spacer(),
-          if (isInstalled && source.sourceInfo != null) ...[
-            if (isDefault)
-              Container(
-                margin: const EdgeInsets.only(right: 6),
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primary,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  'DEFAULT',
-                  style: TextStyle(
-                    fontSize: 9,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.5,
-                    color: theme.colorScheme.onPrimary,
-                  ),
-                ),
-              ),
-            IconButton(
-              icon: Icon(
-                isDefault ? Icons.push_pin_rounded : Icons.push_pin_outlined,
-                size: 18,
+    return Container(
+      decoration: BoxDecoration(
+        color: isDefault
+            ? theme.colorScheme.primaryContainer
+            : (isInstalled
+                  ? theme.colorScheme.secondaryContainer
+                  : Colors.transparent),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: (isDefault || isInstalled)
+              ? Colors.transparent
+              : theme.colorScheme.outlineVariant,
+          width: 1.0,
+        ),
+      ),
+      padding: const EdgeInsets.only(left: 12, right: 4, top: 4, bottom: 4),
+      child: IconTheme(
+        data: IconThemeData(
+          color: isDefault
+              ? theme.colorScheme.onPrimaryContainer
+              : (isInstalled
+                    ? theme.colorScheme.onSecondaryContainer.withValues(
+                        alpha: 0.8,
+                      )
+                    : theme.colorScheme.primary),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              titleText,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: isInstalled ? FontWeight.w600 : FontWeight.w500,
                 color: isDefault
-                    ? theme.colorScheme.primary
-                    : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                    ? theme.colorScheme.onPrimaryContainer
+                    : (isInstalled
+                          ? theme.colorScheme.onSecondaryContainer
+                          : theme.colorScheme.onSurfaceVariant),
               ),
-              tooltip: isDefault
-                  ? 'Pinned as Default Source'
-                  : 'Pin as Default Source',
-              onPressed: () => controller.setDefaultSource(source, type),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
             ),
             const SizedBox(width: 8),
-            _SourceSettingsButton(
-              sourceInfo: source.sourceInfo!,
-              type: type,
-              iconSize: 18,
-            ),
-          ] else if (!isInstalled) ...[
-            Consumer(
-              builder: (context, ref, _) {
-                final isProcessing = ref
-                    .watch(extensionsControllerProvider)
-                    .contains(source.id);
-                return isProcessing
-                    ? const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 8),
-                        child: SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      )
-                    : FilledButton.tonalIcon(
-                        onPressed: () {
-                          if (Platform.isAndroid &&
-                              source.bridgeSource is ASource) {
-                            showInstallMethodSheet(context, source, controller);
-                          } else {
-                            controller.installSource(context, source);
-                          }
-                        },
-                        icon: const Icon(Icons.download_rounded, size: 14),
-                        label: const Text(
-                          'Install',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 11,
+
+            if (isInstalled && source.sourceInfo != null) ...[
+              IconButton(
+                icon: Icon(
+                  isDefault ? Icons.push_pin_rounded : Icons.push_pin_outlined,
+                  size: 16,
+                ),
+                tooltip: isDefault
+                    ? 'Pinned as Default Source'
+                    : 'Pin as Default Source',
+                onPressed: () => controller.setDefaultSource(source, type),
+                padding: const EdgeInsets.all(4),
+                constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+              ),
+              _SourceSettingsButton(
+                sourceInfo: source.sourceInfo!,
+                type: type,
+                iconSize: 16,
+              ),
+            ] else if (!isInstalled) ...[
+              Consumer(
+                builder: (context, ref, _) {
+                  final isProcessing = ref
+                      .watch(extensionsControllerProvider)
+                      .contains(source.id);
+                  return isProcessing
+                      ? const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 6),
+                          child: SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
                           ),
-                        ),
-                        style: FilledButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 0,
+                        )
+                      : IconButton(
+                          onPressed: () {
+                            if (Platform.isAndroid &&
+                                source.bridgeSource is ASource) {
+                              showInstallMethodSheet(
+                                context,
+                                source,
+                                controller,
+                              );
+                            } else {
+                              controller.installSource(context, source);
+                            }
+                          },
+                          icon: const Icon(Icons.download_rounded, size: 18),
+                          padding: const EdgeInsets.all(4),
+                          constraints: const BoxConstraints(
+                            minWidth: 28,
+                            minHeight: 28,
                           ),
-                          minimumSize: const Size(0, 28),
-                        ),
-                      );
-              },
-            ),
+                        );
+                },
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }

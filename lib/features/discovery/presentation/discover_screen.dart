@@ -170,6 +170,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
   void _attachOverlay() {
     Future.microtask(() {
       try {
+        if (!mounted || Navigator.of(context).canPop()) return;
         ref
             .read(navBarProvider.notifier)
             .attachTop(
@@ -285,6 +286,16 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
       _status != SearchStatusFilter.all ||
       _format != SearchFormatFilter.all;
 
+  bool get _hasLocalChanges =>
+      _query.trim() != (widget.initialQuery?.trim() ?? '') ||
+      !listEquals(_selectedGenres, widget.initialGenres) ||
+      !listEquals(_selectedTags, widget.initialTags) ||
+      _selectedSource != widget.source ||
+      _selectedSources.length > (widget.source != null ? 1 : 0) ||
+      _sort != widget.initialSort ||
+      _status != widget.initialStatus ||
+      _format != widget.initialFormat;
+
   bool get _isSearchingOrFiltering =>
       _query.trim().isNotEmpty ||
       _hasActiveFilters ||
@@ -349,9 +360,10 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
 
   void _clearSearch() {
     _debounceTimer?.cancel();
-    _searchController.clear();
-    if (_query.isNotEmpty) {
-      setState(() => _query = '');
+    final initial = widget.initialQuery ?? '';
+    _searchController.text = initial;
+    if (_query != initial) {
+      setState(() => _query = initial);
       _resetScroll();
     }
   }
@@ -362,15 +374,15 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
     }
   }
 
-  void _onScroll() {
+  void _onScroll({bool isAutomatic = false}) {
     if (!_scrollController.hasClients || _isLoadingMore) return;
     final pos = _scrollController.position;
     if (pos.pixels >= pos.maxScrollExtent - 250) {
-      _loadNextPage();
+      _loadNextPage(isAutomatic: isAutomatic);
     }
   }
 
-  Future<void> _loadNextPage() async {
+  Future<void> _loadNextPage({bool isAutomatic = false}) async {
     final args = _currentSearchArgs;
     if (args == null || !_scrollController.hasClients || _isLoadingMore) return;
     final state = ref.read(searchProvider(args));
@@ -378,6 +390,10 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
 
     setState(() => _isLoadingMore = true);
     try {
+      if (isAutomatic) {
+        await Future.delayed(const Duration(milliseconds: 600));
+      }
+      if (!mounted) return;
       await ref.read(searchProvider(args).notifier).loadNextPage();
     } finally {
       if (mounted) setState(() => _isLoadingMore = false);
@@ -425,13 +441,13 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
 
   void _clearAllFilters() {
     setState(() {
-      _selectedGenres.clear();
-      _selectedTags.clear();
-      _selectedSources.clear();
-      _selectedSource = null;
-      _sort = SearchSort.popularity;
-      _status = SearchStatusFilter.all;
-      _format = SearchFormatFilter.all;
+      _selectedGenres = List.from(widget.initialGenres);
+      _selectedTags = List.from(widget.initialTags);
+      _selectedSource = widget.source;
+      _selectedSources = widget.source != null ? [widget.source!] : [];
+      _sort = widget.initialSort;
+      _status = widget.initialStatus;
+      _format = widget.initialFormat;
     });
     _resetScroll();
   }
@@ -475,7 +491,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
   }
 
   void _handleBack() {
-    if (_isSearchingOrFiltering) {
+    if (_hasLocalChanges) {
       _clearSearch();
       _clearAllFilters();
     } else if (Navigator.of(context).canPop()) {
@@ -507,27 +523,27 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
       }
     });
 
-    final showBack = canPop || _isSearchingOrFiltering;
+    if (searchArgs != null) {
+      ref.listen(searchProvider(searchArgs), (prev, next) {
+        if (!next.isLoading && next.hasValue) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _onScroll(isAutomatic: true);
+          });
+        }
+      });
+    }
+
+    final showBack = canPop || _hasLocalChanges;
 
     return PopScope(
-      canPop: canPop && !_isSearchingOrFiltering,
+      canPop: canPop && !_hasLocalChanges,
       onPopInvokedWithResult: (didPop, _) {
         if (didPop) return;
         _handleBack();
       },
       child: AppScaffold(
         showBackButton: false,
-        bottomNavigationBar: canPop && _supportedMediaTypes.length > 1
-            ? SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: MediaSwitcherOverlay(
-                    controller: _tabController,
-                    supportedTypes: _supportedMediaTypes,
-                  ),
-                ),
-              )
-            : null,
+        bottomNavigationBar: null,
         body: SafeArea(
           bottom: false,
           child: Column(

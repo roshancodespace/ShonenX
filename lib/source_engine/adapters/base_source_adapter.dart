@@ -8,40 +8,10 @@ import 'package:shonenx/source_engine/models/source_setting.dart';
 import 'package:shonenx/source_engine/providers/media_source.dart';
 import 'package:shonenx/source_engine/utils/parsers.dart';
 
-class _CacheEntry<T> {
-  final T data;
-  final Timer timer;
-  _CacheEntry(this.data, this.timer);
-}
-
-class _SourceCache {
-  final Map<String, _CacheEntry> _store = {};
-
-  void set<T>(String key, T value) {
-    _store[key]?.timer.cancel();
-    final timer = Timer(const Duration(minutes: 5), () {
-      _store.remove(key);
-    });
-    _store[key] = _CacheEntry(value, timer);
-  }
-
-  T? get<T>(String key) {
-    return _store[key]?.data as T?;
-  }
-
-  void clear() {
-    for (final entry in _store.values) {
-      entry.timer.cancel();
-    }
-    _store.clear();
-  }
-}
-
 abstract class BaseSourceAdapter implements MediaSource {
   @override
   final SourceInfo sourceInfo;
   final bridge.Source source;
-  final _SourceCache _cache = _SourceCache();
 
   BaseSourceAdapter({required this.sourceInfo, required this.source});
 
@@ -53,10 +23,6 @@ abstract class BaseSourceAdapter implements MediaSource {
 
   @override
   Future<List<SourceSetting>> getSettingsSchema() async {
-    final cacheKey = 'getSettingsSchema';
-    final cached = _cache.get<List<SourceSetting>>(cacheKey);
-    if (cached != null) return cached;
-
     final methodLog = log.child('getSettingsSchema');
     try {
       final schema = await source.methods.getPreference();
@@ -140,9 +106,6 @@ abstract class BaseSourceAdapter implements MediaSource {
         }
       }
 
-      if (settings.isNotEmpty) {
-        _cache.set(cacheKey, settings);
-      }
       return settings;
     } catch (e, st) {
       methodLog.e('Failed to fetch settings schema', e, st);
@@ -197,9 +160,6 @@ abstract class BaseSourceAdapter implements MediaSource {
 
       methodLog.i('Saving setting $settingId to source ${sourceInfo.id}');
       final success = await source.methods.setPreference(targetPref, value);
-      if (success) {
-        _cache.clear();
-      }
       return success;
     } catch (e, st) {
       methodLog.e('Failed to save setting $settingId', e, st);
@@ -217,11 +177,6 @@ abstract class BaseSourceAdapter implements MediaSource {
     List<String> genres = const [],
     List<String> tags = const [],
   }) async {
-    final cacheKey =
-        'search|$query|$type|$page|$isAdult|${sort.join(',')}|${genres.join(',')}|${tags.join(',')}';
-    final cached = _cache.get<List<UnifiedMedia>>(cacheKey);
-    if (cached != null) return cached;
-
     final methodLog = log.child('search');
     try {
       final extraDetails = [
@@ -253,9 +208,6 @@ abstract class BaseSourceAdapter implements MediaSource {
           )
           .toList();
 
-      if (parsed.isNotEmpty) {
-        _cache.set(cacheKey, parsed);
-      }
       return parsed;
     } catch (e, st) {
       methodLog.e('search failed', e, st);
@@ -265,10 +217,6 @@ abstract class BaseSourceAdapter implements MediaSource {
 
   @override
   Future<List<UnifiedMedia>> getTrending({int page = 1}) async {
-    final cacheKey = 'getTrending|$page';
-    final cached = _cache.get<List<UnifiedMedia>>(cacheKey);
-    if (cached != null) return cached;
-
     final methodLog = log.child('getTrending');
     try {
       methodLog.i('page=$page');
@@ -294,23 +242,14 @@ abstract class BaseSourceAdapter implements MediaSource {
           .toList();
 
       if (list.isNotEmpty) {
-        _cache.set(cacheKey, list);
         return list;
       }
       methodLog.i('getTrending returned empty, falling back to search("")');
-      final fallback = await search('', mediaType, page: page);
-      if (fallback.isNotEmpty) {
-        _cache.set(cacheKey, fallback);
-      }
-      return fallback;
+      return await search('', mediaType, page: page);
     } catch (e, st) {
       methodLog.e('getTrending failed, falling back to search("")', e, st);
       try {
-        final fallback = await search('', mediaType, page: page);
-        if (fallback.isNotEmpty) {
-          _cache.set(cacheKey, fallback);
-        }
-        return fallback;
+        return await search('', mediaType, page: page);
       } catch (_) {
         return [];
       }
@@ -318,24 +257,15 @@ abstract class BaseSourceAdapter implements MediaSource {
   }
 
   Future<bridge.DMedia> getRawDetail(String providerId) async {
-    final cacheKey = 'getRawDetail|$providerId';
-    final cached = _cache.get<bridge.DMedia>(cacheKey);
-    if (cached != null) return cached;
-
     final parts = providerId.split('|');
     final detail = await source.methods.getDetail(
       bridge.DMedia(url: parts[0], title: parts.length > 1 ? parts[1] : ''),
     );
-    _cache.set(cacheKey, detail);
     return detail;
   }
 
   @override
   Future<UnifiedMedia> getDetails(String providerId, MediaType type) async {
-    final cacheKey = 'getDetails|$providerId|$type';
-    final cached = _cache.get<UnifiedMedia>(cacheKey);
-    if (cached != null) return cached;
-
     final methodLog = log.child('getDetails');
     try {
       final detail = await getRawDetail(providerId);
@@ -355,7 +285,6 @@ abstract class BaseSourceAdapter implements MediaSource {
         description: detail.description,
         genres: detail.genre,
       );
-      _cache.set(cacheKey, parsed);
       return parsed;
     } catch (e, st) {
       methodLog.e('getDetails failed', e, st);

@@ -131,7 +131,7 @@ class AnilistTrackerQueries {
 
     return '''
     query(\$page: Int = 1, \$type: MediaType) {
-      Page(page: \$page, perPage: 20) {
+      Page(page: \$page, perPage: 50) {
         pageInfo {
           hasNextPage
         }
@@ -187,7 +187,7 @@ class AnilistTrackerQueries {
       \$format_in: [MediaFormat],
       \$sort: [MediaSort] = [SEARCH_MATCH],
     ) {
-      Page(page: \$page, perPage: 20) {
+      Page(page: \$page, perPage: 50) {
         pageInfo {
           hasNextPage
         }

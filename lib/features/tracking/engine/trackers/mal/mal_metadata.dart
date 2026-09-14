@@ -79,7 +79,7 @@ mixin MalMetadata on BaseTracker implements RemoteTracker {
     return executeApi(
       'CATEGORY_${category.name.toUpperCase()}',
       () async {
-        final limit = 20;
+        final limit = 50;
         final offset = (page - 1) * limit;
         final endpoint = type == MediaType.ANIME ? 'anime' : 'manga';
 
@@ -165,7 +165,7 @@ mixin MalMetadata on BaseTracker implements RemoteTracker {
     final requestId = DateTime.now().microsecondsSinceEpoch;
 
     return executeApi('TRENDING', () async {
-      final limit = 20;
+      final limit = 50;
       final offset = (page - 1) * limit;
       final rankingType = type == MediaType.ANIME ? 'airing' : 'bypopularity';
       final endpoint = type == MediaType.ANIME ? 'anime' : 'manga';
@@ -214,7 +214,7 @@ mixin MalMetadata on BaseTracker implements RemoteTracker {
     final requestId = DateTime.now().microsecondsSinceEpoch;
 
     return executeApi('SEARCH_METADATA', () async {
-      final limit = 20;
+      final limit = 50;
       final offset = (page - 1) * limit;
       final endpoint = type == MediaType.ANIME ? 'anime' : 'manga';
 

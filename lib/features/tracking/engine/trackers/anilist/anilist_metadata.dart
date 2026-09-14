@@ -585,7 +585,7 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
   Future<PaginatedResult<MediaCharacter>> getCharacters(
     String providerId, {
     int page = 1,
-    int perPage = 25,
+    int perPage = 50,
     MediaType type = MediaType.ANIME,
   }) async {
     final numericId = int.tryParse(providerId);

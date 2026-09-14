@@ -72,7 +72,7 @@ class MalTracker extends BaseTracker with MalMetadata implements RemoteTracker {
 
       final response = await _http.get(
         'https://api.myanimelist.net/v2/$endpoint',
-        queryParameters: {'q': query, 'limit': '20'},
+        queryParameters: {'q': query, 'limit': '50'},
         headers: headers,
       );
 

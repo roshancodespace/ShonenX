@@ -205,7 +205,7 @@ class AppInit {
         retryCount++;
       }
 
-      ref.read(extensionAdapterProvider).syncAllRepos();
+      ref.read(extensionAdapterProvider);
 
       // await extManager.onRuntimeBridgeInitialization();
 

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shonenx/features/settings/providers/sheet_physics_provider.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 
-class AppBottomSheet extends StatelessWidget {
+class AppBottomSheet extends ConsumerWidget {
   final String title;
   final Widget child;
   final EdgeInsetsGeometry headerPadding;
@@ -40,6 +42,16 @@ class AppBottomSheet extends StatelessWidget {
       16,
     ),
   }) {
+    AnimationStyle? effectiveAnimationStyle;
+    try {
+      final container = ProviderScope.containerOf(context, listen: false);
+      effectiveAnimationStyle =
+          container.read(sheetPhysicsProvider).sheetAnimationStyle;
+    } catch (_) {
+      effectiveAnimationStyle =
+          SheetPhysicsMode.hammer.sheetAnimationStyle;
+    }
+
     return showModalBottomSheet<T>(
       context: context,
       isScrollControlled: isScrollControlled,
@@ -51,12 +63,7 @@ class AppBottomSheet extends StatelessWidget {
         maxWidth: 600,
         maxHeight: MediaQuery.of(context).size.height * 0.88,
       ),
-      sheetAnimationStyle: AnimationStyle(
-        duration: const Duration(milliseconds: 380),
-        reverseDuration: const Duration(milliseconds: 280),
-        curve: Curves.easeOutQuart,
-        reverseCurve: Curves.easeInCubic,
-      ),
+      sheetAnimationStyle: effectiveAnimationStyle,
       builder: (_) {
         return AppBottomSheet(
           title: title,
@@ -198,89 +205,94 @@ class AppBottomSheet extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final cs = Theme.of(context).colorScheme;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final physics = ref.watch(sheetPhysicsProvider);
 
-    return SafeArea(
-      child: TweenAnimationBuilder<double>(
+    Widget sheetContent = Container(
+      margin: EdgeInsets.only(bottom: bottomInset),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainer,
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(GlobalUI.uiRoundness),
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Center(
+            child: Container(
+              margin: const EdgeInsets.only(top: 14),
+              height: 4,
+              width: 36,
+              decoration: BoxDecoration(
+                color: cs.onSurfaceVariant.withValues(alpha: 0.35),
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+          ),
+          Padding(
+            padding: headerPadding,
+            child: Row(
+              children: [
+                if (titleIcon != null) ...[
+                  Icon(titleIcon, color: cs.primary, size: 22),
+                  const SizedBox(width: 10),
+                ],
+                Expanded(
+                  child: Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if (actions != null) ...[
+                  ...actions!,
+                  const SizedBox(width: 8),
+                ],
+                IconButton(
+                  style: IconButton.styleFrom(
+                    backgroundColor: cs.errorContainer,
+                    foregroundColor: cs.onErrorContainer,
+                  ),
+                  icon: const Icon(Icons.close, size: 20),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Flexible(
+            child: Padding(padding: contentPadding, child: child),
+          ),
+        ],
+      ),
+    );
+
+    if (physics.hasTilt) {
+      sheetContent = TweenAnimationBuilder<double>(
         tween: Tween<double>(begin: 0.32, end: 0.0),
         duration: const Duration(milliseconds: 380),
         curve: Curves.easeInOut,
-        builder: (ctx, tilt, child) {
+        builder: (ctx, tilt, animatedChild) {
           return Transform(
             alignment: Alignment.bottomCenter,
             transform: Matrix4.identity()
               ..setEntry(3, 2, 0.0018)
               ..rotateX(tilt),
-            child: child,
+            child: animatedChild,
           );
         },
-        child: Container(
-          margin: EdgeInsets.only(bottom: bottomInset),
-          decoration: BoxDecoration(
-            color: cs.surfaceContainer,
-            borderRadius: BorderRadius.vertical(
-              top: Radius.circular(GlobalUI.uiRoundness),
-            ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Center(
-                child: Container(
-                  margin: const EdgeInsets.only(top: 14),
-                  height: 4,
-                  width: 36,
-                  decoration: BoxDecoration(
-                    color: cs.onSurfaceVariant.withValues(alpha: 0.35),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-              ),
-              Padding(
-                padding: headerPadding,
-                child: Row(
-                  children: [
-                    if (titleIcon != null) ...[
-                      Icon(titleIcon, color: cs.primary, size: 22),
-                      const SizedBox(width: 10),
-                    ],
-                    Expanded(
-                      child: Text(
-                        title,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    if (actions != null) ...[
-                      ...actions!,
-                      const SizedBox(width: 8),
-                    ],
-                    IconButton(
-                      style: IconButton.styleFrom(
-                        backgroundColor: cs.errorContainer,
-                        foregroundColor: cs.onErrorContainer,
-                      ),
-                      icon: const Icon(Icons.close, size: 20),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-              Flexible(
-                child: Padding(padding: contentPadding, child: child),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+        child: sheetContent,
+      );
+    }
+
+    return SafeArea(child: sheetContent);
   }
 }

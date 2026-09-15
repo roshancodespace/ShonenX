@@ -7,6 +7,7 @@ import 'package:shonenx/features/discovery/presentation/widgets/episodes_panel/e
 import 'package:shonenx/features/history/domain/models/read_history_entry.dart';
 import 'package:shonenx/features/history/domain/models/watch_history_entry.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
+import 'package:shonenx/features/settings/providers/sheet_physics_provider.dart';
 import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
@@ -1444,3 +1445,49 @@ IconData _navBarStyleIcon(NavBarStyle style) => switch (style) {
   NavBarStyle.frosted => Icons.blur_on_rounded,
   NavBarStyle.material => Icons.android_rounded,
 };
+
+void showSheetPhysicsSheet(BuildContext context, WidgetRef ref) {
+  AppBottomSheet.show(
+    context: context,
+    title: 'Sheet Physics',
+    titleIcon: Icons.animation_rounded,
+    child: Consumer(
+      builder: (sheetContext, r, _) {
+        final mode = r.watch(sheetPhysicsProvider);
+        final notifier = r.read(sheetPhysicsProvider.notifier);
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SettingsSegmentedTile<SheetPhysicsMode>(
+                segments: [
+                  ButtonSegment<SheetPhysicsMode>(
+                    value: SheetPhysicsMode.hammer,
+                    label: Text(SheetPhysicsMode.hammer.displayName),
+                    icon: const Icon(Icons.gavel_rounded),
+                  ),
+                  ButtonSegment<SheetPhysicsMode>(
+                    value: SheetPhysicsMode.slideUp,
+                    label: Text(SheetPhysicsMode.slideUp.displayName),
+                    icon: const Icon(Icons.swipe_up_rounded),
+                  ),
+                ],
+                selected: {mode},
+                onSelectionChanged: (set) {
+                  if (set.isNotEmpty) {
+                    notifier.setMode(set.first);
+                  }
+                },
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    ),
+  );
+}
+

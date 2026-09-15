@@ -45,7 +45,6 @@ class AppThemePreset {
   final ContinueReadingStyle continueReadingStyle;
   final EpisodeViewMode episodeViewMode;
   final NavBarStyle navBarStyle;
-  final Map<String, dynamic> experimentalConfig;
   final Map<String, bool> cardStyleWideModes;
 
   const AppThemePreset({
@@ -86,7 +85,6 @@ class AppThemePreset {
     this.continueReadingStyle = ContinueReadingStyle.classic,
     this.episodeViewMode = EpisodeViewMode.classic,
     this.navBarStyle = NavBarStyle.classic,
-    this.experimentalConfig = UiPrefState.defaultExperimentalConfig,
     this.cardStyleWideModes = const {},
   });
 
@@ -134,7 +132,6 @@ class AppThemePreset {
       continueReadingStyle: uiPrefs.continueReadingStyle,
       episodeViewMode: uiPrefs.episodeViewMode,
       navBarStyle: uiPrefs.navBarStyle,
-      experimentalConfig: uiPrefs.experimentalConfig,
       cardStyleWideModes: uiPrefs.cardStyleWideModes,
     );
   }
@@ -188,10 +185,6 @@ class AppThemePreset {
       continueReadingStyle: continueReadingStyle,
       episodeViewMode: episodeViewMode,
       navBarStyle: navBarStyle,
-      experimentalConfig: {
-        ...current.experimentalConfig,
-        ...experimentalConfig,
-      },
       cardStyleWideModes: {
         ...current.cardStyleWideModes,
         ...cardStyleWideModes,
@@ -238,7 +231,6 @@ class AppThemePreset {
       'continueReadingStyle': continueReadingStyle.name,
       'episodeViewMode': episodeViewMode.name,
       'navBarStyle': navBarStyle.name,
-      'experimentalConfig': experimentalConfig,
       'cardStyleWideModes': cardStyleWideModes,
     };
   }
@@ -354,12 +346,6 @@ class AppThemePreset {
         (e) => e.name == map['navBarStyle'],
         orElse: () => NavBarStyle.classic,
       ),
-      experimentalConfig: (map['experimentalConfig'] is Map)
-          ? {
-              ...UiPrefState.defaultExperimentalConfig,
-              ...Map<String, dynamic>.from(map['experimentalConfig'] as Map),
-            }
-          : UiPrefState.defaultExperimentalConfig,
       cardStyleWideModes: (map['cardStyleWideModes'] is Map)
           ? Map<String, bool>.from(map['cardStyleWideModes'] as Map)
           : const {},

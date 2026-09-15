@@ -11,35 +11,17 @@ import 'package:shonenx/shared/models/ui_style_enums.dart';
 export 'package:shonenx/shared/models/ui_style_enums.dart';
 
 class UiPrefState {
-  static const Map<String, dynamic> defaultExperimentalConfig = {
-    'enableMetaball': true,
-    'interactiveOrb': true,
-    'enable3dTilt': true,
-    'smoothness': 46.0,
-    'distortion': 0.15,
-    'magnification': 1.06,
-    'chromaticAberration': 0.006,
-    'borderSaturation': 1.6,
-    'enableLuminousBorder': true,
-    'borderGlowIntensity': 0.65,
-    'borderWidth': 2.0,
-    'cardTintOpacity': 0.10,
-    'lensAppearanceTint': 0.13,
-    'enableBadgeLens': true,
-    'enableCardShadow': false,
-  };
-
   final MediaCardStyle cardStyle;
   final ContinueWatchingStyle continueWatchingStyle;
   final ContinueReadingStyle continueReadingStyle;
   final EpisodeViewMode episodeViewMode;
   final NavBarStyle navBarStyle;
-  final Map<String, dynamic> experimentalConfig;
   final Map<String, bool> cardStyleWideModes;
   final bool showCardRatings;
   final bool showCardGenres;
   final bool showCardYear;
   final bool useNewUi;
+  final bool sheetPhysics;
 
   const UiPrefState({
     this.cardStyle = MediaCardStyle.classic,
@@ -47,12 +29,12 @@ class UiPrefState {
     this.continueReadingStyle = ContinueReadingStyle.classic,
     this.episodeViewMode = EpisodeViewMode.classic,
     this.navBarStyle = NavBarStyle.classic,
-    this.experimentalConfig = defaultExperimentalConfig,
     this.cardStyleWideModes = const {},
     this.showCardRatings = true,
     this.showCardGenres = true,
     this.showCardYear = true,
     this.useNewUi = false,
+    this.sheetPhysics = true,
   });
 
   bool isWideCardMode(String key) => cardStyleWideModes[key] ?? false;
@@ -71,12 +53,12 @@ class UiPrefState {
     ContinueReadingStyle? continueReadingStyle,
     EpisodeViewMode? episodeViewMode,
     NavBarStyle? navBarStyle,
-    Map<String, dynamic>? experimentalConfig,
     Map<String, bool>? cardStyleWideModes,
     bool? showCardRatings,
     bool? showCardGenres,
     bool? showCardYear,
     bool? useNewUi,
+    bool? sheetPhysics,
   }) {
     return UiPrefState(
       cardStyle: cardStyle ?? this.cardStyle,
@@ -85,12 +67,12 @@ class UiPrefState {
       continueReadingStyle: continueReadingStyle ?? this.continueReadingStyle,
       episodeViewMode: episodeViewMode ?? this.episodeViewMode,
       navBarStyle: navBarStyle ?? this.navBarStyle,
-      experimentalConfig: experimentalConfig ?? this.experimentalConfig,
       cardStyleWideModes: cardStyleWideModes ?? this.cardStyleWideModes,
       showCardRatings: showCardRatings ?? this.showCardRatings,
       showCardGenres: showCardGenres ?? this.showCardGenres,
       showCardYear: showCardYear ?? this.showCardYear,
       useNewUi: useNewUi ?? this.useNewUi,
+      sheetPhysics: sheetPhysics ?? this.sheetPhysics,
     );
   }
 
@@ -100,12 +82,12 @@ class UiPrefState {
     'continueReadingStyle': continueReadingStyle.name,
     'episodeViewMode': episodeViewMode.name,
     'navBarStyle': navBarStyle.name,
-    'experimentalConfig': experimentalConfig,
     'cardStyleWideModes': cardStyleWideModes,
     'showCardRatings': showCardRatings,
     'showCardGenres': showCardGenres,
     'showCardYear': showCardYear,
     'useNewUi': useNewUi,
+    'sheetPhysics': sheetPhysics,
   };
 
   factory UiPrefState.fromJson(Map<String, dynamic> json) {
@@ -130,12 +112,6 @@ class UiPrefState {
         (e) => e.name == json['navBarStyle'],
         orElse: () => NavBarStyle.classic,
       ),
-      experimentalConfig: (json['experimentalConfig'] is Map)
-          ? {
-              ...defaultExperimentalConfig,
-              ...Map<String, dynamic>.from(json['experimentalConfig'] as Map),
-            }
-          : defaultExperimentalConfig,
       cardStyleWideModes: (json['cardStyleWideModes'] is Map)
           ? Map<String, bool>.from(json['cardStyleWideModes'] as Map)
           : const {},
@@ -143,12 +119,13 @@ class UiPrefState {
       showCardGenres: json['showCardGenres'] ?? true,
       showCardYear: json['showCardYear'] ?? true,
       useNewUi: json['useNewUi'] ?? false,
+      sheetPhysics: json['sheetPhysics'] ?? true,
     );
   }
 
   @override
   String toString() =>
-      'UiPrefState(cardStyle: $cardStyle, continueWatchingStyle: $continueWatchingStyle, continueReadingStyle: $continueReadingStyle, episodeViewMode: $episodeViewMode, navBarStyle: $navBarStyle, experimentalConfig: $experimentalConfig, cardStyleWideModes: $cardStyleWideModes, showCardRatings: $showCardRatings, showCardGenres: $showCardGenres, showCardYear: $showCardYear, useNewUi: $useNewUi)';
+      'UiPrefState(cardStyle: $cardStyle, continueWatchingStyle: $continueWatchingStyle, continueReadingStyle: $continueReadingStyle, episodeViewMode: $episodeViewMode, navBarStyle: $navBarStyle, cardStyleWideModes: $cardStyleWideModes, showCardRatings: $showCardRatings, showCardGenres: $showCardGenres, showCardYear: $showCardYear, useNewUi: $useNewUi, sheetPhysics: $sheetPhysics)';
 
   @override
   bool operator ==(Object other) {
@@ -163,7 +140,7 @@ class UiPrefState {
         other.showCardGenres == showCardGenres &&
         other.showCardYear == showCardYear &&
         other.useNewUi == useNewUi &&
-        mapEquals(other.experimentalConfig, experimentalConfig) &&
+        other.sheetPhysics == sheetPhysics &&
         mapEquals(other.cardStyleWideModes, cardStyleWideModes);
   }
 
@@ -174,12 +151,12 @@ class UiPrefState {
     continueReadingStyle,
     episodeViewMode,
     navBarStyle,
-    experimentalConfig,
     cardStyleWideModes,
     showCardRatings,
     showCardGenres,
     showCardYear,
     useNewUi,
+    sheetPhysics,
   );
 }
 
@@ -250,22 +227,8 @@ class UiPrefsNotifier extends Notifier<UiPrefState> {
     _saveDb();
   }
 
-  void updateExperimentalConfig(Map<String, dynamic> newValues) {
-    state = state.copyWith(
-      experimentalConfig: {...state.experimentalConfig, ...newValues},
-    );
-    _saveDb();
-  }
-
   void updateUiPrefs(UiPrefState Function(UiPrefState) updater) {
     state = updater(state);
-    _saveDb();
-  }
-
-  void resetExperimentalConfig() {
-    state = state.copyWith(
-      experimentalConfig: UiPrefState.defaultExperimentalConfig,
-    );
     _saveDb();
   }
 
@@ -288,6 +251,14 @@ class UiPrefsNotifier extends Notifier<UiPrefState> {
     state = state.copyWith(navBarStyle: style);
     _saveDb();
   }
+
+  void setSheetPhysics(bool value) {
+    if (state.sheetPhysics == value) return;
+    state = state.copyWith(sheetPhysics: value);
+    _saveDb();
+  }
+
+  void toggleSheetPhysics() => setSheetPhysics(!state.sheetPhysics);
 
   void reset() {
     _storage.remove(_key);

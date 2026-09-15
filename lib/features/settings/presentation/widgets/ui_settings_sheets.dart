@@ -1444,3 +1444,49 @@ IconData _navBarStyleIcon(NavBarStyle style) => switch (style) {
   NavBarStyle.frosted => Icons.blur_on_rounded,
   NavBarStyle.material => Icons.android_rounded,
 };
+
+void showSheetPhysicsSheet(BuildContext context, WidgetRef ref) {
+  AppBottomSheet.show(
+    context: context,
+    title: 'Sheet Physics',
+    titleIcon: Icons.animation_rounded,
+    child: Consumer(
+      builder: (sheetContext, r, _) {
+        final prefs = r.watch(uiPrefsProvider);
+        final notifier = r.read(uiPrefsProvider.notifier);
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SettingsSegmentedTile<bool>(
+                segments: const [
+                  ButtonSegment<bool>(
+                    value: true,
+                    label: Text('Hammer'),
+                    icon: Icon(Icons.gavel_rounded),
+                  ),
+                  ButtonSegment<bool>(
+                    value: false,
+                    label: Text('Slide Up'),
+                    icon: Icon(Icons.swipe_up_rounded),
+                  ),
+                ],
+                selected: {prefs.sheetPhysics},
+                onSelectionChanged: (set) {
+                  if (set.isNotEmpty) {
+                    notifier.setSheetPhysics(set.first);
+                  }
+                },
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    ),
+  );
+}
+

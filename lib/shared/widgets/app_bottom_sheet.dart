@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shonenx/features/settings/providers/sheet_physics_provider.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 
 class AppBottomSheet extends ConsumerWidget {
@@ -21,6 +20,20 @@ class AppBottomSheet extends ConsumerWidget {
     this.actions,
     this.titleIcon,
   });
+
+  static const AnimationStyle hammerAnimationStyle = AnimationStyle(
+    duration: Duration(milliseconds: 380),
+    reverseDuration: Duration(milliseconds: 280),
+    curve: Curves.easeOutQuart,
+    reverseCurve: Curves.easeInCubic,
+  );
+
+  static const AnimationStyle slideUpAnimationStyle = AnimationStyle(
+    duration: Duration(milliseconds: 320),
+    reverseDuration: Duration(milliseconds: 240),
+    curve: Curves.easeOutCubic,
+    reverseCurve: Curves.easeInCubic,
+  );
 
   static Future<T?> show<T>({
     required BuildContext context,
@@ -45,11 +58,12 @@ class AppBottomSheet extends ConsumerWidget {
     AnimationStyle? effectiveAnimationStyle;
     try {
       final container = ProviderScope.containerOf(context, listen: false);
-      effectiveAnimationStyle =
-          container.read(sheetPhysicsProvider).sheetAnimationStyle;
+      final isHammer = container.read(uiPrefsProvider).sheetPhysics;
+      effectiveAnimationStyle = isHammer
+          ? hammerAnimationStyle
+          : slideUpAnimationStyle;
     } catch (_) {
-      effectiveAnimationStyle =
-          SheetPhysicsMode.hammer.sheetAnimationStyle;
+      effectiveAnimationStyle = hammerAnimationStyle;
     }
 
     return showModalBottomSheet<T>(
@@ -208,7 +222,7 @@ class AppBottomSheet extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final cs = Theme.of(context).colorScheme;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-    final physics = ref.watch(sheetPhysicsProvider);
+    final hasTilt = ref.watch(uiPrefsProvider.select((p) => p.sheetPhysics));
 
     Widget sheetContent = Container(
       margin: EdgeInsets.only(bottom: bottomInset),
@@ -275,7 +289,7 @@ class AppBottomSheet extends ConsumerWidget {
       ),
     );
 
-    if (physics.hasTilt) {
+    if (hasTilt) {
       sheetContent = TweenAnimationBuilder<double>(
         tween: Tween<double>(begin: 0.32, end: 0.0),
         duration: const Duration(milliseconds: 380),

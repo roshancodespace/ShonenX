@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shonenx/features/settings/providers/sheet_physics_provider.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
@@ -20,8 +19,6 @@ class UiSettingsScreen extends ConsumerWidget {
 
     final themePrefs = ref.watch(themePrefsProvider);
     final themeNotifier = ref.read(themePrefsProvider.notifier);
-
-    final sheetPhysics = ref.watch(sheetPhysicsProvider);
 
     return AppScaffold(
       title: 'UI',
@@ -61,7 +58,10 @@ class UiSettingsScreen extends ConsumerWidget {
                 icon: Icons.animation_rounded,
                 title: 'Sheet Physics',
                 subtitle: 'Adjust bottom sheet motion physics',
-                trailing: _Chip(label: sheetPhysics.displayName, cs: cs),
+                trailing: _Chip(
+                  label: prefs.sheetPhysics ? 'Hammer' : 'Slide Up',
+                  cs: cs,
+                ),
                 onTap: () => showSheetPhysicsSheet(context, ref),
               ),
             ],

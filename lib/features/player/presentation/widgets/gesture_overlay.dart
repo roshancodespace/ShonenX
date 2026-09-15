@@ -94,6 +94,10 @@ class _PlayerGestureOverlayState extends ConsumerState<PlayerGestureOverlay> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final prefs = ref.watch(playerPrefsProvider.select((s) => s.gesturePrefs));
+    final isDraggingVolume = prefs.swapVolumeAndBrightness
+        ? _isLeftSwipe
+        : !_isLeftSwipe;
+    final dragValue = isDraggingVolume ? _volume : _brightness;
 
     String speedText = _currentSpeed.toString();
     if (speedText.endsWith('.0')) {
@@ -344,19 +348,19 @@ class _PlayerGestureOverlayState extends ConsumerState<PlayerGestureOverlay> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                              _isLeftSwipe
-                                  ? Icons.light_mode_rounded
-                                  : (_volume <= 0.0
+                              isDraggingVolume
+                                  ? (_volume <= 0.0
                                         ? Icons.volume_mute_rounded
                                         : (_volume < 0.5
                                               ? Icons.volume_down_rounded
-                                              : Icons.volume_up_rounded)),
+                                              : Icons.volume_up_rounded))
+                                  : Icons.light_mode_rounded,
                               color: Colors.white,
                               size: 28,
                             ),
                             const SizedBox(width: 12),
                             Text(
-                              '${((_isLeftSwipe ? _brightness : _volume) * 100).toInt()}%',
+                              '${(dragValue * 100).toInt()}%',
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 20,
@@ -372,7 +376,7 @@ class _PlayerGestureOverlayState extends ConsumerState<PlayerGestureOverlay> {
                           width: double.infinity,
                           child: CustomPaint(
                             painter: _SkewedBlocksPainter(
-                              value: _isLeftSwipe ? _brightness : _volume,
+                              value: dragValue,
                               isLeft: _isLeftSwipe,
                               color: theme.colorScheme.primary,
                             ),

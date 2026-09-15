@@ -54,6 +54,16 @@ class UiSettingsScreen extends ConsumerWidget {
                   theme,
                 ),
               ),
+              SettingsActionTile(
+                icon: Icons.animation_rounded,
+                title: 'Sheet Physics',
+                subtitle: 'Adjust bottom sheet motion physics',
+                trailing: _Chip(
+                  label: prefs.sheetPhysics ? 'Hammer' : 'Slide Up',
+                  cs: cs,
+                ),
+                onTap: () => showSheetPhysicsSheet(context, ref),
+              ),
             ],
           ),
 

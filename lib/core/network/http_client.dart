@@ -54,11 +54,14 @@ class HTTP {
   static HTTP? _instance;
 
   factory HTTP({CacheManager? cacheManager}) {
-    return _instance ??= HTTP._internal(cacheManager: cacheManager);
+    final instance = _instance ??= HTTP._internal(cacheManager: cacheManager);
+    if (cacheManager != null) instance._cache = cacheManager;
+    return instance;
   }
 
   final rhttp.RhttpClient _client;
-  final CacheManager? _cache;
+  CacheManager? _cache;
+  final Map<String, Future<HttpResponse>> _inFlightGetRequests = {};
 
   String _normalizeBody(String input) {
     return input.replaceAll(RegExp(r'\s+'), ' ').trim();
@@ -125,6 +128,70 @@ class HTTP {
     Object? body,
     Duration? cacheDuration,
   }) async {
+    if (method == 'GET') {
+      final requestKey = _buildRequestKey(url, headers, queryParameters, body);
+      final inFlight = _inFlightGetRequests[requestKey];
+      if (inFlight != null) return inFlight;
+
+      late final Future<HttpResponse> request;
+      request =
+          _sendRequest(
+            method,
+            url,
+            headers: headers,
+            queryParameters: queryParameters,
+            body: body,
+            cacheDuration: cacheDuration,
+          ).whenComplete(() {
+            if (identical(_inFlightGetRequests[requestKey], request)) {
+              _inFlightGetRequests.remove(requestKey);
+            }
+          });
+      _inFlightGetRequests[requestKey] = request;
+      return request;
+    }
+
+    return _sendRequest(
+      method,
+      url,
+      headers: headers,
+      queryParameters: queryParameters,
+      body: body,
+      cacheDuration: cacheDuration,
+    );
+  }
+
+  String _buildRequestKey(
+    String url,
+    Map<String, String>? headers,
+    Map<String, String>? query,
+    Object? body,
+  ) {
+    final buffer = StringBuffer(_buildKey(url, query, body));
+    if (headers == null || headers.isEmpty) return buffer.toString();
+
+    final normalizedHeaders = <String, String>{
+      for (final entry in headers.entries) entry.key.toLowerCase(): entry.value,
+    };
+    final keys = normalizedHeaders.keys.toList()..sort();
+    for (final key in keys) {
+      buffer
+        ..write('|')
+        ..write(key)
+        ..write('=')
+        ..write(normalizedHeaders[key]);
+    }
+    return buffer.toString();
+  }
+
+  Future<HttpResponse> _sendRequest(
+    String method,
+    String url, {
+    Map<String, String>? headers,
+    Map<String, String>? queryParameters,
+    Object? body,
+    Duration? cacheDuration,
+  }) async {
     final key = _buildKey(url, queryParameters, body);
 
     final bool isCacheable =
@@ -134,10 +201,10 @@ class HTTP {
             cacheDuration > Duration.zero);
 
     if (_cache != null &&
-        _cache.cacheConfig.enableCaching &&
-        !_cache.cacheConfig.bypassCache &&
+        _cache!.cacheConfig.enableCaching &&
+        !_cache!.cacheConfig.bypassCache &&
         isCacheable) {
-      final cached = await _cache.get(key);
+      final cached = await _cache!.get(key);
       if (cached != null) {
         return HttpResponse(200, Uint8List.fromList(cached.bodyBytes));
       }
@@ -221,13 +288,12 @@ class HTTP {
 
     if (effectiveTtl > Duration.zero &&
         _cache != null &&
-        _cache.cacheConfig.enableCaching &&
+        _cache!.cacheConfig.enableCaching &&
         isCacheable &&
         res.statusCode >= 200 &&
         res.statusCode < 300 &&
         bodyBytes.isNotEmpty) {
-      await _cache.put(
-        key,
+      await _cache!.put(
         CacheEntry()
           ..key = key
           ..bodyBytes = bodyBytes

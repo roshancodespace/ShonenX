@@ -66,7 +66,7 @@ class EngineStateNotifier extends Notifier<EngineState> {
     List<AudioTrack>? audioTracks,
     AudioTrack? activeAudioTrack,
   }) {
-    state = state.copyWith(
+    final next = state.copyWith(
       position: position,
       duration: duration,
       buffer: buffer,
@@ -76,6 +76,26 @@ class EngineStateNotifier extends Notifier<EngineState> {
       audioTracks: audioTracks,
       activeAudioTrack: activeAudioTrack,
     );
+    if (_sameState(state, next)) return;
+    state = next;
+  }
+
+  bool _sameState(EngineState current, EngineState next) {
+    if (current.position != next.position ||
+        current.duration != next.duration ||
+        current.buffer != next.buffer ||
+        current.isPlaying != next.isPlaying ||
+        current.isBuffering != next.isBuffering ||
+        current.fit != next.fit ||
+        current.activeAudioTrack != next.activeAudioTrack ||
+        current.audioTracks.length != next.audioTracks.length) {
+      return false;
+    }
+
+    for (var index = 0; index < current.audioTracks.length; index++) {
+      if (current.audioTracks[index] != next.audioTracks[index]) return false;
+    }
+    return true;
   }
 
   void setFit(BoxFit fit) {

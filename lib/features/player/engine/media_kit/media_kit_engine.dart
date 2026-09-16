@@ -342,6 +342,7 @@ class MediaKitEngine implements VideoEngine {
 
   @override
   Future<void> dispose() async {
+    if (_disposed) return;
     _log.i('Disposing engine');
     _disposed = true;
     await _positionSubscription?.cancel();

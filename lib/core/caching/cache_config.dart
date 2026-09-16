@@ -47,6 +47,17 @@ class CacheConfig {
       CacheConfig.fromMap(json);
 
   Map<String, dynamic> toJson() => toMap();
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is CacheConfig &&
+          maxCacheSize == other.maxCacheSize &&
+          enableCaching == other.enableCaching &&
+          bypassCache == other.bypassCache;
+
+  @override
+  int get hashCode => Object.hash(maxCacheSize, enableCaching, bypassCache);
 }
 
 class CacheConfigNotifier extends Notifier<CacheConfig> {
@@ -66,16 +77,19 @@ class CacheConfigNotifier extends Notifier<CacheConfig> {
   }
 
   void setMaxCacheSize(int maxCacheSize) {
+    if (maxCacheSize == state.maxCacheSize) return;
     state = state.copyWith(maxCacheSize: maxCacheSize);
     _saveDb();
   }
 
   void setEnableCaching(bool enableCaching) {
+    if (enableCaching == state.enableCaching) return;
     state = state.copyWith(enableCaching: enableCaching);
     _saveDb();
   }
 
   void setBypassCache(bool bypassCache) {
+    if (bypassCache == state.bypassCache) return;
     state = state.copyWith(bypassCache: bypassCache);
     _saveDb();
   }

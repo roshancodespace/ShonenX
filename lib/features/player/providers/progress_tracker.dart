@@ -34,6 +34,7 @@ class ProgressTracker {
   final Ref _ref;
 
   Timer? _progressTimer;
+  bool _isSavingPeriodicProgress = false;
   ScreenshotController? _screenshotController;
 
   ProgressContext Function()? _contextProvider;
@@ -56,8 +57,18 @@ class ProgressTracker {
     _progressTimer?.cancel();
     _progressTimer = Timer.periodic(
       const Duration(seconds: 5),
-      (_) async => await _saveCurrentProgress(),
+      (_) => unawaited(_savePeriodicProgress()),
     );
+  }
+
+  Future<void> _savePeriodicProgress() async {
+    if (_isSavingPeriodicProgress) return;
+    _isSavingPeriodicProgress = true;
+    try {
+      await _saveCurrentProgress();
+    } finally {
+      _isSavingPeriodicProgress = false;
+    }
   }
 
   void cancel() {

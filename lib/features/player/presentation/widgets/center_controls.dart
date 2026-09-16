@@ -3,8 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/features/discovery/domain/media_args.dart';
 import 'package:shonenx/features/discovery/providers/episodes_provider.dart';
 import 'package:shonenx/features/player/engine/video_engine.dart';
-import 'package:shonenx/features/player/providers/video_engine_provider.dart';
+import 'package:shonenx/features/player/presentation/widgets/player_controls.dart';
 import 'package:shonenx/features/player/providers/player_controller.dart';
+import 'package:shonenx/features/player/providers/video_engine_provider.dart';
 
 class CenterControls extends ConsumerStatefulWidget {
   final bool showControls;
@@ -78,60 +79,21 @@ class _CenterControlsState extends ConsumerState<CenterControls> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  IconButton(
-                    onPressed: isFirst
-                        ? null
-                        : () => widget.controller.skipEpisode(forward: false),
-                    icon: const Icon(Icons.skip_previous_outlined, size: 60),
-                    color: isFirst ? Colors.grey : Colors.white,
+                  PlayerEpisodeNavButton(
+                    isNext: false,
+                    isEnabled: !isFirst,
+                    onTap: () => widget.controller.skipEpisode(forward: false),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: IconButton.filled(
-                      style: IconButton.styleFrom(
-                        backgroundColor: theme.colorScheme.primaryContainer
-                            .withValues(alpha: 0.4),
-                        foregroundColor: theme.colorScheme.onPrimaryContainer,
-                      ),
-                      onPressed: isPlaying
-                          ? widget.engine.pause
-                          : widget.engine.play,
-                      icon: AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 200),
-                        switchInCurve: Curves.easeInCubic,
-                        switchOutCurve: Curves.easeOutCubic,
-                        transitionBuilder: (child, animation) {
-                          final isIncoming = child.key == ValueKey(isPlaying);
-
-                          final rotation = Tween<double>(
-                            begin: isIncoming ? -0.25 : 0.25,
-                            end: 0.0,
-                          ).animate(animation);
-
-                          return RotationTransition(
-                            turns: rotation,
-                            child: FadeTransition(
-                              opacity: animation,
-                              child: child,
-                            ),
-                          );
-                        },
-                        child: Icon(
-                          isPlaying
-                              ? Icons.pause_rounded
-                              : Icons.play_arrow_rounded,
-                          key: ValueKey(isPlaying),
-                          size: 80,
-                        ),
-                      ),
-                    ),
+                  PlayerPlayPauseButton(
+                    isPlaying: isPlaying,
+                    onToggle: isPlaying
+                        ? widget.engine.pause
+                        : widget.engine.play,
                   ),
-                  IconButton(
-                    onPressed: isLast
-                        ? null
-                        : () => widget.controller.skipEpisode(forward: true),
-                    icon: const Icon(Icons.skip_next_outlined, size: 60),
-                    color: isLast ? Colors.grey : Colors.white,
+                  PlayerEpisodeNavButton(
+                    isNext: true,
+                    isEnabled: !isLast,
+                    onTap: () => widget.controller.skipEpisode(forward: true),
                   ),
                 ],
               ),

@@ -13,13 +13,11 @@ import 'package:window_manager/window_manager.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/episodes_panel/episode_list_panel.dart';
 import 'package:shonenx/features/player/domain/player_mode.dart';
 import 'package:shonenx/features/player/engine/video_engine.dart';
-import 'package:shonenx/features/player/presentation/widgets/bottom_controls.dart';
-import 'package:shonenx/features/player/presentation/widgets/center_controls.dart';
 import 'package:shonenx/features/player/presentation/widgets/custom_subtitle_overlay.dart';
 import 'package:shonenx/features/player/presentation/widgets/gesture_overlay.dart';
 import 'package:shonenx/features/player/presentation/widgets/keyboard_shortcuts_sheet.dart';
+import 'package:shonenx/features/player/presentation/widgets/player_controls.dart';
 import 'package:shonenx/features/player/presentation/widgets/player_keyboard_listener.dart';
-import 'package:shonenx/features/player/presentation/widgets/top_controls.dart';
 import 'package:shonenx/features/player/providers/player_controller.dart';
 import 'package:shonenx/features/player/providers/player_prefs_provider.dart';
 import 'package:shonenx/features/player/providers/video_engine_provider.dart';
@@ -400,79 +398,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     );
   }
 
-  Widget _buildControlsLayer({
-    required ThemeData theme,
-    required VideoEngine engine,
-    required PlayerState playerState,
-    required PlayerController controller,
-  }) {
-    final mediaQuery = MediaQuery.of(context);
-    final width = mediaQuery.size.width;
-
-    double scale = 1.0;
-    if (width > 1200) {
-      scale = 1.4;
-    } else if (width > 800) {
-      scale = 1.2;
-    }
-
-    final controls = Stack(
-      children: [
-        TopControls(
-          showControls: _showControls,
-          engine: engine,
-          mode: widget.mode,
-          playerState: playerState,
-          controller: controller,
-          onBack: () => _handlePop(false, engine, controller),
-          onComments: _showCommentsSheet,
-        ),
-        CenterControls(
-          showControls: _showControls,
-          playerState: playerState,
-          controller: controller,
-          mediaTitle: _mediaTitle,
-          engine: engine,
-        ),
-        BottomControls(
-          showControls: _showControls,
-          engine: engine,
-          playerState: playerState,
-          controller: controller,
-          theme: theme,
-          mode: widget.mode,
-          isFullScreen: _isFullScreen,
-          onToggleFullScreen: _toggleFullScreen,
-          onShowEpisodePanel: _toggleEpisodePanel,
-          onToggleLockControls: _lockScreen,
-        ),
-      ],
-    );
-
-    if (scale == 1.0) return controls;
-
-    return Center(
-      child: Transform.scale(
-        scale: scale,
-        child: MediaQuery(
-          data: mediaQuery.copyWith(
-            size: Size(width / scale, mediaQuery.size.height / scale),
-            padding: mediaQuery.padding / scale,
-            viewInsets: mediaQuery.viewInsets / scale,
-          ),
-          child: SizedBox(
-            width: width / scale,
-            height: mediaQuery.size.height / scale,
-            child: controls,
-          ),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final playerState = ref.watch(playerControllerProvider);
     final controller = ref.read(playerControllerProvider.notifier);
     final engine = ref.watch(videoEngineProvider);
@@ -620,11 +547,19 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                 if (_lockControls)
                   _buildLockedOverlay()
                 else
-                  _buildControlsLayer(
-                    theme: theme,
+                  PlayerControlsOverlay(
+                    showControls: _showControls,
                     engine: engine,
                     playerState: playerState,
                     controller: controller,
+                    mode: widget.mode,
+                    mediaTitle: _mediaTitle,
+                    isFullScreen: _isFullScreen,
+                    onBack: () => _handlePop(false, engine, controller),
+                    onComments: _showCommentsSheet,
+                    onToggleFullScreen: _toggleFullScreen,
+                    onShowEpisodePanel: _toggleEpisodePanel,
+                    onToggleLockControls: _lockScreen,
                   ),
               ],
             ),

@@ -169,8 +169,7 @@ class ContentSettingsScreen extends ConsumerWidget {
                   activeProvider: activeProvider,
                   icon: Icons.speed_rounded,
                   title: 'AniZip',
-                  subtitle:
-                      'Fast titles & synopses from AniList / MAL (No thumbnails)',
+                  subtitle: 'Fast titles & synopses from AniList / MAL',
                   showDivider: true,
                   onTap: () {
                     ref

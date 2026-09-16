@@ -15,6 +15,8 @@ import 'package:shonenx/features/settings/presentation/widgets/subtitle_settings
 import 'package:shonenx/shared/models/video_server.dart';
 import 'package:shonenx/shared/models/video_stream.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
+import 'package:shonenx/shared/widgets/app_sheet_action.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:window_manager/window_manager.dart';
 
 class BottomControls extends ConsumerStatefulWidget {
@@ -274,14 +276,11 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
               );
             },
             actions: [
-              IconButton.filledTonal(
+              AppSheetAction(
                 tooltip: 'Customize Subtitles',
-                style: IconButton.styleFrom(
-                  backgroundColor: widget.theme.colorScheme.primary,
-                  foregroundColor: widget.theme.colorScheme.onPrimary,
-                ),
-                icon: const Icon(Icons.tune_rounded, size: 18),
-                onPressed: () {
+                isPrimary: true,
+                icon: Icons.tune_rounded,
+                onTap: () {
                   Navigator.of(context).pop();
                   showModalBottomSheet(
                     context: context,
@@ -473,14 +472,28 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
       context: context,
       title: 'Subtitles',
       actions: [
-        IconButton.filledTonal(
+        AppSheetAction(
+          tooltip: 'Load Local Subtitle',
+          icon: Icons.folder_open_rounded,
+          onTap: () async {
+            Navigator.of(context).pop();
+            final result = await FilePicker.platform.pickFiles(
+              type: FileType.custom,
+              allowedExtensions: ['srt', 'vtt', 'ass', 'ssa'],
+            );
+            if (result != null && result.files.single.path != null) {
+              final path = result.files.single.path!;
+              final name = result.files.single.name;
+              widget.controller.loadLocalSubtitle(path, name);
+            }
+          },
+        ),
+        const SizedBox(width: 8),
+        AppSheetAction(
           tooltip: 'Customize Subtitles',
-          style: IconButton.styleFrom(
-            backgroundColor: theme.colorScheme.primary,
-            foregroundColor: theme.colorScheme.onPrimary,
-          ),
-          icon: const Icon(Icons.tune_rounded, size: 18),
-          onPressed: () {
+          isPrimary: true,
+          icon: Icons.tune_rounded,
+          onTap: () {
             Navigator.of(context).pop();
             showModalBottomSheet(
               context: context,

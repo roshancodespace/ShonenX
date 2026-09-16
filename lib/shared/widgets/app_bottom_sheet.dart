@@ -266,10 +266,7 @@ class AppBottomSheet extends ConsumerWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                if (actions != null) ...[
-                  ...actions!,
-                  const SizedBox(width: 8),
-                ],
+                if (actions != null) ...[...actions!, const SizedBox(width: 8)],
                 IconButton(
                   style: IconButton.styleFrom(
                     backgroundColor: cs.errorContainer,

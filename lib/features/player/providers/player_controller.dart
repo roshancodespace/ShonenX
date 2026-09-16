@@ -701,6 +701,27 @@ class PlayerController extends Notifier<PlayerState> {
     await _applyNativeSubtitle(newSubtitle);
   }
 
+  Future<void> loadLocalSubtitle(String path, String name) async {
+    final newSub = SubtitleTrack(
+      url: path,
+      language: name,
+      label: 'Local Files',
+    );
+
+    // Make sure we don't duplicate it if the user loads it twice
+    final existingIndex = state.subtitles.indexWhere((s) => s.url == path);
+    final newSubtitles = List<SubtitleTrack>.from(state.subtitles);
+
+    if (existingIndex != -1) {
+      newSubtitles[existingIndex] = newSub;
+    } else {
+      newSubtitles.add(newSub);
+    }
+
+    state = state.copyWith(subtitles: newSubtitles);
+    await changeSubtitle(newSub);
+  }
+
   // Update active audio track and save preference
   Future<void> changeAudioTrack(AudioTrack track) async {
     if (track.language != null && track.language!.isNotEmpty) {

@@ -236,7 +236,7 @@ class TopControls extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     PlayerIconButton(
-                      icon: Icons.arrow_back_rounded,
+                      icon: Icons.arrow_back_ios_new_outlined,
                       size: 24,
                       padding: const EdgeInsets.all(8.0),
                       tooltip: 'Back',

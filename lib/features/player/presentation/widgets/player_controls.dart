@@ -144,8 +144,10 @@ class PlayerBottomSheetTrigger<T> extends StatelessWidget {
   final String? displayText;
   final Widget? displayWidget;
   final bool isHighlighted;
+  final String? Function(T)? subtitleBuilder;
   final Widget? Function(T)? badgeBuilder;
   final List<Widget>? actions;
+  final VoidCallback? onTap;
 
   const PlayerBottomSheetTrigger({
     super.key,
@@ -160,7 +162,9 @@ class PlayerBottomSheetTrigger<T> extends StatelessWidget {
     this.displayWidget,
     this.isHighlighted = false,
     this.badgeBuilder,
+    this.subtitleBuilder,
     this.actions,
+    this.onTap,
   });
 
   @override
@@ -174,18 +178,20 @@ class PlayerBottomSheetTrigger<T> extends StatelessWidget {
       child: InkWell(
         onTap: isDisabled == true
             ? null
-            : () {
-                AppBottomSheet.showSelector<T>(
-                  context: context,
-                  title: displayText ?? '',
-                  items: items,
-                  selectedValue: value,
-                  itemLabel: itemLabel,
-                  badgeBuilder: badgeBuilder,
-                  onChanged: onChanged,
-                  actions: actions,
-                );
-              },
+            : (onTap ??
+                  () {
+                    AppBottomSheet.showSelector<T>(
+                      context: context,
+                      title: displayText ?? '',
+                      items: items,
+                      selectedValue: value,
+                      itemLabel: itemLabel,
+                      badgeBuilder: badgeBuilder,
+                      subtitleBuilder: subtitleBuilder,
+                      onChanged: onChanged,
+                      actions: actions,
+                    );
+                  }),
         onLongPress: onLongPress,
         onSecondaryTap: onLongPress,
         borderRadius: BorderRadius.circular(6),

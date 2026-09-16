@@ -47,9 +47,9 @@ class PlayerControlsOverlay extends StatelessWidget {
 
     double scale = 1.0;
     if (width > 1200) {
-      scale = 1.4;
-    } else if (width > 800) {
       scale = 1.2;
+    } else if (width > 800) {
+      scale = 1.1;
     }
 
     final controls = Stack(

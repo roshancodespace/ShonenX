@@ -98,3 +98,6 @@ android/app/build/
 *.flatpak
 *.AppImage
 .flatpak-builder/
+
+node_modules
+**/.vitepress/cache

@@ -223,34 +223,28 @@ class TopControls extends ConsumerWidget {
                 ),
               ),
             ),
-            SafeArea(
-              bottom: false,
-              child: Padding(
-                padding: const EdgeInsets.only(
-                  bottom: 24,
-                  top: 8,
-                  left: 14,
-                  right: 14,
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    PlayerIconButton(
-                      icon: Icons.arrow_back_ios_new_outlined,
-                      size: 24,
-                      padding: const EdgeInsets.all(8.0),
-                      tooltip: 'Back',
-                      onTap: onBack,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(child: titleColumn),
-                    const SizedBox(width: 12),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: actionButtons,
-                    ),
-                  ],
-                ),
+            Padding(
+              padding: const EdgeInsets.only(
+                bottom: 24,
+                top: 8,
+                left: 14,
+                right: 14,
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  PlayerIconButton(
+                    icon: Icons.arrow_back_ios_new_outlined,
+                    size: 24,
+                    padding: const EdgeInsets.all(8.0),
+                    tooltip: 'Back',
+                    onTap: onBack,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(child: titleColumn),
+                  const SizedBox(width: 12),
+                  Row(mainAxisSize: MainAxisSize.min, children: actionButtons),
+                ],
               ),
             ),
           ],

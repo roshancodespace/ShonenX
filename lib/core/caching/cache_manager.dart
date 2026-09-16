@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar_community/isar.dart';
 import 'package:shonenx/core/caching/cache_config.dart';
@@ -10,6 +12,8 @@ class CacheManager {
   final CacheConfig cacheConfig;
 
   late final ScopedLogger _log = AppLogger.scope(CacheManager);
+
+  static const int _oneMb = 1024 * 1024; // 1 MB threshold for gzip compression
 
   CacheManager({required Isar isar, required this.cacheConfig}) : _isar = isar {
     _initCleanup();
@@ -24,36 +28,46 @@ class CacheManager {
     final log = _log.child('enforceMaxCacheSize');
     try {
       final maxSize = cacheConfig.maxCacheSize;
-      final currentSize = await getCacheSize();
-      if (currentSize <= maxSize) {
-        return;
-      }
+      int usedSize = await getCacheSize();
 
-      // Query oldest expiring cache entries with batch limit to avoid excessive memory allocation
-      final entries = await _isar.cacheEntrys
-          .where()
-          .sortByExpiry()
-          .limit(100)
-          .findAll();
-      final keysToDelete = <String>[];
+      if (usedSize <= maxSize) return;
+
+      int deletedEntries = 0;
       int bytesCleared = 0;
 
-      for (final entry in entries) {
-        keysToDelete.add(entry.key);
-        bytesCleared += entry.bodyBytes.length;
-        if (currentSize - bytesCleared <= maxSize) {
-          break;
-        }
-      }
+      while (usedSize > maxSize) {
+        final entries = await _isar.cacheEntrys
+            .where()
+            .sortByExpiry()
+            .limit(100)
+            .findAll();
 
-      if (keysToDelete.isNotEmpty) {
+        if (entries.isEmpty) break;
+
+        final keysToDelete = <String>[];
+        int batchBytes = 0;
+
+        for (final entry in entries) {
+          keysToDelete.add(entry.key);
+          batchBytes += entry.bodyBytes.length;
+
+          if (usedSize - batchBytes <= maxSize) break;
+        }
+
         await _isar.writeTxn(() async {
           for (final key in keysToDelete) {
             await _isar.cacheEntrys.deleteByKey(key);
           }
         });
+
+        deletedEntries += keysToDelete.length;
+        bytesCleared += batchBytes;
+        usedSize -= batchBytes;
+      }
+
+      if (deletedEntries > 0) {
         log.s(
-          'Pruned ${keysToDelete.length} entries, cleared approx $bytesCleared bytes',
+          'Pruned $deletedEntries entries, cleared approx $bytesCleared bytes',
         );
       }
     } catch (e, st) {
@@ -78,6 +92,8 @@ class CacheManager {
         return null;
       }
 
+      entry.bodyBytes = _decompressIfNeeded(entry.bodyBytes);
+
       log.s('HIT: $key');
       return entry;
     } catch (e, st) {
@@ -86,20 +102,46 @@ class CacheManager {
     }
   }
 
-  Future<void> put(String key, CacheEntry entry, Duration cacheDuration) async {
+  Future<void> put(CacheEntry entry, Duration cacheDuration) async {
     final log = _log.child('put');
 
     try {
       entry.expiry = DateTime.now().add(cacheDuration);
 
+      if (entry.bodyBytes.length > _oneMb) {
+        log.v(
+          'Compressing bodyBytes (${entry.bodyBytes.length} bytes) with gzip: ${entry.key}',
+        );
+        entry.bodyBytes = gzip.encode(entry.bodyBytes);
+      }
+
       await _isar.writeTxn(() async {
         await _isar.cacheEntrys.put(entry);
       });
 
-      log.s('STORED: $key (ttl: ${cacheDuration.inMinutes}m)');
+      log.s('STORED: ${entry.key} (ttl: ${cacheDuration.inMinutes}m)');
     } catch (e, st) {
-      log.e('WRITE FAILED: $key', e, st);
+      log.e('WRITE FAILED: ${entry.key}', e, st);
     }
+  }
+
+  bool _isGzip(List<int> bytes) {
+    return bytes.length >= 3 &&
+        bytes[0] == 0x1F &&
+        bytes[1] == 0x8B &&
+        bytes[2] == 0x08;
+  }
+
+  List<int> _decompressIfNeeded(List<int> bytes) {
+    if (_isGzip(bytes)) {
+      try {
+        return gzip.decode(bytes);
+      } catch (e, st) {
+        _log.child('decompress').w('Failed to decompress gzip bytes', e, st);
+        return bytes;
+      }
+    }
+    return bytes;
   }
 
   Future<void> delete(String key) async {

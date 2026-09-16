@@ -33,10 +33,31 @@ class VideoStream {
 class SubtitleTrack {
   final String url;
   final String language;
+  final String? label;
 
-  const SubtitleTrack({required this.url, required this.language});
+  const SubtitleTrack({required this.url, required this.language, this.label});
 
   static const none = SubtitleTrack(url: '', language: 'Off');
+
+  SubtitleTrack copyWith({String? url, String? language, String? label}) {
+    return SubtitleTrack(
+      url: url ?? this.url,
+      language: language ?? this.language,
+      label: label ?? this.label,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SubtitleTrack &&
+          runtimeType == other.runtimeType &&
+          url == other.url &&
+          language == other.language &&
+          label == other.label;
+
+  @override
+  int get hashCode => url.hashCode ^ language.hashCode ^ label.hashCode;
 }
 
 class AudioTrack {

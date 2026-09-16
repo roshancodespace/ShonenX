@@ -403,7 +403,17 @@ class PlayerController extends Notifier<PlayerState> {
       );
 
       // Step 6: Select preferred subtitle language (or default to Off)
-      final subtitles = [SubtitleTrack.none, ...activeStream.subtitles];
+      final Set<String> activeServerSeenUrls = {};
+      final List<SubtitleTrack> labelledSubtitles = [];
+      for (final stream in streams) {
+        for (final sub in stream.subtitles) {
+          if (!activeServerSeenUrls.contains(sub.url) && sub.url.isNotEmpty) {
+            activeServerSeenUrls.add(sub.url);
+            labelledSubtitles.add(sub.copyWith(label: activeServer.name));
+          }
+        }
+      }
+      final subtitles = [SubtitleTrack.none, ...labelledSubtitles];
       final activeSubtitle = _resolver.resolveSubtitle(subtitles);
 
       // Step 7: Update controller state with resolved active options
@@ -438,9 +448,49 @@ class PlayerController extends Notifier<PlayerState> {
       );
       _updateDiscordRpc();
       _fetchSkipsIfNeeded();
+      _fetchAdditionalSubtitles(episode.id);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
+  }
+
+  Future<void> _fetchAdditionalSubtitles(String episodeId) async {
+    if (_source == null) return;
+
+    final currentServerId = state.activeServer?.id;
+    final otherServers = state.servers
+        .where((s) => s.id != currentServerId)
+        .toList();
+    if (otherServers.isEmpty) return;
+
+    final streamsList = await Future.wait(
+      otherServers.map((server) async {
+        try {
+          return await _source!.getSources(episodeId, server);
+        } catch (_) {
+          return <VideoStream>[];
+        }
+      }),
+    );
+
+    if (_isDisposed || state.activeEpisode?.id != episodeId) return;
+
+    final newSubtitles = List<SubtitleTrack>.from(state.subtitles);
+    final Set<String> seenUrls = newSubtitles.map((e) => e.url).toSet();
+
+    for (int i = 0; i < otherServers.length; i++) {
+      final server = otherServers[i];
+      for (final stream in streamsList[i]) {
+        for (final sub in stream.subtitles) {
+          if (!seenUrls.contains(sub.url) && sub.url.isNotEmpty) {
+            seenUrls.add(sub.url);
+            newSubtitles.add(sub.copyWith(label: server.name));
+          }
+        }
+      }
+    }
+
+    state = state.copyWith(subtitles: newSubtitles);
   }
 
   // Switch active server and reload streams while preserving playback position
@@ -525,8 +575,6 @@ class PlayerController extends Notifier<PlayerState> {
     state = state.copyWith(
       isLoading: true,
       activeStream: newStream,
-      subtitles: [...newStream.subtitles, SubtitleTrack.none],
-      activeSubtitle: newStream.subtitles.firstOrNull ?? SubtitleTrack.none,
       error: null,
     );
 

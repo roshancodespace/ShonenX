@@ -14,6 +14,7 @@ import 'package:shonenx/features/player/providers/video_engine_provider.dart';
 import 'package:shonenx/features/settings/presentation/widgets/subtitle_settings_sheet.dart';
 import 'package:shonenx/shared/models/video_server.dart';
 import 'package:shonenx/shared/models/video_stream.dart';
+import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:window_manager/window_manager.dart';
 
 class BottomControls extends ConsumerStatefulWidget {
@@ -256,9 +257,11 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
             value: widget.playerState.activeSubtitle,
             items: widget.playerState.subtitles,
             itemLabel: (s) => s.language,
+            subtitleBuilder: (s) => s.label,
             onChanged: (v) {
               widget.controller.changeSubtitle(v);
             },
+            onTap: () => _showSubtitleSelector(context),
             onLongPress: () {
               showModalBottomSheet(
                 context: context,
@@ -447,6 +450,112 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
           ),
         ],
       ],
+    );
+  }
+
+  void _showSubtitleSelector(BuildContext context) {
+    final theme = Theme.of(context);
+    final activeSub = widget.playerState.activeSubtitle;
+
+    final offOption = widget.playerState.subtitles.firstWhere(
+      (s) => s.url.isEmpty,
+      orElse: () => SubtitleTrack.none,
+    );
+
+    final groups = <String, List<SubtitleTrack>>{};
+    for (final sub in widget.playerState.subtitles) {
+      if (sub.url.isEmpty) continue;
+      final label = sub.label ?? 'Other';
+      groups.putIfAbsent(label, () => []).add(sub);
+    }
+
+    AppBottomSheet.show(
+      context: context,
+      title: 'Subtitles',
+      actions: [
+        IconButton.filledTonal(
+          tooltip: 'Customize Subtitles',
+          style: IconButton.styleFrom(
+            backgroundColor: theme.colorScheme.primary,
+            foregroundColor: theme.colorScheme.onPrimary,
+          ),
+          icon: const Icon(Icons.tune_rounded, size: 18),
+          onPressed: () {
+            Navigator.of(context).pop();
+            showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              constraints: const BoxConstraints(maxWidth: double.infinity),
+              builder: (context) => const SubtitleSettingsSheet(),
+            );
+          },
+        ),
+      ],
+      child: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.only(bottom: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _buildSubtitleTile(offOption, activeSub == offOption),
+            const SizedBox(height: 8),
+            for (final entry in groups.entries) ...[
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                child: Text(
+                  entry.key.toUpperCase(),
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: theme.colorScheme.primary,
+                    letterSpacing: 1.0,
+                  ),
+                ),
+              ),
+              for (final sub in entry.value)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: _buildSubtitleTile(sub, activeSub == sub),
+                ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSubtitleTile(SubtitleTrack item, bool isSelected) {
+    final theme = Theme.of(context);
+    return ListTile(
+      selected: isSelected,
+      selectedTileColor: theme.colorScheme.primary.withValues(alpha: 0.1),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      leading: isSelected
+          ? Icon(
+              Icons.radio_button_checked_rounded,
+              color: theme.colorScheme.primary,
+            )
+          : Icon(
+              Icons.radio_button_unchecked_rounded,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+      title: Text(
+        item.language,
+        style: TextStyle(
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          color: isSelected
+              ? theme.colorScheme.primary
+              : theme.colorScheme.onSurface,
+        ),
+      ),
+      trailing: isSelected
+          ? Icon(Icons.check_rounded, color: theme.colorScheme.primary)
+          : null,
+      onTap: () {
+        widget.controller.changeSubtitle(item);
+        Navigator.of(context).pop();
+      },
     );
   }
 

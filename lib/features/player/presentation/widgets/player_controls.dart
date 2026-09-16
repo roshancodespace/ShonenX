@@ -9,6 +9,7 @@ import 'package:shonenx/features/player/providers/player_prefs_provider.dart';
 import 'package:shonenx/features/player/providers/video_engine_provider.dart';
 import 'package:shonenx/shared/models/video_server.dart';
 import 'package:shonenx/shared/models/video_stream.dart';
+import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/shared/widgets/marquee_text.dart';
 
@@ -29,6 +30,7 @@ class PlayerIconButton extends StatelessWidget {
   final double size;
   final EdgeInsetsGeometry padding;
   final Color color;
+  final Color? backgroundColor;
   final String? tooltip;
 
   const PlayerIconButton({
@@ -38,17 +40,24 @@ class PlayerIconButton extends StatelessWidget {
     this.size = 22,
     this.padding = const EdgeInsets.all(4.0),
     this.color = Colors.white,
+    this.backgroundColor,
     this.tooltip,
   });
 
   @override
   Widget build(BuildContext context) {
-    Widget button = InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: Padding(
-        padding: padding,
-        child: Icon(icon, color: color, size: size),
+    Widget button = Material(
+      color: backgroundColor ?? Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
+      ),
+      clipBehavior: Clip.hardEdge,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: padding,
+          child: Icon(icon, color: color, size: size),
+        ),
       ),
     );
 
@@ -96,7 +105,7 @@ class PlayerActionButton extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
       child: Container(
         alignment: Alignment.center,
         padding: isHighlighted
@@ -104,7 +113,7 @@ class PlayerActionButton extends StatelessWidget {
             : const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         decoration: BoxDecoration(
           color: backgroundColor,
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -194,7 +203,7 @@ class PlayerBottomSheetTrigger<T> extends StatelessWidget {
                   }),
         onLongPress: onLongPress,
         onSecondaryTap: onLongPress,
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
         child: Container(
           alignment: Alignment.center,
           padding: isHighlighted
@@ -203,7 +212,7 @@ class PlayerBottomSheetTrigger<T> extends StatelessWidget {
           decoration: isHighlighted
               ? BoxDecoration(
                   color: const Color(0xFF343040),
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
                 )
               : null,
           child:
@@ -524,12 +533,10 @@ class PlayerEpisodeNavButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return IconButton(
-      onPressed: isEnabled ? onTap : null,
-      icon: Icon(
-        isNext ? Icons.skip_next_outlined : Icons.skip_previous_outlined,
-        size: 60,
-      ),
+    return PlayerIconButton(
+      onTap: isEnabled ? onTap : null,
+      icon: isNext ? Icons.skip_next_outlined : Icons.skip_previous_outlined,
+      size: 60,
       color: isEnabled ? Colors.white : Colors.grey,
     );
   }
@@ -554,7 +561,7 @@ class PlayerQualityButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         child: Row(

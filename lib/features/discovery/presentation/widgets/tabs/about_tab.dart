@@ -223,7 +223,10 @@ class _MediaDetailsSection extends StatelessWidget {
       );
     }
     if (media.duration != null && media.duration! > 0) {
-      details.add(_DetailPair('Duration', '${media.duration} mins'));
+      details.add(_DetailPair(
+        'Duration',
+        formatDurationMinutes(media.duration) ?? '${media.duration} mins',
+      ));
     }
     if (media.volumes != null && media.volumes! > 0) {
       details.add(_DetailPair('Volumes', '${media.volumes}'));

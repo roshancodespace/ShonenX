@@ -20,6 +20,7 @@ import 'package:shonenx/features/tracking/providers/media_tracking_provider.dart
 import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
 import 'package:shonenx/features/episode_metadata/providers/episode_metadata_providers.dart';
 import 'package:shonenx/features/tv_mode/presentation/widgets/tv_episode_list_panel.dart';
+import 'package:shonenx/features/discovery/domain/models/episode_playback_progress.dart';
 
 export 'episode_tiles.dart';
 
@@ -151,6 +152,29 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
     final effectiveWatchedProgress = widget.watchedProgress > 0
         ? widget.watchedProgress
         : (trackedProgress > 0 ? trackedProgress : maxHistoryEp);
+
+    final Map<double, EpisodePlaybackProgress> progressMap = {};
+    if (widget.media.type == MediaType.ANIME) {
+      for (final entry in watchHistoryEntries) {
+        final isMarkedWatched = historyWatchedSet.contains(entry.episodeNumber) ||
+            effectiveWatchedProgress >= entry.episodeNumber;
+        progressMap[entry.episodeNumber] =
+            EpisodePlaybackProgress.fromWatchEntry(
+          entry,
+          isMarkedWatched: isMarkedWatched,
+        );
+      }
+    } else {
+      for (final entry in readHistoryEntries) {
+        final isMarkedRead = historyWatchedSet.contains(entry.chapterNumber) ||
+            effectiveWatchedProgress >= entry.chapterNumber;
+        progressMap[entry.chapterNumber] =
+            EpisodePlaybackProgress.fromReadEntry(
+          entry,
+          isMarkedRead: isMarkedRead,
+        );
+      }
+    }
 
     return episodesAsync.when(
       loading: () {
@@ -571,6 +595,7 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
                   viewMode: viewMode,
                   effectiveWatchedProgress: effectiveWatchedProgress,
                   historyWatchedSet: historyWatchedSet,
+                  progressMap: progressMap,
                   currentIndex: finalEpisodes.indexWhere(
                     (ep) => ep.number == widget.currentEpisodeNumber,
                   ),
@@ -590,6 +615,7 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
     required EpisodeViewMode viewMode,
     required double effectiveWatchedProgress,
     required Set<double> historyWatchedSet,
+    required Map<double, EpisodePlaybackProgress> progressMap,
     int currentIndex = -1,
   }) {
     if (widget.isTv) {
@@ -599,6 +625,7 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
         source: source,
         effectiveWatchedProgress: effectiveWatchedProgress,
         historyWatchedSet: historyWatchedSet,
+        progressMap: progressMap,
         currentEpisodeNumber: widget.currentEpisodeNumber,
         onEpisodeTap: widget.onEpisodeTap,
       );
@@ -728,6 +755,7 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
                   mediaType: widget.media.type,
                   isCurrent: isCurrent,
                   isWatched: isWatched,
+                  progress: progressMap[ep.number],
                   imageFadeDirection: widget.imageFadeDirection,
                   imageFadeStops: widget.imageFadeStops,
                   imageOpacity: widget.imageOpacity,
@@ -763,6 +791,7 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
                   mediaType: widget.media.type,
                   isCurrent: isCurrent,
                   isWatched: isWatched,
+                  progress: progressMap[ep.number],
                   isFiller: ep.isFiller,
                   fallbackThumbnailUrl: fallbackThumbnailUrl,
                   actions:
@@ -819,6 +848,7 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
                   mediaType: widget.media.type,
                   isCurrent: isCurrent,
                   isWatched: isWatched,
+                  progress: progressMap[ep.number],
                   isFiller: ep.isFiller,
                   fallbackThumbnailUrl: fallbackThumbnailUrl,
                   actions:
@@ -875,6 +905,7 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
                   mediaType: widget.media.type,
                   isCurrent: isCurrent,
                   isWatched: isWatched,
+                  progress: progressMap[ep.number],
                   isFiller: ep.isFiller,
                   fallbackThumbnailUrl: fallbackThumbnailUrl,
                   actions:
@@ -930,6 +961,7 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
                   isCurrent: isCurrent,
                   isFiller: ep.isFiller,
                   isWatched: isWatched,
+                  progress: progressMap[ep.number],
                   fallbackThumbnailUrl: fallbackThumbnailUrl,
                   onTap: () => widget.onEpisodeTap(ep, source),
                 );

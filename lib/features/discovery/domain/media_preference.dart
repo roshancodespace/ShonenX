@@ -1,6 +1,8 @@
+// ignore_for_file: deprecated_member_use_from_same_package, deprecated_member_use
 import 'package:isar_community/isar.dart';
 
 part 'media_preference.g.dart';
+
 
 @collection
 class MediaPreference {

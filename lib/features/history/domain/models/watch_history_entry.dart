@@ -73,22 +73,35 @@ class WatchHistoryEntry {
     'lastUpdated': lastUpdated.toIso8601String(),
   };
 
-  static WatchHistoryEntry fromBackupMap(Map<String, dynamic> m) => WatchHistoryEntry()
-    ..episodeNumber = (m['episodeNumber'] as num).toDouble()
-    ..animeId = m['animeId'] as String
-    ..animeIdMal = m['animeIdMal'] as String?
-    ..animeTitle = m['animeTitle'] as String
-    ..episodeTitle = m['episodeTitle'] as String?
-    ..cover = m['cover'] as String?
-    ..banner = m['banner'] as String?
-    ..thumbnailUrl = m['thumbnailUrl'] as String?
-    ..totalEpisodes = m['totalEpisodes'] as int?
-    ..positionInMilliseconds = m['positionInMilliseconds'] as int
-    ..durationInMilliseconds = m['durationInMilliseconds'] as int
-    ..sourceId = m['sourceId'] as String?
-    ..sourceName = m['sourceName'] as String?
-    ..providerId = m['providerId'] as String?
-    ..externalIdsJson = m['externalIdsJson'] as String?
-    ..lastUpdated = DateTime.tryParse(m['lastUpdated'] as String? ?? '') ?? DateTime.now();
+  static WatchHistoryEntry fromBackupMap(Map<String, dynamic> m) =>
+      WatchHistoryEntry()
+        ..episodeNumber = (m['episodeNumber'] is num)
+            ? (m['episodeNumber'] as num).toDouble()
+            : (double.tryParse(m['episodeNumber']?.toString() ?? '') ?? 1.0)
+        ..animeId =
+            (m['animeId'] ?? m['providerId'] ?? m['id'] ?? '').toString()
+        ..animeIdMal = m['animeIdMal']?.toString()
+        ..animeTitle =
+            (m['animeTitle'] ?? m['title'] ?? 'Unknown').toString()
+        ..episodeTitle = m['episodeTitle']?.toString()
+        ..cover = m['cover']?.toString()
+        ..banner = m['banner']?.toString()
+        ..thumbnailUrl = m['thumbnailUrl']?.toString()
+        ..totalEpisodes = (m['totalEpisodes'] is num)
+            ? (m['totalEpisodes'] as num).toInt()
+            : int.tryParse(m['totalEpisodes']?.toString() ?? '')
+        ..positionInMilliseconds = (m['positionInMilliseconds'] is num)
+            ? (m['positionInMilliseconds'] as num).toInt()
+            : (int.tryParse(m['positionInMilliseconds']?.toString() ?? '') ?? 0)
+        ..durationInMilliseconds = (m['durationInMilliseconds'] is num)
+            ? (m['durationInMilliseconds'] as num).toInt()
+            : (int.tryParse(m['durationInMilliseconds']?.toString() ?? '') ?? 0)
+        ..sourceId = m['sourceId']?.toString()
+        ..sourceName = m['sourceName']?.toString()
+        ..providerId = m['providerId']?.toString()
+        ..externalIdsJson = m['externalIdsJson']?.toString()
+        ..lastUpdated =
+            DateTime.tryParse(m['lastUpdated'] as String? ?? '') ??
+            DateTime.now();
 }
 

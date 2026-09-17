@@ -38,14 +38,11 @@ class MalAuthenticator implements Authenticator {
       customCredentials != null && customCredentials!.clientId.isNotEmpty;
 
   @override
-  String get redirectUri => _isDesktop
-      ? 'http://localhost:43824/success?code=1337'
-      : (_isCustom ? 'shonenx://callback' : 'mallogin://callback');
+  String get redirectUri =>
+      _isCustom ? 'shonenx://callback' : 'mallogin://callback';
 
   @override
-  String get callbackScheme => _isDesktop
-      ? 'http://localhost:43824'
-      : (_isCustom ? 'shonenx' : 'mallogin');
+  String get callbackScheme => _isCustom ? 'shonenx' : 'mallogin';
 
   @override
   String get providerName => TrackerType.myanimelist.name;
@@ -97,9 +94,9 @@ class MalAuthenticator implements Authenticator {
         'state': state, // CSRF protection
       };
 
-      // Only specify redirect_uri if custom credentials are used or on desktop.
-      // Default bundled MAL client ID expects no redirect_uri on mobile to avoid 401.
-      if (_isCustom || _isDesktop) {
+      // Only specify redirect_uri if custom credentials are used.
+      // Default bundled MAL client ID expects no redirect_uri (sending it returns 401).
+      if (_isCustom) {
         authParams['redirect_uri'] = redirectUri;
       }
 
@@ -108,17 +105,26 @@ class MalAuthenticator implements Authenticator {
       final result = await FlutterWebAuth2.authenticate(
         url: authUri.toString(),
         callbackUrlScheme: callbackScheme,
-        options: FlutterWebAuth2Options(useWebview: !_isDesktop),
+        options: const FlutterWebAuth2Options(
+          preferEphemeral: false,
+          useWebview: true,
+        ),
       );
 
       final sanitizedResult = result.contains('://')
           ? result
           : result.replaceFirst(':', '://');
       final parsedUrl = Uri.parse(sanitizedResult);
-      final returnedState = parsedUrl.queryParameters['state'];
-      final code = parsedUrl.queryParameters['code'];
-      final error = parsedUrl.queryParameters['error'];
-      final errorDescription = parsedUrl.queryParameters['error_description'];
+      final fragmentParams = parsedUrl.fragment.isNotEmpty
+          ? Uri.splitQueryString(parsedUrl.fragment)
+          : const <String, String>{};
+      final returnedState =
+          parsedUrl.queryParameters['state'] ?? fragmentParams['state'];
+      final code = parsedUrl.queryParameters['code'] ?? fragmentParams['code'];
+      final error =
+          parsedUrl.queryParameters['error'] ?? fragmentParams['error'];
+      final errorDescription = parsedUrl.queryParameters['error_description'] ??
+          fragmentParams['error_description'];
 
       // Validate state parameter (CSRF protection)
       final storedState = await _secureStorage.read(key: _authStateKey);
@@ -151,7 +157,7 @@ class MalAuthenticator implements Authenticator {
         'code_verifier': codeVerifier,
       };
 
-      if (_isCustom || _isDesktop) {
+      if (_isCustom) {
         bodyParams['redirect_uri'] = redirectUri;
       }
 

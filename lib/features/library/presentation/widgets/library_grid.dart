@@ -12,6 +12,7 @@ import 'package:shonenx/features/tracking/providers/tracker_profile_provider.dar
 import 'package:shonenx/features/tracking/providers/tracking_prefs_provider.dart';
 import 'package:shonenx/core/utils/responsive.dart';
 import 'package:skeletonizer/skeletonizer.dart';
+import 'package:shonenx/features/recommendations/presentation/widgets/quick_status_sheet.dart';
 
 class LibraryGridWidget extends ConsumerWidget {
   const LibraryGridWidget({super.key});
@@ -143,6 +144,9 @@ class LibraryGridWidget extends ConsumerWidget {
                         media: entry.toUnifiedMedia(),
                         tag: 'library-${entry.id}',
                       );
+                    },
+                    onLongPress: () {
+                      QuickStatusSheet.show(context, entry.toUnifiedMedia());
                     },
                   );
                 },

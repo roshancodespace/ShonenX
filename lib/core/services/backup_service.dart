@@ -72,20 +72,35 @@ class BackupManifest {
 
   factory BackupManifest.fromJson(String source) {
     final map = jsonDecode(source) as Map<String, dynamic>;
+    final data = map['data'] as Map<String, dynamic>? ?? {};
+
+    // Auto-detect / fallback categories if not explicitly listed or empty (e.g. from older versions)
+    final explicitCategories = (map['categories'] as List<dynamic>? ?? [])
+        .map(
+          (name) => BackupCategory.values.firstWhere(
+            (c) => c.name == name,
+            orElse: () => BackupCategory.library,
+          ),
+        )
+        .toSet();
+
+    final detectedCategories = BackupCategory.values
+        .where((c) => data.containsKey(c.name))
+        .toSet();
+
+    final categories = explicitCategories.isNotEmpty
+        ? explicitCategories
+        : (detectedCategories.isNotEmpty
+            ? detectedCategories
+            : BackupCategory.values.toSet());
+
     return BackupManifest(
       appVersion: map['appVersion'] as String? ?? 'unknown',
       exportDate:
           DateTime.tryParse(map['exportDate'] as String? ?? '') ??
           DateTime.now(),
-      categories: (map['categories'] as List<dynamic>? ?? [])
-          .map(
-            (name) => BackupCategory.values.firstWhere(
-              (c) => c.name == name,
-              orElse: () => BackupCategory.library,
-            ),
-          )
-          .toSet(),
-      data: map['data'] as Map<String, dynamic>? ?? {},
+      categories: categories,
+      data: data,
     );
   }
 }
@@ -148,34 +163,41 @@ class BackupService {
     Set<BackupCategory> categories,
   ) async {
     for (final cat in categories) {
-      if (!manifest.categories.contains(cat)) continue;
-      switch (cat) {
-        case BackupCategory.library:
-          await _importLibrary(manifest.data['library'] as List<dynamic>?);
-        case BackupCategory.watchHistory:
-          await _importWatchHistory(
-            manifest.data['watchHistory'] as List<dynamic>?,
-          );
-        case BackupCategory.readHistory:
-          await _importReadHistory(
-            manifest.data['readHistory'] as List<dynamic>?,
-          );
-        case BackupCategory.notifications:
-          await _importNotifications(
-            manifest.data['notifications'] as List<dynamic>?,
-          );
-        case BackupCategory.trackerLinks:
-          await _importTrackerLinks(
-            manifest.data['trackerLinks'] as List<dynamic>?,
-          );
-        case BackupCategory.mediaPreferences:
-          await _importMediaPreferences(
-            manifest.data['mediaPreferences'] as List<dynamic>?,
-          );
-        case BackupCategory.appPreferences:
-          await _importPreferences(
-            manifest.data['appPreferences'] as Map<String, dynamic>?,
-          );
+      if (!manifest.categories.contains(cat) &&
+          !manifest.data.containsKey(cat.name)) {
+        continue;
+      }
+      try {
+        switch (cat) {
+          case BackupCategory.library:
+            await _importLibrary(manifest.data['library'] as List<dynamic>?);
+          case BackupCategory.watchHistory:
+            await _importWatchHistory(
+              manifest.data['watchHistory'] as List<dynamic>?,
+            );
+          case BackupCategory.readHistory:
+            await _importReadHistory(
+              manifest.data['readHistory'] as List<dynamic>?,
+            );
+          case BackupCategory.notifications:
+            await _importNotifications(
+              manifest.data['notifications'] as List<dynamic>?,
+            );
+          case BackupCategory.trackerLinks:
+            await _importTrackerLinks(
+              manifest.data['trackerLinks'] as List<dynamic>?,
+            );
+          case BackupCategory.mediaPreferences:
+            await _importMediaPreferences(
+              manifest.data['mediaPreferences'] as List<dynamic>?,
+            );
+          case BackupCategory.appPreferences:
+            await _importPreferences(
+              manifest.data['appPreferences'] as Map<String, dynamic>?,
+            );
+        }
+      } catch (_) {
+        // Individual category failures should never abort the rest of the restore process
       }
     }
   }
@@ -341,20 +363,26 @@ class BackupService {
     await _isar.writeTxn(() async {
       await _isar.mediaPreferences.clear();
       for (final item in items) {
-        final m = item as Map<String, dynamic>;
+        if (item is! Map) continue;
+        final m = Map<String, dynamic>.from(item);
+        final title = (m['mediaTitle'] ?? m['title'] ?? '').toString();
+        if (title.isEmpty) continue;
         final pref = MediaPreference()
-          ..mediaTitle = m['mediaTitle'] as String
-          ..preferredSourceId = m['preferredSourceId'] as String
-          ..preferredSourceName = m['preferredSourceName'] as String
-          ..preferredSourceType = m['preferredSourceType'] as String
+          ..mediaTitle = title
+          ..preferredSourceId =
+              (m['preferredSourceId'] ?? '').toString()
+          ..preferredSourceName =
+              (m['preferredSourceName'] ?? '').toString()
+          ..preferredSourceType =
+              (m['preferredSourceType'] ?? 'anime').toString()
           ..matchedMediaTitle =
-              (m['matchedMediaTitle'] ?? m['manualOverrideTitle']) as String?
+              (m['matchedMediaTitle'] ?? m['manualOverrideTitle'])?.toString()
           ..matchedMediaId =
-              (m['matchedMediaId'] ?? m['manualOverrideId']) as String?
+              (m['matchedMediaId'] ?? m['manualOverrideId'])?.toString()
           ..preferredTracker =
-              (m['preferredTracker'] ?? m['preferredAiringTracker']) as String?
+              (m['preferredTracker'] ?? m['preferredAiringTracker'])?.toString()
           ..trackerMediaId =
-              (m['trackerMediaId'] ?? m['manualAiringTrackerId']) as String?;
+              (m['trackerMediaId'] ?? m['manualAiringTrackerId'])?.toString();
         await _isar.mediaPreferences.put(pref);
       }
     });

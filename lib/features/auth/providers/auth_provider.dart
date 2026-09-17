@@ -60,6 +60,30 @@ class AuthTokensNotifier extends AsyncNotifier<Map<TrackerType, String>> {
     tracker.toggleTracker(ref, true);
   }
 
+  Future<void> setToken(RemoteTracker tracker, String token) async {
+    final cleanToken = token.trim();
+    if (cleanToken.isEmpty) {
+      throw Exception('Token cannot be empty');
+    }
+
+    await _storage.write(key: '$_prefix${tracker.type.id}', value: cleanToken);
+    state = AsyncData({..._current(), tracker.type: cleanToken});
+
+    try {
+      final profile = await tracker.fetchProfile();
+      ref
+          .read(trackerProfileProvider.notifier)
+          .saveProfile(tracker.type, profile);
+      tracker.toggleTracker(ref, true);
+    } catch (e) {
+      await _storage.delete(key: '$_prefix${tracker.type.id}');
+      final reverted = Map<TrackerType, String>.from(_current())
+        ..remove(tracker.type);
+      state = AsyncData(reverted);
+      rethrow;
+    }
+  }
+
   Future<void> logout(RemoteTracker tracker) async {
     await _storage.delete(key: '$_prefix${tracker.type.id}');
 

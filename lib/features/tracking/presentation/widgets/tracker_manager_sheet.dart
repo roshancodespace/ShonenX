@@ -157,11 +157,24 @@ class _LoginTrackerRow extends ConsumerWidget {
         ),
       ),
       trailing: FilledButton.tonal(
-        onPressed: () {
+        onPressed: () async {
           if (tracker is RemoteTracker) {
-            ref
-                .read(authTokensProvider.notifier)
-                .login(tracker as RemoteTracker);
+            try {
+              await ref
+                  .read(authTokensProvider.notifier)
+                  .login(tracker as RemoteTracker);
+            } catch (e) {
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                        'Login failed for ${tracker.type.displayName}: $e'),
+                    backgroundColor: theme.colorScheme.error,
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              }
+            }
           }
         },
         style: FilledButton.styleFrom(

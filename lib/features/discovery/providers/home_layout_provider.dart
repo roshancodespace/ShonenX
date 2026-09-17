@@ -33,11 +33,45 @@ class UserHomeLayoutNotifier extends Notifier<List<HomeSection>> {
     final json = _storage.getStringList(key);
 
     if (json != null && json.isNotEmpty) {
-      return json.map((e) => HomeSection.fromJson(e)).toList();
+      final list = json.map((e) => HomeSection.fromJson(e)).toList();
+      if (!list.any((s) => s.type == HomeSectionType.recommendation)) {
+        final lastContinueIndex = list.lastIndexWhere(
+          (s) => s.type == HomeSectionType.continueMedia,
+        );
+        final insertIndex = lastContinueIndex != -1 ? lastContinueIndex + 1 : 0;
+        list.insert(
+          insertIndex,
+          const HomeSection(
+            id: 'rec_anime',
+            title: 'Recommended For You',
+            type: HomeSectionType.recommendation,
+            targetMediaType: MediaType.ANIME,
+          ),
+        );
+      }
+      return list;
     }
 
     if (prefs.mode == MetadataMode.source || tracker == null) {
       return const [
+        HomeSection(
+          id: '3',
+          title: 'Continue Watching',
+          type: HomeSectionType.continueMedia,
+          targetMediaType: MediaType.ANIME,
+        ),
+        HomeSection(
+          id: '4',
+          title: 'Continue Reading',
+          type: HomeSectionType.continueMedia,
+          targetMediaType: MediaType.MANGA,
+        ),
+        HomeSection(
+          id: 'rec_anime',
+          title: 'Recommended For You',
+          type: HomeSectionType.recommendation,
+          targetMediaType: MediaType.ANIME,
+        ),
         HomeSection(
           id: '1',
           title: 'Trending Anime',
@@ -52,22 +86,28 @@ class UserHomeLayoutNotifier extends Notifier<List<HomeSection>> {
           targetMediaType: MediaType.MANGA,
           trackerCategory: TrackerCategory.trending,
         ),
-        HomeSection(
-          id: '3',
-          title: 'Continue Watching',
-          type: HomeSectionType.continueMedia,
-          targetMediaType: MediaType.ANIME,
-        ),
-        HomeSection(
-          id: '4',
-          title: 'Continue Reading',
-          type: HomeSectionType.continueMedia,
-          targetMediaType: MediaType.MANGA,
-        ),
       ];
     } else {
       int idCounter = 1;
       final sections = <HomeSection>[];
+
+      for (final media in tracker.supportedMediaTypes) {
+        sections.add(HomeSection(
+          id: (idCounter++).toString(),
+          title: (media == MediaType.MANGA || media == MediaType.NOVEL)
+              ? 'Continue Reading'
+              : 'Continue Watching',
+          type: HomeSectionType.continueMedia,
+          targetMediaType: media,
+        ));
+      }
+
+      sections.add(const HomeSection(
+        id: 'rec_anime',
+        title: 'Recommended For You',
+        type: HomeSectionType.recommendation,
+        targetMediaType: MediaType.ANIME,
+      ));
 
       for (final media in tracker.supportedMediaTypes) {
         if (tracker.supportedCategories.contains(TrackerCategory.trending)) {
@@ -79,17 +119,6 @@ class UserHomeLayoutNotifier extends Notifier<List<HomeSection>> {
             trackerCategory: TrackerCategory.trending,
           ));
         }
-      }
-
-      for (final media in tracker.supportedMediaTypes) {
-        sections.add(HomeSection(
-          id: (idCounter++).toString(),
-          title: (media == MediaType.MANGA || media == MediaType.NOVEL)
-              ? 'Continue Reading'
-              : 'Continue Watching',
-          type: HomeSectionType.continueMedia,
-          targetMediaType: media,
-        ));
       }
 
       return sections;

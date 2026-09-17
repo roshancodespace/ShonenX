@@ -16,11 +16,15 @@ class IsarTrackerLink {
     'mappings': mappings.map((m) => m.toBackupMap()).toList(),
   };
 
-  static IsarTrackerLink fromBackupMap(Map<String, dynamic> m) => IsarTrackerLink()
-    ..primaryMediaId = m['primaryMediaId'] as String
-    ..mappings = (m['mappings'] as List<dynamic>? ?? [])
-        .map((mp) => TrackerMapping.fromBackupMap(mp as Map<String, dynamic>))
-        .toList();
+  static IsarTrackerLink fromBackupMap(Map<String, dynamic> m) =>
+      IsarTrackerLink()
+        ..primaryMediaId =
+            (m['primaryMediaId'] ?? m['mediaId'] ?? m['id'] ?? '').toString()
+        ..mappings = (m['mappings'] as List<dynamic>? ?? [])
+            .whereType<Map>()
+            .map((mp) => TrackerMapping.fromBackupMap(
+                Map<String, dynamic>.from(mp)))
+            .toList();
 }
 
 @embedded
@@ -36,7 +40,7 @@ class TrackerMapping {
   };
 
   static TrackerMapping fromBackupMap(Map<String, dynamic> m) => TrackerMapping()
-    ..trackerId = m['trackerId'] as String?
-    ..trackingId = m['trackingId'] as String?
-    ..trackingTitle = m['trackingTitle'] as String?;
+    ..trackerId = m['trackerId']?.toString()
+    ..trackingId = m['trackingId']?.toString()
+    ..trackingTitle = m['trackingTitle']?.toString();
 }

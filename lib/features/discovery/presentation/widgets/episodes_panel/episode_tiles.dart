@@ -5,6 +5,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:shonenx/core/utils/formatting.dart';
 import 'package:shonenx/core/utils/image_headers.dart';
+import 'package:shonenx/features/discovery/domain/models/episode_playback_progress.dart';
+import 'package:shonenx/features/discovery/presentation/widgets/episodes_panel/episode_progress_bar.dart';
 import 'package:shonenx/shared/models/unified_episode.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 
@@ -34,6 +36,7 @@ abstract class BaseEpisodeTile extends StatelessWidget {
   final bool isCurrent;
   final bool isWatched;
   final bool isFiller;
+  final EpisodePlaybackProgress? progress;
   final VoidCallback onTap;
   final VoidCallback? onSecondaryTap;
   final VoidCallback? onLongPress;
@@ -51,6 +54,7 @@ abstract class BaseEpisodeTile extends StatelessWidget {
     required this.isCurrent,
     required this.isWatched,
     this.isFiller = false,
+    this.progress,
     required this.onTap,
     this.onSecondaryTap,
     this.onLongPress,
@@ -129,6 +133,7 @@ class EpisodeClassicTile extends BaseEpisodeTile {
     super.mediaType = MediaType.ANIME,
     required super.isCurrent,
     required super.isWatched,
+    super.progress,
     required super.onTap,
     super.isFiller = false,
     super.imageFadeDirection = EpisodeImageFadeDirection.left,
@@ -372,6 +377,15 @@ class EpisodeClassicTile extends BaseEpisodeTile {
                               ],
                             ],
                           ),
+                          if (progress != null && progress!.isInProgress) ...[
+                            const SizedBox(height: 4),
+                            EpisodeProgressBar(
+                              progress: progress!.progress,
+                              remainingText: progress!.remainingText,
+                              showText: true,
+                              height: 3,
+                            ),
+                          ],
                           if (displayDate != null &&
                               displayDate!.isNotEmpty) ...[
                             const SizedBox(height: 3),
@@ -438,6 +452,7 @@ class EpisodeGridTile extends BaseEpisodeTile {
     super.mediaType = MediaType.ANIME,
     required super.isCurrent,
     required super.isWatched,
+    super.progress,
     required super.onTap,
     super.onSecondaryTap,
     super.onLongPress,
@@ -548,6 +563,7 @@ class EpisodeGridTile extends BaseEpisodeTile {
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ],
+
                             if (displayDate != null &&
                                 displayDate!.isNotEmpty) ...[
                               const SizedBox(height: 2),
@@ -562,11 +578,38 @@ class EpisodeGridTile extends BaseEpisodeTile {
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ],
+                            if (progress != null &&
+                                progress!.isInProgress &&
+                                progress!.remainingText != null) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                progress!.remainingText!,
+                                style: TextStyle(
+                                  color: cs.primary,
+                                  fontSize: 9.5,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
                           ],
                         ),
                       ),
                     ),
                   ),
+
+                  if (progress != null && progress!.isInProgress)
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      child: EpisodeProgressBar(
+                        progress: progress!.progress,
+                        height: 3.5,
+                        borderRadius: BorderRadius.zero,
+                      ),
+                    ),
 
                   if (isFiller)
                     Positioned(
@@ -667,6 +710,7 @@ class EpisodeBoxTile extends BaseEpisodeTile {
     super.mediaType = MediaType.ANIME,
     required super.isCurrent,
     required super.isWatched,
+    super.progress,
     required super.onTap,
     super.isFiller = false,
     super.actions = const [],
@@ -745,6 +789,17 @@ class EpisodeBoxTile extends BaseEpisodeTile {
                 ),
               ),
             ),
+            if (progress != null && progress!.isInProgress)
+              Positioned(
+                left: 4,
+                right: 4,
+                bottom: 3,
+                child: EpisodeProgressBar(
+                  progress: progress!.progress,
+                  height: 2.5,
+                  borderRadius: BorderRadius.circular(1.5),
+                ),
+              ),
             if (isFiller)
               Positioned(
                 top: 2,
@@ -772,6 +827,7 @@ class EpisodeCompactTile extends BaseEpisodeTile {
     super.mediaType = MediaType.ANIME,
     required super.isCurrent,
     required super.isWatched,
+    super.progress,
     required super.onTap,
     super.isFiller = false,
     super.actions = const [],
@@ -891,6 +947,15 @@ class EpisodeCompactTile extends BaseEpisodeTile {
                       ],
                     ),
                   ],
+                  if (progress != null && progress!.isInProgress) ...[
+                    const SizedBox(height: 4),
+                    EpisodeProgressBar(
+                      progress: progress!.progress,
+                      remainingText: progress!.remainingText,
+                      showText: true,
+                      height: 2.5,
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -919,6 +984,7 @@ class EpisodeCoverTile extends BaseEpisodeTile {
     super.mediaType = MediaType.ANIME,
     required super.isCurrent,
     required super.isWatched,
+    super.progress,
     required super.onTap,
     super.isFiller = false,
     super.actions = const [],
@@ -1093,12 +1159,38 @@ class EpisodeCoverTile extends BaseEpisodeTile {
                             ),
                           ),
                         ],
+                        if (progress != null &&
+                            progress!.isInProgress &&
+                            progress!.remainingText != null) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            progress!.remainingText!,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: cs.primary,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
                 ],
               ),
             ),
+            if (progress != null && progress!.isInProgress)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: EpisodeProgressBar(
+                  progress: progress!.progress,
+                  height: 3.5,
+                  borderRadius: BorderRadius.zero,
+                ),
+              ),
             if (actions.isNotEmpty)
               Positioned(
                 top: 6,

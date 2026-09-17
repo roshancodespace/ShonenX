@@ -1,6 +1,8 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:shonenx/core/utils/formatting.dart';
+import 'package:shonenx/features/discovery/domain/models/episode_playback_progress.dart';
+import 'package:shonenx/features/discovery/presentation/widgets/episodes_panel/episode_progress_bar.dart';
 import 'package:shonenx/features/tv_mode/presentation/widgets/tv_focusable.dart';
 import 'package:shonenx/shared/models/ui_style_enums.dart';
 import 'package:shonenx/shared/models/unified_episode.dart';
@@ -13,6 +15,7 @@ class TvEpisodeListPanel extends StatelessWidget {
   final SourceInfo source;
   final double effectiveWatchedProgress;
   final Set<double> historyWatchedSet;
+  final Map<double, EpisodePlaybackProgress>? progressMap;
   final double? currentEpisodeNumber;
   final void Function(UnifiedEpisode episode, SourceInfo sourceInfo)
   onEpisodeTap;
@@ -24,6 +27,7 @@ class TvEpisodeListPanel extends StatelessWidget {
     required this.source,
     required this.effectiveWatchedProgress,
     required this.historyWatchedSet,
+    this.progressMap,
     this.currentEpisodeNumber,
     required this.onEpisodeTap,
   });
@@ -47,6 +51,7 @@ class TvEpisodeListPanel extends StatelessWidget {
       itemCount: episodes.length,
       itemBuilder: (context, index) {
         final episode = episodes[index];
+        final progress = progressMap?[episode.number];
         final isCompleted =
             historyWatchedSet.contains(episode.number) ||
             effectiveWatchedProgress >= episode.number;
@@ -186,6 +191,17 @@ class TvEpisodeListPanel extends StatelessWidget {
                               ),
                             ),
                           ),
+                        if (progress != null && progress.isInProgress)
+                          Positioned(
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            child: EpisodeProgressBar(
+                              progress: progress.progress,
+                              height: 3.5,
+                              borderRadius: BorderRadius.zero,
+                            ),
+                          ),
                         AnimatedOpacity(
                           opacity: active ? 1.0 : 0.0,
                           duration: const Duration(milliseconds: 180),
@@ -235,16 +251,28 @@ class TvEpisodeListPanel extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 3),
-                        Text(
-                          episode.airDate?.isNotEmpty == true
-                              ? (formatAirDate(episode.airDate) ??
-                                    episode.airDate!)
-                              : (isManga ? 'Chapter' : 'Episode'),
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.45),
-                            fontSize: 11,
+                        if (progress != null &&
+                            progress.isInProgress &&
+                            progress.remainingText != null)
+                          Text(
+                            progress.remainingText!,
+                            style: TextStyle(
+                              color: cs.primary,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          )
+                        else
+                          Text(
+                            episode.airDate?.isNotEmpty == true
+                                ? (formatAirDate(episode.airDate) ??
+                                      episode.airDate!)
+                                : (isManga ? 'Chapter' : 'Episode'),
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.45),
+                              fontSize: 11,
+                            ),
                           ),
-                        ),
                       ],
                     ),
                   ),

@@ -34,14 +34,11 @@ class AnilistAuthenticator implements Authenticator {
   bool get _hasSecret => _clientSecret.trim().isNotEmpty;
 
   @override
-  String get redirectUri => _isDesktop
-      ? 'http://localhost:43824/success?code=1337'
-      : (_isCustom ? 'shonenx://callback' : 'anilistlogin://callback');
+  String get redirectUri =>
+      _isCustom ? 'shonenx://callback' : 'anilistlogin://callback';
 
   @override
-  String get callbackScheme => _isDesktop
-      ? 'http://localhost:43824'
-      : (_isCustom ? 'shonenx' : 'anilistlogin');
+  String get callbackScheme => _isCustom ? 'shonenx' : 'anilistlogin';
 
   @override
   String get providerName => TrackerType.anilist.name;
@@ -56,18 +53,27 @@ class AnilistAuthenticator implements Authenticator {
     final authParams = <String, String>{
       'client_id': _clientId,
       'response_type': useImplicitGrant ? 'token' : 'code',
-      'redirect_uri': redirectUri,
     };
+
+    if (_isCustom) {
+      authParams['redirect_uri'] = redirectUri;
+    }
 
     final url = Uri.https('anilist.co', '/api/v2/oauth/authorize', authParams);
 
     final result = await FlutterWebAuth2.authenticate(
       url: url.toString(),
       callbackUrlScheme: callbackScheme,
-      options: FlutterWebAuth2Options(useWebview: !_isDesktop),
+      options: const FlutterWebAuth2Options(
+        preferEphemeral: false,
+        useWebview: true,
+      ),
     );
 
-    final uri = Uri.parse(result);
+    final sanitizedResult = result.contains('://')
+        ? result
+        : result.replaceFirst(':', '://');
+    final uri = Uri.parse(sanitizedResult);
 
     // Implicit grant returns '#access_token=...' in URL fragment
     String? accessToken;
@@ -82,20 +88,29 @@ class AnilistAuthenticator implements Authenticator {
     }
 
     // If authorization code grant flow with secret
-    final code = uri.queryParameters['code'];
+    final fragmentParams = uri.fragment.isNotEmpty
+        ? Uri.splitQueryString(uri.fragment)
+        : const <String, String>{};
+    final code = uri.queryParameters['code'] ?? fragmentParams['code'];
     if (code == null || code.isEmpty) {
       throw Exception('AniList Auth Error: Failed to obtain access token or code.');
     }
 
+    final tokenBody = <String, dynamic>{
+      "grant_type": "authorization_code",
+      "client_id": _clientId,
+      "code": code,
+    };
+    if (_clientSecret.isNotEmpty) {
+      tokenBody["client_secret"] = _clientSecret;
+    }
+    if (_isCustom) {
+      tokenBody["redirect_uri"] = redirectUri;
+    }
+
     final tokenResponse = await _http.post(
       'https://anilist.co/api/v2/oauth/token',
-      body: {
-        "grant_type": "authorization_code",
-        "client_id": _clientId,
-        "client_secret": _clientSecret,
-        "redirect_uri": redirectUri,
-        "code": code,
-      },
+      body: tokenBody,
       headers: {
         "Content-Type": "application/json",
         "Accept": "application/json",

@@ -608,12 +608,27 @@ class _TrackerProfileSheetState extends ConsumerState<TrackerProfileSheet> {
             Padding(
               padding: const EdgeInsets.only(top: 8),
               child: FilledButton(
-                onPressed: () {
+                onPressed: () async {
                   final tracker = ref
                       .read(availableTrackersProvider)
                       .firstWhere((t) => t.type == widget.trackerType);
                   if (tracker is RemoteTracker) {
-                    ref.read(authTokensProvider.notifier).login(tracker);
+                    try {
+                      await ref
+                          .read(authTokensProvider.notifier)
+                          .login(tracker);
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                                'Login failed for ${widget.trackerType.displayName}: $e'),
+                            backgroundColor: cs.error,
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      }
+                    }
                   }
                 },
                 style: FilledButton.styleFrom(

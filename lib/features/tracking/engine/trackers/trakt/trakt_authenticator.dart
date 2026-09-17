@@ -24,13 +24,10 @@ class TraktAuthenticator implements Authenticator {
       '4cefa94b7e9e62cf03b9b0098f98bc5bb10c14b3017a493a778cba22cf551ee6';
 
   @override
-  String get redirectUri => _isDesktop
-      ? 'http://localhost:43824/success?code=1337'
-      : 'shonenx://callback';
+  String get redirectUri => 'shonenx://callback';
 
   @override
-  String get callbackScheme =>
-      _isDesktop ? 'http://localhost:43824' : 'shonenx';
+  String get callbackScheme => 'shonenx';
 
   @override
   String get providerName => TrackerType.trakt.name;
@@ -49,7 +46,10 @@ class TraktAuthenticator implements Authenticator {
     final result = await FlutterWebAuth2.authenticate(
       url: url.toString(),
       callbackUrlScheme: callbackScheme,
-      options: FlutterWebAuth2Options(useWebview: !_isDesktop),
+      options: const FlutterWebAuth2Options(
+        preferEphemeral: false,
+        useWebview: true,
+      ),
     );
 
     final code = Uri.parse(result).queryParameters['code'];

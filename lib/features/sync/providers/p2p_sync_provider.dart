@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shonenx/shared/providers/backup_provider.dart';
@@ -74,10 +75,9 @@ final p2pSyncProvider =
     NotifierProvider<P2PSyncNotifier, P2PSyncState>(P2PSyncNotifier.new);
 
 class P2PSyncNotifier extends Notifier<P2PSyncState> {
-  SeederStorageManager get _storageManager =>
-      ref.read(seederStorageManagerProvider);
-  SyncDataBridge get _dataBridge => ref.read(syncDataBridgeProvider);
-  SharedPreferences get _prefs => ref.read(sharedPreferencesProvider);
+  late final SharedPreferences _prefs;
+  late final SeederStorageManager _storageManager;
+  late final SyncDataBridge _dataBridge;
 
   P2PChannel? _p2pChannel;
   SwarmPeerDiscovery? _discovery;
@@ -88,14 +88,19 @@ class P2PSyncNotifier extends Notifier<P2PSyncState> {
 
   @override
   P2PSyncState build() {
+    _prefs = ref.watch(sharedPreferencesProvider);
+    _storageManager = SeederStorageManager();
+    _dataBridge = ref.watch(syncDataBridgeProvider);
+
     ref.onDispose(() {
       _stopP2PNetwork();
     });
-    Future.microtask(() => _init());
+
+    _initialize();
     return const P2PSyncState();
   }
 
-  Future<void> _init() async {
+  Future<void> _initialize() async {
     try {
       final identity = await SyncIdentity.loadFromStorage();
       final lastSyncMs = _prefs.getInt(_prefLastSync);
@@ -123,6 +128,31 @@ class P2PSyncNotifier extends Notifier<P2PSyncState> {
     }
   }
 
+  /// Determines whether an incoming blob should be accepted and restored.
+  /// Relaxed backwards-compatibility allows backups from older app versions,
+  /// lower sequential counters with newer timestamps, or uninitialized devices.
+  bool _shouldAcceptIncomingBlob(SeederBlob blob, SyncIdentity identity) {
+    if (blob.targetPeerId != identity.peerId) return false;
+
+    // 1. Strictly higher version counter -> always apply
+    if (blob.version > state.snapshotVersion) return true;
+
+    // 2. Uninitialized / restored device that hasn't synced yet -> always apply
+    final lastSync = state.lastSyncDate;
+    if (lastSync == null) return true;
+
+    // 3. Newer timestamp than last successful sync (e.g. from an older version of client)
+    if (blob.timestamp.isAfter(lastSync)) return true;
+
+    // 4. Equal version counter with reasonable interval since last sync
+    if (blob.version >= state.snapshotVersion &&
+        DateTime.now().difference(lastSync).inSeconds >= 10) {
+      return true;
+    }
+
+    return false;
+  }
+
   /// Starts the P2P networking channel and LAN discovery.
   Future<void> _startP2PNetwork(SyncIdentity identity) async {
     await _stopP2PNetwork();
@@ -132,14 +162,15 @@ class P2PSyncNotifier extends Notifier<P2PSyncState> {
       storageManager: _storageManager,
       onBlobReceived: (blob) async {
         await _refreshSeederStats();
-        // If this blob belongs to us, check if it is newer and apply
-        if (blob.targetPeerId == identity.peerId && blob.version > state.snapshotVersion) {
+        // If this blob belongs to us, verify if it should be accepted & applied
+        if (_shouldAcceptIncomingBlob(blob, identity)) {
           try {
             await _dataBridge.decryptAndApply(
               encryptedPayload: blob.payloadBytes,
               identity: identity,
             );
-            await _saveSyncSuccess(blob.version);
+            final newVersion = math.max(blob.version, state.snapshotVersion);
+            await _saveSyncSuccess(newVersion, timestamp: blob.timestamp);
           } catch (_) {}
         }
       },
@@ -213,14 +244,28 @@ class P2PSyncNotifier extends Notifier<P2PSyncState> {
       final identity = await SyncIdentity.fromMnemonic(mnemonic);
       await identity.saveToStorage();
 
-      state = state.copyWith(identity: identity);
+      // Clear previous local version counter so any incoming backup is accepted
+      await _prefs.remove(_prefVersion);
+      await _prefs.remove(_prefLastSync);
+
+      state = state.copyWith(
+        identity: identity,
+        snapshotVersion: 0,
+        lastSyncDate: null,
+      );
       await _startP2PNetwork(identity);
 
-      // Immediately query peers for our blob
+      // Immediately query peers for our backup blob
       _p2pChannel?.requestBlob(identity.peerId);
 
-      // Also capture and seed current local state
-      await syncNow();
+      // Only seed current state if this device already had existing database items
+      final counts = await _dataBridge.getExistingCounts();
+      final totalLocalItems = counts.values.fold(0, (a, b) => a + b);
+      if (totalLocalItems > 0) {
+        await syncNow();
+      } else {
+        state = state.copyWith(isSyncing: false);
+      }
     } catch (e) {
       state = state.copyWith(isSyncing: false, syncError: e.toString());
       rethrow;
@@ -280,8 +325,8 @@ class P2PSyncNotifier extends Notifier<P2PSyncState> {
     );
   }
 
-  Future<void> _saveSyncSuccess(int version) async {
-    final now = DateTime.now();
+  Future<void> _saveSyncSuccess(int version, {DateTime? timestamp}) async {
+    final now = timestamp ?? DateTime.now();
     await _prefs.setInt(_prefLastSync, now.millisecondsSinceEpoch);
     await _prefs.setInt(_prefVersion, version);
 

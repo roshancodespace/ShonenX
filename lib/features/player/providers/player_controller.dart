@@ -8,6 +8,7 @@ import 'package:screenshot/screenshot.dart';
 
 import 'package:collection/collection.dart';
 import 'package:shonenx/core/network/http_client.dart';
+import 'package:shonenx/features/downloads/data/offline_progress_repository.dart';
 import 'package:shonenx/features/discovery/domain/media_args.dart';
 import 'package:shonenx/features/discovery/providers/episodes_provider.dart';
 import 'package:shonenx/features/discord/providers/discord_rpc_provider.dart';
@@ -114,6 +115,8 @@ class PlayerController extends Notifier<PlayerState> {
   Timer? _endingSkipCooldownTimer;
 
   bool _isDisposed = false;
+  String? _offlineFilePath;
+  Timer? _offlineProgressTimer;
 
   @override
   PlayerState build() {
@@ -134,6 +137,8 @@ class PlayerController extends Notifier<PlayerState> {
       _isDisposed = true;
       _endingSkipCooldownTimer?.cancel();
       _progressTracker.cancel();
+      _offlineProgressTimer?.cancel();
+      _saveCurrentOfflineProgress();
     });
 
     // Re-apply native subtitle when the "use custom subtitle" pref toggles
@@ -340,18 +345,53 @@ class PlayerController extends Notifier<PlayerState> {
         isLoading: false,
       );
 
+      _offlineFilePath = mode.filePath;
+
+      Duration? startAt = mode.startPosition;
+      if (startAt == null) {
+        final saved = ref
+            .read(offlineProgressRepositoryProvider)
+            .getProgress(mode.filePath);
+        if (saved != null && saved.positionMs > 4000 && !saved.isCompleted) {
+          startAt = Duration(milliseconds: saved.positionMs);
+        }
+      }
+
       await ref.read(videoEngineProvider).initialize(
             localStream,
             subtitle: defaultSub == SubtitleTrack.none ? null : defaultSub,
-            startAt: Duration.zero,
+            startAt: startAt ?? Duration.zero,
           );
 
       if (defaultSub != SubtitleTrack.none) {
         _applyNativeSubtitle(defaultSub);
       }
+
+      // Start periodic tracking for offline playback progress
+      _offlineProgressTimer?.cancel();
+      _offlineProgressTimer = Timer.periodic(
+        const Duration(seconds: 4),
+        (_) => _saveCurrentOfflineProgress(),
+      );
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
+  }
+
+  void _saveCurrentOfflineProgress() {
+    final path = _offlineFilePath;
+    if (path == null || path.isEmpty) return;
+
+    try {
+      final engine = ref.read(videoEngineProvider);
+      final pos = engine.currentPosition.inMilliseconds;
+      final dur = engine.currentDuration.inMilliseconds;
+      if (pos > 1500 && dur > 0) {
+        ref
+            .read(offlineProgressRepositoryProvider)
+            .saveProgress(path, pos, dur);
+      }
+    } catch (_) {}
   }
 
   /// Allows picking an external subtitle file (.vtt, .srt, .ass) from device storage

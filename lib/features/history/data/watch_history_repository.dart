@@ -60,13 +60,20 @@ class WatchHistoryRepository {
 
   Stream<List<WatchHistoryEntry>> watchHistoryForAnime(
     String animeId, {
-    int limit = 50,
+    String? animeIdMal,
+    int? limit,
   }) {
-    return _isar.watchHistoryEntrys
-        .filter()
-        .animeIdEqualTo(animeId)
-        .sortByLastUpdatedDesc()
-        .limit(limit)
-        .watch(fireImmediately: true);
+    var query = _isar.watchHistoryEntrys.filter().group((q) {
+      var inner = q.animeIdEqualTo(animeId);
+      if (animeIdMal != null && animeIdMal.isNotEmpty) {
+        inner = inner.or().animeIdMalEqualTo(animeIdMal);
+      }
+      return inner;
+    }).sortByEpisodeNumberAsc();
+
+    if (limit != null && limit > 0) {
+      return query.limit(limit).watch(fireImmediately: true);
+    }
+    return query.watch(fireImmediately: true);
   }
 }

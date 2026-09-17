@@ -23,6 +23,8 @@ import 'package:shonenx/features/tracking/domain/models/tracked_list_item.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
 import 'package:shonenx/features/tracking/engine/remote_tracker.dart';
 import 'package:shonenx/features/tracking/engine/tracking_service.dart';
+import 'package:shonenx/features/recommendations/presentation/widgets/quick_status_sheet.dart';
+import 'package:shonenx/features/recommendations/providers/recommendations_provider.dart';
 import 'package:shonenx/features/tracking/presentation/widgets/edit_tracker_sheet.dart';
 import 'package:shonenx/features/tracking/presentation/widgets/tracker_manager_sheet.dart';
 import 'package:shonenx/features/tracking/providers/media_tracking_provider.dart';
@@ -220,6 +222,11 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen>
                   ),
                   actions: [
                     const _DownloadAppBarButton(),
+                    _LikeAppBarButton(
+                      media: displayMedia,
+                      uiRoundness: uiRoundness,
+                    ),
+                    const SizedBox(width: 5),
                     AppIconButton(
                       tooltip: 'Share',
                       backgroundColor: theme.colorScheme.secondaryContainer,
@@ -743,20 +750,9 @@ class _TrackerAppBarButton extends ConsumerWidget {
               ref.read(authTokensProvider.notifier).login(tracker);
               return;
             }
-            _openManager(context);
+            QuickStatusSheet.show(context, media);
           },
-          onLongPress: (isTrackerLinked && listItem != null)
-              ? () => showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  useSafeArea: true,
-                  builder: (_) => EditTrackerSheet(
-                    media: media,
-                    initialItem: listItem,
-                    tracker: tracker,
-                  ),
-                )
-              : null,
+          onLongPress: () => _openManager(context),
           uiRoundness: uiRoundness,
         );
       },
@@ -904,4 +900,56 @@ void _showCommentsSheet(BuildContext context, UnifiedMedia media) {
       child: CommentsTabWidget(media: media),
     ),
   );
+}
+
+class _LikeAppBarButton extends ConsumerWidget {
+  final UnifiedMedia media;
+  final double uiRoundness;
+
+  const _LikeAppBarButton({required this.media, required this.uiRoundness});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final isLiked = ref.watch(
+      likedAnimeProvider.select((map) => map.containsKey(media.id)),
+    );
+
+    return AppIconButton(
+      tooltip: isLiked ? 'Unlike Anime' : 'Like Anime',
+      backgroundColor: isLiked
+          ? Colors.redAccent.withValues(alpha: 0.2)
+          : theme.colorScheme.secondaryContainer,
+      foregroundColor: isLiked
+          ? Colors.redAccent
+          : theme.colorScheme.onSecondaryContainer,
+      radius: uiRoundness,
+      icon: Icon(
+        isLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+        size: 18,
+        color: isLiked ? Colors.redAccent : null,
+      ),
+      onPressed: () async {
+        HapticFeedback.mediumImpact();
+        final nowLiked = await ref
+            .read(likedAnimeProvider.notifier)
+            .toggleLike(media);
+        if (context.mounted) {
+          final title = media.title.availableTitle;
+          ScaffoldMessenger.of(context).clearSnackBars();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                nowLiked
+                    ? 'Added "$title" to Likes • Recommendations updated'
+                    : 'Removed "$title" from Likes',
+              ),
+              duration: const Duration(seconds: 2),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      },
+    );
+  }
 }

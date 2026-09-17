@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import 'package:shonenx/core/updates/models/github_release.dart';
 import 'package:shonenx/core/updates/ui/android_update_widget.dart';
+import 'package:shonenx/core/updates/ui/app_update_downloader_widget.dart';
 import 'package:shonenx/core/updates/ui/linux_update_widget.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 
@@ -177,39 +178,30 @@ class UpdateUI {
                   icon: const Icon(Icons.terminal_rounded, size: 18),
                   label: const Text('Terminal Install'),
                 ),
-              if (Platform.isAndroid)
-                FilledButton.icon(
-                  onPressed: () {
-                    onDownload?.call();
-                    context.pop();
-                    AndroidUpdateWidget.show(
-                      context,
-                      release: release,
-                      onDownloadStarted: onDownload,
-                    );
-                  },
-                  icon: const Icon(Icons.install_mobile_rounded, size: 18),
-                  label: const Text('In-App Install'),
-                )
-              else if (release.downloadUrl != null ||
-                  release.htmlUrl.isNotEmpty)
-                FilledButton.icon(
-                  onPressed: () async {
-                    onDownload?.call();
-                    context.pop();
-                    final url = Uri.parse(
-                      release.downloadUrl ?? release.htmlUrl,
-                    );
-                    if (await canLaunchUrl(url)) {
-                      await launchUrl(
-                        url,
-                        mode: LaunchMode.externalApplication,
-                      );
-                    }
-                  },
-                  icon: const Icon(Icons.download_rounded, size: 18),
-                  label: const Text('Download'),
+              FilledButton.icon(
+                onPressed: () {
+                  onDownload?.call();
+                  context.pop();
+                  AppUpdateDownloaderWidget.show(
+                    context,
+                    release: release,
+                    onDownloadStarted: onDownload,
+                  );
+                },
+                icon: Icon(
+                  Platform.isAndroid || Platform.isIOS
+                      ? Icons.install_mobile_rounded
+                      : Icons.install_desktop_rounded,
+                  size: 18,
                 ),
+                label: Text(
+                  Platform.isAndroid
+                      ? 'In-App Install'
+                      : Platform.isWindows
+                          ? 'In-App Update'
+                          : 'In-App Download',
+                ),
+              ),
             ],
           ),
         ],

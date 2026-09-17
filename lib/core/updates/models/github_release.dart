@@ -50,17 +50,43 @@ class GitHubRelease {
       for (final a in assets) {
         final name = a.name.toLowerCase();
         if (name.contains('linux') &&
-            (name.endsWith('.zip') ||
-                name.endsWith('.tar.gz') ||
-                name.endsWith('.appimage'))) {
+            (name.endsWith('.tar.gz') ||
+                name.endsWith('.appimage') ||
+                name.endsWith('.zip'))) {
           return a;
         }
       }
     } else if (Platform.isWindows) {
       for (final a in assets) {
         final name = a.name.toLowerCase();
-        if (name.endsWith('.exe') ||
-            (name.contains('win') && name.endsWith('.zip'))) {
+        if (name.endsWith('.exe')) {
+          return a;
+        }
+      }
+      for (final a in assets) {
+        final name = a.name.toLowerCase();
+        if (name.contains('win') && name.endsWith('.zip')) {
+          return a;
+        }
+      }
+    } else if (Platform.isMacOS) {
+      for (final a in assets) {
+        final name = a.name.toLowerCase();
+        if (name.endsWith('.dmg')) {
+          return a;
+        }
+      }
+      for (final a in assets) {
+        final name = a.name.toLowerCase();
+        if ((name.contains('mac') || name.contains('darwin')) &&
+            name.endsWith('.zip')) {
+          return a;
+        }
+      }
+    } else if (Platform.isIOS) {
+      for (final a in assets) {
+        final name = a.name.toLowerCase();
+        if (name.endsWith('.ipa')) {
           return a;
         }
       }
@@ -119,17 +145,43 @@ class GitHubRelease {
       for (final a in assets) {
         final name = a.name.toLowerCase();
         if (name.contains('linux') &&
-            (name.endsWith('.zip') ||
-                name.endsWith('.tar.gz') ||
-                name.endsWith('.appimage'))) {
+            (name.endsWith('.tar.gz') ||
+                name.endsWith('.appimage') ||
+                name.endsWith('.zip'))) {
           return a.downloadUrl;
         }
       }
     } else if (Platform.isWindows) {
       for (final a in assets) {
         final name = a.name.toLowerCase();
-        if (name.endsWith('.exe') ||
-            (name.contains('win') && name.endsWith('.zip'))) {
+        if (name.endsWith('.exe')) {
+          return a.downloadUrl;
+        }
+      }
+      for (final a in assets) {
+        final name = a.name.toLowerCase();
+        if (name.contains('win') && name.endsWith('.zip')) {
+          return a.downloadUrl;
+        }
+      }
+    } else if (Platform.isMacOS) {
+      for (final a in assets) {
+        final name = a.name.toLowerCase();
+        if (name.endsWith('.dmg')) {
+          return a.downloadUrl;
+        }
+      }
+      for (final a in assets) {
+        final name = a.name.toLowerCase();
+        if ((name.contains('mac') || name.contains('darwin')) &&
+            name.endsWith('.zip')) {
+          return a.downloadUrl;
+        }
+      }
+    } else if (Platform.isIOS) {
+      for (final a in assets) {
+        final name = a.name.toLowerCase();
+        if (name.endsWith('.ipa')) {
           return a.downloadUrl;
         }
       }

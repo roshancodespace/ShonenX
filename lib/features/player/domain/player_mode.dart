@@ -23,9 +23,11 @@ class PlayerModeOnline extends PlayerMode {
 class PlayerModeOffline extends PlayerMode {
   final String filePath;
   final String? title;
+  final Duration? startPosition;
 
   const PlayerModeOffline({
     required this.filePath,
     this.title,
+    this.startPosition,
   });
 }

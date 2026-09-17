@@ -28,6 +28,18 @@ class SeederStorageManager {
       final dir = await _getSeederDirectory();
       final file = _getBlobFile(dir, blob.targetPeerId);
 
+      // Protect against older versions overwriting newer cached snapshots
+      if (await file.exists()) {
+        try {
+          final existingStr = await file.readAsString();
+          final existingJson = jsonDecode(existingStr) as Map<String, dynamic>;
+          final existing = SeederBlob.fromJson(existingJson);
+          if (existing.version > blob.version && existing.timestamp.isAfter(blob.timestamp)) {
+            return;
+          }
+        } catch (_) {}
+      }
+
       final jsonStr = jsonEncode(blob.toJson());
       await file.writeAsString(jsonStr, flush: true);
 

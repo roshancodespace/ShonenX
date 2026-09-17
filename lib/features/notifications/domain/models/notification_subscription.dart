@@ -54,16 +54,22 @@ class NotificationSubscription {
 
   static NotificationSubscription fromBackupMap(Map<String, dynamic> m) =>
       NotificationSubscription()
-        ..type = SubscriptionType.values.firstWhere((e) => e.name == m['type'], orElse: () => SubscriptionType.animeAiring)
-        ..referenceId = m['referenceId'] as String
-        ..title = m['title'] as String
-        ..image = m['image'] as String
+        ..type = SubscriptionType.values.firstWhere(
+            (e) => e.name == m['type'],
+            orElse: () => SubscriptionType.animeAiring)
+        ..referenceId = (m['referenceId'] ?? '').toString()
+        ..title = (m['title'] ?? 'Unknown').toString()
+        ..image = (m['image'] ?? '').toString()
         ..isEnabled = m['isEnabled'] as bool? ?? true
-        ..mode = SubscriptionMode.values.firstWhere((e) => e.name == m['mode'], orElse: () => SubscriptionMode.nextOnly)
-        ..offsetMinutes = m['offsetMinutes'] as int? ?? 0
-        ..upcomingIdentifier = m['upcomingIdentifier'] as String?
+        ..mode = SubscriptionMode.values.firstWhere(
+            (e) => e.name == m['mode'],
+            orElse: () => SubscriptionMode.nextOnly)
+        ..offsetMinutes = (m['offsetMinutes'] is num)
+            ? (m['offsetMinutes'] as num).toInt()
+            : (int.tryParse(m['offsetMinutes']?.toString() ?? '') ?? 0)
+        ..upcomingIdentifier = m['upcomingIdentifier']?.toString()
         ..upcomingTime = m['upcomingTime'] != null
-            ? DateTime.tryParse(m['upcomingTime'] as String)
+            ? DateTime.tryParse(m['upcomingTime'].toString())
             : null
         ..createdAt = DateTime.tryParse(m['createdAt'] as String? ?? '') ??
             DateTime.now();

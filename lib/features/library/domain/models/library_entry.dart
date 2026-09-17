@@ -97,20 +97,28 @@ class LibraryEntry {
   };
 
   static LibraryEntry fromBackupMap(Map<String, dynamic> m) => LibraryEntry()
-    ..providerId = m['providerId'] as String
-    ..title = m['title'] as String
-    ..cover = m['cover'] as String
-    ..type = m['type'] as String?
-    ..format = m['format'] as String?
-    ..score = (m['score'] as num?)?.toDouble()
-    ..status = m['status'] as String?
-    ..episodes = m['episodes'] as int?
-    ..episodesWatched = m['episodesWatched'] as int? ?? 0
+    ..providerId =
+        (m['providerId'] ?? m['id'] ?? m['animeId'] ?? '').toString()
+    ..title = (m['title'] ?? m['name'] ?? 'Unknown').toString()
+    ..cover =
+        (m['cover'] ?? m['coverImage'] ?? m['imageUrl'] ?? '').toString()
+    ..type = m['type']?.toString()
+    ..format = m['format']?.toString()
+    ..score = (m['score'] is num)
+        ? (m['score'] as num).toDouble()
+        : double.tryParse(m['score']?.toString() ?? '')
+    ..status = m['status']?.toString()
+    ..episodes = (m['episodes'] is num)
+        ? (m['episodes'] as num).toInt()
+        : int.tryParse(m['episodes']?.toString() ?? '')
+    ..episodesWatched = (m['episodesWatched'] is num)
+        ? (m['episodesWatched'] as num).toInt()
+        : (int.tryParse(m['episodesWatched']?.toString() ?? '') ?? 0)
     ..addedAt =
         DateTime.tryParse(m['addedAt'] as String? ?? '') ?? DateTime.now()
     ..updatedAt =
         DateTime.tryParse(m['updatedAt'] as String? ?? '') ?? DateTime.now()
-    ..sourceType = m['sourceType'] as String?
-    ..sourceId = m['sourceId'] as String?
-    ..externalIdsJson = m['externalIdsJson'] as String?;
+    ..sourceType = m['sourceType']?.toString()
+    ..sourceId = m['sourceId']?.toString()
+    ..externalIdsJson = m['externalIdsJson']?.toString();
 }

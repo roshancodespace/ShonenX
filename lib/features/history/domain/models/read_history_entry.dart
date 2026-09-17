@@ -74,19 +74,27 @@ class ReadHistoryEntry {
 
   static ReadHistoryEntry fromBackupMap(Map<String, dynamic> m) =>
       ReadHistoryEntry()
-        ..chapterNumber = (m['chapterNumber'] as num).toDouble()
-        ..mangaId = m['mangaId'] as String
-        ..mangaIdMal = m['mangaIdMal'] as String?
-        ..mangaTitle = m['mangaTitle'] as String
-        ..chapterTitle = m['chapterTitle'] as String?
-        ..cover = m['cover'] as String?
-        ..banner = m['banner'] as String?
-        ..positionPage = m['positionPage'] as int
-        ..totalPages = m['totalPages'] as int
-        ..sourceId = m['sourceId'] as String?
-        ..sourceName = m['sourceName'] as String?
-        ..providerId = m['providerId'] as String?
-        ..externalIdsJson = m['externalIdsJson'] as String?
+        ..chapterNumber = (m['chapterNumber'] is num)
+            ? (m['chapterNumber'] as num).toDouble()
+            : (double.tryParse(m['chapterNumber']?.toString() ?? '') ?? 1.0)
+        ..mangaId =
+            (m['mangaId'] ?? m['providerId'] ?? m['id'] ?? '').toString()
+        ..mangaIdMal = m['mangaIdMal']?.toString()
+        ..mangaTitle =
+            (m['mangaTitle'] ?? m['title'] ?? 'Unknown').toString()
+        ..chapterTitle = m['chapterTitle']?.toString()
+        ..cover = m['cover']?.toString()
+        ..banner = m['banner']?.toString()
+        ..positionPage = (m['positionPage'] is num)
+            ? (m['positionPage'] as num).toInt()
+            : (int.tryParse(m['positionPage']?.toString() ?? '') ?? 0)
+        ..totalPages = (m['totalPages'] is num)
+            ? (m['totalPages'] as num).toInt()
+            : (int.tryParse(m['totalPages']?.toString() ?? '') ?? 0)
+        ..sourceId = m['sourceId']?.toString()
+        ..sourceName = m['sourceName']?.toString()
+        ..providerId = m['providerId']?.toString()
+        ..externalIdsJson = m['externalIdsJson']?.toString()
         ..lastUpdated =
             DateTime.tryParse(m['lastUpdated'] as String? ?? '') ??
             DateTime.now();

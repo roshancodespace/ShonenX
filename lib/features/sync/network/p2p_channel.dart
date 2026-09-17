@@ -206,6 +206,7 @@ class P2PChannel {
         case 'blob_data':
           // Delivery of a requested blob
           final blob = SeederBlob.fromJson(msg.payload);
+          await _storageManager.saveBlob(blob);
           onBlobReceived?.call(blob);
           break;
       }

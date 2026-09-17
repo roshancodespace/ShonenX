@@ -11,6 +11,9 @@ class SyncDataBridge {
 
   SyncDataBridge(this._backupService);
 
+  Future<Map<BackupCategory, int>> getExistingCounts() =>
+      _backupService.getExistingCounts();
+
   /// Captures the complete local state, packages it into a signed [SyncSnapshot],
   /// and produces an authenticated encrypted byte payload ready for seeding.
   Future<({SyncSnapshot snapshot, Uint8List encryptedPayload})> captureAndEncrypt({

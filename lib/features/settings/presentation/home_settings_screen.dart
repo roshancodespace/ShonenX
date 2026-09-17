@@ -429,6 +429,9 @@ class _SectionFormSheetState extends ConsumerState<_SectionFormSheet> {
             ? 'My ${_selectedStatus!.displayName}'
             : '';
         break;
+      case HomeSectionType.recommendation:
+        newTitle = 'Recommended For You';
+        break;
     }
     _titleController.text = newTitle;
   }

@@ -65,15 +65,17 @@ class LikedAnime {
   UnifiedMedia toUnifiedMedia() {
     return UnifiedMedia(
       id: id,
-      title: MediaTitle(english: title, userPreferred: title),
+      type: type ?? MediaType.ANIME,
+      title: MediaTitle(english: title, romaji: title),
       cover: cover,
       banner: banner,
       genres: genres,
-      tags: tags,
+      tags: tags
+          .map((t) => MediaTag(id: t, name: t, category: 'General'))
+          .toList(),
       format: format,
       score: score,
       season: season,
-      type: type,
       providerId: providerId,
       sourceId: sourceId,
     );

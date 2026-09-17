@@ -90,6 +90,7 @@ class TvHomeScreen extends ConsumerWidget {
         );
 
       case HomeSectionType.discovery:
+      case HomeSectionType.recommendation:
         final cardStyles = ref.watch(
           uiPrefsProvider.select(
             (s) =>

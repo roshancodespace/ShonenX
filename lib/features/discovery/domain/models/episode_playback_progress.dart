@@ -36,6 +36,7 @@ class EpisodePlaybackProgress {
     }
     final rawProgress = (pos / dur).clamp(0.0, 1.0);
     final completed = isMarkedWatched || rawProgress >= 0.92;
+    final remainingMs = dur - pos;
     final remainingText =
         formatTimeRemaining(remainingMs > 0 ? remainingMs : 0);
 

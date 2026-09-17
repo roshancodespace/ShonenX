@@ -69,7 +69,7 @@ class WatchHistoryRepository {
         inner = inner.or().animeIdMalEqualTo(animeIdMal);
       }
       return inner;
-    }).sortByEpisodeNumberAsc();
+    }).sortByLastUpdatedDesc();
 
     if (limit != null && limit > 0) {
       return query.limit(limit).watch(fireImmediately: true);

@@ -95,7 +95,7 @@ final userTasteProfileProvider = FutureProvider<UserTasteProfile>((ref) async {
   try {
     final libraryEntries = await isar.libraryEntrys.where().findAll();
     for (final entry in libraryEntries) {
-      final status = entry.status.toLowerCase();
+      final status = entry.status?.toLowerCase() ?? '';
       final id = entry.providerId;
       if (id.isNotEmpty) {
         // Exclude watched, watching, or dropped from recommendations
@@ -114,7 +114,8 @@ final userTasteProfileProvider = FutureProvider<UserTasteProfile>((ref) async {
         seedAnime.add(
           UnifiedMedia(
             id: entry.providerId,
-            title: MediaTitle(english: entry.title, userPreferred: entry.title),
+            type: MediaType.ANIME,
+            title: MediaTitle(english: entry.title, romaji: entry.title),
             cover: entry.cover,
             format: entry.format,
             score: entry.score,

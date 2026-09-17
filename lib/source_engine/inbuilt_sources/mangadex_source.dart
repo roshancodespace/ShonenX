@@ -232,7 +232,6 @@ class MangaDexSource implements MangaSource {
         final imageUrl = '$baseUrl/data/$hash/$fileName';
         pages.add(
           ChapterPage(
-            page: i + 1,
             url: imageUrl,
             headers: {'Referer': 'https://mangadex.org'},
           ),

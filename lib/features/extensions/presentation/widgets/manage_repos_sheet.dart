@@ -573,6 +573,46 @@ class _ManageReposSheetState extends ConsumerState<ManageReposSheet> {
             ),
 
             const SizedBox(height: 10),
+            FilledButton.icon(
+              onPressed: _isLoading
+                  ? null
+                  : () async {
+                      setState(() => _isLoading = true);
+                      try {
+                        _controller.text =
+                            'https://raw.githubusercontent.com/Zcross091/KuroX/main/kurox_repository.json';
+                        final added =
+                            await CommunityRepoSyncService.syncNow(ref);
+                        if (mounted) {
+                          _showSnackBar(
+                            added > 0
+                                ? 'Successfully imported $added Ronin API & Community Repositories!'
+                                : 'Ronin API & Community Repositories are already up to date!',
+                            isSuccess: true,
+                          );
+                        }
+                      } catch (e) {
+                        if (mounted) {
+                          _showSnackBar('Import failed: $e', isError: true);
+                        }
+                      } finally {
+                        if (mounted) setState(() => _isLoading = false);
+                      }
+                    },
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              icon: const Icon(Icons.auto_awesome_rounded, size: 18),
+              label: const Text(
+                'Import Ronin API',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+
+            const SizedBox(height: 10),
             OutlinedButton.icon(
               onPressed: _isLoading
                   ? null

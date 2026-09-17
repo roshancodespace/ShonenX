@@ -34,6 +34,25 @@
         ]
       },
       {
+        "name": "Ronin API",
+        "lang": "en",
+        "baseUrl": "https://github.com/Zcross091/Ronin-API",
+        "type": "anime",
+        "status": "active",
+        "quality": [
+          "1080p",
+          "720p",
+          "480p"
+        ],
+        "features": [
+          "Sub",
+          "Dub",
+          "Fast Cache",
+          "Failover Streams",
+          "Direct Video Resolver"
+        ]
+      },
+      {
         "name": "Gogoanime / Anitaku",
         "lang": "en",
         "baseUrl": "https://anitaku.to",
@@ -484,5 +503,5 @@
       }
     }
   },
-  "lastSynced": "2026-09-17T10:53:45.746Z"
+  "lastSynced": "2026-09-17T16:25:00.000Z"
 }

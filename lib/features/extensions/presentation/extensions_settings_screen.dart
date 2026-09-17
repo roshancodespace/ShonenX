@@ -17,6 +17,8 @@ import 'widgets/extension_guide_sheet.dart';
 import 'widgets/manage_repos_sheet.dart';
 import 'widgets/runtime_setup_sheet.dart';
 import 'widgets/sources_tab.dart';
+import 'package:shonenx/core/utils/snackbar_utils.dart';
+import 'package:shonenx/features/extensions/services/community_repo_sync_service.dart';
 import 'package:shonenx/shared/widgets/unified_search_bar.dart';
 
 class ExtensionsSettingsScreen extends ConsumerStatefulWidget {
@@ -517,8 +519,38 @@ class _ExtensionsSettingsScreenState
     );
   }
 
+  Future<void> _importRoninApi(BuildContext context) async {
+    SnackbarUtils.show(
+      context,
+      'Importing Ronin API & Community Sources...',
+      isSuccess: true,
+    );
+    try {
+      final added = await CommunityRepoSyncService.syncNow(ref);
+      if (mounted) {
+        SnackbarUtils.show(
+          context,
+          added > 0
+              ? 'Successfully imported $added Ronin API & Community Repositories!'
+              : 'Ronin API & Community Repositories are already up to date!',
+          isSuccess: true,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        SnackbarUtils.show(context, 'Import failed: $e', isError: true);
+      }
+    }
+  }
+
   List<Widget> _buildActions(BuildContext context) {
     return [
+      IconButton(
+        icon: const Icon(Icons.auto_awesome_rounded),
+        tooltip: 'Import Ronin API',
+        onPressed: () => _importRoninApi(context),
+      ),
+
       IconButton(
         icon: const Icon(Icons.speed_rounded),
         tooltip: 'Test Extensions',
@@ -564,6 +596,20 @@ class _ExtensionsSettingsScreenState
           crossAxisAlignment: WrapCrossAlignment.center,
           verticalDirection: VerticalDirection.up,
           children: [
+            SizedBox(
+              height: 44,
+              child: FloatingActionButton.extended(
+                heroTag: 'import_ronin_api_fab',
+                backgroundColor: theme.colorScheme.tertiaryContainer,
+                foregroundColor: theme.colorScheme.onTertiaryContainer,
+                icon: const Icon(Icons.auto_awesome_rounded, size: 18),
+                label: const Text(
+                  'Import Ronin API',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                ),
+                onPressed: () => _importRoninApi(context),
+              ),
+            ),
             SizedBox(
               height: 44,
               child: FloatingActionButton.extended(

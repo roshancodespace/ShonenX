@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:open_file/open_file.dart';
+import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:shonenx/core/router/app_navigator.dart';
 import 'package:shonenx/features/player/domain/player_mode.dart';
@@ -431,8 +432,8 @@ class _DownloadedFilesTabState extends ConsumerState<_DownloadedFilesTab> {
     final entities = await dir.list().toList();
 
     for (final entity in entities) {
-      if (entity is File && entity.path.endsWith('.mp4')) {
-        final name = entity.path.split('/').last.replaceAll('.mp4', '');
+      if (entity is File && entity.path.toLowerCase().endsWith('.mp4')) {
+        final name = p.basenameWithoutExtension(entity.path);
         items.add(OfflineFile(name, entity, await entity.length()));
       } else if (entity is Directory) {
         final subEntities = await entity.list(recursive: true).toList();
@@ -440,8 +441,8 @@ class _DownloadedFilesTabState extends ConsumerState<_DownloadedFilesTab> {
         int totalSize = 0;
 
         for (final sub in subEntities) {
-          if (sub is File && sub.path.endsWith('.mp4')) {
-            final name = sub.path.split('/').last.replaceAll('.mp4', '');
+          if (sub is File && sub.path.toLowerCase().endsWith('.mp4')) {
+            final name = p.basenameWithoutExtension(sub.path);
             final size = await sub.length();
             files.add(OfflineFile(name, sub, size));
             totalSize += size;
@@ -450,7 +451,7 @@ class _DownloadedFilesTabState extends ConsumerState<_DownloadedFilesTab> {
 
         if (files.isNotEmpty) {
           files.sort((a, b) => a.name.compareTo(b.name));
-          final name = entity.path.split('/').last;
+          final name = p.basename(entity.path);
           items.add(OfflineFolder(name, entity, files, totalSize));
         }
       }
@@ -466,7 +467,7 @@ class _DownloadedFilesTabState extends ConsumerState<_DownloadedFilesTab> {
   }
 
   void _openFile(File file, {Duration? startPosition}) {
-    final name = file.path.split('/').last.replaceAll('.mp4', '');
+    final name = p.basenameWithoutExtension(file.path);
     context.pushPlayer(PlayerModeOffline(
       filePath: file.path,
       title: name,
@@ -483,31 +484,28 @@ class _DownloadedFilesTabState extends ConsumerState<_DownloadedFilesTab> {
     }
   }
 
-  void _showDeleteSheet({
+  Future<bool?> _showDeleteConfirmation({
     required BuildContext context,
     required String title,
     required String message,
-    required Future<void> Function() onDelete,
   }) {
-    final colors = Theme.of(context).colorScheme;
-
-    showModalBottomSheet(
+    return AppBottomSheet.show<bool>(
       context: context,
-      useRootNavigator: true,
-      builder: (_) {
-        return AppBottomSheet(
-          title: title,
-          child: Column(
+      title: title,
+      child: Builder(
+        builder: (sheetContext) {
+          final colors = Theme.of(sheetContext).colorScheme;
+          return Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(message, style: Theme.of(context).textTheme.bodyMedium),
+              Text(message, style: Theme.of(sheetContext).textTheme.bodyMedium),
               const SizedBox(height: 24),
               Row(
                 children: [
                   Expanded(
                     child: FilledButton.tonal(
-                      onPressed: () => Navigator.pop(context),
+                      onPressed: () => Navigator.of(sheetContext).pop(false),
                       child: const Text('Cancel'),
                     ),
                   ),
@@ -518,54 +516,115 @@ class _DownloadedFilesTabState extends ConsumerState<_DownloadedFilesTab> {
                         backgroundColor: colors.error,
                         foregroundColor: colors.onError,
                       ),
-                      onPressed: () async {
-                        final messenger = ScaffoldMessenger.of(context);
-                        Navigator.pop(context);
-                        try {
-                          await onDelete();
-                        } catch (e) {
-                          if (mounted) {
-                            messenger.showSnackBar(
-                              SnackBar(content: Text('Failed to delete: $e')),
-                            );
-                          }
-                        }
-                      },
+                      onPressed: () => Navigator.of(sheetContext).pop(true),
                       child: const Text('Delete'),
                     ),
                   ),
                 ],
               ),
             ],
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 
-  void _confirmDeleteFile(BuildContext context, OfflineFile item) {
-    _showDeleteSheet(
+  Future<void> _confirmDeleteFile(BuildContext context, OfflineFile item) async {
+    final confirmed = await _showDeleteConfirmation(
       context: context,
       title: 'Delete Episode?',
       message: 'This will permanently remove ${item.name}.',
-      onDelete: () async {
-        await item.file.delete();
-        setState(() => _itemsFuture = _getItems());
-      },
     );
+    if (confirmed != true || !mounted) return;
+
+    try {
+      if (await item.file.exists()) {
+        await item.file.delete();
+      }
+      // Clean up companion subtitle files if any exist (.vtt / .srt)
+      final basePath = p.withoutExtension(item.file.path);
+      final vttFile = File('$basePath.vtt');
+      if (await vttFile.exists()) {
+        await vttFile.delete();
+      }
+      final srtFile = File('$basePath.srt');
+      if (await srtFile.exists()) {
+        await srtFile.delete();
+      }
+
+      // Clean up cached offline playback progress
+      await ref
+          .read(offlineProgressRepositoryProvider)
+          .clearProgress(item.file.path);
+
+      // If parent directory is now empty, remove it to prevent clutter
+      final parentDir = item.file.parent;
+      if (await parentDir.exists()) {
+        final remaining = await parentDir.list().toList();
+        if (remaining.isEmpty) {
+          await parentDir.delete();
+        }
+      }
+
+      if (mounted) {
+        setState(() => _itemsFuture = _getItems());
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Deleted ${item.name}'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete: $e'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 
-  void _confirmDeleteFolder(BuildContext context, OfflineFolder item) {
-    _showDeleteSheet(
+  Future<void> _confirmDeleteFolder(
+      BuildContext context, OfflineFolder item) async {
+    final confirmed = await _showDeleteConfirmation(
       context: context,
       title: 'Delete Folder?',
       message:
           'This will permanently remove all ${item.files.length} episodes in ${item.name}.',
-      onDelete: () async {
-        await item.directory.delete(recursive: true);
-        setState(() => _itemsFuture = _getItems());
-      },
     );
+    if (confirmed != true || !mounted) return;
+
+    try {
+      if (await item.directory.exists()) {
+        for (final f in item.files) {
+          await ref
+              .read(offlineProgressRepositoryProvider)
+              .clearProgress(f.file.path);
+        }
+        await item.directory.delete(recursive: true);
+      }
+      if (mounted) {
+        setState(() => _itemsFuture = _getItems());
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Deleted folder ${item.name}'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete folder: $e'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -752,7 +811,11 @@ class _DownloadedFilesTabState extends ConsumerState<_DownloadedFilesTab> {
                   _openFile(item.file, startPosition: Duration.zero);
                 }
                 if (val == 'external') _openExternal(item.file);
-                if (val == 'delete') _confirmDeleteFile(context, item);
+                if (val == 'delete') {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) _confirmDeleteFile(context, item);
+                  });
+                }
               },
               itemBuilder: (_) => [
                 PopupMenuItem(

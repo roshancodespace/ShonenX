@@ -8,6 +8,7 @@ import 'package:shonenx/shared/providers/content_prefs_provider.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
 import 'package:shonenx/source_engine/source_engine_provider.dart';
 import 'package:shonenx/source_engine/source_registry.dart';
+import 'package:shonenx/features/recommendations/providers/recommendations_provider.dart';
 
 class HomeFeedSection {
   final String id;
@@ -29,6 +30,7 @@ class HomeFeedSection {
   bool get isDiscovery => type == HomeSectionType.discovery;
   bool get isContinueMedia => type == HomeSectionType.continueMedia;
   bool get isLibraryStatus => type == HomeSectionType.libraryStatus;
+  bool get isRecommendation => type == HomeSectionType.recommendation;
 
   @override
   bool operator ==(Object other) =>
@@ -151,7 +153,14 @@ final homeSectionFeedProvider =
         );
       }
 
-      // 2. Tracker mode
+      // 2. Recommendation mode
+      if (section.type == HomeSectionType.recommendation) {
+        return ref.watch(
+          recommendedMediaFeedProvider(section.mediaType).future,
+        );
+      }
+
+      // 3. Tracker mode
       final hs = section.homeSection;
       if (hs == null || hs.type != HomeSectionType.discovery) return const [];
 

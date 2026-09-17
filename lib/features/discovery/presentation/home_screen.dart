@@ -21,6 +21,9 @@ import 'package:shonenx/shared/widgets/app_scaffold.dart';
 import 'package:shonenx/shared/widgets/tracker_avatar.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/sheets/star_repo_sheet.dart';
+import 'package:shonenx/features/recommendations/domain/models/recommended_anime.dart';
+import 'package:shonenx/features/recommendations/presentation/widgets/quick_status_sheet.dart';
+import 'package:shonenx/features/recommendations/providers/recommendations_provider.dart';
 
 class _HeaderButton extends StatelessWidget {
   final IconData icon;
@@ -339,6 +342,108 @@ class _HomeFeedSectionRowState extends ConsumerState<HomeFeedSectionRow>
           targetMediaType: section.mediaType,
         );
 
+      case HomeSectionType.recommendation:
+        final style = ref.watch(uiPrefsProvider.select((p) => p.cardStyle));
+        final isWide = ref.watch(
+          uiPrefsProvider.select((p) => p.isMediaCardWide(style.name)),
+        );
+        final recData = ref.watch(
+          recommendedAnimeFeedProvider(section.mediaType),
+        );
+
+        return recData.when(
+          data: (items) {
+            if (items.isEmpty) {
+              return Container(
+                margin: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .surfaceContainerHighest
+                      .withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .outlineVariant
+                        .withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.auto_awesome_rounded,
+                      color: Theme.of(context).colorScheme.primary,
+                      size: 26,
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Personalize Your Recommendations',
+                            style: Theme.of(context).textTheme.titleSmall
+                                ?.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Tap ❤️ or set status to "Completed" on any anime to train your recommendations.',
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            return HorizontalSection<RecommendedAnime>(
+              title: section.title,
+              height: style.getLayout(isWideMode: isWide).height,
+              data: recData,
+              itemBuilder: (context, rec) {
+                final item = rec.media;
+                return MediaCard(
+                  tag: 'rec-${section.id}-${item.id}',
+                  format: item.format,
+                  score: item.score,
+                  status: item.status,
+                  genres: item.genres,
+                  year: item.season,
+                  subtitle: rec.reason,
+                  title: item.title.availableTitle,
+                  imageUrl: item.cover ?? '',
+                  style: style,
+                  onTap: () => context.pushDetails(
+                    mediaType: item.type,
+                    media: item,
+                    tag: 'rec-${section.id}-${item.id}',
+                  ),
+                  onLongPress: () => QuickStatusSheet.show(context, item),
+                );
+              },
+            );
+          },
+          loading: () => HorizontalSection<UnifiedMedia>(
+            title: section.title,
+            height: style.getLayout(isWideMode: isWide).height,
+            data: const AsyncValue.loading(),
+            itemBuilder: (_, __) => const SizedBox.shrink(),
+          ),
+          error: (_, __) => const SizedBox.shrink(),
+        );
+
       case HomeSectionType.discovery:
         final style = ref.watch(uiPrefsProvider.select((p) => p.cardStyle));
         final isWide = ref.watch(
@@ -383,6 +488,7 @@ class _HomeFeedSectionRowState extends ConsumerState<HomeFeedSectionRow>
                 media: item,
                 tag: '${section.id}-${item.id}',
               ),
+              onLongPress: () => QuickStatusSheet.show(context, item),
             );
           },
         );

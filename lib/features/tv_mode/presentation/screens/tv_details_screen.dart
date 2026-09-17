@@ -34,6 +34,8 @@ import 'package:shonenx/features/tracking/providers/media_tracking_provider.dart
 import 'package:shonenx/features/tracking/providers/tracker_link_provider.dart';
 import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
 import 'package:shonenx/features/tv_mode/presentation/widgets/tv_episode_shelf.dart';
+import 'package:shonenx/features/recommendations/presentation/widgets/quick_status_sheet.dart';
+import 'package:shonenx/features/recommendations/providers/recommendations_provider.dart';
 import 'package:shonenx/features/tv_mode/presentation/widgets/tv_focusable.dart';
 import 'package:shonenx/features/tv_mode/presentation/widgets/tv_media_card.dart';
 import 'package:shonenx/features/tv_mode/presentation/widgets/tv_source_dialog.dart';
@@ -342,6 +344,71 @@ class _TvDetailsScreenState extends ConsumerState<TvDetailsScreen> {
           },
         ),
         const Spacer(),
+        TvFocusable(
+          onTap: () async {
+            await ref.read(likedAnimeProvider.notifier).toggleLike(media);
+          },
+          builder: (context, isFocused, isHovered) {
+            final active = isFocused || isHovered;
+            final isLiked = ref.watch(
+              likedAnimeProvider.select((map) => map.containsKey(media.id)),
+            );
+            return Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: active
+                    ? Colors.white
+                    : (isLiked
+                        ? Colors.redAccent.withValues(alpha: 0.25)
+                        : Colors.white.withValues(alpha: 0.08)),
+                borderRadius: BorderRadius.circular(radius),
+              ),
+              child: Icon(
+                isLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                size: 16,
+                color: active
+                    ? (isLiked ? Colors.redAccent : Colors.black)
+                    : (isLiked ? Colors.redAccent : Colors.white70),
+              ),
+            );
+          },
+        ),
+        const SizedBox(width: 8),
+        TvFocusable(
+          onTap: () => QuickStatusSheet.show(context, media),
+          builder: (context, isFocused, isHovered) {
+            final active = isFocused || isHovered;
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: active
+                    ? Colors.white
+                    : Colors.white.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(radius),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.bookmark_add_outlined,
+                    size: 14,
+                    color: active ? Colors.black : Colors.white70,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Status',
+                    style: TextStyle(
+                      color: active ? Colors.black : Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+        const SizedBox(width: 8),
         TvFocusable(
           onTap: () => _shareMedia(media),
           builder: (context, isFocused, isHovered) {
@@ -1333,11 +1400,19 @@ class _TvDetailsScreenState extends ConsumerState<TvDetailsScreen> {
                           60000)
                       .ceil()
                 : 0;
+            String timeLabel = '';
+            if (remainingMins > 0) {
+              if (remainingMins >= 60) {
+                final h = remainingMins ~/ 60;
+                final m = remainingMins % 60;
+                timeLabel = m > 0 ? ' (${h}h ${m}m left)' : ' (${h}h left)';
+              } else {
+                timeLabel = ' (${remainingMins}m left)';
+              }
+            }
             return _PlaybackTarget(
               episode: currentEp,
-              buttonLabel: remainingMins > 0
-                  ? 'Resume Ep ${fmtNum(currentEp.number)} (${remainingMins}m left)'
-                  : 'Resume Ep ${fmtNum(currentEp.number)}',
+              buttonLabel: 'Resume Ep ${fmtNum(currentEp.number)}$timeLabel',
               startPositionDuration: Duration(
                 milliseconds: latestWatch.positionInMilliseconds,
               ),

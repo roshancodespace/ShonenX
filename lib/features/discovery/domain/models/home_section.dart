@@ -9,6 +9,7 @@ enum HomeSectionType {
   discovery,
   continueMedia,
   libraryStatus,
+  recommendation,
 }
 
 class HomeSection {

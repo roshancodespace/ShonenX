@@ -7,6 +7,9 @@ import 'package:shonenx/features/discovery/presentation/widgets/rows/horizontal_
 import 'package:shonenx/features/discovery/providers/discovery_feed_provider.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:skeletonizer/skeletonizer.dart';
+import 'package:shonenx/features/recommendations/domain/models/recommended_anime.dart';
+import 'package:shonenx/features/recommendations/presentation/widgets/quick_status_sheet.dart';
+import 'package:shonenx/features/recommendations/providers/recommendations_provider.dart';
 
 class DynamicGenreFeed extends ConsumerWidget {
   final MediaType type;
@@ -23,24 +26,35 @@ class DynamicGenreFeed extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final genresState = ref.watch(discoveryFeedGenresProvider);
+    final profileState = ref.watch(userTasteProfileProvider);
+    final hasSignals = profileState.value?.hasAnySignals ?? false;
     final effectivePadding =
         padding ?? const EdgeInsets.only(top: 60, bottom: 200);
 
     return genresState.when(
       data: (genres) {
-        if (genres.isEmpty) {
+        if (genres.isEmpty && !hasSignals) {
           return const Center(child: Text('No categories available'));
         }
 
+        final totalCount = genres.length + (hasSignals ? 1 : 0);
+
         return ListView.builder(
           padding: effectivePadding,
-          itemCount: genres.length,
+          itemCount: totalCount,
           itemBuilder: (context, index) {
+            if (hasSignals && index == 0) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 5),
+                child: _RecommendedFeedRow(type: type),
+              );
+            }
+            final genreIndex = hasSignals ? index - 1 : index;
             return Padding(
               padding: const EdgeInsets.only(bottom: 5),
               child: GenreFeedRow(
                 type: type,
-                genre: genres[index],
+                genre: genres[genreIndex],
                 onGenreSelect: onGenreSelect,
               ),
             );
@@ -139,6 +153,7 @@ class GenreFeedRow extends ConsumerWidget {
                 media: item,
                 tag: 'feed-$genre-${item.id}',
               ),
+              onLongPress: () => QuickStatusSheet.show(context, item),
             );
           },
         );
@@ -165,3 +180,54 @@ class GenreFeedRow extends ConsumerWidget {
     );
   }
 }
+
+class _RecommendedFeedRow extends ConsumerWidget {
+  final MediaType type;
+
+  const _RecommendedFeedRow({required this.type});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final recState = ref.watch(recommendedAnimeFeedProvider(type));
+    final style = ref.watch(uiPrefsProvider.select((p) => p.cardStyle));
+    final isWide = ref.watch(
+      uiPrefsProvider.select((p) => p.isMediaCardWide(style.name)),
+    );
+
+    return recState.when(
+      data: (items) {
+        if (items.isEmpty) return const SizedBox.shrink();
+
+        return HorizontalSection<RecommendedAnime>(
+          title: 'Recommended For You',
+          height: style.getLayout(isWideMode: isWide).height,
+          data: AsyncValue.data(items),
+          itemBuilder: (context, rec) {
+            final item = rec.media;
+            return MediaCard(
+              tag: 'discover-rec-${item.id}',
+              format: item.format,
+              score: item.score,
+              status: item.status,
+              genres: item.genres,
+              year: item.season,
+              subtitle: rec.reason,
+              title: item.title.availableTitle,
+              imageUrl: item.cover ?? '',
+              style: style,
+              onTap: () => context.pushDetails(
+                mediaType: item.type,
+                media: item,
+                tag: 'discover-rec-${item.id}',
+              ),
+              onLongPress: () => QuickStatusSheet.show(context, item),
+            );
+          },
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+    );
+  }
+}
+

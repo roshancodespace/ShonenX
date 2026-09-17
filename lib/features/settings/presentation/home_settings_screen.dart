@@ -102,6 +102,8 @@ class HomeSettingsScreen extends ConsumerWidget {
                           : Icons.play_circle_outline_rounded;
                     case HomeSectionType.libraryStatus:
                       return Icons.collections_bookmark_outlined;
+                    case HomeSectionType.recommendation:
+                      return Icons.auto_awesome_rounded;
                     case HomeSectionType.discovery:
                       switch (section.trackerCategory) {
                         case TrackerCategory.popular:
@@ -131,6 +133,8 @@ class HomeSettingsScreen extends ConsumerWidget {
                       final trackerName =
                           section.targetTracker?.displayName ?? 'Auto Source';
                       return '${mediaType.displayName} • $statusLabel ($trackerName)';
+                    case HomeSectionType.recommendation:
+                      return '${mediaType.displayName} • Personalized Recommendations (Likes & History)';
                     case HomeSectionType.discovery:
                       final catLabel =
                           section.trackerCategory?.label ?? 'Trending';

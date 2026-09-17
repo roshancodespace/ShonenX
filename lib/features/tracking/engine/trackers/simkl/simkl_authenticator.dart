@@ -28,13 +28,10 @@ class SimklAuthenticator implements Authenticator {
           : Env.SIMKL_CLIENT_SECRET_LIST.first);
 
   @override
-  String get redirectUri => _isDesktop
-      ? 'http://localhost:43824/success?code=1337'
-      : 'shonenx://callback';
+  String get redirectUri => 'shonenx://callback';
 
   @override
-  String get callbackScheme =>
-      _isDesktop ? 'http://localhost:43824' : 'shonenx';
+  String get callbackScheme => 'shonenx';
 
   @override
   String get providerName => TrackerType.simkl.name;
@@ -53,7 +50,10 @@ class SimklAuthenticator implements Authenticator {
     final result = await FlutterWebAuth2.authenticate(
       url: url.toString(),
       callbackUrlScheme: callbackScheme,
-      options: FlutterWebAuth2Options(useWebview: !_isDesktop),
+      options: const FlutterWebAuth2Options(
+        preferEphemeral: false,
+        useWebview: true,
+      ),
     );
 
     final code = Uri.parse(result).queryParameters['code'];

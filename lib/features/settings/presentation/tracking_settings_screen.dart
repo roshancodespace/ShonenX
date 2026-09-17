@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/features/auth/providers/auth_provider.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
@@ -24,6 +25,43 @@ class TrackingSettingsScreen extends ConsumerStatefulWidget {
 
 class _TrackingSettingsScreenState
     extends ConsumerState<TrackingSettingsScreen> {
+  final Set<TrackerType> _loggingInTrackers = {};
+
+  Future<void> _handleLogin(RemoteTracker tracker) async {
+    if (_loggingInTrackers.contains(tracker.type)) return;
+    setState(() {
+      _loggingInTrackers.add(tracker.type);
+    });
+    try {
+      await ref.read(authTokensProvider.notifier).login(tracker);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content:
+                Text('Successfully logged into ${tracker.type.displayName}!'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Login failed for ${tracker.type.displayName}: $e'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _loggingInTrackers.remove(tracker.type);
+        });
+      }
+    }
+  }
+
   bool _hasCredentials(TrackerType type) {
     final prefs = ref.read(trackingPrefsProvider);
     final custom = prefs.customCredentials[type];
@@ -48,52 +86,222 @@ class _TrackingSettingsScreenState
 
     final idController = TextEditingController(text: custom?.clientId);
     final secretController = TextEditingController(text: custom?.clientSecret);
+    final tokenController = TextEditingController();
+    bool isSubmittingToken = false;
 
     AppDialog.show(
       context: context,
-      title: '${type.displayName} Credentials',
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            'Provide your own API Client ID and Secret. This overrides the default bundled credentials.',
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: idController,
-            decoration: const InputDecoration(
-              labelText: 'Client ID',
-              border: OutlineInputBorder(),
+      title: '${type.displayName} Settings & Token',
+      child: StatefulBuilder(
+        builder: (context, setDialogState) {
+          return SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Custom API Credentials',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Override bundled credentials if you want to use your own developer registration.',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: idController,
+                  decoration: const InputDecoration(
+                    labelText: 'Client ID',
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: secretController,
+                  decoration: const InputDecoration(
+                    labelText: 'Client Secret',
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: FilledButton.tonal(
+                    onPressed: () {
+                      ref
+                          .read(trackingPrefsProvider.notifier)
+                          .setCustomCredentials(
+                            type,
+                            idController.text.trim(),
+                            secretController.text.trim(),
+                          );
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                              'Custom credentials saved for ${type.displayName}.'),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    },
+                    child: const Text('Save Credentials'),
+                  ),
+                ),
+                const Divider(height: 28),
+                Text(
+                  'Manual Access Token Login',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'If the OAuth browser does not redirect on your device, paste an Access Token directly below.',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                if (type == TrackerType.anilist) ...[
+                  const SizedBox(height: 8),
+                  InkWell(
+                    onTap: () {
+                      Clipboard.setData(const ClipboardData(
+                        text:
+                            'https://anilist.co/api/v2/oauth/authorize?client_id=20815&response_type=token',
+                      ));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content:
+                              Text('AniList token URL copied to clipboard!'),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.copy_rounded,
+                            size: 16,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              'Copy AniList Token Generation URL',
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.primary,
+                                fontSize: 12,
+                                decoration: TextDecoration.underline,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 12),
+                TextField(
+                  controller: tokenController,
+                  decoration: const InputDecoration(
+                    labelText: 'Access Token',
+                    hintText: 'Paste OAuth Bearer Token',
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: FilledButton(
+                    onPressed: isSubmittingToken
+                        ? null
+                        : () async {
+                            final rawToken = tokenController.text.trim();
+                            if (rawToken.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content:
+                                      Text('Please enter an access token.'),
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                              return;
+                            }
+                            setDialogState(() {
+                              isSubmittingToken = true;
+                            });
+                            final allTrackers =
+                                ref.read(availableTrackersProvider);
+                            final tracker = allTrackers
+                                .whereType<RemoteTracker>()
+                                .cast<RemoteTracker?>()
+                                .firstWhere(
+                                  (t) => t?.type == type,
+                                  orElse: () => null,
+                                );
+                            if (tracker == null) {
+                              setDialogState(() {
+                                isSubmittingToken = false;
+                              });
+                              return;
+                            }
+                            try {
+                              await ref
+                                  .read(authTokensProvider.notifier)
+                                  .setToken(tracker, rawToken);
+                              if (context.mounted) {
+                                Navigator.pop(context);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                        'Successfully logged into ${type.displayName}!'),
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              }
+                            } catch (e) {
+                              if (context.mounted) {
+                                setDialogState(() {
+                                  isSubmittingToken = false;
+                                });
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Token login failed: $e'),
+                                    backgroundColor:
+                                        Theme.of(context).colorScheme.error,
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              }
+                            }
+                          },
+                    child: isSubmittingToken
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text('Log In with Token'),
+                  ),
+                ),
+              ],
             ),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: secretController,
-            decoration: const InputDecoration(
-              labelText: 'Client Secret',
-              border: OutlineInputBorder(),
-            ),
-          ),
-        ],
+          );
+        },
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          onPressed: () {
-            ref
-                .read(trackingPrefsProvider.notifier)
-                .setCustomCredentials(
-                  type,
-                  idController.text.trim(),
-                  secretController.text.trim(),
-                );
-            Navigator.pop(context);
-          },
-          child: const Text('Save'),
+          child: const Text('Close'),
         ),
       ],
     );
@@ -525,21 +733,38 @@ class _TrackingSettingsScreenState
                                   icon: const Icon(Icons.key_rounded, size: 20),
                                   onPressed: () =>
                                       _showCredentialsDialog(tracker.type),
-                                  tooltip: 'Custom API Credentials',
+                                  tooltip: 'Custom API Credentials & Token',
                                 ),
-                                FilledButton.icon(
-                                  style: IconButton.styleFrom(
-                                    backgroundColor: theme.colorScheme.primary,
-                                    foregroundColor:
-                                        theme.colorScheme.onPrimary,
-                                  ),
-                                  onPressed: () {
-                                    ref
-                                        .read(authTokensProvider.notifier)
-                                        .login(tracker);
+                                Builder(
+                                  builder: (context) {
+                                    final isLoggingIn =
+                                        _loggingInTrackers.contains(tracker.type);
+                                    return FilledButton.icon(
+                                      style: IconButton.styleFrom(
+                                        backgroundColor:
+                                            theme.colorScheme.primary,
+                                        foregroundColor:
+                                            theme.colorScheme.onPrimary,
+                                      ),
+                                      onPressed: isLoggingIn
+                                          ? null
+                                          : () => _handleLogin(tracker),
+                                      icon: isLoggingIn
+                                          ? SizedBox(
+                                              width: 16,
+                                              height: 16,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                color:
+                                                    theme.colorScheme.onPrimary,
+                                              ),
+                                            )
+                                          : const Icon(Icons.login),
+                                      label: Text(isLoggingIn
+                                          ? 'Logging in...'
+                                          : 'Login'),
+                                    );
                                   },
-                                  icon: const Icon(Icons.login),
-                                  label: const Text('Login'),
                                 ),
                               ],
                             ],

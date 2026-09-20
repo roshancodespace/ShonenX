@@ -18,8 +18,12 @@ import 'package:shonenx/shared/models/video_stream.dart' as stream;
 class MediaKitEngine implements VideoEngine {
   static final _log = AppLogger.scope('MediaKitEngine');
 
-  late final Player _player;
-  late final VideoController _controller;
+  late Player _player;
+  late VideoController _controller;
+  final ValueNotifier<int> _playerVersion = ValueNotifier(0);
+
+  stream.VideoStream? _currentStream;
+  stream.SubtitleTrack? _currentSubtitle;
 
   MediaKitPrefs prefs;
   final Ref ref;
@@ -31,7 +35,21 @@ class MediaKitEngine implements VideoEngine {
   Future<void> updatePrefs(MediaKitPrefs newPrefs) async {
     _log.d('Updating preferences');
     if (_disposed) return;
+
+    final requiresReinit =
+        prefs.hwdec != newPrefs.hwdec ||
+        prefs.enableHardwareAcceleration !=
+            newPrefs.enableHardwareAcceleration ||
+        prefs.vo != newPrefs.vo ||
+        prefs.rawConfiguration != newPrefs.rawConfiguration;
+
     prefs = newPrefs;
+
+    if (requiresReinit) {
+      _log.i('Preferences require player reinitialization');
+      await refresh();
+      return;
+    }
 
     final player = _player.platform;
     if (player is! NativePlayer) return;
@@ -95,6 +113,47 @@ class MediaKitEngine implements VideoEngine {
 
   final List<StreamSubscription> _subscriptions = [];
 
+  @override
+  Future<void> refresh() async {
+    if (_currentStream == null || _disposed) return;
+    _log.i('Refreshing MediaKitEngine');
+
+    final position = currentPosition;
+    final isPlaying = _player.state.playing;
+
+    for (var s in _subscriptions) {
+      await s.cancel();
+    }
+    _subscriptions.clear();
+
+    await _player.dispose();
+
+    _player = Player();
+    _controller = VideoController(
+      _player,
+      configuration: VideoControllerConfiguration(
+        hwdec: prefs.hwdec,
+        enableHardwareAcceleration: prefs.enableHardwareAcceleration,
+        vo: prefs.vo != 'auto' ? prefs.vo : null,
+      ),
+    );
+
+    await updatePrefs(prefs);
+    _setupSubscriptions();
+
+    _playerVersion.value++;
+
+    await initialize(
+      _currentStream!,
+      subtitle: _currentSubtitle,
+      startAt: position,
+    );
+
+    if (!isPlaying) {
+      await _player.pause();
+    }
+  }
+
   MediaKitEngine(this.prefs, this.ref) {
     _player = Player();
     _controller = VideoController(
@@ -106,7 +165,10 @@ class MediaKitEngine implements VideoEngine {
       ),
     );
     updatePrefs(prefs);
+    _setupSubscriptions();
+  }
 
+  void _setupSubscriptions() {
     _subscriptions.addAll([
       _player.stream.position.listen((pos) {
         if (!_disposed) {
@@ -203,6 +265,9 @@ class MediaKitEngine implements VideoEngine {
     stream.SubtitleTrack? subtitle,
     Duration? startAt,
   }) async {
+    _currentStream = stream;
+    _currentSubtitle = subtitle;
+
     _log.i('Initializing player with URL: ${stream.url}');
     final media = Media(stream.url, httpHeaders: stream.headers);
 
@@ -230,18 +295,23 @@ class MediaKitEngine implements VideoEngine {
           subtitlePrefs.fontSize,
         );
 
-        return Video(
-          controller: _controller,
-          controls: NoVideoControls,
-          fit: fit,
-          subtitleViewConfiguration: SubtitleViewConfiguration(
-            padding: EdgeInsets.only(bottom: subtitlePrefs.bottomPadding),
-            style: getSubtitleStrokeStyleInShadowForm(
-              subtitlePrefs,
-              responsiveFontSize,
-            ),
-            textScaler: TextScaler.linear(subtitlePrefs.fontSize / 1.2),
-          ),
+        return ValueListenableBuilder<int>(
+          valueListenable: _playerVersion,
+          builder: (context, version, _) {
+            return Video(
+              controller: _controller,
+              controls: NoVideoControls,
+              fit: fit,
+              subtitleViewConfiguration: SubtitleViewConfiguration(
+                padding: EdgeInsets.only(bottom: subtitlePrefs.bottomPadding),
+                style: getSubtitleStrokeStyleInShadowForm(
+                  subtitlePrefs,
+                  responsiveFontSize,
+                ),
+                textScaler: TextScaler.linear(subtitlePrefs.fontSize / 1.2),
+              ),
+            );
+          },
         );
       },
     );
@@ -291,10 +361,12 @@ class MediaKitEngine implements VideoEngine {
   }
 
   stream.AudioTrack _mapAudioTrack(AudioTrack track) {
-    if (track.id == 'auto' && track.title == null && track.language == null)
+    if (track.id == 'auto' && track.title == null && track.language == null) {
       return stream.AudioTrack.auto;
-    if (track.id == 'no' && track.title == null && track.language == null)
+    }
+    if (track.id == 'no' && track.title == null && track.language == null) {
       return stream.AudioTrack.none;
+    }
 
     final title = track.title?.trim();
     final lang = track.language?.trim();

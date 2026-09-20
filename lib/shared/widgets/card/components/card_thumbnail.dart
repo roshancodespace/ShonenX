@@ -3,20 +3,26 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:shonenx/core/utils/image_headers.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
-import '../models/card_config.dart';
+import 'package:shonenx/shared/models/unified_media.dart';
 
 class CardThumbnail extends StatelessWidget {
-  final CardConfig config;
+  final UnifiedMedia media;
   final double width;
   final double height;
   final double? radiusOverride;
+  final bool isActive;
+  final double? progress;
+  final String? heroTag;
 
   const CardThumbnail({
     super.key,
-    required this.config,
+    required this.media,
     required this.width,
     required this.height,
     this.radiusOverride,
+    required this.isActive,
+    this.progress,
+    this.heroTag,
   });
 
   @override
@@ -25,11 +31,11 @@ class CardThumbnail extends StatelessWidget {
     final cs = theme.colorScheme;
     final radius = radiusOverride ?? GlobalUI.uiRoundness;
 
-    if (config.progress == null) {
+    if (progress == null) {
       return _buildImage(cs, w: width, h: height, r: radius);
     }
 
-    final strokeW = config.isActive ? 3.5 : 2.8;
+    final strokeW = isActive ? 3.5 : 2.8;
     return Stack(
       children: [
         Padding(
@@ -44,7 +50,7 @@ class CardThumbnail extends StatelessWidget {
         Positioned.fill(
           child: CustomPaint(
             painter: _ProgressBorderPainter(
-              progress: config.progress!.clamp(0.0, 1.0),
+              progress: progress!.clamp(0.0, 1.0),
               color: cs.primary,
               trackColor: cs.primary.withValues(alpha: 0.22),
               strokeWidth: strokeW,
@@ -65,26 +71,12 @@ class CardThumbnail extends StatelessWidget {
     final finalW = (w.isFinite && w > 0) ? w : double.infinity;
     final finalH = (h.isFinite && h > 0) ? h : double.infinity;
 
-    if (config.thumbnailBuilder != null) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(r),
-        clipBehavior: Clip.antiAlias,
-        child: SizedBox(
-          width: finalW,
-          height: finalH,
-          child: Builder(
-            builder: (context) => config.thumbnailBuilder!(context, cs),
-          ),
-        ),
-      );
-    }
-
-    if (config.imageUrl != null && config.imageUrl!.isNotEmpty) {
+    if ((media.cover ?? media.banner) != null && (media.cover ?? media.banner)!.isNotEmpty) {
       final cacheW = (w.isFinite && w > 0 && w < 4000)
           ? (w * 2.5).clamp(150.0, 1000.0).toInt()
           : 600;
 
-      final rawUrl = config.imageUrl!.trim();
+      final rawUrl = (media.cover ?? media.banner)!.trim();
       Widget img;
 
       if (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')) {
@@ -121,8 +113,8 @@ class CardThumbnail extends StatelessWidget {
         }
       }
 
-      if (config.heroTag != null && config.heroTag!.isNotEmpty) {
-        img = Hero(tag: config.heroTag!, child: img);
+      if (heroTag != null && heroTag!.isNotEmpty) {
+        img = Hero(tag: heroTag!, child: img);
       }
       return ClipRRect(
         borderRadius: BorderRadius.circular(r),
@@ -152,7 +144,7 @@ class CardThumbnail extends StatelessWidget {
       height: h,
       color: cs.surfaceContainerHighest,
       alignment: Alignment.center,
-      child: Icon(config.fallbackIcon, color: cs.onSurfaceVariant, size: 28),
+      child: Icon(Icons.image_not_supported_rounded, color: cs.onSurfaceVariant, size: 28),
     );
   }
 }

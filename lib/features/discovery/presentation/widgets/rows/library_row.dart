@@ -55,14 +55,8 @@ class LibraryRow extends ConsumerWidget {
       final cardTag = '$tagPrefix-$status-${entry.providerId}';
 
       return MediaCard(
+                media: entry.toUnifiedMedia(),
         tag: cardTag,
-        title: entry.title,
-        imageUrl: entry.cover,
-        format: entry.format,
-        score: entry.score,
-        year: entry.year?.toString(),
-        status: entry.status,
-        genres: entry.genres,
         progress: progress,
         progressText: progressText,
         style: style,

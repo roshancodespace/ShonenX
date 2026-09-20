@@ -18,6 +18,7 @@ class MediaPreferenceState {
   final String? matchedMediaTitle;
   final TrackerType? preferredTracker;
   final String? trackerMediaId;
+  final bool hasExplicitSource;
 
   MediaPreferenceState({
     required this.sourceInfo,
@@ -25,6 +26,7 @@ class MediaPreferenceState {
     this.matchedMediaTitle,
     this.preferredTracker,
     this.trackerMediaId,
+    this.hasExplicitSource = false,
   });
 
   MediaPreferenceState copyWith({
@@ -33,6 +35,7 @@ class MediaPreferenceState {
     Object? matchedMediaTitle = _sentinel,
     Object? preferredTracker = _sentinel,
     Object? trackerMediaId = _sentinel,
+    Object? hasExplicitSource = _sentinel,
   }) {
     return MediaPreferenceState(
       sourceInfo: sourceInfo ?? this.sourceInfo,
@@ -48,6 +51,9 @@ class MediaPreferenceState {
       trackerMediaId: trackerMediaId == _sentinel
           ? this.trackerMediaId
           : trackerMediaId as String?,
+      hasExplicitSource: hasExplicitSource == _sentinel
+          ? this.hasExplicitSource
+          : hasExplicitSource as bool,
     );
   }
 
@@ -72,7 +78,8 @@ class MediaPreferenceState {
           matchedMediaId == other.matchedMediaId &&
           matchedMediaTitle == other.matchedMediaTitle &&
           preferredTracker == other.preferredTracker &&
-          trackerMediaId == other.trackerMediaId;
+          trackerMediaId == other.trackerMediaId &&
+          hasExplicitSource == other.hasExplicitSource;
 
   @override
   int get hashCode => Object.hash(
@@ -81,6 +88,7 @@ class MediaPreferenceState {
     matchedMediaTitle,
     preferredTracker,
     trackerMediaId,
+    hasExplicitSource,
   );
 }
 
@@ -174,6 +182,12 @@ class MediaPreferenceNotifier extends AsyncNotifier<MediaPreferenceState> {
         resolvedSource =
             availableSources.firstWhereOrNull(
               (source) =>
+                  source.id == preferredId &&
+                  source.name == preferredName &&
+                  source.type == sourceType,
+            ) ??
+            availableSources.firstWhereOrNull(
+              (source) =>
                   source.id == preferredId && source.name == preferredName,
             ) ??
             defaultSource;
@@ -201,6 +215,7 @@ class MediaPreferenceNotifier extends AsyncNotifier<MediaPreferenceState> {
         matchedMediaTitle: savedPreference?.matchedMediaTitle,
         preferredTracker: preferredTracker,
         trackerMediaId: savedPreference?.trackerMediaId,
+        hasExplicitSource: savedPreference?.preferredSourceId != null,
       );
     } catch (e, st) {
       log.e('Build failed', e, st);

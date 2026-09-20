@@ -52,7 +52,12 @@ class HorizontalSection<T> extends StatelessWidget {
     final effectiveTitleWidget =
         titleWidget ??
         (title != null
-            ? Text(title!, style: Theme.of(context).textTheme.titleLarge)
+            ? Text(
+                title!,
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              )
             : const SizedBox.shrink());
 
     final hasHeader =

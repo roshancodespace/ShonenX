@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shonenx/core/router/app_navigator.dart';
+import 'package:shonenx/core/router/nav_bar_theme.dart';
 
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/core/remote_config/providers/remote_config_provider.dart';
@@ -255,11 +256,14 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
       return TvShell(navigationShell: widget.navigationShell);
     }
 
+    final navBarStyle = ref.watch(uiPrefsProvider.select((p) => p.navBarStyle));
+    final isDocked = navBarStyle == NavBarStyle.docked;
+
     return ResponsiveHandler(
       breakpoints: _navBreakpoints,
       builder: (context, r) {
         return AppScaffold(
-          extendBody: true,
+          extendBody: !isDocked,
           body: r.isDesktop || r.isTabletLandscape
               ? Row(
                   children: [
@@ -274,6 +278,13 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
                         ],
                       ),
                     ),
+                  ],
+                )
+              : isDocked
+              ? Column(
+                  children: [
+                    Expanded(child: widget.navigationShell),
+                    _BottomNavBar(navigationShell: widget.navigationShell),
                   ],
                 )
               : Stack(
@@ -329,77 +340,100 @@ class _BottomNavBar extends ConsumerWidget {
       navigationShell.currentIndex,
     );
 
-    final uiScale = GlobalUI.uiScaleFactor.clamp(0.85, 1.25);
-    final double barHeight =
-        (navBarStyle == NavBarStyle.minimal
-            ? 54.0
-            : (r.isPhone ? 68.0 : 80.0)) *
-        uiScale;
-    final iconSize = (r.isPhone ? 25.0 : 28.0) * uiScale;
-    final fontSize = r.isPhone ? 14.5 : 16.0;
-    final hPad = (r.isPhone ? 6.0 : 10.5) * uiScale;
+    final isDocked = navBarStyle == NavBarStyle.docked;
+    final isBubble = navBarStyle == NavBarStyle.bubble;
 
-    // Radius calculations
-    final barRadius =
-        (navBarStyle == NavBarStyle.material ||
-            navBarStyle == NavBarStyle.minimal)
-        ? barHeight / 2
-        : GlobalUI.uiRoundness;
-    final activeItemRadius =
-        (navBarStyle == NavBarStyle.material ||
-            navBarStyle == NavBarStyle.minimal)
-        ? (barHeight - 2 * hPad) / 2
-        : GlobalUI.uiRoundness;
+    final bottomMargin = isDocked ? 0.0 : r.height * 0.018;
 
-    // Background blur config
-    final double? blurAmount = switch (navBarStyle) {
-      NavBarStyle.classic => 14.0,
-      NavBarStyle.frosted => 24.0,
-      NavBarStyle.minimal => 12.0,
-      _ => null,
-    };
+    Widget navBarWidget;
 
-    // Main bar background decoration
-    final barDecoration = switch (navBarStyle) {
-      NavBarStyle.classic => BoxDecoration(
-        color: cs.surface.withValues(alpha: 0.75),
-        borderRadius: BorderRadius.circular(barRadius),
-        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.45)),
-      ),
-      NavBarStyle.minimal => BoxDecoration(
-        color: cs.surface.withValues(alpha: 0.95),
-        borderRadius: BorderRadius.circular(barRadius),
-        border: Border.all(
-          color: cs.outlineVariant.withValues(alpha: 0.2),
-          width: 0.8,
+    if (isDocked) {
+      navBarWidget = NavigationBar(
+        height: 72.0,
+        selectedIndex: navigationShell.currentIndex,
+        onDestinationSelected: (i) => navigationShell.goBranch(
+          i,
+          initialLocation: i == navigationShell.currentIndex,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 16,
-            spreadRadius: 0.5,
+        backgroundColor: cs.surfaceContainer,
+        indicatorColor: cs.primaryContainer,
+        destinations: [
+          ..._destinations.map(
+            (d) => NavigationDestination(icon: Icon(d.icon), label: d.label),
+          ),
+          const NavigationDestination(
+            icon: _DockedDownloadIcon(),
+            label: 'Downloads',
           ),
         ],
-      ),
-      NavBarStyle.frosted => BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(barRadius),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.15),
-          width: 0.8,
+      );
+    } else {
+      final uiScale = GlobalUI.uiScaleFactor.clamp(0.85, 1.25);
+      final double barHeight =
+          (navBarStyle == NavBarStyle.minimal
+              ? 54.0
+              : (r.isPhone ? 68.0 : 80.0)) *
+          uiScale;
+      final iconSize = (r.isPhone ? 25.0 : 28.0) * uiScale;
+      final fontSize = r.isPhone ? 14.5 : 16.0;
+      final hPad = isBubble ? 12.0 : (r.isPhone ? 6.0 : 10.5) * uiScale;
+
+      final themeData = NavBarThemeData.resolve(navBarStyle, cs, false, false);
+      final barRadius = themeData.barRadius(barHeight);
+      final activeItemRadius = themeData.itemRadius(barHeight - 2 * hPad);
+
+      final contentWidget = Container(
+        height: barHeight,
+        padding: EdgeInsets.all(hPad),
+        decoration: themeData.barDecoration.copyWith(
+          borderRadius: BorderRadius.circular(barRadius),
         ),
-      ),
-      NavBarStyle.material => BoxDecoration(
-        color: cs.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(barRadius),
-      ),
-    };
+        child: _buildItemsRow(
+          context,
+          cs,
+          iconSize,
+          fontSize,
+          activeItemRadius,
+          navBarStyle,
+        ),
+      );
+
+      final innerContent = themeData.blurSigma != null
+          ? BackdropFilter(
+              filter: ImageFilter.blur(
+                sigmaX: themeData.blurSigma!,
+                sigmaY: themeData.blurSigma!,
+              ),
+              child: contentWidget,
+            )
+          : contentWidget;
+
+      navBarWidget = Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(barRadius),
+            child: innerContent,
+          ),
+          SizedBox(width: hPad + 4),
+          _DownloadButton(
+            colorScheme: cs,
+            size: barHeight,
+            iconSize: iconSize,
+            padding: hPad,
+            navBarStyle: navBarStyle,
+            navigationShell: navigationShell,
+          ),
+        ],
+      );
+    }
 
     return SafeArea(
+      bottom: !isDocked,
       child: Align(
         alignment: Alignment.bottomCenter,
         child: Padding(
-          padding: EdgeInsets.only(bottom: r.height * 0.018),
+          padding: EdgeInsets.only(bottom: bottomMargin),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -419,56 +453,7 @@ class _BottomNavBar extends ConsumerWidget {
                       : const SizedBox.shrink(key: ValueKey('empty_nav_att')),
                 ),
               ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(barRadius),
-                    child: blurAmount != null
-                        ? BackdropFilter(
-                            filter: ImageFilter.blur(
-                              sigmaX: blurAmount,
-                              sigmaY: blurAmount,
-                            ),
-                            child: Container(
-                              height: barHeight,
-                              padding: EdgeInsets.all(hPad),
-                              decoration: barDecoration,
-                              child: _buildItemsRow(
-                                context,
-                                cs,
-                                iconSize,
-                                fontSize,
-                                activeItemRadius,
-                                navBarStyle,
-                              ),
-                            ),
-                          )
-                        : Container(
-                            height: barHeight,
-                            padding: EdgeInsets.all(hPad),
-                            decoration: barDecoration,
-                            child: _buildItemsRow(
-                              context,
-                              cs,
-                              iconSize,
-                              fontSize,
-                              activeItemRadius,
-                              navBarStyle,
-                            ),
-                          ),
-                  ),
-                  SizedBox(width: hPad + 4),
-                  _DownloadButton(
-                    colorScheme: cs,
-                    size: barHeight,
-                    iconSize: iconSize,
-                    padding: hPad,
-                    navBarStyle: navBarStyle,
-                    navigationShell: navigationShell,
-                  ),
-                ],
-              ),
+              navBarWidget,
             ],
           ),
         ),
@@ -486,56 +471,17 @@ class _BottomNavBar extends ConsumerWidget {
   ) {
     return Row(
       mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.start,
       children: List.generate(_destinations.length, (i) {
         final active = navigationShell.currentIndex == i;
+        final themeData = NavBarThemeData.resolve(
+          navBarStyle,
+          cs,
+          active,
+          false,
+        );
 
-        // Colors based on NavBarStyle
-        final activeIconColor = switch (navBarStyle) {
-          NavBarStyle.material => cs.onSecondaryContainer,
-          NavBarStyle.frosted => Colors.white,
-          NavBarStyle.minimal => cs.primary,
-          _ => cs.onPrimary,
-        };
-
-        final inactiveIconColor = switch (navBarStyle) {
-          NavBarStyle.frosted => Colors.white54,
-          NavBarStyle.minimal => cs.onSurfaceVariant.withValues(alpha: 0.5),
-          _ => cs.onSurfaceVariant,
-        };
-
-        final activeTextColor = switch (navBarStyle) {
-          NavBarStyle.material => cs.onSecondaryContainer,
-          NavBarStyle.frosted => Colors.white,
-          NavBarStyle.minimal => cs.primary,
-          _ => cs.onPrimary,
-        };
-
-        // Item background decoration
-        final itemDecoration = switch (navBarStyle) {
-          NavBarStyle.classic => BoxDecoration(
-            color: active ? cs.primary : Colors.transparent,
-            borderRadius: BorderRadius.circular(itemRadius),
-          ),
-          NavBarStyle.minimal => const BoxDecoration(color: Colors.transparent),
-          NavBarStyle.frosted => BoxDecoration(
-            color: active
-                ? Colors.white.withValues(alpha: 0.12)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(itemRadius),
-            border: active
-                ? Border.all(
-                    color: Colors.white.withValues(alpha: 0.1),
-                    width: 0.5,
-                  )
-                : null,
-          ),
-          NavBarStyle.material => BoxDecoration(
-            color: active ? cs.secondaryContainer : Colors.transparent,
-            borderRadius: BorderRadius.circular(itemRadius),
-          ),
-        };
-
-        return InkWell(
+        Widget item = InkWell(
           onTap: () => navigationShell.goBranch(i),
           borderRadius: BorderRadius.circular(itemRadius),
           focusColor: cs.primary.withValues(alpha: 0.2),
@@ -544,7 +490,11 @@ class _BottomNavBar extends ConsumerWidget {
             curve: Curves.easeOutCubic,
             height: double.maxFinite,
             padding: EdgeInsets.symmetric(horizontal: active ? 18 : 14),
-            decoration: itemDecoration,
+            decoration:
+                (active
+                        ? themeData.activeItemDecoration
+                        : themeData.inactiveItemDecoration)
+                    .copyWith(borderRadius: BorderRadius.circular(itemRadius)),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -552,7 +502,7 @@ class _BottomNavBar extends ConsumerWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     AnimatedScale(
-                      scale: active ? 1.15 : 1.0,
+                      scale: active ? themeData.activeScale : 1.0,
                       duration: const Duration(milliseconds: 300),
                       curve: Curves.easeOutBack,
                       child: AnimatedOpacity(
@@ -560,7 +510,9 @@ class _BottomNavBar extends ConsumerWidget {
                         duration: const Duration(milliseconds: 250),
                         child: Icon(
                           _destinations[i].icon,
-                          color: active ? activeIconColor : inactiveIconColor,
+                          color: active
+                              ? themeData.activeIconColor
+                              : themeData.inactiveIconColor,
                           size: iconSize,
                         ),
                       ),
@@ -576,8 +528,10 @@ class _BottomNavBar extends ConsumerWidget {
                                   _destinations[i].label,
                                   style: TextStyle(
                                     fontSize: fontSize,
-                                    fontWeight: FontWeight.w600,
-                                    color: activeTextColor,
+                                    fontWeight: themeData.isMaterial3
+                                        ? FontWeight.w500
+                                        : FontWeight.w600,
+                                    color: themeData.activeTextColor,
                                   ),
                                 ),
                               )
@@ -586,13 +540,13 @@ class _BottomNavBar extends ConsumerWidget {
                     ),
                   ],
                 ),
-                if (navBarStyle == NavBarStyle.minimal && active) ...[
+                if (themeData.showDotIndicator && active) ...[
                   const SizedBox(height: 3),
                   Container(
                     width: 5,
                     height: 5,
                     decoration: BoxDecoration(
-                      color: cs.primary,
+                      color: themeData.activeIconColor,
                       shape: BoxShape.circle,
                     ),
                   ),
@@ -601,6 +555,15 @@ class _BottomNavBar extends ConsumerWidget {
             ),
           ),
         );
+
+        if (navBarStyle == NavBarStyle.bubble) {
+          item = Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4.0),
+            child: item,
+          );
+        }
+
+        return item;
       }),
     );
   }
@@ -647,77 +610,15 @@ class _DownloadButton extends ConsumerWidget {
       }
     }
 
-    final buttonRadius =
-        (navBarStyle == NavBarStyle.material ||
-            navBarStyle == NavBarStyle.minimal)
-        ? size / 2
-        : GlobalUI.uiRoundness;
-
-    // Background blur config
-    final double? blurAmount = switch (navBarStyle) {
-      NavBarStyle.classic => 14.0,
-      NavBarStyle.frosted => 24.0,
-      NavBarStyle.minimal => 12.0,
-      _ => null,
-    };
-
-    // Decoration matching the main Nav bar
-    final btnDecoration = switch (navBarStyle) {
-      NavBarStyle.classic => BoxDecoration(
-        color: active ? cs.primary : cs.surface.withValues(alpha: 0.75),
-        borderRadius: BorderRadius.circular(buttonRadius),
-        border: Border.all(
-          color: active
-              ? cs.primary
-              : cs.outlineVariant.withValues(alpha: 0.45),
-        ),
-      ),
-      NavBarStyle.minimal => BoxDecoration(
-        color: cs.surface.withValues(alpha: 0.95),
-        borderRadius: BorderRadius.circular(buttonRadius),
-        border: Border.all(
-          color: cs.outlineVariant.withValues(alpha: 0.2),
-          width: 0.8,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 16,
-            spreadRadius: 0.5,
-          ),
-        ],
-      ),
-      NavBarStyle.frosted => BoxDecoration(
-        color: active
-            ? Colors.white.withValues(alpha: 0.18)
-            : Colors.white.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(buttonRadius),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: active ? 0.3 : 0.15),
-          width: active ? 0.5 : 0.8,
-        ),
-      ),
-      NavBarStyle.material => BoxDecoration(
-        color: active ? cs.secondaryContainer : cs.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(buttonRadius),
-      ),
-    };
-
-    final Color iconColor = switch (navBarStyle) {
-      NavBarStyle.material =>
-        active ? cs.onSecondaryContainer : cs.onSurfaceVariant,
-      NavBarStyle.frosted => active ? Colors.white : Colors.white54,
-      NavBarStyle.minimal =>
-        active ? cs.primary : cs.onSurfaceVariant.withValues(alpha: 0.5),
-      _ => active ? cs.onPrimary : cs.onSurfaceVariant,
-    };
+    final themeData = NavBarThemeData.resolve(navBarStyle, cs, false, active);
+    final buttonRadius = themeData.barRadius(size);
 
     final content = AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeOutCubic,
       width: size,
       height: size,
-      decoration: btnDecoration,
+      decoration: themeData.downloadButtonDecoration,
       child: IconButton(
         padding: EdgeInsets.zero,
         icon: Badge(
@@ -743,31 +644,37 @@ class _DownloadButton extends ConsumerWidget {
                       child: CircularProgressIndicator(
                         value: progress,
                         strokeWidth: 2.5,
-                        color: active && navBarStyle == NavBarStyle.classic
+                        color:
+                            active &&
+                                themeData.isMaterial3 == false &&
+                                !themeData.showDotIndicator &&
+                                navBarStyle != NavBarStyle.frosted
                             ? cs.onPrimary
                             : cs.primary,
                       ),
                     ),
                   ),
                   AnimatedScale(
-                    scale: hasActive ? 1.1 : (active ? 1.15 : 1.0),
+                    scale: hasActive
+                        ? 1.1
+                        : (active ? themeData.activeScale : 1.0),
                     duration: const Duration(milliseconds: 350),
                     curve: Curves.easeOutBack,
                     child: Icon(
                       Icons.download_outlined,
-                      color: iconColor,
+                      color: themeData.downloadIconColor,
                       size: iconSize,
                     ),
                   ),
                 ],
               ),
-              if (navBarStyle == NavBarStyle.minimal && active) ...[
+              if (themeData.showDotIndicator && active) ...[
                 const SizedBox(height: 3),
                 Container(
                   width: 5,
                   height: 5,
                   decoration: BoxDecoration(
-                    color: cs.primary,
+                    color: themeData.downloadIconColor,
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -784,9 +691,12 @@ class _DownloadButton extends ConsumerWidget {
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(buttonRadius),
-      child: blurAmount != null
+      child: themeData.blurSigma != null
           ? BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: blurAmount, sigmaY: blurAmount),
+              filter: ImageFilter.blur(
+                sigmaX: themeData.blurSigma!,
+                sigmaY: themeData.blurSigma!,
+              ),
               child: content,
             )
           : content,
@@ -806,34 +716,123 @@ class _SideNavBar extends ConsumerWidget {
     final uiPrefs = ref.watch(uiPrefsProvider);
     final navBarStyle = uiPrefs.navBarStyle;
 
+    final isDocked = navBarStyle == NavBarStyle.docked;
+    final isBubble = navBarStyle == NavBarStyle.bubble;
+
+    if (isDocked) {
+      return SafeArea(
+        child: Container(
+          width: 80, // Material standard side rail width
+          color: cs.surfaceContainer,
+          child: Column(
+            children: [
+              Expanded(
+                child: NavigationRail(
+                  selectedIndex: navigationShell.currentIndex == 3
+                      ? null
+                      : navigationShell.currentIndex,
+                  onDestinationSelected: (i) => navigationShell.goBranch(
+                    i,
+                    initialLocation: i == navigationShell.currentIndex,
+                  ),
+                  backgroundColor: Colors.transparent,
+                  indicatorColor: cs.primaryContainer,
+                  groupAlignment: 0.0, // Center alignment
+                  destinations: [
+                    ..._destinations.map(
+                      (d) => NavigationRailDestination(
+                        icon: Icon(d.icon),
+                        label: Text(d.label),
+                      ),
+                    ),
+                  ],
+                  labelType: NavigationRailLabelType.all,
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 24.0),
+                child: InkWell(
+                  onTap: () => navigationShell.goBranch(
+                    3,
+                    initialLocation: 3 == navigationShell.currentIndex,
+                  ),
+                  borderRadius: BorderRadius.circular(8),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: navigationShell.currentIndex == 3
+                                ? cs.primaryContainer
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: const _DockedDownloadIcon(),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Downloads',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: navigationShell.currentIndex == 3
+                                ? cs.onPrimaryContainer
+                                : cs.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     final barWidth = h.pick(
-      spacious: 72.0,
-      normal: 72.0,
-      compact: 70.0,
-      tight: 68.0,
-      cramped: 66.0,
+      spacious: 90.0,
+      normal: 82.0,
+      compact: 72.0,
+      tight: 64.0,
+      cramped: 56.0,
     );
-    final hPad = h.pick(
-      spacious: 8.0,
-      normal: 8.0,
-      compact: 6.0,
-      tight: 5.0,
-      cramped: 4.0,
-    );
-    final vOuterPad = h.pick(
-      spacious: 16.0,
-      normal: 16.0,
-      compact: 14.0,
-      tight: 8.0,
-      cramped: 6.0,
-    );
-    final hOuterPad = h.pick(
-      spacious: 16.0,
-      normal: 16.0,
-      compact: 14.0,
-      tight: 8.0,
-      cramped: 6.0,
-    );
+    final hPad = isDocked
+        ? 0.0
+        : (isBubble
+              ? 12.0
+              : h.pick(
+                  spacious: 12.0,
+                  normal: 10.0,
+                  compact: 8.0,
+                  tight: 6.0,
+                  cramped: 4.0,
+                ));
+    final vOuterPad = isDocked
+        ? 0.0
+        : h.pick(
+            spacious: 24.0,
+            normal: 20.0,
+            compact: 16.0,
+            tight: 10.0,
+            cramped: 6.0,
+          );
+    final hOuterPad = isDocked
+        ? 0.0
+        : h.pick(
+            spacious: 16.0,
+            normal: 16.0,
+            compact: 14.0,
+            tight: 8.0,
+            cramped: 6.0,
+          );
     final gapBetween = h.pick(
       spacious: 14.0,
       normal: 12.0,
@@ -844,10 +843,55 @@ class _SideNavBar extends ConsumerWidget {
 
     final hideDownloadLabel = h.isBelowCompact;
     final hideNavLabels = h == HeightTier.cramped;
+    final itemsCol = Column(
+      children: List.generate(_destinations.length, (i) {
+        final active = navigationShell.currentIndex == i;
+        final themeData = NavBarThemeData.resolve(
+          navBarStyle,
+          cs,
+          active,
+          false,
+        );
+        final activeItemRadius = themeData.itemRadius(barWidth);
 
-    final activeItemRadius = navBarStyle == NavBarStyle.material
-        ? 999.0
-        : GlobalUI.uiRoundness;
+        return Expanded(
+          child: InkWell(
+            onTap: () => navigationShell.goBranch(i),
+            borderRadius: BorderRadius.circular(activeItemRadius),
+            focusColor: cs.primary.withValues(alpha: 0.2),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 350),
+              curve: Curves.easeOutCubic,
+              width: double.infinity,
+              decoration:
+                  (active
+                          ? themeData.activeItemDecoration
+                          : themeData.inactiveItemDecoration)
+                      .copyWith(
+                        borderRadius: BorderRadius.circular(activeItemRadius),
+                      ),
+              child: _PillContent(
+                icon: _destinations[i].icon,
+                label: _destinations[i].label,
+                active: active,
+                themeData: themeData,
+                heightTier: h,
+                forceHideLabel: hideNavLabels,
+              ),
+            ),
+          ),
+        );
+      }),
+    );
+
+    final downloadPill = _TallDownloadPillContent(
+      cs: cs,
+      heightTier: h,
+      hideLabel: hideDownloadLabel,
+      navBarStyle: navBarStyle,
+      navigationShell: navigationShell,
+      barWidth: barWidth,
+    );
 
     return SafeArea(
       child: Padding(
@@ -864,62 +908,7 @@ class _SideNavBar extends ConsumerWidget {
                 padding: hPad,
                 navBarStyle: navBarStyle,
                 cs: cs,
-                child: Column(
-                  children: List.generate(_destinations.length, (i) {
-                    final active = navigationShell.currentIndex == i;
-
-                    final itemDecoration = switch (navBarStyle) {
-                      NavBarStyle.classic => BoxDecoration(
-                        color: active ? cs.primary : Colors.transparent,
-                        borderRadius: BorderRadius.circular(activeItemRadius),
-                      ),
-                      NavBarStyle.minimal => const BoxDecoration(
-                        color: Colors.transparent,
-                      ),
-                      NavBarStyle.frosted => BoxDecoration(
-                        color: active
-                            ? Colors.white.withValues(alpha: 0.12)
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(activeItemRadius),
-                        border: active
-                            ? Border.all(
-                                color: Colors.white.withValues(alpha: 0.1),
-                                width: 0.5,
-                              )
-                            : null,
-                      ),
-                      NavBarStyle.material => BoxDecoration(
-                        color: active
-                            ? cs.secondaryContainer
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(activeItemRadius),
-                      ),
-                    };
-
-                    return Expanded(
-                      child: InkWell(
-                        onTap: () => navigationShell.goBranch(i),
-                        borderRadius: BorderRadius.circular(activeItemRadius),
-                        focusColor: cs.primary.withValues(alpha: 0.2),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 350),
-                          curve: Curves.easeOutCubic,
-                          width: double.infinity,
-                          decoration: itemDecoration,
-                          child: _PillContent(
-                            icon: _destinations[i].icon,
-                            label: _destinations[i].label,
-                            active: active,
-                            cs: cs,
-                            heightTier: h,
-                            forceHideLabel: hideNavLabels,
-                            navBarStyle: navBarStyle,
-                          ),
-                        ),
-                      ),
-                    );
-                  }),
-                ),
+                child: itemsCol,
               ),
             ),
             SizedBox(height: gapBetween),
@@ -930,13 +919,7 @@ class _SideNavBar extends ConsumerWidget {
                 padding: hPad,
                 navBarStyle: navBarStyle,
                 cs: cs,
-                child: _TallDownloadPillContent(
-                  cs: cs,
-                  heightTier: h,
-                  hideLabel: hideDownloadLabel,
-                  navBarStyle: navBarStyle,
-                  navigationShell: navigationShell,
-                ),
+                child: downloadPill,
               ),
             ),
           ],
@@ -963,68 +946,26 @@ class _SideBarContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final barRadius =
-        (navBarStyle == NavBarStyle.material ||
-            navBarStyle == NavBarStyle.minimal)
-        ? 28.0
-        : GlobalUI.uiRoundness;
-
-    // Background blur config
-    final double? blurAmount = switch (navBarStyle) {
-      NavBarStyle.classic => 14.0,
-      NavBarStyle.frosted => 24.0,
-      NavBarStyle.minimal => 12.0,
-      _ => null,
-    };
-
-    // Container background decoration
-    final decoration = switch (navBarStyle) {
-      NavBarStyle.classic => BoxDecoration(
-        color: cs.surface.withValues(alpha: 0.75),
-        borderRadius: BorderRadius.circular(barRadius),
-        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.45)),
-      ),
-      NavBarStyle.minimal => BoxDecoration(
-        color: cs.surface.withValues(alpha: 0.95),
-        borderRadius: BorderRadius.circular(barRadius),
-        border: Border.all(
-          color: cs.outlineVariant.withValues(alpha: 0.2),
-          width: 0.8,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 16,
-            spreadRadius: 0.5,
-          ),
-        ],
-      ),
-      NavBarStyle.frosted => BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(barRadius),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.15),
-          width: 0.8,
-        ),
-      ),
-      NavBarStyle.material => BoxDecoration(
-        color: cs.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(barRadius),
-      ),
-    };
+    final themeData = NavBarThemeData.resolve(navBarStyle, cs, false, false);
+    final barRadius = themeData.barRadius(width);
 
     final content = Container(
       width: width,
       padding: EdgeInsets.all(padding),
-      decoration: decoration,
+      decoration: themeData.barDecoration.copyWith(
+        borderRadius: BorderRadius.circular(barRadius),
+      ),
       child: child,
     );
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(barRadius),
-      child: blurAmount != null
+      child: themeData.blurSigma != null
           ? BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: blurAmount, sigmaY: blurAmount),
+              filter: ImageFilter.blur(
+                sigmaX: themeData.blurSigma!,
+                sigmaY: themeData.blurSigma!,
+              ),
               child: content,
             )
           : content,
@@ -1036,19 +977,17 @@ class _PillContent extends StatelessWidget {
   final IconData icon;
   final String label;
   final bool active;
-  final ColorScheme cs;
+  final NavBarThemeData themeData;
   final bool isDownload;
   final HeightTier heightTier;
   final bool forceHideLabel;
-  final NavBarStyle navBarStyle;
 
   const _PillContent({
     required this.icon,
     required this.label,
     required this.active,
-    required this.cs,
+    required this.themeData,
     required this.heightTier,
-    required this.navBarStyle,
     this.isDownload = false,
     this.forceHideLabel = false,
   });
@@ -1086,36 +1025,20 @@ class _PillContent extends StatelessWidget {
 
     final showLabel = !forceHideLabel && (active || isDownload);
 
-    // Dynamic coloring based on NavBarStyle
-    final activeIconColor = switch (navBarStyle) {
-      NavBarStyle.material => cs.onSecondaryContainer,
-      NavBarStyle.frosted => Colors.white,
-      NavBarStyle.minimal => cs.primary,
-      _ => cs.onPrimary,
-    };
-
-    final inactiveIconColor = switch (navBarStyle) {
-      NavBarStyle.frosted => Colors.white54,
-      NavBarStyle.minimal => cs.onSurfaceVariant.withValues(alpha: 0.5),
-      _ => cs.onSurfaceVariant,
-    };
-
-    final activeTextColor = switch (navBarStyle) {
-      NavBarStyle.material => cs.onSecondaryContainer,
-      NavBarStyle.frosted => Colors.white,
-      NavBarStyle.minimal => cs.primary,
-      _ => cs.onPrimary,
-    };
-
-    final resolvedColor = active ? activeIconColor : inactiveIconColor;
-
-    final resolvedTextColor = active ? activeTextColor : inactiveIconColor;
+    final resolvedColor = active
+        ? themeData.activeIconColor
+        : (isDownload
+              ? themeData.downloadIconColor
+              : themeData.inactiveIconColor);
+    final resolvedTextColor = active
+        ? themeData.activeTextColor
+        : themeData.inactiveIconColor;
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         AnimatedScale(
-          scale: active ? 1.15 : 1.0,
+          scale: active ? themeData.activeScale : 1.0,
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeOutBack,
           child: AnimatedOpacity(
@@ -1138,7 +1061,9 @@ class _PillContent extends StatelessWidget {
                         style: TextStyle(
                           fontSize: labelSize,
                           letterSpacing: labelSpacing,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: themeData.isMaterial3
+                              ? FontWeight.w500
+                              : FontWeight.bold,
                           color: resolvedTextColor,
                         ),
                       ),
@@ -1147,6 +1072,17 @@ class _PillContent extends StatelessWidget {
                 : const SizedBox.shrink(),
           ),
         ),
+        if (themeData.showDotIndicator && active) ...[
+          const SizedBox(height: 5),
+          Container(
+            width: 5,
+            height: 5,
+            decoration: BoxDecoration(
+              color: resolvedColor,
+              shape: BoxShape.circle,
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -1158,6 +1094,7 @@ class _TallDownloadPillContent extends ConsumerWidget {
   final bool hideLabel;
   final NavBarStyle navBarStyle;
   final StatefulNavigationShell navigationShell;
+  final double barWidth;
 
   const _TallDownloadPillContent({
     required this.cs,
@@ -1165,6 +1102,7 @@ class _TallDownloadPillContent extends ConsumerWidget {
     required this.hideLabel,
     required this.navBarStyle,
     required this.navigationShell,
+    required this.barWidth,
   });
 
   @override
@@ -1179,30 +1117,8 @@ class _TallDownloadPillContent extends ConsumerWidget {
         )
         .length;
 
-    final activeItemRadius = navBarStyle == NavBarStyle.material
-        ? 999.0
-        : GlobalUI.uiRoundness;
-
-    final itemDecoration = switch (navBarStyle) {
-      NavBarStyle.classic => BoxDecoration(
-        color: active ? cs.primary : Colors.transparent,
-        borderRadius: BorderRadius.circular(activeItemRadius),
-      ),
-      NavBarStyle.minimal => const BoxDecoration(color: Colors.transparent),
-      NavBarStyle.frosted => BoxDecoration(
-        color: active
-            ? Colors.white.withValues(alpha: 0.12)
-            : Colors.transparent,
-        borderRadius: BorderRadius.circular(activeItemRadius),
-        border: active
-            ? Border.all(color: Colors.white.withValues(alpha: 0.1), width: 0.5)
-            : null,
-      ),
-      NavBarStyle.material => BoxDecoration(
-        color: active ? cs.secondaryContainer : Colors.transparent,
-        borderRadius: BorderRadius.circular(activeItemRadius),
-      ),
-    };
+    final themeData = NavBarThemeData.resolve(navBarStyle, cs, false, active);
+    final activeItemRadius = themeData.itemRadius(barWidth);
 
     return Material(
       color: Colors.transparent,
@@ -1225,16 +1141,23 @@ class _TallDownloadPillContent extends ConsumerWidget {
             duration: const Duration(milliseconds: 350),
             curve: Curves.easeOutCubic,
             width: double.infinity,
-            decoration: itemDecoration,
+            decoration:
+                (active
+                        ? themeData.activeItemDecoration
+                        : themeData.inactiveItemDecoration)
+                    .copyWith(
+                      borderRadius: BorderRadius.circular(
+                        themeData.itemRadius(72.0),
+                      ),
+                    ),
             child: _PillContent(
               icon: Icons.download_outlined,
               label: 'DOWNLOAD',
               active: active,
               isDownload: true,
-              cs: cs,
+              themeData: themeData,
               heightTier: heightTier,
               forceHideLabel: hideLabel,
-              navBarStyle: navBarStyle,
             ),
           ),
         ),
@@ -1274,6 +1197,60 @@ class _SideNavAttachment extends ConsumerWidget {
             child: activeWidget ?? const SizedBox.shrink(),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _DockedDownloadIcon extends ConsumerWidget {
+  const _DockedDownloadIcon();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cs = Theme.of(context).colorScheme;
+    final tasks = ref.watch(downloadTasksProvider).value ?? [];
+    final activeTasks = tasks
+        .where(
+          (t) =>
+              t.status == DownloadStatus.downloading ||
+              t.status == DownloadStatus.pending,
+        )
+        .toList();
+    final count = activeTasks.length;
+    final hasActive = count > 0;
+
+    double? progress;
+    if (hasActive) {
+      final valid = activeTasks.where((t) => t.progress >= 0);
+      if (valid.isNotEmpty) {
+        progress =
+            valid.map((t) => t.progress).reduce((a, b) => a + b) / valid.length;
+      }
+    }
+
+    return Badge(
+      isLabelVisible: hasActive,
+      backgroundColor: cs.primary,
+      textColor: cs.onPrimary,
+      label: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 200),
+        child: Text('$count', key: ValueKey(count)),
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          if (hasActive)
+            SizedBox(
+              width: 32,
+              height: 32,
+              child: CircularProgressIndicator(
+                value: progress,
+                strokeWidth: 2,
+                color: cs.primary,
+              ),
+            ),
+          const Icon(Icons.download_outlined),
+        ],
       ),
     );
   }

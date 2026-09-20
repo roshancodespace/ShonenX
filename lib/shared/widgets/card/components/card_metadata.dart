@@ -1,27 +1,39 @@
 import 'package:flutter/material.dart';
+
+import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/widgets/marquee_text.dart';
-import '../models/card_config.dart';
 
 class PortraitMetadataRow extends StatelessWidget {
-  final CardConfig config;
+  final UnifiedMedia media;
+  final bool showRatings;
+  final bool showYear;
+  final bool showGenres;
+  final String? subtitle;
 
-  const PortraitMetadataRow({super.key, required this.config});
+  const PortraitMetadataRow({
+    super.key,
+    required this.media,
+    required this.showRatings,
+    required this.showYear,
+    required this.showGenres,
+    this.subtitle,
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    final year = config.year;
-    final genres = config.genres;
-    final status = config.status;
+    final year = showYear ? media.year?.toString() : null;
+    final genres = showGenres ? media.genres : null;
+    final status = media.status;
 
     final hasYear = year != null && year.isNotEmpty;
     final hasGenres = genres != null && genres.isNotEmpty;
     final hasStatus = status != null && status.isNotEmpty;
 
-    if (config.subtitle != null && config.subtitle!.isNotEmpty) {
+    if (subtitle != null && subtitle!.isNotEmpty) {
       return Text(
-        config.subtitle!,
+        subtitle!,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: theme.textTheme.labelSmall?.copyWith(color: cs.onSurfaceVariant),
@@ -103,32 +115,60 @@ class PortraitMetadataRow extends StatelessWidget {
 }
 
 class WideMetadataColumn extends StatelessWidget {
-  final CardConfig config;
+  final UnifiedMedia media;
+  final bool showRatings;
+  final bool showYear;
+  final bool showGenres;
+  final String? subtitle;
   final Color? textColor;
+  final double height;
+  final double? progress;
+  final String? progressText;
+  final Widget? topRightBadge;
 
-  const WideMetadataColumn({super.key, required this.config, this.textColor});
+  const WideMetadataColumn({
+    super.key,
+    required this.media,
+    required this.showRatings,
+    required this.showYear,
+    required this.showGenres,
+    required this.height,
+    this.subtitle,
+    this.textColor,
+    this.progress,
+    this.progressText,
+    this.topRightBadge,
+  });
+
+  String? _getFormattedScore() {
+    if (!showRatings || media.score == null || media.score! <= 0) return null;
+    return media.score! > 10
+        ? (media.score! / 10).toStringAsFixed(1)
+        : media.score!.toStringAsFixed(1);
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final metaItems = <String>[];
-    if (config.year != null && config.year!.isNotEmpty) {
-      metaItems.add(config.year!);
+    if (showYear && media.year != null) {
+      metaItems.add(media.year!.toString());
     }
-    if (config.status != null && config.status!.isNotEmpty) {
-      metaItems.add(config.status!);
+    if (media.status != null && media.status!.isNotEmpty) {
+      metaItems.add(media.status!);
     }
-    if (config.subtitle != null && config.subtitle!.isNotEmpty) {
-      metaItems.add(config.subtitle!);
+    if (subtitle != null && subtitle!.isNotEmpty) {
+      metaItems.add(subtitle!);
     }
     final metaText = metaItems.join(' • ');
 
-    final formattedScore = config.formattedScore;
-    final showGenres =
-        config.genres != null &&
-        config.genres!.isNotEmpty &&
-        config.height >= 105;
+    final formattedScore = _getFormattedScore();
+    final shouldShowGenres =
+        showGenres &&
+        media.genres != null &&
+        media.genres!.isNotEmpty &&
+        height >= 105;
 
     final effectiveTextColor = textColor ?? cs.onSurface;
     final effectiveSubtextColor =
@@ -143,7 +183,7 @@ class WideMetadataColumn extends StatelessWidget {
           children: [
             Expanded(
               child: MarqueeText(
-                text: config.title,
+                text: media.title.availableTitle,
                 style:
                     theme.textTheme.labelLarge?.copyWith(
                       fontWeight: FontWeight.w800,
@@ -153,9 +193,9 @@ class WideMetadataColumn extends StatelessWidget {
                     TextStyle(color: effectiveTextColor),
               ),
             ),
-            if (config.topRightBadge != null) ...[
+            if (topRightBadge != null) ...[
               const SizedBox(width: 4),
-              Flexible(child: config.topRightBadge!),
+              Flexible(child: topRightBadge!),
             ],
           ],
         ),
@@ -214,12 +254,12 @@ class WideMetadataColumn extends StatelessWidget {
             ],
           ),
         ],
-        if (showGenres) ...[
+        if (shouldShowGenres) ...[
           const SizedBox(height: 3),
           Wrap(
             spacing: 4,
             runSpacing: 4,
-            children: config.genres!.take(2).map((g) {
+            children: media.genres!.take(2).map((g) {
               return Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 4,
@@ -243,26 +283,26 @@ class WideMetadataColumn extends StatelessWidget {
             }).toList(),
           ),
         ],
-        if (config.progress != null || config.progressText != null) ...[
+        if (progress != null || progressText != null) ...[
           const SizedBox(height: 3),
           Row(
             children: [
-              if (config.progress != null)
+              if (progress != null)
                 Expanded(
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(4),
                     child: LinearProgressIndicator(
-                      value: config.progress!.clamp(0.0, 1.0),
+                      value: progress!.clamp(0.0, 1.0),
                       minHeight: 4,
                       backgroundColor: cs.surfaceContainerHighest,
                       valueColor: AlwaysStoppedAnimation<Color>(cs.primary),
                     ),
                   ),
                 ),
-              if (config.progressText != null) ...[
+              if (progressText != null) ...[
                 const SizedBox(width: 6),
                 Text(
-                  config.progressText!,
+                  progressText!,
                   style: theme.textTheme.labelSmall?.copyWith(
                     color: cs.primary,
                     fontWeight: FontWeight.w700,

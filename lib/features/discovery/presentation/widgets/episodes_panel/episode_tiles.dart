@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:shonenx/core/utils/formatting.dart';
 import 'package:shonenx/core/utils/image_headers.dart';
 import 'package:shonenx/shared/models/unified_episode.dart';
+import 'package:shonenx/shared/models/ui_style_enums.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 
 enum EpisodeViewMode {
@@ -120,32 +121,6 @@ abstract class BaseEpisodeTile extends StatelessWidget {
       errorBuilder: errorBuilder ?? (_, __, ___) => const SizedBox.shrink(),
     );
   }
-}
-
-class EpisodeClassicTile extends BaseEpisodeTile {
-  const EpisodeClassicTile({
-    super.key,
-    required super.episode,
-    super.mediaType = MediaType.ANIME,
-    required super.isCurrent,
-    required super.isWatched,
-    required super.onTap,
-    super.isFiller = false,
-    super.imageFadeDirection = EpisodeImageFadeDirection.left,
-    super.imageFadeStops,
-    super.imageOpacity = 0.3,
-    super.imageBlurSigma = 0,
-    super.actions = const [],
-    super.fallbackThumbnailUrl,
-  });
-
-  @override
-  String? get resolvedThumbnailUrl {
-    if (episode.thumbnailUrl != null && episode.thumbnailUrl!.isNotEmpty) {
-      return episode.thumbnailUrl;
-    }
-    return null;
-  }
 
   Alignment _begin() {
     switch (imageFadeDirection) {
@@ -179,25 +154,90 @@ class EpisodeClassicTile extends BaseEpisodeTile {
     }
   }
 
+  Color getDimColor(ThemeData theme) =>
+      theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4);
+
+  Color getLabelColor(ThemeData theme) =>
+      isWatched ? getDimColor(theme) : theme.colorScheme.primary;
+
+  Color getTitleColor(ThemeData theme) =>
+      isWatched ? getDimColor(theme) : theme.colorScheme.onSurface;
+
+  double getResolvedOpacity() {
+    if (isCurrent) return imageOpacity * 0.65;
+    if (isWatched) return imageOpacity * 0.5;
+    return imageOpacity;
+  }
+
+  Widget buildFadedImage(ThemeData theme) {
+    if (imageUrl == null || imageUrl!.isEmpty) return const SizedBox.shrink();
+    return Positioned.fill(
+      child: ClipRect(
+        child: ShaderMask(
+          shaderCallback: (bounds) {
+            return LinearGradient(
+              begin: _begin(),
+              end: _end(),
+              stops: imageFadeStops ?? const [0, 0.4, 1],
+              colors: [
+                theme.colorScheme.surface,
+                theme.colorScheme.surface.withValues(alpha: 0.4),
+                Colors.transparent,
+              ],
+            ).createShader(bounds);
+          },
+          blendMode: BlendMode.srcOver,
+          child: ImageFiltered(
+            imageFilter: ImageFilter.blur(
+              sigmaX: imageBlurSigma,
+              sigmaY: imageBlurSigma,
+            ),
+            child: Opacity(
+              opacity: getResolvedOpacity(),
+              child: buildImage(fit: BoxFit.cover),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class EpisodeClassicTile extends BaseEpisodeTile {
+  const EpisodeClassicTile({
+    super.key,
+    required super.episode,
+    super.mediaType = MediaType.ANIME,
+    required super.isCurrent,
+    required super.isWatched,
+    required super.onTap,
+    super.isFiller = false,
+    super.imageFadeDirection = EpisodeImageFadeDirection.left,
+    super.imageFadeStops,
+    super.imageOpacity = 0.3,
+    super.imageBlurSigma = 0,
+    super.actions = const [],
+    super.fallbackThumbnailUrl,
+  });
+
+  @override
+  String? get resolvedThumbnailUrl {
+    if (episode.thumbnailUrl != null && episode.thumbnailUrl!.isNotEmpty) {
+      return episode.thumbnailUrl;
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final num = formatEpisodeNumber(episode.number);
 
-    final dimColor = theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4);
+    final dimColor = getDimColor(theme);
     final isEffectivelyWatched = isWatched;
 
-    final labelColor = isEffectivelyWatched
-        ? dimColor
-        : theme.colorScheme.primary;
-    final titleColor = isEffectivelyWatched
-        ? dimColor
-        : theme.colorScheme.onSurface;
-    final resolvedOpacity = isCurrent
-        ? imageOpacity * 0.65
-        : isEffectivelyWatched
-        ? imageOpacity * 0.5
-        : imageOpacity;
+    final labelColor = getLabelColor(theme);
+    final titleColor = getTitleColor(theme);
 
     return Material(
       color: Colors.transparent,
@@ -213,36 +253,7 @@ class EpisodeClassicTile extends BaseEpisodeTile {
           ),
           child: Stack(
             children: [
-              if (imageUrl != null && imageUrl!.isNotEmpty)
-                Positioned.fill(
-                  child: ClipRect(
-                    child: ShaderMask(
-                      shaderCallback: (bounds) {
-                        return LinearGradient(
-                          begin: _begin(),
-                          end: _end(),
-                          stops: imageFadeStops ?? const [0, 0.4, 1],
-                          colors: [
-                            theme.colorScheme.surface,
-                            theme.colorScheme.surface.withValues(alpha: 0.4),
-                            Colors.transparent,
-                          ],
-                        ).createShader(bounds);
-                      },
-                      blendMode: BlendMode.srcOver,
-                      child: ImageFiltered(
-                        imageFilter: ImageFilter.blur(
-                          sigmaX: imageBlurSigma,
-                          sigmaY: imageBlurSigma,
-                        ),
-                        child: Opacity(
-                          opacity: resolvedOpacity,
-                          child: buildImage(fit: BoxFit.cover),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
+              buildFadedImage(theme),
               Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
@@ -319,7 +330,9 @@ class EpisodeClassicTile extends BaseEpisodeTile {
                                     color: isWatched
                                         ? theme.colorScheme.secondaryContainer
                                         : theme.colorScheme.primaryContainer,
-                                    borderRadius: BorderRadius.circular(6),
+                                    borderRadius: BorderRadius.circular(
+                                      GlobalUI.uiRoundness,
+                                    ),
                                   ),
                                   child: Text(
                                     isWatched
@@ -451,11 +464,11 @@ class EpisodeGridTile extends BaseEpisodeTile {
     final num = formatEpisodeNumber(episode.number);
 
     final isEffectivelyWatched = isWatched;
-    final dimColor = cs.onSurfaceVariant.withValues(alpha: 0.45);
+    final dimColor = getDimColor(theme);
 
     return Material(
       color: cs.surfaceContainerLow,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
@@ -582,7 +595,9 @@ class EpisodeGridTile extends BaseEpisodeTile {
                           color: isWatched
                               ? cs.secondaryContainer
                               : cs.primaryContainer,
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: BorderRadius.circular(
+                            GlobalUI.uiRoundness * 0.5,
+                          ),
                         ),
                         child: Text(
                           isWatched
@@ -627,7 +642,7 @@ class EpisodeGridTile extends BaseEpisodeTile {
                   ),
                   decoration: BoxDecoration(
                     color: Colors.black.withValues(alpha: 0.75),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
                     border: Border.all(
                       color: Colors.white.withValues(alpha: 0.15),
                     ),
@@ -693,12 +708,12 @@ class EpisodeBoxTile extends BaseEpisodeTile {
 
     return Material(
       color: bgColor,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
       child: InkWell(
         onTap: onTap,
         onLongPress: triggerMenuAction,
         onSecondaryTap: triggerMenuAction,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
         child: Stack(
           children: [
             Positioned.fill(
@@ -796,7 +811,7 @@ class EpisodeCompactTile extends BaseEpisodeTile {
       onTap: onTap,
       onLongPress: triggerMenuAction,
       onSecondaryTap: triggerMenuAction,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         child: Row(
@@ -808,7 +823,9 @@ class EpisodeCompactTile extends BaseEpisodeTile {
                 margin: const EdgeInsets.only(right: 10),
                 decoration: BoxDecoration(
                   color: cs.primary,
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: BorderRadius.circular(
+                    GlobalUI.uiRoundness * 0.5,
+                  ),
                 ),
               ),
             SizedBox(
@@ -860,7 +877,9 @@ class EpisodeCompactTile extends BaseEpisodeTile {
                               color: Colors.amber.shade600.withValues(
                                 alpha: 0.2,
                               ),
-                              borderRadius: BorderRadius.circular(4),
+                              borderRadius: BorderRadius.circular(
+                                GlobalUI.uiRoundness * 0.5,
+                              ),
                             ),
                             child: Text(
                               'FILLER',
@@ -947,7 +966,7 @@ class EpisodeCoverTile extends BaseEpisodeTile {
           : isEffectivelyWatched
           ? cs.surfaceContainerLow.withValues(alpha: 0.5)
           : cs.surfaceContainerLow,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
@@ -955,7 +974,7 @@ class EpisodeCoverTile extends BaseEpisodeTile {
         onSecondaryTap: onSecondaryTap ?? triggerMenuAction,
         child: Container(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
             border: isCurrent
                 ? Border.all(
                     color: cs.primary.withValues(alpha: 0.55),
@@ -972,7 +991,7 @@ class EpisodeCoverTile extends BaseEpisodeTile {
                 child: AspectRatio(
                   aspectRatio: 16 / 9,
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
@@ -1044,7 +1063,9 @@ class EpisodeCoverTile extends BaseEpisodeTile {
                               ),
                               decoration: BoxDecoration(
                                 color: Colors.amber.shade700,
-                                borderRadius: BorderRadius.circular(3),
+                                borderRadius: BorderRadius.circular(
+                                  GlobalUI.uiRoundness * 0.5,
+                                ),
                               ),
                               child: const Text(
                                 'FILLER',
@@ -1094,7 +1115,9 @@ class EpisodeCoverTile extends BaseEpisodeTile {
                               color: isWatched
                                   ? cs.secondaryContainer
                                   : cs.primaryContainer,
-                              borderRadius: BorderRadius.circular(4),
+                              borderRadius: BorderRadius.circular(
+                                GlobalUI.uiRoundness * 0.5,
+                              ),
                             ),
                             child: Text(
                               isWatched

@@ -1,39 +1,60 @@
 import 'package:flutter/material.dart';
-import '../models/card_config.dart';
+import 'package:shonenx/shared/models/unified_media.dart';
 
 class CardBadgeOverlay extends StatelessWidget {
-  final CardConfig config;
+  final UnifiedMedia media;
   final String styleName;
+  final bool isWideMode;
+  final bool isActive;
+  final bool showRatings;
+  final double? progress;
+  final String? progressText;
+  final Widget? topLeftBadge;
+  final Widget? topRightBadge;
+  final Widget? bottomLeftBadge;
+  final Widget? bottomRightBadge;
 
   const CardBadgeOverlay({
     super.key,
-    required this.config,
+    required this.media,
     required this.styleName,
+    required this.isWideMode,
+    required this.isActive,
+    required this.showRatings,
+    this.progress,
+    this.progressText,
+    this.topLeftBadge,
+    this.topRightBadge,
+    this.bottomLeftBadge,
+    this.bottomRightBadge,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    final isHorizontalLayout =
-        config.isWideMode || (config.width > config.height * 1.2);
+    final isHorizontalLayout = isWideMode || (100 > 100 * 1.2);
     final hasScore =
-        config.score != null && config.score! > 0 && !isHorizontalLayout;
-    final showBadgeText = config.badgeText != null;
-    final formattedScore = config.formattedScore;
+        showRatings &&
+        media.score != null &&
+        (media.score ?? 0) > 0 &&
+        !isHorizontalLayout;
+    final formattedScore = _getFormattedScore();
 
-    final hasTopBadges =
-        showBadgeText ||
-        config.topRightBadge != null ||
-        (hasScore && formattedScore != null);
+    final showFormatBadge = media.format != null;
+    final topLBadge =
+        topLeftBadge ?? (showFormatBadge ? _buildFormatBadge(theme, cs) : null);
+    final topRBadge =
+        topRightBadge ??
+        ((hasScore && formattedScore != null)
+            ? buildStyleRatingBadge(theme, styleName, formattedScore)
+            : null);
 
     final effectiveProgressText =
-        config.progressText ??
-        (config.bottomLeftBadgeText ??
-            (config.progress != null
-                ? '${(config.progress!.clamp(0.0, 1.0) * 100).toInt()}%'
-                : null));
-
+        progressText ??
+        (progress != null
+            ? '${(progress!.clamp(0.0, 1.0) * 100).toInt()}%'
+            : null);
     final showBottomProgress =
         !isHorizontalLayout &&
         styleName != 'minimal' &&
@@ -41,7 +62,19 @@ class CardBadgeOverlay extends StatelessWidget {
         effectiveProgressText != null &&
         effectiveProgressText.isNotEmpty;
 
-    if (!hasTopBadges && !showBottomProgress) {
+    final bottomLBadge =
+        bottomLeftBadge ??
+        (showBottomProgress
+            ? IgnorePointer(
+                child: _buildProgressBadge(theme, effectiveProgressText),
+              )
+            : null);
+    final bottomRBadge = bottomRightBadge;
+
+    if (topLBadge == null &&
+        topRBadge == null &&
+        bottomLBadge == null &&
+        bottomRBadge == null) {
       return const SizedBox.shrink();
     }
 
@@ -49,53 +82,66 @@ class CardBadgeOverlay extends StatelessWidget {
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          if (hasTopBadges)
+          if (topLBadge != null || topRBadge != null)
             Positioned(
               top: 8,
               left: 8,
               right: 8,
-              child: Wrap(
-                spacing: 4,
-                runSpacing: 4,
-                alignment: WrapAlignment.spaceBetween,
-                crossAxisAlignment: WrapCrossAlignment.center,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (showBadgeText)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 5,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: cs.primaryContainer.withValues(alpha: 0.92),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        config.badgeText!.toUpperCase(),
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: cs.onPrimaryContainer,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.3,
-                          fontSize: 9.5,
-                        ),
-                      ),
-                    ),
-                  if (config.topRightBadge != null)
-                    config.topRightBadge!
-                  else if (hasScore && formattedScore != null)
-                    buildStyleRatingBadge(theme, styleName, formattedScore),
+                  if (topLBadge != null)
+                    Flexible(child: topLBadge)
+                  else
+                    const SizedBox.shrink(),
+                  if (topRBadge != null)
+                    Flexible(child: topRBadge)
+                  else
+                    const SizedBox.shrink(),
                 ],
               ),
             ),
-          if (showBottomProgress)
+          if (bottomLBadge != null || bottomRBadge != null)
             Positioned(
               bottom: 6,
               left: 6,
-              child: IgnorePointer(
-                child: _buildProgressBadge(theme, effectiveProgressText),
+              right: 6,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  if (bottomLBadge != null)
+                    Flexible(child: bottomLBadge)
+                  else
+                    const SizedBox.shrink(),
+                  if (bottomRBadge != null)
+                    Flexible(child: bottomRBadge)
+                  else
+                    const SizedBox.shrink(),
+                ],
               ),
             ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildFormatBadge(ThemeData theme, ColorScheme cs) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+      decoration: BoxDecoration(
+        color: cs.primaryContainer.withValues(alpha: 0.92),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        media.format!.toUpperCase(),
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: cs.onPrimaryContainer,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.3,
+          fontSize: 9.5,
+        ),
       ),
     );
   }
@@ -217,9 +263,7 @@ class CardBadgeOverlay extends StatelessWidget {
         break;
     }
 
-    final cardW = config.width.isFinite && config.width > 40
-        ? config.width - 24
-        : 140.0;
+    final cardW = 76.0;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 5.5, vertical: 2.5),
@@ -458,5 +502,12 @@ class CardBadgeOverlay extends StatelessWidget {
           ),
         );
     }
+  }
+
+  String? _getFormattedScore() {
+    if (!showRatings || media.score == null || media.score! <= 0) return null;
+    return media.score! > 10
+        ? (media.score! / 10).toStringAsFixed(1)
+        : media.score!.toStringAsFixed(1);
   }
 }

@@ -384,32 +384,7 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
               final name = server.name;
               return name.length > 30 ? '${name.substring(0, 27)}...' : name;
             })(),
-            badgeBuilder: (s) {
-              if (s.type == ServerType.unknown) return null;
-              return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: s.type == ServerType.dub
-                      ? theme.colorScheme.primary
-                      : theme.colorScheme.secondary,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  s.type == ServerType.dub
-                      ? 'DUB'
-                      : s.type == ServerType.sub
-                      ? 'SUB'
-                      : '',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color: s.type == ServerType.dub
-                        ? theme.colorScheme.onPrimary
-                        : theme.colorScheme.onSecondary,
-                  ),
-                ),
-              );
-            },
+            onTap: () => _showServerSelector(context),
           ),
         ],
 
@@ -464,8 +439,7 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
     final groups = <String, List<SubtitleTrack>>{};
     for (final sub in widget.playerState.subtitles) {
       if (sub.url.isEmpty) continue;
-      final label = sub.label ?? 'Other';
-      groups.putIfAbsent(label, () => []).add(sub);
+      groups.putIfAbsent(sub.language, () => []).add(sub);
     }
 
     AppBottomSheet.show(
@@ -513,32 +487,56 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
           children: [
             _buildSubtitleTile(offOption, activeSub == offOption),
             const SizedBox(height: 8),
-            for (final entry in groups.entries) ...[
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-                child: Text(
-                  entry.key.toUpperCase(),
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: theme.colorScheme.primary,
-                    letterSpacing: 1.0,
-                  ),
-                ),
-              ),
-              for (final sub in entry.value)
+            for (final entry in groups.entries)
+              if (entry.value.length == 1)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 4),
-                  child: _buildSubtitleTile(sub, activeSub == sub),
+                  child: _buildSubtitleTile(
+                    entry.value.first,
+                    activeSub == entry.value.first,
+                    title: entry.key,
+                    subtitle: entry.value.first.label,
+                  ),
+                )
+              else
+                Theme(
+                  data: Theme.of(
+                    context,
+                  ).copyWith(dividerColor: Colors.transparent),
+                  child: ExpansionTile(
+                    title: Text(
+                      entry.key,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
+                    childrenPadding: const EdgeInsets.only(left: 12),
+                    children: [
+                      for (final sub in entry.value)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 4),
+                          child: _buildSubtitleTile(
+                            sub,
+                            activeSub == sub,
+                            title: sub.label ?? 'Default',
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
-            ],
           ],
         ),
       ),
     );
   }
 
-  Widget _buildSubtitleTile(SubtitleTrack item, bool isSelected) {
+  Widget _buildSubtitleTile(
+    SubtitleTrack item,
+    bool isSelected, {
+    String? title,
+    String? subtitle,
+  }) {
     final theme = Theme.of(context);
     return ListTile(
       selected: isSelected,
@@ -554,7 +552,7 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
               color: theme.colorScheme.onSurfaceVariant,
             ),
       title: Text(
-        item.language,
+        title ?? item.language,
         style: TextStyle(
           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
           color: isSelected
@@ -562,11 +560,109 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
               : theme.colorScheme.onSurface,
         ),
       ),
+      subtitle: subtitle != null
+          ? Text(
+              subtitle,
+              style: TextStyle(
+                fontSize: 12,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            )
+          : null,
       trailing: isSelected
           ? Icon(Icons.check_rounded, color: theme.colorScheme.primary)
           : null,
       onTap: () {
         widget.controller.changeSubtitle(item);
+        Navigator.of(context).pop();
+      },
+    );
+  }
+
+  void _showServerSelector(BuildContext context) {
+    final theme = Theme.of(context);
+    final activeServer = widget.playerState.activeServer;
+
+    final groups = <ServerType, List<VideoServer>>{};
+    for (final server in widget.playerState.servers) {
+      groups.putIfAbsent(server.type, () => []).add(server);
+    }
+
+    final sortedGroupKeys = groups.keys.toList()
+      ..sort((a, b) => a.index.compareTo(b.index));
+
+    AppBottomSheet.show(
+      context: context,
+      title: 'Servers',
+      child: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.only(bottom: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (final type in sortedGroupKeys) ...[
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                child: Text(
+                  type.displayName.toUpperCase(),
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: theme.colorScheme.primary,
+                    letterSpacing: 1.0,
+                  ),
+                ),
+              ),
+              for (final server in groups[type]!)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: _buildServerTile(server, activeServer == server),
+                ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildServerTile(VideoServer item, bool isSelected) {
+    final theme = Theme.of(context);
+    return ListTile(
+      selected: isSelected,
+      selectedTileColor: theme.colorScheme.primary.withValues(alpha: 0.1),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      leading: isSelected
+          ? Icon(
+              Icons.radio_button_checked_rounded,
+              color: theme.colorScheme.primary,
+            )
+          : Icon(
+              Icons.radio_button_unchecked_rounded,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+      title: Text(
+        item.name,
+        style: TextStyle(
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          color: isSelected
+              ? theme.colorScheme.primary
+              : theme.colorScheme.onSurface,
+        ),
+      ),
+      subtitle: Text(
+        item.id,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          fontSize: 12,
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+      ),
+      trailing: isSelected
+          ? Icon(Icons.check_rounded, color: theme.colorScheme.primary)
+          : null,
+      onTap: () {
+        widget.controller.changeServer(item);
         Navigator.of(context).pop();
       },
     );

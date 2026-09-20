@@ -1,3 +1,4 @@
+import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/cards/media_card.dart';
@@ -283,76 +284,6 @@ void _showMediaStylePickerSheet({
   AppBottomSheet.show(
     context: context,
     title: title,
-    actions: [
-      Consumer(
-        builder: (_, r, __) {
-          final notifier = r.read(uiPrefsProvider.notifier);
-          final uiState = r.watch(uiPrefsProvider);
-          final current = getStyle(uiState);
-          final isWide = getIsWide(uiState, current.name);
-          final canToggleWide =
-              current != MediaCardStyle.compact &&
-              current != MediaCardStyle.cinematic &&
-              current != MediaCardStyle.wideBanner;
-
-          if (!canToggleWide) return const SizedBox.shrink();
-
-          return Tooltip(
-            message: isWide ? 'Switch to Portrait Mode' : 'Switch to Wide Mode',
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () => onToggleWide(notifier, current.name),
-                borderRadius: BorderRadius.circular(20),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 150),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 5,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isWide
-                        ? cs.primaryContainer
-                        : cs.surfaceContainerHigh,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: isWide
-                          ? cs.primary
-                          : cs.outlineVariant.withValues(alpha: 0.4),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        isWide
-                            ? Icons.table_rows_rounded
-                            : Icons.grid_view_rounded,
-                        size: 15,
-                        color: isWide
-                            ? cs.onPrimaryContainer
-                            : cs.onSurfaceVariant,
-                      ),
-                      const SizedBox(width: 5),
-                      Text(
-                        isWide ? 'Wide' : 'Normal',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: isWide
-                              ? cs.onPrimaryContainer
-                              : cs.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    ],
     child: UiSettingsSheetLayout(
       preview: Consumer(
         builder: (ctx, r, _) {
@@ -422,15 +353,19 @@ void showCardStyleSheet(
         width: layout.width,
         height: layout.height,
         child: MediaCard(
-          title: 'Demon Slayer: Kimetsu No Yaiba',
+          media: UnifiedMedia(
+            id: 'ui-preview',
+            type: MediaType.ANIME,
+            title: const MediaTitle(english: 'Demon Slayer: Kimetsu No Yaiba'),
+            format: 'TV',
+            score: 8.7,
+            year: 2024,
+            status: 'Ongoing',
+            genres: const ['Action', 'Fantasy'],
+            cover:
+                'https://m.media-amazon.com/images/M/MV5BM2IyN2E0NjctYWU2ZC00ZDc4LThiOTQtODAyOGNkZWM0M2E1XkEyXkFqcGc@._V1_.jpg',
+          ),
           tag: 'ui-card-preview',
-          format: 'TV',
-          score: 8.7,
-          year: '2024',
-          status: 'Ongoing',
-          genres: const ['Action', 'Fantasy'],
-          imageUrl:
-              'https://m.media-amazon.com/images/M/MV5BM2IyN2E0NjctYWU2ZC00ZDc4LThiOTQtODAyOGNkZWM0M2E1XkEyXkFqcGc@._V1_.jpg',
           onTap: () {},
           style: style,
         ),
@@ -662,6 +597,20 @@ void showNavBarStyleSheet(
                               color: cs.surfaceContainerLow,
                               borderRadius: BorderRadius.circular(barRadius),
                             ),
+                            NavBarStyle.docked => BoxDecoration(
+                              color: cs.surfaceContainer,
+                              border: Border(
+                                top: BorderSide(
+                                  color: cs.outlineVariant.withValues(
+                                    alpha: 0.3,
+                                  ),
+                                  width: 1.0,
+                                ),
+                              ),
+                            ),
+                            NavBarStyle.bubble => const BoxDecoration(
+                              color: Colors.transparent,
+                            ),
                           },
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -786,6 +735,26 @@ Widget _buildPreviewItem(
     NavBarStyle.material => BoxDecoration(
       color: active ? cs.secondaryContainer : Colors.transparent,
       borderRadius: BorderRadius.circular(20),
+    ),
+    NavBarStyle.docked => BoxDecoration(
+      color: active ? cs.primaryContainer : Colors.transparent,
+      borderRadius: BorderRadius.circular(8),
+    ),
+    NavBarStyle.bubble => BoxDecoration(
+      color: active ? cs.primaryContainer : cs.surface.withValues(alpha: 0.75),
+      borderRadius: BorderRadius.circular(20),
+      boxShadow: active
+          ? [
+              BoxShadow(
+                color: cs.primary.withValues(alpha: 0.2),
+                blurRadius: 4,
+                spreadRadius: 0,
+              ),
+            ]
+          : null,
+      border: !active
+          ? Border.all(color: cs.outlineVariant.withValues(alpha: 0.3))
+          : null,
     ),
   };
 
@@ -1436,6 +1405,8 @@ String _navBarStyleDesc(NavBarStyle style) => switch (style) {
   NavBarStyle.frosted => 'Super-translucent frosted glassmorphism layout',
   NavBarStyle.material =>
     'Material You rounded capsules with navigation indicators',
+  NavBarStyle.docked => 'Solid edge-to-edge layout connected to screen bottom',
+  NavBarStyle.bubble => 'Segmented floating translucent islands',
 };
 
 IconData _navBarStyleIcon(NavBarStyle style) => switch (style) {
@@ -1443,6 +1414,8 @@ IconData _navBarStyleIcon(NavBarStyle style) => switch (style) {
   NavBarStyle.minimal => Icons.more_horiz_rounded,
   NavBarStyle.frosted => Icons.blur_on_rounded,
   NavBarStyle.material => Icons.android_rounded,
+  NavBarStyle.docked => Icons.dock_outlined,
+  NavBarStyle.bubble => Icons.bubble_chart_outlined,
 };
 
 void showSheetPhysicsSheet(BuildContext context, WidgetRef ref) {
@@ -1489,4 +1462,3 @@ void showSheetPhysicsSheet(BuildContext context, WidgetRef ref) {
     ),
   );
 }
-

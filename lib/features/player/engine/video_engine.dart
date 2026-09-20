@@ -2,7 +2,12 @@ import 'package:flutter/widgets.dart';
 import 'package:shonenx/shared/models/video_stream.dart';
 
 abstract class VideoEngine {
-  Future<void> initialize(VideoStream stream, {SubtitleTrack? subtitle, Duration? startAt});
+  Future<void> initialize(
+    VideoStream stream, {
+    SubtitleTrack? subtitle,
+    Duration? startAt,
+  });
+  Future<void> refresh();
 
   Widget buildVideoView();
   Widget? buildSettingsView(BuildContext context);

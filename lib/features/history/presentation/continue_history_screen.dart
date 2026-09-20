@@ -320,9 +320,13 @@ class _ContinueHistoryScreenState extends ConsumerState<ContinueHistoryScreen> {
                                       : 1.0,
                                   duration: const Duration(milliseconds: 200),
                                   child: MediaCard(
+                media: UnifiedMedia(
+                                      id: id,
+                                      type: isAnime ? MediaType.ANIME : MediaType.MANGA,
+                                      title: MediaTitle(english: title),
+                                      cover: imageUrl,
+                                    ),
                                     tag: 'ch-$id',
-                                    title: title,
-                                    imageUrl: imageUrl,
                                     style: style,
                                     onSecondaryTap: () {
                                       if (!_isSelectionMode) {

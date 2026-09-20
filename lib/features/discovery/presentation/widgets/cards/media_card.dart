@@ -3,56 +3,53 @@ import 'package:shonenx/shared/widgets/app_focus_hover.dart';
 import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/shared/widgets/card/card_renderer.dart';
-import 'package:shonenx/shared/widgets/card/models/card_config.dart';
+import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class MediaCard extends ConsumerWidget {
-  final String title;
+  final UnifiedMedia media;
   final String tag;
-  final String? format;
-  final Widget? badge;
-  final String imageUrl;
   final VoidCallback onTap;
   final VoidCallback? onSecondaryTap;
   final VoidCallback? onLongPress;
   final MediaCardStyle style;
   final Map<String, dynamic>? config;
-  final double? score;
   final String? subtitle;
-  final String? year;
-  final String? status;
-  final List<String>? genres;
   final double? progress;
   final String? progressText;
-  final String? bottomLeftBadgeText;
+  final Widget? topLeftBadge;
+  final Widget? topRightBadge;
+  final Widget? bottomLeftBadge;
+  final Widget? bottomRightBadge;
+  final bool? forceWideMode;
 
   const MediaCard({
     super.key,
-    required this.title,
+    required this.media,
     required this.tag,
-    this.format,
-    this.badge,
-    required this.imageUrl,
+    this.topLeftBadge,
+    this.topRightBadge,
+    this.bottomLeftBadge,
+    this.bottomRightBadge,
     required this.onTap,
     this.onSecondaryTap,
     this.onLongPress,
     this.style = MediaCardStyle.classic,
     this.config,
-    this.score,
     this.subtitle,
-    this.year,
-    this.status,
-    this.genres,
     this.progress,
     this.progressText,
-    this.bottomLeftBadgeText,
+    this.forceWideMode,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isWideMode = ref.watch(
-      uiPrefsProvider.select((s) => s.isMediaCardWide(style.name)),
-    );
+    final isWideMode =
+        (forceWideMode ??
+            ref.watch(
+              uiPrefsProvider.select((s) => s.isMediaCardWide(style.name)),
+            )) ??
+        false;
     final showRatings = ref.watch(
       uiPrefsProvider.select((s) => s.showCardRatings),
     );
@@ -75,25 +72,22 @@ class MediaCard extends ConsumerWidget {
           final baseLayout = style.getBaseLayout(isWideMode: isWideMode);
           final child = CardRenderer(
             style: style,
-            config: CardConfig(
-              width: baseLayout.width,
-              height: baseLayout.height,
-              isActive: isActive,
-              isWideMode: isWideMode,
-              title: title,
-              imageUrl: imageUrl,
-              heroTag: tag,
-              badgeText: format,
-              topRightBadge: badge,
-              bottomLeftBadgeText: bottomLeftBadgeText,
-              progress: progress,
-              progressText: progressText,
-              score: showRatings ? score : null,
-              subtitle: subtitle,
-              year: showYear ? year : null,
-              status: status,
-              genres: showGenres ? genres : null,
-            ),
+            media: media,
+            width: baseLayout.width,
+            height: baseLayout.height,
+            isActive: isActive,
+            isWideMode: isWideMode,
+            showRatings: showRatings,
+            showYear: showYear,
+            showGenres: showGenres,
+            subtitle: subtitle,
+            progress: progress,
+            progressText: progressText,
+            heroTag: tag,
+            topLeftBadge: topLeftBadge,
+            topRightBadge: topRightBadge,
+            bottomLeftBadge: bottomLeftBadge,
+            bottomRightBadge: bottomRightBadge,
           );
 
           final currentTextScale = MediaQuery.of(context).textScaler.scale(1.0);

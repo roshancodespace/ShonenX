@@ -42,13 +42,17 @@ class LibraryGridWidget extends ConsumerWidget {
             itemCount: 12,
             itemBuilder: (context, index) {
               return MediaCard(
-                title: 'Placeholder Library Title',
+                media: UnifiedMedia(
+                  id: 'skeleton-lib-$index',
+                  type: MediaType.ANIME,
+                  title: const MediaTitle(english: 'Placeholder Title'),
+                  cover: '',
+                  format: 'TV',
+                  score: 8.5,
+                  year: 2026,
+                ),
                 tag: 'skeleton-lib-$index',
-                imageUrl: '',
                 style: cardStyle,
-                format: 'TV',
-                score: 8.5,
-                year: '2026',
                 onTap: () {},
               );
             },
@@ -155,15 +159,9 @@ class LibraryGridWidget extends ConsumerWidget {
                       'library__${viewState.status.id}_${entry.providerId}_$index';
 
                   return MediaCard(
-                    title: entry.title,
+                    media: entry.toUnifiedMedia(),
                     tag: cardTag,
-                    imageUrl: entry.cover,
                     style: cardStyle,
-                    format: entry.format,
-                    score: entry.score,
-                    year: entry.year?.toString(),
-                    status: entry.status,
-                    genres: entry.genres,
                     progress: progress,
                     progressText: progressText,
                     onTap: () {

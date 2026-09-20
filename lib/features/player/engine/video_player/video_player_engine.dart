@@ -79,6 +79,9 @@ class VideoPlayerEngine implements VideoEngine {
   }
 
   @override
+  Future<void> refresh() async {}
+
+  @override
   Widget buildVideoView() {
     return Consumer(
       builder: (context, ref, _) {

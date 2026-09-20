@@ -1055,10 +1055,8 @@ class _RelationsList extends ConsumerWidget {
             gap: 12,
             itemBuilder: (context, relation) {
               return MediaCard(
+                media: relation,
                 tag: 'details-${relation.id}',
-                title: relation.title.availableTitle,
-                format: relation.format,
-                imageUrl: relation.cover ?? relation.banner ?? '',
                 onTap: () => context.pushReplacementDetails(
                   mediaType: relation.type,
                   media: relation,
@@ -1094,10 +1092,8 @@ class _RecommendationsList extends ConsumerWidget {
       listPadding: EdgeInsets.zero,
       itemBuilder: (context, rec) {
         return MediaCard(
+                media: rec,
           tag: 'details-rec-${rec.id}',
-          title: rec.title.availableTitle,
-          format: rec.format,
-          imageUrl: rec.cover ?? rec.banner ?? '',
           onTap: () => context.pushReplacementDetails(
             mediaType: rec.type,
             media: rec,

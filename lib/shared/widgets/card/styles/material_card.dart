@@ -1,19 +1,51 @@
 import 'package:flutter/material.dart';
-import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import '../components/card_badges.dart';
 import '../components/card_metadata.dart';
 import '../components/card_thumbnail.dart';
-import '../models/card_config.dart';
+import 'package:shonenx/shared/models/unified_media.dart';
 
 class MaterialCard extends StatelessWidget {
-  final CardConfig config;
+  final UnifiedMedia media;
+  final double width;
+  final double height;
+  final bool isActive;
+  final bool isWideMode;
+  final bool showRatings;
+  final bool showYear;
+  final bool showGenres;
+  final String? subtitle;
+  final double? progress;
+  final String? progressText;
+  final String? heroTag;
+  final Widget? topLeftBadge;
+  final Widget? topRightBadge;
+  final Widget? bottomLeftBadge;
+  final Widget? bottomRightBadge;
 
-  const MaterialCard({super.key, required this.config});
+  const MaterialCard({
+    super.key,
+    required this.media,
+    required this.width,
+    required this.height,
+    required this.isActive,
+    required this.isWideMode,
+    required this.showRatings,
+    required this.showYear,
+    required this.showGenres,
+    this.subtitle,
+    this.progress,
+    this.progressText,
+    this.heroTag,
+    this.topLeftBadge,
+    this.topRightBadge,
+    this.bottomLeftBadge,
+    this.bottomRightBadge,
+    });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    if (config.isWideMode) {
+    if (isWideMode) {
       return _buildWide(theme);
     }
     return _buildPortrait(theme);
@@ -21,72 +53,92 @@ class MaterialCard extends StatelessWidget {
 
   Widget _buildPortrait(ThemeData theme) {
     final cs = theme.colorScheme;
-    final imgH = config.height * 0.62;
+    final imgH = height * 0.62;
 
     return SizedBox(
-      width: config.width,
-      child: AnimatedContainer(
-        duration: Durations.short4,
-        width: config.width,
-        height: config.height,
-        decoration: BoxDecoration(
-          color: config.isActive
-              ? cs.surfaceContainerHighest
-              : cs.surfaceContainer,
-          borderRadius: BorderRadius.circular(GlobalUI.uiRoundness + 2),
-          border: Border.all(
-            color: config.isActive
-                ? cs.primary
-                : cs.outlineVariant.withValues(alpha: 0.35),
-            width: config.isActive ? 2.5 : 1.0,
-            strokeAlign: BorderSide.strokeAlignOutside,
+      width: width,
+      height: height,
+      child: Card(
+        elevation: isActive ? 6 : 1,
+        margin: EdgeInsets.zero,
+        clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(
+            color: isActive ? cs.primary : Colors.transparent,
+            width: isActive ? 2 : 0,
           ),
-          boxShadow: config.isActive
-              ? [
-                  BoxShadow(
-                    color: cs.shadow.withValues(alpha: 0.14),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
-                  ),
-                ]
-              : null,
         ),
-        padding: const EdgeInsets.all(8),
+        color: cs.surfaceContainerLow,
+        surfaceTintColor: cs.primary,
+        shadowColor: isActive ? cs.shadow : Colors.transparent,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Stack(
-              children: [
-                CardThumbnail(
-                  config: config,
-                  width: double.maxFinite,
-                  height: imgH,
-                  radiusOverride: GlobalUI.uiRoundness - 2,
-                ),
-                CardBadgeOverlay(config: config, styleName: 'material'),
-              ],
+            SizedBox(
+              height: imgH,
+              width: double.infinity,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  CardThumbnail(
+                    media: media,
+                    isActive: isActive,
+                    progress: progress,
+                    heroTag: heroTag,
+                    width: double.maxFinite,
+                    height: imgH,
+                    radiusOverride: 0,
+                  ),
+                  CardBadgeOverlay(
+                    media: media,
+                    styleName: 'material',
+                    isWideMode: isWideMode,
+                    isActive: isActive,
+                    showRatings: showRatings,
+                    progress: progress,
+                    progressText: progressText,
+                    topLeftBadge: topLeftBadge,
+      topRightBadge: topRightBadge,
+      bottomLeftBadge: bottomLeftBadge,
+      bottomRightBadge: bottomRightBadge,
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 10),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: Text(
-                config.title,
-                maxLines: config.progress != null ? 1 : 2,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: cs.onSurface,
-                  height: 1.2,
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      media.title.availableTitle,
+                      maxLines: progress != null ? 1 : 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: cs.onSurface,
+                        height: 1.2,
+                      ),
+                    ),
+                    if (_getSubtitle() != null) ...[
+                      const Spacer(),
+                      PortraitMetadataRow(
+                        media: media,
+                        showRatings: showRatings,
+                        showYear: showYear,
+                        showGenres: showGenres,
+                        subtitle: subtitle,
+                      ),
+                    ],
+                  ],
                 ),
               ),
             ),
-            if (config.effectiveSubtitle != null) ...[
-              const Spacer(),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: PortraitMetadataRow(config: config),
-              ),
-            ],
           ],
         ),
       ),
@@ -95,55 +147,94 @@ class MaterialCard extends StatelessWidget {
 
   Widget _buildWide(ThemeData theme) {
     final cs = theme.colorScheme;
-    final thumbW = config.width * 0.48;
+    final thumbW = width * 0.45;
 
-    return AnimatedContainer(
-      duration: Durations.short4,
-      width: config.width,
-      height: config.height,
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest.withValues(alpha: 0.65),
-        borderRadius: BorderRadius.circular(GlobalUI.uiRoundness * 1.3),
-        border: Border.all(
-          color: config.isActive
-              ? cs.primary
-              : cs.outlineVariant.withValues(alpha: 0.3),
-          width: config.isActive ? 2.0 : 1.0,
-          strokeAlign: BorderSide.strokeAlignOutside,
+    return SizedBox(
+      width: width,
+      height: height,
+      child: Card(
+        elevation: isActive ? 6 : 1,
+        margin: EdgeInsets.zero,
+        clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(
+            color: isActive ? cs.primary : Colors.transparent,
+            width: isActive ? 2 : 0,
+          ),
         ),
-        boxShadow: config.isActive
-            ? [
-                BoxShadow(
-                  color: cs.primary.withValues(alpha: 0.15),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ]
-            : const [],
-      ),
-      padding: const EdgeInsets.all(6),
-      child: Row(
-        children: [
-          Stack(
-            children: [
-              CardThumbnail(
-                config: config,
-                width: thumbW,
-                height: config.height,
-                radiusOverride: GlobalUI.uiRoundness,
+        color: cs.surfaceContainerLow,
+        surfaceTintColor: cs.primary,
+        shadowColor: isActive ? cs.shadow : Colors.transparent,
+        child: Row(
+          children: [
+            SizedBox(
+              width: thumbW,
+              height: double.infinity,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  CardThumbnail(
+                    media: media,
+                    isActive: isActive,
+                    progress: progress,
+                    heroTag: heroTag,
+                    width: thumbW,
+                    height: height,
+                    radiusOverride: 0,
+                  ),
+                  CardBadgeOverlay(
+                    media: media,
+                    styleName: 'material',
+                    isWideMode: isWideMode,
+                    isActive: isActive,
+                    showRatings: showRatings,
+                    progress: progress,
+                    progressText: progressText,
+                    topLeftBadge: topLeftBadge,
+      topRightBadge: topRightBadge,
+      bottomLeftBadge: bottomLeftBadge,
+      bottomRightBadge: bottomRightBadge,
+                  ),
+                ],
               ),
-              CardBadgeOverlay(config: config, styleName: 'material'),
-            ],
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
-              child: WideMetadataColumn(config: config),
             ),
-          ),
-        ],
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+                child: WideMetadataColumn(
+                  media: media,
+                  showRatings: showRatings,
+                  showYear: showYear,
+                  showGenres: showGenres,
+                  subtitle: subtitle,
+                  height: height,
+                  progress: progress,
+                  progressText: progressText,
+                  topRightBadge: topRightBadge,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
+  }
+
+  String? _getSubtitle() {
+    if (subtitle != null && subtitle!.isNotEmpty) return subtitle;
+    final items = <String>[];
+    if (showYear && media.year != null) items.add(media.year.toString());
+    if (media.status != null && media.status!.isNotEmpty) {
+      items.add(media.status!);
+    }
+    if (showGenres && media.genres != null && media.genres!.isNotEmpty) {
+      items.add(media.genres!.first);
+    }
+    if (items.isEmpty) return null;
+    return items.join(' • ');
   }
 }

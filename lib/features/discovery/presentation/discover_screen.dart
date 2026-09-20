@@ -1430,14 +1430,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
             delegate: SliverChildBuilderDelegate((context, index) {
               final media = items[index];
               return MediaCard(
-                tag: 'browse-${media.id}',
-                format: media.format,
-                score: media.score,
-                status: media.status,
-                genres: media.genres,
-                year: media.season,
-                title: media.title.availableTitle,
-                imageUrl: media.cover ?? media.banner ?? '',
+              media: media,
+              tag: 'browse-${media.id}',
                 style: style,
                 onTap: () => context.pushDetails(
                   mediaType: media.type,
@@ -1486,13 +1480,16 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
         itemCount: 12,
         itemBuilder: (context, index) {
           return MediaCard(
-            tag: 'skeleton-$index',
-            title: 'Placeholder Title',
-            imageUrl: '',
+            media: UnifiedMedia(
+              id: 'skeleton-${index}',
+              type: MediaType.ANIME,
+              title: const MediaTitle(english: 'Placeholder Title'),
+              format: 'TV',
+              score: 8.5,
+              year: 2026,
+            ),
+            tag: 'skeleton-${index}',
             style: style,
-            format: 'TV',
-            score: 8.5,
-            year: '2026',
             onTap: () {},
           );
         },

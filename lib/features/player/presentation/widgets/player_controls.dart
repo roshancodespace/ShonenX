@@ -480,16 +480,10 @@ class PlayerPlayPauseButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: IconButton.filled(
-        style: IconButton.styleFrom(
-          backgroundColor: theme.colorScheme.primaryContainer.withValues(
-            alpha: 0.4,
-          ),
-          foregroundColor: theme.colorScheme.onPrimaryContainer,
-        ),
+      child: IconButton(
+        color: Colors.white,
         onPressed: onToggle,
         icon: AnimatedSwitcher(
           duration: const Duration(milliseconds: 200),
@@ -508,9 +502,9 @@ class PlayerPlayPauseButton extends StatelessWidget {
             );
           },
           child: Icon(
-            isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+            isPlaying ? Icons.pause : Icons.play_arrow,
             key: ValueKey(isPlaying),
-            size: 80,
+            size: 100,
           ),
         ),
       ),

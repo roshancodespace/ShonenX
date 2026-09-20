@@ -628,14 +628,18 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       );
     } else {
       previewCard = MediaCard(
-        title: "Frieren: Beyond Journey's End",
+        media: UnifiedMedia(
+          id: 'onboarding_preview',
+          type: isManga ? MediaType.MANGA : MediaType.ANIME,
+          title: MediaTitle(english: "Frieren: Beyond Journey's End"),
+          cover: 'https://cdn.myanimelist.net/images/anime/1015/138006.jpg',
+          format: isManga ? 'Manga' : 'TV',
+          score: 9.1,
+          year: 2023,
+          status: 'Finished',
+          genres: const ['Adventure', 'Fantasy'],
+        ),
         tag: 'onboarding_preview_card',
-        imageUrl: 'https://cdn.myanimelist.net/images/anime/1015/138006.jpg',
-        format: isManga ? 'Manga' : 'TV',
-        score: 9.1,
-        year: '2023',
-        status: 'Finished',
-        genres: const ['Adventure', 'Fantasy'],
         progress: 0.65,
         progressText: isManga ? 'Ch 45/60' : 'Ep 18/28',
         style: currentStyle,

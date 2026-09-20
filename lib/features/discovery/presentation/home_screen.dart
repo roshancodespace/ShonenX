@@ -401,26 +401,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           },
           skeletonItemBuilder: (context, index) {
             return MediaCard(
+              media: UnifiedMedia(
+                id: 'skeleton-${section.id}-$index',
+                type: MediaType.ANIME,
+                title: const MediaTitle(english: 'Placeholder Title'),
+                cover: '',
+                format: 'TV',
+                score: 8.5,
+                year: 2026,
+              ),
               tag: 'skeleton-${section.id}-$index',
-              title: 'Placeholder Media Title Name',
-              imageUrl: '',
               style: style,
-              format: 'TV',
-              score: 8.5,
-              year: '2026',
               onTap: () {},
             );
           },
           itemBuilder: (context, item) {
             return MediaCard(
+              media: item,
               tag: '${section.id}-${item.id}',
-              format: item.format,
-              score: item.score,
-              status: item.status,
-              genres: item.genres,
-              year: item.season,
-              title: item.title.availableTitle,
-              imageUrl: item.cover ?? '',
               style: style,
               onTap: () => context.pushDetails(
                 mediaType: item.type,

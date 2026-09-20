@@ -1,19 +1,17 @@
-import 'dart:convert';
-
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import 'package:shonenx/core/router/app_navigator.dart';
 import 'package:shonenx/core/utils/formatting.dart';
-import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
-import 'package:shonenx/core/utils/image_headers.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/continue/continue_media_mixin.dart';
 import 'package:shonenx/features/history/domain/models/watch_history_entry.dart';
 import 'package:shonenx/features/history/providers/continue_watching_resolver.dart';
 import 'package:shonenx/features/history/providers/watch_history_provider.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
+import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/shared/widgets/app_focus_hover.dart';
 import 'package:shonenx/source_engine/source_registry.dart';
+
 import 'continue_card_layout.dart';
 
 class ContinueWatchingItem extends ConsumerStatefulWidget {
@@ -133,8 +131,7 @@ class _ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem>
             widget.entry.positionInMilliseconds,
       ),
       badgeText: 'EP ${widget.entry.episodeNumber.toInt()}',
-      thumbnailBuilder: (context, cs) =>
-          _buildThumbnail(widget.entry.thumbnailUrl, cs),
+      imageUrl: widget.entry.thumbnailUrl,
       fallbackIcon: Icons.play_circle_outline_rounded,
       badgeType: 'WATCHING',
     );
@@ -167,48 +164,5 @@ class _ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem>
         ),
       ),
     );
-  }
-
-  Widget _buildThumbnail(String? thumbnail, ColorScheme cs) {
-    if (thumbnail == null || thumbnail.isEmpty) {
-      return Container(
-        color: cs.surfaceContainerHighest,
-        child: Icon(Icons.movie_creation_outlined, color: cs.onSurfaceVariant),
-      );
-    }
-
-    try {
-      if (thumbnail.startsWith('http')) {
-        final imageUrl = thumbnail.split('#').first;
-        final headers = decodeUrlHeaders(thumbnail);
-
-        return CachedNetworkImage(
-          imageUrl: imageUrl,
-          httpHeaders: headers.isEmpty ? null : headers,
-          fit: BoxFit.cover,
-          memCacheWidth: 600,
-          maxWidthDiskCache: 800,
-          errorWidget: (_, __, ___) => Container(
-            color: cs.surfaceContainerHighest,
-            child: Icon(Icons.broken_image_rounded, color: cs.onSurfaceVariant),
-          ),
-        );
-      }
-
-      return Image.memory(
-        base64Decode(thumbnail),
-        fit: BoxFit.cover,
-        gaplessPlayback: true,
-        errorBuilder: (_, __, ___) => Container(
-          color: cs.surfaceContainerHighest,
-          child: Icon(Icons.broken_image_rounded, color: cs.onSurfaceVariant),
-        ),
-      );
-    } catch (_) {
-      return Container(
-        color: cs.surfaceContainerHighest,
-        child: Icon(Icons.broken_image_rounded, color: cs.onSurfaceVariant),
-      );
-    }
   }
 }

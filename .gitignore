@@ -94,6 +94,7 @@ android/app/build/
 *.log
 
 *.js
+*.py
 *.zip
 *.flatpak
 *.AppImage

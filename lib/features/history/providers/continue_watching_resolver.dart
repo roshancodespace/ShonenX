@@ -8,6 +8,7 @@ import 'package:shonenx/features/player/domain/player_mode.dart';
 import 'package:shonenx/features/tracking/providers/tracking_prefs_provider.dart';
 import 'package:shonenx/shared/models/unified_episode.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
+import 'package:shonenx/source_engine/models/source_info.dart';
 import 'package:shonenx/source_engine/source_registry.dart';
 
 final continueWatchingResolverProvider = Provider(
@@ -30,13 +31,23 @@ class ContinueWatchingResolver {
       availableAnimeSourcesProvider.future,
     );
 
-    final sourceInfo =
-        (entry.sourceId != null
-            ? availableSourcesInfo.firstWhereOrNull(
-                (s) => s.id == entry.sourceId,
-              )
-            : null) ??
-        prefState.sourceInfo;
+    SourceInfo? sourceInfo;
+    if (prefState.hasExplicitSource) {
+      sourceInfo = prefState.sourceInfo;
+    } else if (entry.sourceId != null) {
+      if (entry.sourceId == prefState.sourceInfo.id) {
+        sourceInfo = prefState.sourceInfo;
+      } else {
+        sourceInfo =
+            availableSourcesInfo.firstWhereOrNull(
+              (s) => s.id == entry.sourceId && s.name == entry.sourceName,
+            ) ??
+            availableSourcesInfo.firstWhereOrNull(
+              (s) => s.id == entry.sourceId,
+            );
+      }
+    }
+    sourceInfo ??= prefState.sourceInfo;
 
     final rawOverride = prefState.matchedMediaId ?? entry.providerId;
     final overrideId = (rawOverride != null && rawOverride != entry.animeId)

@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
+
 enum MediaKitAudioChannel {
   stereo('stereo'),
   mono('mono'),
@@ -21,12 +23,12 @@ enum MediaKitAudioChannel {
 }
 
 enum MediaKitColorPreset {
-  default_('Default', 0, 0, 0, 0, 0),
-  vibrant('Vibrant', 5, 10, 30, 0, 0),
-  anime('Anime (Colorful)', 5, 5, 40, 0, 0),
-  film('Film (Cinematic)', -5, 20, -10, 10, 0),
-  cool('Cool (Bluish)', 0, 5, 10, 0, -5),
-  warm('Warm (Yellowish)', 0, 5, 10, 0, 5);
+  default_('Default', 0, 0, 0, 0, 0, 'default_'),
+  vibrant('Vibrant', 5, 10, 30, 0, 0, 'vibrant'),
+  anime('Anime (Colorful)', 5, 5, 40, 0, 0, 'anime'),
+  film('Film (Cinematic)', -5, 20, -10, 10, 0, 'film'),
+  cool('Cool (Bluish)', 0, 5, 10, 0, -5, 'cool'),
+  warm('Warm (Yellowish)', 0, 5, 10, 0, 5, 'warm');
 
   final String label;
   final int brightness;
@@ -34,6 +36,7 @@ enum MediaKitColorPreset {
   final int saturation;
   final int gamma;
   final int hue;
+  final String value;
 
   const MediaKitColorPreset(
     this.label,
@@ -42,32 +45,34 @@ enum MediaKitColorPreset {
     this.saturation,
     this.gamma,
     this.hue,
+    this.value,
   );
 
-  static MediaKitColorPreset fromString(String? value) {
-    if (value == null) return MediaKitColorPreset.default_;
+  static MediaKitColorPreset fromString(String? val) {
+    if (val == null) return MediaKitColorPreset.default_;
     return MediaKitColorPreset.values.firstWhere(
-      (e) => e.name == value,
+      (e) => e.value == val || e.name == val,
       orElse: () => MediaKitColorPreset.default_,
     );
   }
 }
 
 enum MediaKitAudioNormalizePreset {
-  none('None', ''),
-  light('Light', 'acompressor=ratio=2:makeup=2'),
-  standard('Standard', 'acompressor=ratio=4:makeup=4'),
-  heavy('Heavy', 'acompressor=ratio=8:makeup=8');
+  none('None', '', 'none'),
+  light('Light', 'acompressor=ratio=2:makeup=2', 'light'),
+  standard('Standard', 'acompressor=ratio=4:makeup=4', 'standard'),
+  heavy('Heavy', 'acompressor=ratio=8:makeup=8', 'heavy');
 
   final String label;
   final String filter;
+  final String value;
 
-  const MediaKitAudioNormalizePreset(this.label, this.filter);
+  const MediaKitAudioNormalizePreset(this.label, this.filter, this.value);
 
-  static MediaKitAudioNormalizePreset fromString(String? value) {
-    if (value == null) return MediaKitAudioNormalizePreset.none;
+  static MediaKitAudioNormalizePreset fromString(String? val) {
+    if (val == null) return MediaKitAudioNormalizePreset.none;
     return MediaKitAudioNormalizePreset.values.firstWhere(
-      (e) => e.name == value,
+      (e) => e.value == val || e.name == val,
       orElse: () => MediaKitAudioNormalizePreset.none,
     );
   }
@@ -180,34 +185,28 @@ class MediaKitPrefs {
 
   factory MediaKitPrefs.fromMap(Map<String, dynamic> map) {
     String defaultHwdec = 'auto-copy';
-    try {
-      if (Platform.isAndroid || Platform.isIOS) defaultHwdec = 'auto-safe';
-    } catch (_) {}
+    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+      defaultHwdec = 'auto-safe';
+    }
 
     return MediaKitPrefs(
-      enableHardwareAcceleration: map['enableHardwareAcceleration'] ?? true,
-      hwdec: map['hwdec'] ?? defaultHwdec,
-      vo: map['vo'] ?? 'auto',
-      enableLowLatency: map['enableLowLatency'] ?? false,
-      minBuffer: Duration(milliseconds: map['minBufferMs'] ?? 5000),
-      maxBuffer: Duration(milliseconds: map['maxBufferMs'] ?? 30000),
+      enableHardwareAcceleration: map['enableHardwareAcceleration'] as bool? ?? true,
+      hwdec: map['hwdec'] as String? ?? defaultHwdec,
+      vo: map['vo'] as String? ?? 'auto',
+      enableLowLatency: map['enableLowLatency'] as bool? ?? false,
+      minBuffer: Duration(milliseconds: map['minBufferMs'] as int? ?? 5000),
+      maxBuffer: Duration(milliseconds: map['maxBufferMs'] as int? ?? 30000),
       audioChannel: MediaKitAudioChannel.fromString(
         map['audioChannel'] as String?,
       ),
-      boostVolume: map['boostVolume'] ?? false,
-      audioNormalizePreset:
-          MediaKitAudioNormalizePreset.fromString(
-                map['audioNormalizePreset'] as String?,
-              ) ==
-              MediaKitAudioNormalizePreset.none
-          ? MediaKitAudioNormalizePreset.none
-          : MediaKitAudioNormalizePreset.fromString(
-              map['audioNormalizePreset'] as String?,
-            ),
+      boostVolume: map['boostVolume'] as bool? ?? false,
+      audioNormalizePreset: MediaKitAudioNormalizePreset.fromString(
+        map['audioNormalizePreset'] as String?,
+      ),
       colorPreset: MediaKitColorPreset.fromString(
         map['colorPreset'] as String?,
       ),
-      rawConfiguration: map['rawConfiguration'] ?? '',
+      rawConfiguration: map['rawConfiguration'] as String? ?? '',
     );
   }
 
@@ -221,8 +220,8 @@ class MediaKitPrefs {
       'maxBufferMs': maxBuffer.inMilliseconds,
       'audioChannel': audioChannel.value,
       'boostVolume': boostVolume,
-      'audioNormalizePreset': audioNormalizePreset.name,
-      'colorPreset': colorPreset.name,
+      'audioNormalizePreset': audioNormalizePreset.value,
+      'colorPreset': colorPreset.value,
       'rawConfiguration': rawConfiguration,
     };
   }

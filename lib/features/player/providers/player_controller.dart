@@ -140,7 +140,7 @@ class PlayerController extends Notifier<PlayerState> {
       _isDisposed = true;
       _endingSkipCooldownTimer?.cancel();
       _progressTracker.cancel();
-      TorrentStreamResolver.dispose();
+      unawaited(TorrentStreamResolver.dispose());
     });
 
     // Re-apply native subtitle when the "use custom subtitle" pref toggles
@@ -409,7 +409,7 @@ class PlayerController extends Notifier<PlayerState> {
         for (final sub in stream.subtitles) {
           if (!activeServerSeenUrls.contains(sub.url) && sub.url.isNotEmpty) {
             activeServerSeenUrls.add(sub.url);
-            labelledSubtitles.add(sub.copyWith(label: activeServer.name));
+            labelledSubtitles.add(sub.copyWith(label: stream.quality));
           }
         }
       }
@@ -479,12 +479,11 @@ class PlayerController extends Notifier<PlayerState> {
     final Set<String> seenUrls = newSubtitles.map((e) => e.url).toSet();
 
     for (int i = 0; i < otherServers.length; i++) {
-      final server = otherServers[i];
       for (final stream in streamsList[i]) {
         for (final sub in stream.subtitles) {
           if (!seenUrls.contains(sub.url) && sub.url.isNotEmpty) {
             seenUrls.add(sub.url);
-            newSubtitles.add(sub.copyWith(label: server.name));
+            newSubtitles.add(sub.copyWith(label: stream.quality));
           }
         }
       }

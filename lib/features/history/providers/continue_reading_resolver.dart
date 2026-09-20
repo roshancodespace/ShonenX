@@ -6,6 +6,7 @@ import 'package:shonenx/features/discovery/providers/media_preference_provider.d
 import 'package:shonenx/features/history/domain/models/read_history_entry.dart';
 import 'package:shonenx/features/reader/domain/reader_mode.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
+import 'package:shonenx/source_engine/models/source_info.dart';
 import 'package:shonenx/source_engine/source_registry.dart';
 
 final continueReadingResolverProvider = Provider(
@@ -28,13 +29,23 @@ class ContinueReadingResolver {
       availableMangaSourcesProvider.future,
     );
 
-    final sourceInfo =
-        (entry.sourceId != null
-            ? availableSourcesInfo.firstWhereOrNull(
-                (s) => s.id == entry.sourceId,
-              )
-            : null) ??
-        prefState.sourceInfo;
+    SourceInfo? sourceInfo;
+    if (prefState.hasExplicitSource) {
+      sourceInfo = prefState.sourceInfo;
+    } else if (entry.sourceId != null) {
+      if (entry.sourceId == prefState.sourceInfo.id) {
+        sourceInfo = prefState.sourceInfo;
+      } else {
+        sourceInfo =
+            availableSourcesInfo.firstWhereOrNull(
+              (s) => s.id == entry.sourceId && s.name == entry.sourceName,
+            ) ??
+            availableSourcesInfo.firstWhereOrNull(
+              (s) => s.id == entry.sourceId,
+            );
+      }
+    }
+    sourceInfo ??= prefState.sourceInfo;
 
     final rawOverride = prefState.matchedMediaId ?? entry.providerId;
     final overrideId = (rawOverride != null && rawOverride != entry.mangaId)

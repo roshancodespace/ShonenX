@@ -105,7 +105,7 @@ enum MediaCardStyle {
   compact(
     'Compact',
     LayoutVariants(
-      normal: ComponentLayout(width: 200, height: 80),
+      normal: ComponentLayout(width: 110, height: 160),
       wide: ComponentLayout(width: 320, height: 95),
       wideContinue: ComponentLayout(width: 340, height: 100),
       continueWatching: ComponentLayout(width: 280, height: 90),
@@ -192,7 +192,9 @@ enum NavBarStyle {
   classic('Classic'),
   minimal('Minimal'),
   frosted('Frosted Glass'),
-  material('Material You');
+  material('Material You'),
+  docked('Docked'),
+  bubble('Bubble');
 
   final String displayName;
   const NavBarStyle(this.displayName);

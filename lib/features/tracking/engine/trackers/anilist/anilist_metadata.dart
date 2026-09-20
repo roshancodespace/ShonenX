@@ -550,7 +550,7 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
             (json['coverImage'] as Map?)?['large'] ??
             (json['coverImage'] as Map?)?['medium'],
         banner: json['bannerImage'],
-        description: json['description'],
+        description: _cleanBio(json['description']?.toString()),
         status: status,
         episodes: json['episodes'],
         chapters: json['chapters'],
@@ -698,6 +698,8 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
       },
     );
   }
+
+  String? cleanBio(String? text) => _cleanBio(text);
 
   String? _cleanBio(String? text) {
     if (text == null || text.trim().isEmpty) return null;

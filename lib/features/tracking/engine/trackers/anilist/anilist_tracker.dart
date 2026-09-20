@@ -359,7 +359,7 @@ class AnilistTracker extends BaseTracker
               ..format = media['format']?.toString() ?? ''
               ..cover = media['coverImage']?['large'] ?? ''
               ..banner = media['bannerImage']?.toString()
-              ..description = media['description']?.toString()
+              ..description = cleanBio(media['description']?.toString())
               ..genres = genres
               ..year = media['seasonYear'] as int?
               ..status = _parseAnilistStatus(media['status']).id

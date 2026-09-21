@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shonenx/features/auth/providers/auth_provider.dart';
+import 'package:shonenx/features/tracking/providers/tracker_auth_provider.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_auth_mode.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';

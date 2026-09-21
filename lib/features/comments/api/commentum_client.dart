@@ -1,7 +1,7 @@
 import 'package:commentum_client/commentum_client.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shonenx/core/commentum/commentum_storage.dart';
+import 'package:shonenx/features/comments/api/commentum_storage.dart';
 import 'package:shonenx/core/utils/env.dart';
 
 final commentumClientProvider = Provider<CommentumClient>((ref) {

@@ -5,10 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import 'package:shonenx/core/updates/models/github_release.dart';
-import 'package:shonenx/core/updates/ui/android_update_widget.dart';
-import 'package:shonenx/core/updates/ui/linux_update_widget.dart';
-import 'package:shonenx/core/updates/ui/windows_update_widget.dart';
+import 'package:shonenx/features/updates/models/github_release.dart';
+import 'package:shonenx/features/updates/ui/android_update_widget.dart';
+import 'package:shonenx/features/updates/ui/linux_update_widget.dart';
+import 'package:shonenx/features/updates/ui/windows_update_widget.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 
 class UpdateUI {

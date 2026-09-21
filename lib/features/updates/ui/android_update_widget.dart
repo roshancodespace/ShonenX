@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:shonenx/core/updates/models/github_release.dart';
+import 'package:shonenx/features/updates/models/github_release.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 
 class AndroidUpdateWidget extends StatefulWidget {

@@ -7,7 +7,7 @@ import 'package:shonenx/core/router/complex_extra_codec.dart';
 import 'package:shonenx/core/router/scaffold_with_nav_bar.dart';
 import 'package:shonenx/features/discovery/domain/models/search_filter_options.dart';
 import 'package:shonenx/features/discovery/presentation/details_screen.dart';
-import 'package:shonenx/features/onboarding/presentation/onboarding_screen.dart';
+import 'package:shonenx/features/onboarding/onboarding_screen.dart';
 import 'package:shonenx/features/discovery/presentation/home_screen.dart';
 import 'package:shonenx/features/settings/presentation/discord_settings_screen.dart';
 import 'package:shonenx/features/splash/presentation/splash_screen.dart';

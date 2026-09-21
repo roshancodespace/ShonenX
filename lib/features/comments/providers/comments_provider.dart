@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:commentum_client/commentum_client.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shonenx/core/commentum/commentum_client.dart';
+import 'package:shonenx/features/comments/api/commentum_client.dart';
 
 class CommentsArgs {
   final String mediaId;

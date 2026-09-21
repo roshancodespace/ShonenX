@@ -7,12 +7,12 @@ import 'package:shonenx/features/episode_metadata/domain/models/episode_metadata
 import 'package:shonenx/features/episode_metadata/services/title_matcher.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 
-class KitsuEpisodeMetadataProvider implements EpisodeMetadataProvider {
+class KitsuEpisodeMetadataClient implements EpisodeMetadataProvider {
   final HTTP _http;
   final _log = AppLogger.scope('EpisodeMetadata.Kitsu');
   static const _cacheDuration = Duration(days: 30);
 
-  KitsuEpisodeMetadataProvider({HTTP? http}) : _http = http ?? HTTP();
+  KitsuEpisodeMetadataClient({HTTP? http}) : _http = http ?? HTTP();
 
   @override
   String get id => 'kitsu';

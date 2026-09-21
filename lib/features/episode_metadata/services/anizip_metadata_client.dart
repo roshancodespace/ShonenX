@@ -7,13 +7,13 @@ import 'package:shonenx/features/episode_metadata/domain/models/episode_metadata
 import 'package:shonenx/features/episode_metadata/services/title_matcher.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 
-class AniZipEpisodeMetadataProvider implements EpisodeMetadataProvider {
+class AniZipEpisodeMetadataClient implements EpisodeMetadataProvider {
   final HTTP _http;
   final _log = AppLogger.scope('EpisodeMetadata.AniZip');
   static const _cacheDuration = Duration(days: 30);
   static const _aniListEndpoint = 'https://graphql.anilist.co';
 
-  AniZipEpisodeMetadataProvider({HTTP? http}) : _http = http ?? HTTP();
+  AniZipEpisodeMetadataClient({HTTP? http}) : _http = http ?? HTTP();
 
   @override
   String get id => 'anizip';

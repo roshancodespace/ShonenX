@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:shonenx/core/updates/models/github_release.dart';
+import 'package:shonenx/features/updates/models/github_release.dart';
 import 'package:shonenx/core/utils/env.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 

@@ -2,33 +2,33 @@ import 'dart:async';
 
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/episode_metadata/domain/models/episode_metadata.dart';
-import 'package:shonenx/features/episode_metadata/services/anizip_metadata_provider.dart';
-import 'package:shonenx/features/episode_metadata/services/jikan_metadata_provider.dart';
-import 'package:shonenx/features/episode_metadata/services/kitsu_metadata_provider.dart';
-import 'package:shonenx/features/episode_metadata/services/tenrai_metadata_provider.dart';
+import 'package:shonenx/features/episode_metadata/services/anizip_metadata_client.dart';
+import 'package:shonenx/features/episode_metadata/services/jikan_metadata_client.dart';
+import 'package:shonenx/features/episode_metadata/services/kitsu_metadata_client.dart';
+import 'package:shonenx/features/episode_metadata/services/tenrai_metadata_client.dart';
 import 'package:shonenx/shared/models/unified_episode.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/providers/content_prefs_provider.dart';
 
 class EpisodeMetadataService {
-  final AniZipEpisodeMetadataProvider _anizip;
-  final TenraiEpisodeMetadataProvider _tenrai;
-  final KitsuEpisodeMetadataProvider _kitsu;
-  final JikanEpisodeMetadataProvider _jikan;
+  final AniZipEpisodeMetadataClient _anizip;
+  final TenraiEpisodeMetadataClient _tenrai;
+  final KitsuEpisodeMetadataClient _kitsu;
+  final JikanEpisodeMetadataClient _jikan;
   final _log = AppLogger.scope('EpisodeMetadata');
   final _progressController = StreamController<String>.broadcast();
 
   Stream<String> get progressStream => _progressController.stream;
 
   EpisodeMetadataService({
-    AniZipEpisodeMetadataProvider? anizip,
-    TenraiEpisodeMetadataProvider? tenrai,
-    KitsuEpisodeMetadataProvider? kitsu,
-    JikanEpisodeMetadataProvider? jikan,
-  }) : _anizip = anizip ?? AniZipEpisodeMetadataProvider(),
-       _tenrai = tenrai ?? TenraiEpisodeMetadataProvider(),
-       _kitsu = kitsu ?? KitsuEpisodeMetadataProvider(),
-       _jikan = jikan ?? JikanEpisodeMetadataProvider();
+    AniZipEpisodeMetadataClient? anizip,
+    TenraiEpisodeMetadataClient? tenrai,
+    KitsuEpisodeMetadataClient? kitsu,
+    JikanEpisodeMetadataClient? jikan,
+  }) : _anizip = anizip ?? AniZipEpisodeMetadataClient(),
+       _tenrai = tenrai ?? TenraiEpisodeMetadataClient(),
+       _kitsu = kitsu ?? KitsuEpisodeMetadataClient(),
+       _jikan = jikan ?? JikanEpisodeMetadataClient();
 
   void _notify(String msg) {
     if (!_progressController.isClosed) {

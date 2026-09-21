@@ -1,10 +1,10 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shonenx/core/updates/models/github_release.dart';
-import 'package:shonenx/core/updates/services/update_service.dart';
-import 'package:shonenx/core/updates/ui/linux_update_widget.dart';
-import 'package:shonenx/core/updates/ui/update_ui.dart';
+import 'package:shonenx/features/updates/models/github_release.dart';
+import 'package:shonenx/features/updates/services/update_service.dart';
+import 'package:shonenx/features/updates/ui/linux_update_widget.dart';
+import 'package:shonenx/features/updates/ui/update_ui.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
 

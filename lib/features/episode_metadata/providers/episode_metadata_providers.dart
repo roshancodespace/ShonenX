@@ -1,29 +1,29 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/network/http_client.dart';
-import 'package:shonenx/features/episode_metadata/services/anizip_metadata_provider.dart';
+import 'package:shonenx/features/episode_metadata/services/anizip_metadata_client.dart';
 import 'package:shonenx/features/episode_metadata/services/episode_metadata_service.dart';
-import 'package:shonenx/features/episode_metadata/services/jikan_metadata_provider.dart';
-import 'package:shonenx/features/episode_metadata/services/kitsu_metadata_provider.dart';
-import 'package:shonenx/features/episode_metadata/services/tenrai_metadata_provider.dart';
+import 'package:shonenx/features/episode_metadata/services/jikan_metadata_client.dart';
+import 'package:shonenx/features/episode_metadata/services/kitsu_metadata_client.dart';
+import 'package:shonenx/features/episode_metadata/services/tenrai_metadata_client.dart';
 
-final anizipMetadataProvider = Provider<AniZipEpisodeMetadataProvider>((ref) {
+final anizipMetadataProvider = Provider<AniZipEpisodeMetadataClient>((ref) {
   final http = ref.watch(httpClientProvider);
-  return AniZipEpisodeMetadataProvider(http: http);
+  return AniZipEpisodeMetadataClient(http: http);
 });
 
-final tenraiMetadataProvider = Provider<TenraiEpisodeMetadataProvider>((ref) {
+final tenraiMetadataProvider = Provider<TenraiEpisodeMetadataClient>((ref) {
   final http = ref.watch(httpClientProvider);
-  return TenraiEpisodeMetadataProvider(http: http);
+  return TenraiEpisodeMetadataClient(http: http);
 });
 
-final kitsuMetadataProvider = Provider<KitsuEpisodeMetadataProvider>((ref) {
+final kitsuMetadataProvider = Provider<KitsuEpisodeMetadataClient>((ref) {
   final http = ref.watch(httpClientProvider);
-  return KitsuEpisodeMetadataProvider(http: http);
+  return KitsuEpisodeMetadataClient(http: http);
 });
 
-final jikanMetadataProvider = Provider<JikanEpisodeMetadataProvider>((ref) {
+final jikanMetadataProvider = Provider<JikanEpisodeMetadataClient>((ref) {
   final http = ref.watch(httpClientProvider);
-  return JikanEpisodeMetadataProvider(http: http);
+  return JikanEpisodeMetadataClient(http: http);
 });
 
 final episodeMetadataServiceProvider = Provider<EpisodeMetadataService>((ref) {

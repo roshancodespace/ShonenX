@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/router/app_navigator.dart';
 import 'package:shonenx/app_init.dart';
-import 'package:shonenx/features/onboarding/providers/onboarding_provider.dart';
+import 'package:shonenx/features/onboarding/onboarding_provider.dart';
 import 'package:shonenx/features/splash/presentation/splash_quotes.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
 import 'package:shonenx/shared/widgets/svg_icon.dart';

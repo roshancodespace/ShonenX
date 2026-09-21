@@ -232,7 +232,9 @@ final updateServiceProvider = Provider<UpdateService>((ref) {
   return UpdateService(ref);
 });
 
-final releasesListProvider = FutureProvider<List<GitHubRelease>>((ref) async {
+final releasesListProvider = FutureProvider.autoDispose<List<GitHubRelease>>((
+  ref,
+) async {
   final service = ref.watch(updateServiceProvider);
   return service.fetchAllReleases();
 });

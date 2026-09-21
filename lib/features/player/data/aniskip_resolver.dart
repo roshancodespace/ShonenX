@@ -6,7 +6,7 @@ import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
 import 'package:shonenx/features/tracking/providers/tracker_link_provider.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 
-final aniSkipResolverProvider = Provider<AniSkipResolver>((ref) {
+final aniSkipResolverProvider = Provider.autoDispose<AniSkipResolver>((ref) {
   return AniSkipResolver(ref);
 });
 

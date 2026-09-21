@@ -122,6 +122,6 @@ class OneDMService {
   }
 }
 
-final isOneDMInstalledProvider = FutureProvider<bool>((ref) async {
+final isOneDMInstalledProvider = FutureProvider.autoDispose<bool>((ref) async {
   return await OneDMService.instance.isOneDMAvailable();
 });

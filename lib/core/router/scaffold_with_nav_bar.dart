@@ -341,7 +341,6 @@ class _BottomNavBar extends ConsumerWidget {
     );
 
     final isDocked = navBarStyle == NavBarStyle.docked;
-    final isBubble = navBarStyle == NavBarStyle.bubble;
 
     final bottomMargin = isDocked ? 0.0 : r.height * 0.018;
 
@@ -376,15 +375,17 @@ class _BottomNavBar extends ConsumerWidget {
           uiScale;
       final iconSize = (r.isPhone ? 25.0 : 28.0) * uiScale;
       final fontSize = r.isPhone ? 14.5 : 16.0;
-      final hPad = isBubble ? 12.0 : (r.isPhone ? 6.0 : 10.5) * uiScale;
+      final hPad = (r.isPhone ? 6.0 : 10.5) * uiScale;
+
+      final vPad = hPad;
 
       final themeData = NavBarThemeData.resolve(navBarStyle, cs, false, false);
       final barRadius = themeData.barRadius(barHeight);
-      final activeItemRadius = themeData.itemRadius(barHeight - 2 * hPad);
+      final activeItemRadius = themeData.itemRadius(barHeight - 2 * vPad);
 
       final contentWidget = Container(
         height: barHeight,
-        padding: EdgeInsets.all(hPad),
+        padding: EdgeInsets.symmetric(horizontal: hPad, vertical: vPad),
         decoration: themeData.barDecoration.copyWith(
           borderRadius: BorderRadius.circular(barRadius),
         ),
@@ -556,13 +557,6 @@ class _BottomNavBar extends ConsumerWidget {
           ),
         );
 
-        if (navBarStyle == NavBarStyle.bubble) {
-          item = Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4.0),
-            child: item,
-          );
-        }
-
         return item;
       }),
     );
@@ -717,7 +711,6 @@ class _SideNavBar extends ConsumerWidget {
     final navBarStyle = uiPrefs.navBarStyle;
 
     final isDocked = navBarStyle == NavBarStyle.docked;
-    final isBubble = navBarStyle == NavBarStyle.bubble;
 
     if (isDocked) {
       return SafeArea(
@@ -806,15 +799,13 @@ class _SideNavBar extends ConsumerWidget {
     );
     final hPad = isDocked
         ? 0.0
-        : (isBubble
-              ? 12.0
-              : h.pick(
-                  spacious: 12.0,
-                  normal: 10.0,
-                  compact: 8.0,
-                  tight: 6.0,
-                  cramped: 4.0,
-                ));
+        : h.pick(
+            spacious: 12.0,
+            normal: 10.0,
+            compact: 8.0,
+            tight: 6.0,
+            cramped: 4.0,
+          );
     final vOuterPad = isDocked
         ? 0.0
         : h.pick(

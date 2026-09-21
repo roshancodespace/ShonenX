@@ -193,8 +193,7 @@ enum NavBarStyle {
   minimal('Minimal'),
   frosted('Frosted Glass'),
   material('Material You'),
-  docked('Docked'),
-  bubble('Bubble');
+  docked('Docked');
 
   final String displayName;
   const NavBarStyle(this.displayName);

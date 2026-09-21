@@ -1,3 +1,5 @@
+import 'dart:ui';
+import 'package:shonenx/core/router/nav_bar_theme.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -545,105 +547,7 @@ void showNavBarStyleSheet(
               Center(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 12),
-                  child: Builder(
-                    builder: (context) {
-                      const double barHeight = 52.0;
-                      const double hPad = 6.0;
-                      final barRadius =
-                          (current == NavBarStyle.material ||
-                              current == NavBarStyle.minimal)
-                          ? barHeight / 2
-                          : 12.0;
-
-                      return ClipRRect(
-                        borderRadius: BorderRadius.circular(barRadius),
-                        child: Container(
-                          height: barHeight,
-                          padding: const EdgeInsets.all(hPad),
-                          decoration: switch (current) {
-                            NavBarStyle.classic => BoxDecoration(
-                              color: cs.surface.withValues(alpha: 0.75),
-                              borderRadius: BorderRadius.circular(barRadius),
-                              border: Border.all(
-                                color: cs.outlineVariant.withValues(
-                                  alpha: 0.45,
-                                ),
-                              ),
-                            ),
-                            NavBarStyle.minimal => BoxDecoration(
-                              color: cs.surface.withValues(alpha: 0.95),
-                              borderRadius: BorderRadius.circular(barRadius),
-                              border: Border.all(
-                                color: cs.outlineVariant.withValues(alpha: 0.2),
-                                width: 0.8,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.08),
-                                  blurRadius: 16,
-                                  spreadRadius: 0.5,
-                                ),
-                              ],
-                            ),
-                            NavBarStyle.frosted => BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.08),
-                              borderRadius: BorderRadius.circular(barRadius),
-                              border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.15),
-                                width: 0.8,
-                              ),
-                            ),
-                            NavBarStyle.material => BoxDecoration(
-                              color: cs.surfaceContainerLow,
-                              borderRadius: BorderRadius.circular(barRadius),
-                            ),
-                            NavBarStyle.docked => BoxDecoration(
-                              color: cs.surfaceContainer,
-                              border: Border(
-                                top: BorderSide(
-                                  color: cs.outlineVariant.withValues(
-                                    alpha: 0.3,
-                                  ),
-                                  width: 1.0,
-                                ),
-                              ),
-                            ),
-                            NavBarStyle.bubble => const BoxDecoration(
-                              color: Colors.transparent,
-                            ),
-                          },
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              _buildPreviewItem(
-                                'Home',
-                                Icons.home_outlined,
-                                true,
-                                cs,
-                                current,
-                              ),
-                              const SizedBox(width: 8),
-                              _buildPreviewItem(
-                                'Search',
-                                Icons.search_rounded,
-                                false,
-                                cs,
-                                current,
-                              ),
-                              const SizedBox(width: 8),
-                              _buildPreviewItem(
-                                'Library',
-                                Icons.library_books_outlined,
-                                false,
-                                cs,
-                                current,
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
+                  child: _buildNavBarPreviewWidget(context, current, cs),
                 ),
               ),
               const SizedBox(height: 14),
@@ -692,112 +596,174 @@ void showNavBarStyleSheet(
   );
 }
 
-Widget _buildPreviewItem(
-  String label,
-  IconData icon,
-  bool active,
-  ColorScheme cs,
+Widget _buildNavBarPreviewWidget(
+  BuildContext context,
   NavBarStyle style,
+  ColorScheme cs,
 ) {
-  final activeIconColor = switch (style) {
-    NavBarStyle.material => cs.onSecondaryContainer,
-    NavBarStyle.frosted => Colors.white,
-    NavBarStyle.minimal => cs.primary,
-    _ => cs.onPrimary,
-  };
-
-  final inactiveIconColor = switch (style) {
-    NavBarStyle.frosted => Colors.white54,
-    NavBarStyle.minimal => cs.onSurfaceVariant.withValues(alpha: 0.5),
-    _ => cs.onSurfaceVariant,
-  };
-
-  final activeTextColor = switch (style) {
-    NavBarStyle.material => cs.onSecondaryContainer,
-    NavBarStyle.frosted => Colors.white,
-    NavBarStyle.minimal => cs.primary,
-    _ => cs.onPrimary,
-  };
-
-  final itemDecoration = switch (style) {
-    NavBarStyle.classic => BoxDecoration(
-      color: active ? cs.primary : Colors.transparent,
-      borderRadius: BorderRadius.circular(8),
-    ),
-    NavBarStyle.minimal => const BoxDecoration(color: Colors.transparent),
-    NavBarStyle.frosted => BoxDecoration(
-      color: active ? Colors.white.withValues(alpha: 0.12) : Colors.transparent,
-      borderRadius: BorderRadius.circular(8),
-      border: active
-          ? Border.all(color: Colors.white.withValues(alpha: 0.1), width: 0.5)
-          : null,
-    ),
-    NavBarStyle.material => BoxDecoration(
-      color: active ? cs.secondaryContainer : Colors.transparent,
-      borderRadius: BorderRadius.circular(20),
-    ),
-    NavBarStyle.docked => BoxDecoration(
-      color: active ? cs.primaryContainer : Colors.transparent,
-      borderRadius: BorderRadius.circular(8),
-    ),
-    NavBarStyle.bubble => BoxDecoration(
-      color: active ? cs.primaryContainer : cs.surface.withValues(alpha: 0.75),
-      borderRadius: BorderRadius.circular(20),
-      boxShadow: active
-          ? [
-              BoxShadow(
-                color: cs.primary.withValues(alpha: 0.2),
-                blurRadius: 4,
-                spreadRadius: 0,
-              ),
-            ]
-          : null,
-      border: !active
-          ? Border.all(color: cs.outlineVariant.withValues(alpha: 0.3))
-          : null,
-    ),
-  };
-
-  return Container(
-    padding: const EdgeInsets.symmetric(horizontal: 10),
-    decoration: itemDecoration,
-    child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              color: active ? activeIconColor : inactiveIconColor,
-              size: 18,
-            ),
-            if (active) ...[
-              const SizedBox(width: 4),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: activeTextColor,
-                ),
-              ),
-            ],
-          ],
-        ),
-        if (style == NavBarStyle.minimal && active) ...[
-          const SizedBox(height: 2),
-          Container(
-            width: 4,
-            height: 4,
-            decoration: BoxDecoration(
-              color: cs.primary,
-              shape: BoxShape.circle,
-            ),
+  if (style == NavBarStyle.docked) {
+    return SizedBox(
+      width: MediaQuery.sizeOf(context).width,
+      child: NavigationBar(
+        height: 72.0,
+        selectedIndex: 0,
+        onDestinationSelected: (_) {},
+        backgroundColor: cs.surfaceContainer,
+        indicatorColor: cs.primaryContainer,
+        destinations: const [
+          NavigationDestination(icon: Icon(Icons.home_outlined), label: 'Home'),
+          NavigationDestination(
+            icon: Icon(Icons.search_rounded),
+            label: 'Search',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.library_books_outlined),
+            label: 'Library',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.download_outlined),
+            label: 'Downloads',
           ),
         ],
+      ),
+    );
+  }
+
+  final double barHeight = style == NavBarStyle.minimal ? 54.0 : 68.0;
+  final double iconSize = 25.0;
+  final double fontSize = 14.5;
+  final double hPad = 6.0;
+  final double vPad = hPad;
+
+  final themeData = NavBarThemeData.resolve(style, cs, false, false);
+  final barRadius = themeData.barRadius(barHeight);
+  final activeItemRadius = themeData.itemRadius(barHeight - 2 * vPad);
+
+  Widget buildPreviewNavItem(String label, IconData icon, bool active) {
+    final tData = NavBarThemeData.resolve(style, cs, active, false);
+    Widget item = Container(
+      height: double.maxFinite,
+      padding: EdgeInsets.symmetric(horizontal: active ? 18 : 14),
+      decoration:
+          (active ? tData.activeItemDecoration : tData.inactiveItemDecoration)
+              .copyWith(borderRadius: BorderRadius.circular(activeItemRadius)),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Transform.scale(
+                scale: active ? tData.activeScale : 1.0,
+                child: Opacity(
+                  opacity: active ? 1.0 : 0.55,
+                  child: Icon(
+                    icon,
+                    color: active
+                        ? tData.activeIconColor
+                        : tData.inactiveIconColor,
+                    size: iconSize,
+                  ),
+                ),
+              ),
+              if (active)
+                Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: fontSize,
+                      fontWeight: tData.isMaterial3
+                          ? FontWeight.w500
+                          : FontWeight.w600,
+                      color: tData.activeTextColor,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          if (tData.showDotIndicator && active) ...[
+            const SizedBox(height: 3),
+            Container(
+              width: 5,
+              height: 5,
+              decoration: BoxDecoration(
+                color: tData.activeIconColor,
+                shape: BoxShape.circle,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+
+    return item;
+  }
+
+  final contentWidget = Container(
+    height: barHeight,
+    padding: EdgeInsets.symmetric(horizontal: hPad, vertical: vPad),
+    decoration: themeData.barDecoration.copyWith(
+      borderRadius: BorderRadius.circular(barRadius),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.start,
+      children: [
+        buildPreviewNavItem('Home', Icons.home_outlined, true),
+        buildPreviewNavItem('Search', Icons.search_rounded, false),
+        buildPreviewNavItem('Library', Icons.library_books_outlined, false),
       ],
     ),
+  );
+
+  final innerContent = themeData.blurSigma != null
+      ? BackdropFilter(
+          filter: ImageFilter.blur(
+            sigmaX: themeData.blurSigma!,
+            sigmaY: themeData.blurSigma!,
+          ),
+          child: contentWidget,
+        )
+      : contentWidget;
+
+  final downloadTheme = NavBarThemeData.resolve(style, cs, false, false);
+  final downloadBtn = Container(
+    width: barHeight,
+    height: barHeight,
+    decoration: downloadTheme.downloadButtonDecoration,
+    child: Center(
+      child: Icon(
+        Icons.download_outlined,
+        color: downloadTheme.downloadIconColor,
+        size: iconSize,
+      ),
+    ),
+  );
+
+  final downloadWidget = ClipRRect(
+    borderRadius: BorderRadius.circular(downloadTheme.barRadius(barHeight)),
+    child: downloadTheme.blurSigma != null
+        ? BackdropFilter(
+            filter: ImageFilter.blur(
+              sigmaX: downloadTheme.blurSigma!,
+              sigmaY: downloadTheme.blurSigma!,
+            ),
+            child: downloadBtn,
+          )
+        : downloadBtn,
+  );
+
+  return Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      ClipRRect(
+        borderRadius: BorderRadius.circular(barRadius),
+        child: innerContent,
+      ),
+      SizedBox(width: hPad + 4),
+      downloadWidget,
+    ],
   );
 }
 
@@ -1406,7 +1372,6 @@ String _navBarStyleDesc(NavBarStyle style) => switch (style) {
   NavBarStyle.material =>
     'Material You rounded capsules with navigation indicators',
   NavBarStyle.docked => 'Solid edge-to-edge layout connected to screen bottom',
-  NavBarStyle.bubble => 'Segmented floating translucent islands',
 };
 
 IconData _navBarStyleIcon(NavBarStyle style) => switch (style) {
@@ -1415,7 +1380,6 @@ IconData _navBarStyleIcon(NavBarStyle style) => switch (style) {
   NavBarStyle.frosted => Icons.blur_on_rounded,
   NavBarStyle.material => Icons.android_rounded,
   NavBarStyle.docked => Icons.dock_outlined,
-  NavBarStyle.bubble => Icons.bubble_chart_outlined,
 };
 
 void showSheetPhysicsSheet(BuildContext context, WidgetRef ref) {

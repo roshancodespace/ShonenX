@@ -61,8 +61,6 @@ class NavBarThemeData {
         return _material(cs, isActiveItem, isDownloadActive);
       case NavBarStyle.docked:
         return _docked(cs, isActiveItem, isDownloadActive);
-      case NavBarStyle.bubble:
-        return _bubble(cs, isActiveItem, isDownloadActive);
       case NavBarStyle.classic:
         return _classic(cs, isActiveItem, isDownloadActive);
     }
@@ -100,63 +98,6 @@ class NavBarThemeData {
       downloadIconColor: isDownloadActive
           ? cs.onPrimaryContainer
           : cs.onSurfaceVariant,
-    );
-  }
-
-  static NavBarThemeData _bubble(
-    ColorScheme cs,
-    bool isActiveItem,
-    bool isDownloadActive,
-  ) {
-    return NavBarThemeData(
-      blurSigma: null, // Outer container is completely transparent
-      barRadius: (size) => size / 2, // Ensure download button gets pill shape!
-      itemRadius: (size) => size / 2, // Perfect pill items
-      barDecoration: const BoxDecoration(
-        color: Colors.transparent, // Completely invisible outer container
-      ),
-      activeIconColor: cs.onPrimaryContainer,
-      inactiveIconColor: cs.onSurface,
-      activeTextColor: cs.onPrimaryContainer,
-      activeItemDecoration: BoxDecoration(
-        color: cs.primaryContainer.withValues(alpha: 0.95),
-        boxShadow: [
-          BoxShadow(
-            color: cs.primary.withValues(alpha: 0.2),
-            blurRadius: 12,
-            spreadRadius: 1,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      inactiveItemDecoration: BoxDecoration(
-        color: cs.surface.withValues(alpha: 0.75),
-        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.3)),
-      ),
-      activeScale: 1.15,
-      downloadButtonDecoration: BoxDecoration(
-        color: isDownloadActive
-            ? cs.primaryContainer.withValues(alpha: 0.95)
-            : cs.surface.withValues(alpha: 0.75),
-        border: Border.all(
-          color: isDownloadActive
-              ? Colors.transparent
-              : cs.outlineVariant.withValues(alpha: 0.3),
-        ),
-        boxShadow: isDownloadActive
-            ? [
-                BoxShadow(
-                  color: cs.primary.withValues(alpha: 0.2),
-                  blurRadius: 12,
-                  spreadRadius: 1,
-                  offset: const Offset(0, 4),
-                ),
-              ]
-            : null,
-      ),
-      downloadIconColor: isDownloadActive
-          ? cs.onPrimaryContainer
-          : cs.onSurface,
     );
   }
 

@@ -128,6 +128,7 @@ jobs:
         run: |
           git submodule update --init packages/anymex_extension_bridge
           git submodule update --init packages/commentum_client
+          git submodule update --init packages/byte_me_ecosystem
 
       - name: Override pubspec.yaml version
         if: github.event_name == 'workflow_dispatch'
@@ -225,6 +226,7 @@ jobs:
         run: |
           git submodule update --init packages/anymex_extension_bridge
           git submodule update --init packages/commentum_client
+          git submodule update --init packages/byte_me_ecosystem
 
       - name: Override pubspec.yaml version
         if: github.event_name == 'workflow_dispatch'
@@ -283,14 +285,14 @@ jobs:
         run: |
           BUNDLE_DIR="build/linux/x64/release/bundle"
           APPDIR="AppDir"
-          
+
           EXE_PATH=$(find $BUNDLE_DIR -maxdepth 1 -type f -executable -not -name "*.so")
           EXE_NAME=$(basename "$EXE_PATH")
           echo "Found executable: $EXE_NAME"
-          
+
           mkdir -p $APPDIR
           cp -r $BUNDLE_DIR/* $APPDIR/
-          
+
           cat << EOF > $APPDIR/AppRun
           #!/bin/sh
           HERE="\$(dirname "\$(readlink -f "\${0}")")"
@@ -298,7 +300,7 @@ jobs:
           exec "\${HERE}/$EXE_NAME" "\$@"
           EOF
           chmod +x $APPDIR/AppRun
-          
+
           cat << EOF > $APPDIR/$EXE_NAME.desktop
           [Desktop Entry]
           Version=1.0
@@ -309,16 +311,16 @@ jobs:
           Terminal=false
           Categories=Utility;
           EOF
-          
+
           if [ -f "linux/application_icon.png" ]; then
             cp linux/application_icon.png $APPDIR/$EXE_NAME.png
           else
             echo "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" | base64 -d > $APPDIR/$EXE_NAME.png
           fi
-          
+
           curl -sLO https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
           chmod +x appimagetool-x86_64.AppImage
-          
+
           ./appimagetool-x86_64.AppImage --appimage-extract-and-run $APPDIR ShonenX-linux-x86_64.AppImage
 
       - name: Upload Linux Artifacts
@@ -341,6 +343,7 @@ jobs:
         run: |
           git submodule update --init packages/anymex_extension_bridge
           git submodule update --init packages/commentum_client
+          git submodule update --init packages/byte_me_ecosystem
 
       - name: Override pubspec.yaml version
         if: github.event_name == 'workflow_dispatch'
@@ -424,6 +427,7 @@ jobs:
         run: |
           git submodule update --init packages/anymex_extension_bridge
           git submodule update --init packages/commentum_client
+          git submodule update --init packages/byte_me_ecosystem
 
       - name: Override pubspec.yaml version
         if: github.event_name == 'workflow_dispatch'
@@ -498,6 +502,7 @@ jobs:
         run: |
           git submodule update --init packages/anymex_extension_bridge
           git submodule update --init packages/commentum_client
+          git submodule update --init packages/byte_me_ecosystem
 
       - name: Override pubspec.yaml version
         if: github.event_name == 'workflow_dispatch'
@@ -672,13 +677,13 @@ jobs:
             echo "Skipping Discord notification: Webhook missing."
             exit 0
           fi
-          
+
           REPO_URL="https://github.com/${{ github.repository }}"
           RELEASE_URL="${REPO_URL}/releases/download/${TAG}"
-          
+
           # Truncate changelog to safely fit under Discord's 2000 character payload limit
           CHANGELOG=$(cat release_notes.md | head -c 1500)
-          
+
           # Build Download Links strictly from the artifacts we just released
           LINKS=""
           cd release-artifacts
@@ -687,16 +692,16 @@ jobs:
               LINKS="${LINKS}\n• [${f}](${RELEASE_URL}/${f})"
             fi
           done
-          
+
           MENTION=""
           if [ "$NOTIFY_EVERYONE" = "true" ] || [ "${{ github.event_name }}" = "push" ]; then
             MENTION="@everyone "
           fi
-          
+
           # Assemble clean Markdown structure
           BODY="${MENTION}**ShonenX Release Compiled: ${TAG}**\n\n**Changelog:**\n${CHANGELOG}\n\n**Direct Asset Downloads:**${LINKS}"
-          
+
           # Escape securely via jq
           PAYLOAD=$(jq -n --arg content "$BODY" '{content: $content}')
-          
+
           curl -s -X POST -H "Content-Type: application/json" -d "$PAYLOAD" "$DISCORD_WEBHOOK"

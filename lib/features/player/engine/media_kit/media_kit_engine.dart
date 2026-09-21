@@ -41,7 +41,8 @@ class MediaKitEngine implements VideoEngine {
         prefs.enableHardwareAcceleration !=
             newPrefs.enableHardwareAcceleration ||
         prefs.vo != newPrefs.vo ||
-        prefs.rawConfiguration != newPrefs.rawConfiguration;
+        prefs.rawConfiguration != newPrefs.rawConfiguration ||
+        prefs.libassEnabled != newPrefs.libassEnabled;
 
     prefs = newPrefs;
 
@@ -128,7 +129,7 @@ class MediaKitEngine implements VideoEngine {
 
     await _player.dispose();
 
-    _player = Player();
+    _player = Player(configuration: const PlayerConfiguration(libass: true));
     _controller = VideoController(
       _player,
       configuration: VideoControllerConfiguration(
@@ -155,7 +156,7 @@ class MediaKitEngine implements VideoEngine {
   }
 
   MediaKitEngine(this.prefs, this.ref) {
-    _player = Player();
+    _player = Player(configuration: const PlayerConfiguration(libass: true));
     _controller = VideoController(
       _player,
       configuration: VideoControllerConfiguration(

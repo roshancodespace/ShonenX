@@ -450,6 +450,7 @@ class PlayerController extends Notifier<PlayerState> {
       _fetchSkipsIfNeeded();
       _fetchAdditionalSubtitles(episode.id);
     } catch (e) {
+      if (!ref.mounted) return;
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }

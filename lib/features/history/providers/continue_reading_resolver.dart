@@ -2,6 +2,7 @@ import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/features/discovery/domain/media_args.dart';
 import 'package:shonenx/features/discovery/providers/episodes_provider.dart';
+import 'package:shonenx/features/discovery/providers/matched_media_provider.dart';
 import 'package:shonenx/features/discovery/providers/media_preference_provider.dart';
 import 'package:shonenx/features/history/domain/models/read_history_entry.dart';
 import 'package:shonenx/features/reader/domain/reader_mode.dart';
@@ -9,7 +10,7 @@ import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
 import 'package:shonenx/source_engine/source_registry.dart';
 
-final continueReadingResolverProvider = Provider.autoDispose(
+final continueReadingResolverProvider = Provider(
   (ref) => ContinueReadingResolver(ref),
 );
 
@@ -19,62 +20,65 @@ class ContinueReadingResolver {
   const ContinueReadingResolver(this.ref);
 
   Future<ReaderModeOnline> resolve(ReadHistoryEntry entry) async {
+    // 1. Fetch preferences
     final prefState = await ref.read(
       mediaPreferenceProvider(
         MediaArgs.fromTitle(entry.mangaTitle, type: MediaType.MANGA),
       ).future,
     );
 
-    final availableSourcesInfo = await ref.read(
-      availableMangaSourcesProvider.future,
+    // 2. Determine Source and Provider ID
+    SourceInfo? sourceInfo;
+    String? providerId;
+
+    if (prefState.hasExplicitSource && prefState.matchedMediaId != null) {
+      sourceInfo = prefState.sourceInfo;
+      providerId = prefState.matchedMediaId!;
+    } else if (entry.sourceId != null && entry.providerId != null) {
+      final availableSourcesInfo = await ref.read(
+        availableMangaSourcesProvider.future,
+      );
+      sourceInfo =
+          availableSourcesInfo.firstWhereOrNull(
+            (s) => s.id == entry.sourceId && s.name == entry.sourceName,
+          ) ??
+          availableSourcesInfo.firstWhereOrNull((s) => s.id == entry.sourceId);
+      providerId = entry.providerId!;
+    }
+
+    if (sourceInfo == null || providerId == null) {
+      final matchState = await ref.read(
+        matchedMediaProvider(
+          MediaArgs.fromTitle(entry.mangaTitle, type: MediaType.MANGA),
+        ).future,
+      );
+      if (matchState.matchedMedia == null) {
+        throw Exception('Could not resolve media source.');
+      }
+      sourceInfo = matchState.sourceInfo;
+      providerId = matchState.matchedMedia!.id;
+    }
+
+    // 3. Fetch chapters
+    final chaptersState = await ref.read(
+      sourceEpisodesProvider((
+        providerId: providerId,
+        sourceId: sourceInfo.id,
+        sourceType: sourceInfo.type,
+        type: MediaType.MANGA,
+      )).future,
     );
 
-    SourceInfo? sourceInfo;
-    if (prefState.hasExplicitSource) {
-      sourceInfo = prefState.sourceInfo;
-    } else if (entry.sourceId != null) {
-      if (entry.sourceId == prefState.sourceInfo.id) {
-        sourceInfo = prefState.sourceInfo;
-      } else {
-        sourceInfo =
-            availableSourcesInfo.firstWhereOrNull(
-              (s) => s.id == entry.sourceId && s.name == entry.sourceName,
-            ) ??
-            availableSourcesInfo.firstWhereOrNull(
-              (s) => s.id == entry.sourceId,
-            );
-      }
-    }
-    sourceInfo ??= prefState.sourceInfo;
-
-    final rawOverride = prefState.matchedMediaId ?? entry.providerId;
-    final overrideId = (rawOverride != null && rawOverride != entry.mangaId)
-        ? rawOverride
-        : null;
-
-    final chaptersFuture = overrideId != null
-        ? ref.read(
-            sourceEpisodesProvider((
-              providerId: overrideId,
-              sourceId: sourceInfo.id,
-              type: MediaType.MANGA,
-            )).future,
-          )
-        : ref.read(
-            episodesListProvider(
-              MediaArgs.fromTitle(entry.mangaTitle, type: MediaType.MANGA),
-            ).future,
-          );
-
-    final chaptersState = await chaptersFuture;
+    // 4. Find the target chapter
     final chapter = chaptersState.episodes.firstWhereOrNull(
       (e) => e.number == entry.chapterNumber,
     );
 
     if (chapter == null) {
-      throw Exception('Chapter not found.');
+      throw Exception('Chapter not found in the selected source.');
     }
 
+    // 5. Return ReaderMode
     return ReaderModeOnline(
       media: UnifiedMedia(
         id: entry.mangaId,
@@ -82,9 +86,9 @@ class ContinueReadingResolver {
         externalIds: entry.externalIds,
         cover: entry.cover,
         banner: entry.banner,
-        sourceId: entry.sourceId,
-        sourceName: entry.sourceName,
-        providerId: overrideId ?? entry.providerId,
+        sourceId: sourceInfo.id,
+        sourceName: sourceInfo.name,
+        providerId: providerId,
         type: MediaType.MANGA,
         title: MediaTitle(english: entry.mangaTitle),
       ),

@@ -199,7 +199,7 @@ class MediaPreferenceNotifier extends AsyncNotifier<MediaPreferenceState> {
           ? ', saved match: "${savedPreference!.matchedMediaTitle}"'
           : '';
       log.i(
-        'Resolved source "${resolvedSource.name}" (${resolvedSource.id})$matchInfo',
+        'Resolved source "${resolvedSource.name}" (${resolvedSource.id} ${resolvedSource.type.name})$matchInfo',
       );
 
       TrackerType? preferredTracker;

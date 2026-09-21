@@ -114,6 +114,7 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
         sourceEpisodesProvider((
           providerId: widget.media.id,
           sourceId: widget.media.sourceId!,
+          sourceType: null,
           type: widget.media.type,
         )),
       );

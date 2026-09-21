@@ -90,6 +90,7 @@ class MediaKitPrefs {
   final MediaKitAudioNormalizePreset audioNormalizePreset;
   final MediaKitColorPreset colorPreset;
   final String rawConfiguration;
+  final bool libassEnabled;
 
   const MediaKitPrefs({
     this.enableHardwareAcceleration = true,
@@ -103,6 +104,7 @@ class MediaKitPrefs {
     this.audioNormalizePreset = MediaKitAudioNormalizePreset.none,
     this.colorPreset = MediaKitColorPreset.default_,
     this.rawConfiguration = '',
+    this.libassEnabled = true,
   });
 
   MediaKitPrefs copyWith({
@@ -117,6 +119,7 @@ class MediaKitPrefs {
     MediaKitAudioNormalizePreset? audioNormalizePreset,
     MediaKitColorPreset? colorPreset,
     String? rawConfiguration,
+    bool? libassEnabled,
   }) {
     return MediaKitPrefs(
       enableHardwareAcceleration:
@@ -131,6 +134,7 @@ class MediaKitPrefs {
       audioNormalizePreset: audioNormalizePreset ?? this.audioNormalizePreset,
       colorPreset: colorPreset ?? this.colorPreset,
       rawConfiguration: rawConfiguration ?? this.rawConfiguration,
+      libassEnabled: libassEnabled ?? this.libassEnabled,
     );
   }
 
@@ -148,7 +152,8 @@ class MediaKitPrefs {
             other.boostVolume == boostVolume &&
             other.audioNormalizePreset == audioNormalizePreset &&
             other.colorPreset == colorPreset &&
-            other.rawConfiguration == rawConfiguration);
+            other.rawConfiguration == rawConfiguration &&
+            other.libassEnabled == libassEnabled);
   }
 
   @override
@@ -164,6 +169,7 @@ class MediaKitPrefs {
     audioNormalizePreset,
     colorPreset,
     rawConfiguration,
+    libassEnabled,
   );
 
   @override
@@ -179,7 +185,8 @@ class MediaKitPrefs {
         'boostVolume: $boostVolume, '
         'audioNorm: $audioNormalizePreset, '
         'colorPreset: $colorPreset, '
-        'rawConfiguration: $rawConfiguration'
+        'rawConfiguration: $rawConfiguration, '
+        'libassEnabled: $libassEnabled'
         ')';
   }
 
@@ -190,7 +197,8 @@ class MediaKitPrefs {
     }
 
     return MediaKitPrefs(
-      enableHardwareAcceleration: map['enableHardwareAcceleration'] as bool? ?? true,
+      enableHardwareAcceleration:
+          map['enableHardwareAcceleration'] as bool? ?? true,
       hwdec: map['hwdec'] as String? ?? defaultHwdec,
       vo: map['vo'] as String? ?? 'auto',
       enableLowLatency: map['enableLowLatency'] as bool? ?? false,
@@ -207,6 +215,7 @@ class MediaKitPrefs {
         map['colorPreset'] as String?,
       ),
       rawConfiguration: map['rawConfiguration'] as String? ?? '',
+      libassEnabled: map['libassEnabled'] as bool? ?? true,
     );
   }
 
@@ -223,6 +232,7 @@ class MediaKitPrefs {
       'audioNormalizePreset': audioNormalizePreset.value,
       'colorPreset': colorPreset.value,
       'rawConfiguration': rawConfiguration,
+      'libassEnabled': libassEnabled,
     };
   }
 

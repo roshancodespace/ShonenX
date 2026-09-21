@@ -43,6 +43,7 @@ import 'package:shonenx/features/settings/presentation/about_screen.dart';
 import 'package:shonenx/features/settings/presentation/security_settings_screen.dart';
 import 'package:shonenx/features/settings/presentation/update_settings_screen.dart';
 import 'package:shonenx/features/settings/presentation/troubleshoot_settings_screen.dart';
+import 'package:shonenx/features/settings/presentation/subtitle_debug_screen.dart';
 import 'package:shonenx/core/services/backup_service.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/core/network/cf_client.dart';
@@ -434,6 +435,12 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: 'debug',
             builder: (context, state) => const DebugSettingsScreen(),
+            routes: [
+              GoRoute(
+                path: 'subtitles',
+                builder: (context, state) => const SubtitleDebugScreen(),
+              ),
+            ],
           ),
           GoRoute(
             path: 'logs',

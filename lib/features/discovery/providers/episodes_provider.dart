@@ -21,6 +21,7 @@ class EpisodesListState {
 typedef SourceEpisodeArgs = ({
   String providerId,
   String sourceId,
+  SourceType? sourceType,
   MediaType type,
 });
 
@@ -47,6 +48,7 @@ final episodesListProvider =
           sourceEpisodesProvider((
             providerId: matchState.matchedMedia!.id,
             sourceId: matchState.sourceInfo.id,
+            sourceType: matchState.sourceInfo.type,
             type: args.type,
           )).future,
         );
@@ -96,7 +98,11 @@ final sourceEpisodesProvider =
         );
 
         final sourceInfo = allSources
-            .where((s) => s.id == args.sourceId)
+            .where(
+              (s) =>
+                  s.id == args.sourceId &&
+                  (args.sourceType == null || s.type == args.sourceType),
+            )
             .firstOrNull;
 
         if (sourceInfo == null) {

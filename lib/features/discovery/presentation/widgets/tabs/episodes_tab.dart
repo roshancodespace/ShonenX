@@ -383,6 +383,7 @@ class _EpisodesHeader extends ConsumerWidget {
               sourceEpisodesProvider((
                 providerId: media.id,
                 sourceId: media.sourceId!,
+                sourceType: null,
                 type: media.type,
               )),
             );

@@ -1,16 +1,22 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:flutter/rendering.dart';
+import 'package:shonenx/features/player/utils/parsers/subtitle_parser_base.dart';
+import 'package:shonenx/features/player/utils/parsers/srt_parser.dart';
+import 'package:shonenx/features/player/utils/parsers/ass_parser.dart';
 
 class SubtitleCue {
   final Duration start;
   final Duration end;
   final String text;
+  final Alignment alignment;
 
   const SubtitleCue({
     required this.start,
     required this.end,
     required this.text,
+    this.alignment = Alignment.bottomCenter,
   });
 }
 
@@ -30,49 +36,19 @@ class SubtitleParser {
   }
 
   static List<SubtitleCue> parseString(String content) {
-    final List<SubtitleCue> cues = [];
-    // Normalize newlines
-    final text = content.replaceAll('\r\n', '\n').replaceAll('\r', '\n');
+    if (content.trim().isEmpty) return [];
 
-    // Matches: 00:00:00.000 --> 00:00:00.000 or 00:00:00,000 --> 00:00:00,000
-    final RegExp timePattern = RegExp(
-      r'(?:(?:(\d+):)?(\d{1,2}):(\d{1,2})[.,](\d{1,3}))\s*-->\s*(?:(?:(\d+):)?(\d{1,2}):(\d{1,2})[.,](\d{1,3}))',
-    );
+    BaseSubtitleParser parser;
 
-    final List<String> blocks = text.split(RegExp(r'\n\n+'));
-
-    for (final block in blocks) {
-      final match = timePattern.firstMatch(block);
-      if (match != null) {
-        final start = _parseDuration(
-          match.group(1),
-          match.group(2),
-          match.group(3),
-          match.group(4),
-        );
-        final end = _parseDuration(
-          match.group(5),
-          match.group(6),
-          match.group(7),
-          match.group(8),
-        );
-
-        // Extract text after the timestamp line
-        final lines = block.split('\n');
-        final timeLineIndex = lines.indexWhere((l) => timePattern.hasMatch(l));
-
-        if (timeLineIndex != -1 && timeLineIndex < lines.length - 1) {
-          final textLines = lines.sublist(timeLineIndex + 1);
-          final cleanText = cleanSubtitleText(textLines.join('\n'));
-
-          if (cleanText.isNotEmpty) {
-            cues.add(SubtitleCue(start: start, end: end, text: cleanText));
-          }
-        }
-      }
+    // Detect format
+    if (content.contains('[Script Info]') || content.contains('[V4+ Styles]')) {
+      parser = const AssParser();
+    } else {
+      // Fallback to SRT/VTT parser for standard block formats
+      parser = const SrtParser();
     }
 
-    return cues;
+    return parser.parse(content);
   }
 
   static String cleanSubtitleText(String text) {
@@ -115,32 +91,5 @@ class SubtitleParser {
         .replaceAll('&#160;', ' ');
 
     return cleaned.trim();
-  }
-
-  static Duration _parseDuration(
-    String? hoursStr,
-    String? minsStr,
-    String? secsStr,
-    String? msStr,
-  ) {
-    final hours = int.tryParse(hoursStr ?? '0') ?? 0;
-    final mins = int.tryParse(minsStr ?? '0') ?? 0;
-    final secs = int.tryParse(secsStr ?? '0') ?? 0;
-    // Pad milliseconds to 3 digits (e.g. .1 -> .100)
-    int ms = 0;
-    if (msStr != null) {
-      if (msStr.length == 1) {
-        msStr += '00';
-      } else if (msStr.length == 2) {
-        msStr += '0';
-      }
-      ms = int.tryParse(msStr) ?? 0;
-    }
-    return Duration(
-      hours: hours,
-      minutes: mins,
-      seconds: secs,
-      milliseconds: ms,
-    );
   }
 }

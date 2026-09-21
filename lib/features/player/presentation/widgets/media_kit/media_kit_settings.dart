@@ -22,6 +22,14 @@ class MediaKitSettings extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             SettingsSwitchTile(
+              icon: Icons.closed_caption_outlined,
+              title: 'Enable native libass for subtitles',
+              value: prefs.libassEnabled,
+              onChanged: (value) => prefsNotifier.updatePrefs(
+                prefs.copyWith(libassEnabled: value),
+              ),
+            ),
+            SettingsSwitchTile(
               icon: Icons.video_settings_outlined,
               title: 'Enable hardware acceleration',
               value: prefs.enableHardwareAcceleration,

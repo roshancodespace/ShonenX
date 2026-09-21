@@ -25,10 +25,10 @@ class CustomSubtitleOverlay extends ConsumerWidget {
           videoEngineStateProvider.select((s) => s.position),
         );
 
-        // Find the active cue using binary search
-        final activeCue = _findActiveCue(cues, position);
+        // Find all active overlapping cues
+        final activeCues = _findActiveCues(cues, position);
 
-        if (activeCue == null) return const SizedBox.shrink();
+        if (activeCues.isEmpty) return const SizedBox.shrink();
 
         final screenWidth = MediaQuery.sizeOf(context).width;
         final responsiveFontSize = getResponsiveSubtitleSize(
@@ -36,66 +36,90 @@ class CustomSubtitleOverlay extends ConsumerWidget {
           prefs.fontSize,
         );
 
-        return Positioned(
-          bottom: prefs.bottomPadding, // Configurable bottom padding
-          left: 0,
-          right: 0,
+        final Map<Alignment, List<SubtitleCue>> groupedCues = {};
+        for (final cue in activeCues) {
+          groupedCues.putIfAbsent(cue.alignment, () => []).add(cue);
+        }
+
+        return Positioned.fill(
           child: IgnorePointer(
             child: SafeArea(
-              child: Align(
-                alignment: Alignment.bottomCenter,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: SubtitleParser.cleanSubtitleText(activeCue.text)
-                        .split('\n')
-                        .map((l) => l.replaceAll('\r', ''))
-                        .where((l) => l.trim().isNotEmpty)
-                        .map(
-                          (line) => Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: prefs.padding * 1.5,
-                              vertical: prefs.padding * 0.5,
-                            ),
-                            decoration: prefs.backgroundColor != 0x00000000
-                                ? BoxDecoration(
-                                    color: prefs.bg,
-                                    borderRadius: BorderRadius.circular(4.0),
-                                  )
-                                : null,
-                            child: Stack(
-                              alignment: Alignment.center,
-                              children: [
-                                if (getSubtitleStrokeStyle(
-                                      prefs,
-                                      responsiveFontSize,
-                                    ) !=
-                                    null)
-                                  Text(
-                                    line,
-                                    textAlign: TextAlign.center,
-                                    style: getSubtitleStrokeStyle(
-                                      prefs,
-                                      responsiveFontSize,
+              child: Stack(
+                children: groupedCues.entries.map((entry) {
+                  final alignment = entry.key;
+                  final cuesForAlignment = entry.value;
+
+                  return Align(
+                    alignment: alignment,
+                    child: Padding(
+                      padding: EdgeInsets.only(
+                        bottom: alignment.y == 1.0 ? prefs.bottomPadding : 0,
+                        top: alignment.y == -1.0 ? prefs.bottomPadding : 0,
+                        left: 24,
+                        right: 24,
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: cuesForAlignment
+                            .expand(
+                              (
+                                cue,
+                              ) => SubtitleParser.cleanSubtitleText(cue.text)
+                                  .split('\n')
+                                  .map((l) => l.replaceAll('\r', ''))
+                                  .where((l) => l.trim().isNotEmpty)
+                                  .map(
+                                    (line) => Container(
+                                      margin: const EdgeInsets.only(
+                                        bottom: 4.0,
+                                      ),
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: prefs.padding * 1.5,
+                                        vertical: prefs.padding * 0.5,
+                                      ),
+                                      decoration:
+                                          prefs.backgroundColor != 0x00000000
+                                          ? BoxDecoration(
+                                              color: prefs.bg,
+                                              borderRadius:
+                                                  BorderRadius.circular(4.0),
+                                            )
+                                          : null,
+                                      child: Stack(
+                                        alignment: Alignment.center,
+                                        children: [
+                                          if (getSubtitleStrokeStyle(
+                                                prefs,
+                                                responsiveFontSize,
+                                              ) !=
+                                              null)
+                                            Text(
+                                              line,
+                                              textAlign: TextAlign.center,
+                                              style: getSubtitleStrokeStyle(
+                                                prefs,
+                                                responsiveFontSize,
+                                              ),
+                                            ),
+                                          Text(
+                                            line,
+                                            textAlign: TextAlign.center,
+                                            style: getSubtitleTextStyle(
+                                              prefs,
+                                              responsiveFontSize,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
-                                Text(
-                                  line,
-                                  textAlign: TextAlign.center,
-                                  style: getSubtitleTextStyle(
-                                    prefs,
-                                    responsiveFontSize,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        )
-                        .toList(),
-                  ),
-                ),
+                            )
+                            .toList(),
+                      ),
+                    ),
+                  );
+                }).toList(),
               ),
             ),
           ),
@@ -106,26 +130,37 @@ class CustomSubtitleOverlay extends ConsumerWidget {
     );
   }
 
-  SubtitleCue? _findActiveCue(List<SubtitleCue> cues, Duration position) {
-    if (cues.isEmpty) return null;
+  List<SubtitleCue> _findActiveCues(List<SubtitleCue> cues, Duration position) {
+    if (cues.isEmpty) return [];
 
+    // Binary search for the first cue that starts AFTER the current position
     int low = 0;
     int high = cues.length - 1;
+    int insertIndex = cues.length;
 
     while (low <= high) {
-      // Bitwise shift is slightly faster than division by 2
       int mid = low + ((high - low) >> 1);
-      final cue = cues[mid];
-
-      if (position >= cue.start && position <= cue.end) {
-        return cue; // Target found
-      } else if (position < cue.start) {
-        high = mid - 1; // Target is in the earlier half
+      if (cues[mid].start > position) {
+        insertIndex = mid;
+        high = mid - 1;
       } else {
-        low = mid + 1; // Target is in the later half
+        low = mid + 1;
       }
     }
 
-    return null; // No active subtitle at this position
+    // Iterate backwards to find all overlapping cues
+    final List<SubtitleCue> activeCues = [];
+    for (int i = insertIndex - 1; i >= 0; i--) {
+      final cue = cues[i];
+      if (cue.end >= position) {
+        activeCues.add(cue);
+      }
+      // Stop searching if the cue started more than 60 seconds ago
+      if (position.inSeconds - cue.start.inSeconds > 60) {
+        break;
+      }
+    }
+
+    return activeCues.reversed.toList();
   }
 }

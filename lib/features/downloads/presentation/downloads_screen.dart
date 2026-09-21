@@ -489,7 +489,7 @@ class _DownloadedFilesTabState extends ConsumerState<_DownloadedFilesTab> {
     showModalBottomSheet(
       context: context,
       useRootNavigator: true,
-      builder: (_) {
+      builder: (sheetContext) {
         return AppBottomSheet(
           title: title,
           child: Column(
@@ -502,7 +502,7 @@ class _DownloadedFilesTabState extends ConsumerState<_DownloadedFilesTab> {
                 children: [
                   Expanded(
                     child: FilledButton.tonal(
-                      onPressed: () => Navigator.pop(context),
+                      onPressed: () => Navigator.pop(sheetContext),
                       child: const Text('Cancel'),
                     ),
                   ),
@@ -515,9 +515,11 @@ class _DownloadedFilesTabState extends ConsumerState<_DownloadedFilesTab> {
                       ),
                       onPressed: () async {
                         final messenger = ScaffoldMessenger.of(context);
-                        Navigator.pop(context);
                         try {
                           await onDelete();
+                          if (sheetContext.mounted) {
+                            Navigator.pop(sheetContext);
+                          }
                         } catch (e) {
                           if (mounted) {
                             messenger.showSnackBar(
@@ -545,7 +547,9 @@ class _DownloadedFilesTabState extends ConsumerState<_DownloadedFilesTab> {
       message: 'This will permanently remove ${item.name}.',
       onDelete: () async {
         await item.file.delete();
-        setState(() => _itemsFuture = _getItems());
+        setState(() {
+          _itemsFuture = _getItems();
+        });
       },
     );
   }
@@ -558,7 +562,9 @@ class _DownloadedFilesTabState extends ConsumerState<_DownloadedFilesTab> {
           'This will permanently remove all ${item.files.length} episodes in ${item.name}.',
       onDelete: () async {
         await item.directory.delete(recursive: true);
-        setState(() => _itemsFuture = _getItems());
+        setState(() {
+          _itemsFuture = _getItems();
+        });
       },
     );
   }

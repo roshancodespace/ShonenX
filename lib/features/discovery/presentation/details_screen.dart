@@ -844,7 +844,7 @@ class _DownloadAppBarButton extends ConsumerWidget {
         label: Text(activeCount.toString()),
         offset: const Offset(2, -2),
         child: AppIconButton(
-          onPressed: () => context.pushDownloads(),
+          onPressed: () => context.goDownloads(),
           backgroundColor: colorScheme.primaryContainer,
           foregroundColor: colorScheme.onPrimaryContainer,
           icon: Stack(

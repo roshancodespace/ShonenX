@@ -193,73 +193,20 @@ class DownloadSettingsScreen extends ConsumerWidget {
               ],
             ),
             SettingsSection(
-              title: 'Network & Behavior',
+              title: 'Network & Integration',
               children: [
                 AbsorbPointer(
                   absorbing: prefs.useOneDM,
                   child: Opacity(
                     opacity: prefs.useOneDM ? 0.5 : 1.0,
-                    child: Column(
-                      children: [
-                        SettingsSwitchTile(
-                          icon: Icons.wifi_outlined,
-                          title: 'Download over Wi-Fi Only',
-                          subtitle:
-                              'Pause downloads when connected to mobile data',
-                          value: prefs.wifiOnly,
-                          onChanged: (val) {
-                            prefsNotifier.setWifiOnly(val);
-                          },
-                        ),
-                        SettingsActionTile(
-                          icon: Icons.layers_outlined,
-                          title: 'Concurrent Downloads',
-                          subtitle:
-                              'Maximum active downloads: ${prefs.concurrentDownloads}',
-                          onTap: () {},
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.only(
-                            left: 56,
-                            right: 16,
-                            bottom: 8,
-                          ),
-                          child: Slider(
-                            value: prefs.concurrentDownloads.toDouble(),
-                            min: 1,
-                            max: 3,
-                            divisions: 2,
-                            label: prefs.concurrentDownloads.toString(),
-                            onChanged: (val) {
-                              prefsNotifier.setConcurrentDownloads(val.toInt());
-                            },
-                          ),
-                        ),
-                        SettingsActionTile(
-                          icon: Icons.speed_outlined,
-                          title: 'Concurrent Segments per Download',
-                          subtitle:
-                              'Parallel threads for stream segments: ${prefs.concurrentSegments}',
-                          onTap: () {},
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.only(
-                            left: 56,
-                            right: 16,
-                            bottom: 8,
-                          ),
-                          child: Slider(
-                            value: prefs.concurrentSegments.toDouble(),
-                            min: 1,
-                            max: 16,
-                            divisions: 15,
-                            label: prefs.concurrentSegments.toString(),
-                            onChanged: (val) {
-                              prefsNotifier.setConcurrentSegments(val.toInt());
-                            },
-                          ),
-                        ),
-                      ],
+                    child: SettingsSwitchTile(
+                      icon: Icons.wifi_outlined,
+                      title: 'Download over Wi-Fi Only',
+                      subtitle: 'Pause downloads when connected to mobile data',
+                      value: prefs.wifiOnly,
+                      onChanged: (val) {
+                        prefsNotifier.setWifiOnly(val);
+                      },
                     ),
                   ),
                 ),
@@ -353,6 +300,47 @@ class DownloadSettingsScreen extends ConsumerWidget {
                     },
                   ),
                 ],
+              ],
+            ),
+            SettingsSection(
+              title: 'Performance Tweaks',
+              children: [
+                AbsorbPointer(
+                  absorbing: prefs.useOneDM,
+                  child: Opacity(
+                    opacity: prefs.useOneDM ? 0.5 : 1.0,
+                    child: Column(
+                      children: [
+                        SettingsSliderTile(
+                          icon: Icons.layers_outlined,
+                          title: 'Max Queue (Concurrent Downloads)',
+                          subtitle: 'Maximum active downloads at a time',
+                          value: prefs.concurrentDownloads.toDouble(),
+                          min: 1,
+                          max: 5,
+                          divisions: 4,
+                          label: prefs.concurrentDownloads.toString(),
+                          onChanged: (val) {
+                            prefsNotifier.setConcurrentDownloads(val.toInt());
+                          },
+                        ),
+                        SettingsSliderTile(
+                          icon: Icons.speed_outlined,
+                          title: 'Max Concurrent Segments (HLS)',
+                          subtitle: 'Parallel threads for stream segments',
+                          value: prefs.concurrentSegments.toDouble(),
+                          min: 1,
+                          max: 16,
+                          divisions: 15,
+                          label: prefs.concurrentSegments.toString(),
+                          onChanged: (val) {
+                            prefsNotifier.setConcurrentSegments(val.toInt());
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
                 if (Platform.isLinux ||
                     Platform.isWindows ||
                     Platform.isMacOS) ...[

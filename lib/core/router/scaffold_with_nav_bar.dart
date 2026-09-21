@@ -605,95 +605,126 @@ class _DownloadButton extends ConsumerWidget {
     }
 
     final themeData = NavBarThemeData.resolve(navBarStyle, cs, false, active);
-    final buttonRadius = themeData.barRadius(size);
+    final barRadius = themeData.barRadius(size);
+    final activeItemRadius = themeData.itemRadius(size - 2 * padding);
 
-    final content = AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeOutCubic,
-      width: size,
-      height: size,
-      decoration: themeData.downloadButtonDecoration,
-      child: IconButton(
-        padding: EdgeInsets.zero,
-        icon: Badge(
-          isLabelVisible: hasActive,
-          backgroundColor: cs.primary,
-          textColor: cs.onPrimary,
-          label: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 200),
-            child: Text('$count', key: ValueKey(count)),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Stack(
-                alignment: Alignment.center,
-                children: [
-                  AnimatedOpacity(
-                    opacity: hasActive ? 1.0 : 0.0,
-                    duration: const Duration(milliseconds: 300),
-                    child: SizedBox(
-                      width: iconSize + 8,
-                      height: iconSize + 8,
-                      child: CircularProgressIndicator(
-                        value: progress,
-                        strokeWidth: 2.5,
-                        color:
-                            active &&
-                                themeData.isMaterial3 == false &&
-                                !themeData.showDotIndicator &&
-                                navBarStyle != NavBarStyle.frosted
-                            ? cs.onPrimary
-                            : cs.primary,
+    Widget item = InkWell(
+      onTap: () => navigationShell.goBranch(
+        3,
+        initialLocation: 3 == navigationShell.currentIndex,
+      ),
+      borderRadius: BorderRadius.circular(activeItemRadius),
+      focusColor: cs.primary.withValues(alpha: 0.2),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutCubic,
+        height: double.maxFinite,
+        padding: EdgeInsets.symmetric(horizontal: active ? 18 : 14),
+        decoration:
+            (active
+                    ? themeData.activeItemDecoration
+                    : themeData.inactiveItemDecoration)
+                .copyWith(
+                  borderRadius: BorderRadius.circular(activeItemRadius),
+                ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Badge(
+                  isLabelVisible: hasActive,
+                  backgroundColor: cs.primary,
+                  textColor: cs.onPrimary,
+                  label: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 200),
+                    child: Text('$count', key: ValueKey(count)),
+                  ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      AnimatedOpacity(
+                        opacity: hasActive ? 1.0 : 0.0,
+                        duration: const Duration(milliseconds: 300),
+                        child: SizedBox(
+                          width: iconSize + 8,
+                          height: iconSize + 8,
+                          child: CircularProgressIndicator(
+                            value: progress,
+                            strokeWidth: 2.5,
+                            color:
+                                active &&
+                                    themeData.isMaterial3 == false &&
+                                    !themeData.showDotIndicator &&
+                                    navBarStyle != NavBarStyle.frosted
+                                ? cs.onPrimary
+                                : cs.primary,
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                  AnimatedScale(
-                    scale: hasActive
-                        ? 1.1
-                        : (active ? themeData.activeScale : 1.0),
-                    duration: const Duration(milliseconds: 350),
-                    curve: Curves.easeOutBack,
-                    child: Icon(
-                      Icons.download_outlined,
-                      color: themeData.downloadIconColor,
-                      size: iconSize,
-                    ),
-                  ),
-                ],
-              ),
-              if (themeData.showDotIndicator && active) ...[
-                const SizedBox(height: 3),
-                Container(
-                  width: 5,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: themeData.downloadIconColor,
-                    shape: BoxShape.circle,
+                      AnimatedScale(
+                        scale: active ? themeData.activeScale : 1.0,
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeOutBack,
+                        child: AnimatedOpacity(
+                          opacity: active ? 1.0 : 0.55,
+                          duration: const Duration(milliseconds: 250),
+                          child: Icon(
+                            Icons.download_outlined,
+                            color: active
+                                ? themeData.activeIconColor
+                                : themeData.inactiveIconColor,
+                            size: iconSize,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
+            ),
+            if (themeData.showDotIndicator && active) ...[
+              const SizedBox(height: 3),
+              Container(
+                width: 5,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: themeData.activeIconColor,
+                  shape: BoxShape.circle,
+                ),
+              ),
             ],
-          ),
-        ),
-        onPressed: () => navigationShell.goBranch(
-          3,
-          initialLocation: 3 == navigationShell.currentIndex,
+          ],
         ),
       ),
     );
 
+    final contentWidget = Container(
+      height: size,
+      padding: EdgeInsets.symmetric(horizontal: padding, vertical: padding),
+      decoration: themeData.barDecoration.copyWith(
+        borderRadius: BorderRadius.circular(barRadius),
+      ),
+      child: item,
+    );
+
+    if (themeData.blurSigma != null) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(barRadius),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(
+            sigmaX: themeData.blurSigma!,
+            sigmaY: themeData.blurSigma!,
+          ),
+          child: contentWidget,
+        ),
+      );
+    }
+
     return ClipRRect(
-      borderRadius: BorderRadius.circular(buttonRadius),
-      child: themeData.blurSigma != null
-          ? BackdropFilter(
-              filter: ImageFilter.blur(
-                sigmaX: themeData.blurSigma!,
-                sigmaY: themeData.blurSigma!,
-              ),
-              child: content,
-            )
-          : content,
+      borderRadius: BorderRadius.circular(barRadius),
+      child: contentWidget,
     );
   }
 }

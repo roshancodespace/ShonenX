@@ -7,3 +7,6 @@
 [submodule "packages/commentum_client"]
 	path = packages/commentum_client
 	url = https://github.com/commentum/commentum_client
+[submodule "packages/byte_me_ecosystem"]
+	path = packages/byte_me_ecosystem
+	url = https://github.com/roshancodespace/byte_me.git

@@ -26,9 +26,10 @@ class TvBackdropNotifier extends Notifier<String?> {
   void clear() => state = null;
 }
 
-final tvFocusedBackdropProvider = NotifierProvider<TvBackdropNotifier, String?>(
-  TvBackdropNotifier.new,
-);
+final tvFocusedBackdropProvider =
+    NotifierProvider.autoDispose<TvBackdropNotifier, String?>(
+      TvBackdropNotifier.new,
+    );
 
 class TvHomeScreen extends ConsumerWidget {
   const TvHomeScreen({super.key});

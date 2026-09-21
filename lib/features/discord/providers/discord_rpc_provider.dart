@@ -117,6 +117,9 @@ class DiscordRpcNotifier extends Notifier<DiscordRpcState>
     if (state == AppLifecycleState.resumed && !_rpcService.isConnected) {
       _log.d('App resumed, checking Discord RPC connection');
       _connect(discordState.token, true);
+    } else if (state == AppLifecycleState.detached) {
+      _log.d('App detached, disconnecting Discord RPC');
+      _rpcService.disconnect();
     }
   }
 

@@ -76,7 +76,9 @@ final calendarWeekScheduleProvider = FutureProvider.autoDispose
       );
     });
 
-final calendarLibraryIdsProvider = StreamProvider<Set<String>>((ref) {
+final calendarLibraryIdsProvider = StreamProvider.autoDispose<Set<String>>((
+  ref,
+) {
   final isar = ref.watch(databaseProvider);
   return isar.libraryEntrys.where().watch(fireImmediately: true).map((entries) {
     final set = <String>{};

@@ -9,7 +9,7 @@ import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
 import 'package:shonenx/source_engine/source_registry.dart';
 
-final continueReadingResolverProvider = Provider(
+final continueReadingResolverProvider = Provider.autoDispose(
   (ref) => ContinueReadingResolver(ref),
 );
 

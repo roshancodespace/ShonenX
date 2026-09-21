@@ -18,11 +18,20 @@
 
 Created and maintained by [Roshan Kumar](https://github.com/roshancodespace) with the help of community contributors. ShonenX is an open-source, ad-free, and tracker-free anime and manga client. Tracks progress across AniList, MyAnimeList, and Kitsu.
 
-[Features](#features) • [Screenshots](#screenshots) • [Installation](#installation) • [Contributing](#contributing--guidelines) • [Contributors](#contributors) • [Legal](#legal--dmca-disclaimer)
+[Features](#features) • [Screenshots](#screenshots) • [Installation](#installation) • [Contributing](#contributing) • [Contributors](#contributors)
 
 </div>
 
----
+
+> [!CAUTION]
+> ### Legal & DMCA Disclaimer
+> 
+> **01. Service Nature:** ShonenX does not host, upload, or own any of the media you see in the app. It's simply a frontend client—a glorified web browser. We do not have servers hosting anime.
+> 
+> **02. APIs & Metadata:** The covers, synopses, and schedules are pulled directly from public APIs like AniList, MyAnimeList, and Kitsu. ShonenX merely displays the metadata they provide.
+> 
+> **03. User Extensions & Content:** Any "extensions" or third-party sources you decide to install are entirely on you. ShonenX doesn't distribute copyrighted material or endorse piracy. Ensure you follow your local laws; we are not your lawyers. If you're a copyright holder looking to DMCA someone, please contact the extension developers or the host of the video files.
+
 
 ## Supporters
 
@@ -168,7 +177,7 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/roshancodespace/ShonenX/
 ### macOS & iOS (⚠️ Highly Experimental)
 > [!WARNING]
 > **macOS and iOS builds are HIGHLY EXPERIMENTAL.**  
-> Builds for macOS and iOS might be present in releases or might not be available at all, even if a release is marked stable for other platforms (Android, Windows, Linux). Expect potential bugs, quirks, and manual sideloading/signing requirements if you test them.
+> Builds for macOS and iOS might be present in releases or might not be available at all, even if a release is marked stable for other platforms. Expect potential bugs, quirks, and manual sideloading/signing requirements.
 
 ### 🛠️ Build from Source
 **Prerequisites**: Flutter SDK ≥3.8.1, Git
@@ -176,37 +185,20 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/roshancodespace/ShonenX/
 git clone https://github.com/roshancodespace/ShonenX.git
 cd ShonenX
 flutter pub get
-flutter pub run build_runner build --delete-conflicting-outputs
+dart run build_runner build -d
 flutter run # Select your device/platform
 ```
 
 ---
 
-## Legal & DMCA Disclaimer
+## Contributing
 
-Please read this before complaining.
+Contributions are welcome. Before opening a PR, please review the
+[Contribution Guidelines](./docs/contributing/index.md).
 
-**01. Service Nature**  
-Look, ShonenX does not host, upload, or own any of the media you see in the app. It's literally just a frontend client. It's a glorified web browser that makes stuff look pretty. We don't have servers full of anime.
-
-**02. APIs & Metadata**  
-The covers, synopses, and schedules you see? That's all pulled directly from public APIs like AniList, MyAnimeList, and Kitsu. ShonenX just displays what they send back. Don't sue us for showing a picture of Goku.
-
-**03. User Extensions & Content**  
-Any "extensions" or third-party sources you decide to install are entirely on you. ShonenX doesn't distribute copyrighted material or endorse piracy. If you put in a weird URL and watch something you shouldn't, that's your problem, not ours. Make sure you follow your local laws, we are not your lawyers.
-
-If you're a copyright holder looking to DMCA someone, you're barking up the wrong tree. Go find the extension developers or whoever is actually hosting the video files.
-
----
-
-## Contributing & Guidelines
-
-Contributions are welcome! However, to maintain stability, maintainability, and a unified vision, please adhere to the following rules:
-
-- **Architectural Authority**: The architecture, design system, state management patterns, and project direction remain strictly at the discretion of [@roshancodespace](https://github.com/roshancodespace).
-- **No Unsolicited Architectural Changes**: **Do not** submit PRs that alter the core architecture, restructure directory conventions, replace major dependencies, or rewrite foundational patterns. Unsolicited refactors will be closed.
-- **Discuss Major Changes First**: If you want to propose a significant feature or structural adjustment, open an Issue to discuss and obtain approval before starting work.
-- **What is Welcome**: Bug fixes, provider and extension bridge improvements, performance optimizations, localized UI polish matching existing design tokens, and features that adhere cleanly to the established architecture.
+For significant features, architectural changes, dependency changes, or
+structural refactors, please open an issue for discussion before submitting
+implementation work.
 
 ---
 

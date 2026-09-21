@@ -3,34 +3,38 @@ layout: home
 
 hero:
   name: "ShonenX"
-  text: "Open Source Ecosystem"
+  text: "Developer Documentation"
   image:
     src: /hero_mockup.jpg
-  tagline: "A beautifully crafted, developer-focused platform offering advanced tracking, episode scheduling, and a seamless native experience."
+  tagline: "An implementation-driven guide to modifying, extending, and understanding the ShonenX Flutter application."
   actions:
     - theme: brand
-      text: Get Started
+      text: User Installation
       link: /guide/installation
     - theme: alt
-      text: Developer Docs
-      link: /architecture/
+      text: Extensions Guide
+      link: /guide/extensions
     - theme: alt
-      text: GitHub Repository
-      link: https://github.com/roshancodespace/shonenx
+      text: Developer Docs
+      link: /setup/
 
 features:
-  - title: Developer First
+  - title: Riverpod State
     icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>'
-    details: Strict code boundaries and modular Riverpod architecture designed to simplify open-source contributions.
-  - title: Advanced Tracking
+    details: Learn our strict Riverpod dependency and state management patterns.
+    link: /core/state
+  - title: Tracker Integration
     icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21v-5h5"/></svg>'
-    details: Automatic progress synchronization with AniList, MyAnimeList, Simkl, and Kitsu.
-  - title: Schedule Reminders
-    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>'
-    details: Never miss an update with built-in episode reminder scheduling and notifications.
-  - title: Cross Platform
-    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><line x1="3" x2="21" y1="9" y2="9"/><line x1="9" x2="9" y1="21" y2="9"/></svg>'
-    details: Enjoy a seamless, native Flutter experience across Android, Windows, and Linux devices.
+    details: Discover how media progress syncs with AniList, MAL, and others.
+    link: /systems/tracking
+  - title: Source Engine
+    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="8" x="2" y="2" rx="2" ry="2"/><rect width="20" height="8" x="2" y="14" rx="2" ry="2"/><line x1="6" x2="6.01" y1="6" y2="6"/><line x1="6" x2="6.01" y1="18" y2="18"/></svg>'
+    details: Trace the request flow through the JS Extension Bridge.
+    link: /systems/source_engine
+  - title: Native Media
+    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>'
+    details: Dive into the native video player and local P2P torrent streaming.
+    link: /systems/player_and_downloads
 ---
 
 <style>
@@ -68,8 +72,8 @@ features:
 
 @media (max-width: 959px) {
   .VPHero .image {
-    margin: -24px auto 32px auto !important; /* Pull up to navbar, push down from text */
-    order: 1 !important; /* Ensure image is above text */
+    margin: -24px auto 32px auto !important;
+    order: 1 !important;
   }
   .VPHero .image-container {
     max-width: 140px !important;
@@ -99,8 +103,8 @@ features:
 
 ## Getting Started
 
-New to the project? Start with the [Installation Guide](/guide/installation) and [Extensions Guide](/guide/extensions). Developers can check out the [Architecture Overview](/architecture/) and read the [Contributing Guidelines](/development/contributing) to understand our boundaries.
+Whether you are a regular user or a contributor, here is how you can navigate ShonenX:
 
-::: warning Disclaimer
-ShonenX is an open-source tool that aggregates content from third-party sources. We do not host, store, or distribute any copyrighted media. The developers have no control over and are not responsible for the content provided by third-party extensions. Users are solely responsible for the extensions they install and the content they access.
-:::
+*   **Users:** Start with the [Installation Guide](/guide/installation) and learn how to add sources via the [Extensions Setup](/guide/extensions).
+*   **Developers:** Start with [Local Build Setup](/setup/) if you need to compile the project.
+*   **Developers:** Read the [Architecture Walkthrough](/setup/architecture) to understand where files belong, and trace data flows using the **Core Concepts** and **Key Systems** links in the sidebar.

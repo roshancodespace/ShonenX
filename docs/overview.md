@@ -11,7 +11,7 @@ ShonenX is a cross-platform Anime and Manga client built with Flutter. It aggreg
 
 ## Repository Map
 
-The repository separates generic UI frameworks from domain logic. Read the [Architecture Overview](/architecture/) for a deep dive into the layer boundaries.
+The repository separates generic UI frameworks from domain logic. Read the [Architecture Overview](/setup/architecture) for a deep dive into the layer boundaries.
 
 | Directory | Purpose |
 | --- | --- |

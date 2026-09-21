@@ -12,14 +12,24 @@ export default defineConfig({
   ],
   themeConfig: {
     logo: '/app_icon.png',
+    lastUpdated: {
+      text: 'Last updated',
+      formatOptions: {
+        dateStyle: 'medium'
+      }
+    },
+    editLink: {
+      pattern: 'https://github.com/roshancodespace/ShonenX/edit/main/docs/:path',
+      text: 'Edit this page'
+    },
     footer: {
       message: 'Released under the <a href="https://github.com/roshancodespace/ShonenX/blob/main/LICENSE" target="_blank" rel="noopener">GNU General Public License v3.0</a>.',
       copyright: 'Copyright © 2026-present Roshan (<a href="https://github.com/roshancodespace" target="_blank" rel="noopener">@roshancodespace</a>)'
     },
     nav: [
       { text: 'Home', link: '/' },
-      { text: 'Overview', link: '/overview' },
-      { text: 'Architecture', link: '/architecture/' },
+      { text: 'Setup', link: '/setup/' },
+      { text: 'Contributing', link: '/contributing/' },
       { text: 'Donate', link: 'https://www.buymeacoffee.com/roshan.codespace' }
     ],
 
@@ -31,41 +41,40 @@ export default defineConfig({
         ]
       },
       {
-        text: 'Guides',
+        text: 'User Guides',
         items: [
-          { text: 'Installation Guide', link: '/guide/installation' },
-          { text: 'Extensions Guide', link: '/guide/extensions' }
+          { text: 'Installation', link: '/guide/installation' },
+          { text: 'Extensions', link: '/guide/extensions' }
         ]
       },
       {
-        text: 'Architecture',
+        text: 'Developer Setup',
         items: [
-          { text: 'System Overview', link: '/architecture/' },
-          { text: 'Data Flow & State', link: '/architecture/data_flow' },
-          { text: 'Core Infrastructure', link: '/architecture/infrastructure' }
+          { text: 'Local Build', link: '/setup/' },
+          { text: 'Architecture', link: '/setup/architecture' }
         ]
       },
       {
-        text: 'Features',
+        text: 'Core Concepts',
         items: [
-          { text: 'Media Playback', link: '/features/player' },
-          { text: 'Tracking & Sync', link: '/features/tracking' },
-          { text: 'Downloads', link: '/features/downloads' }
+          { text: 'State', link: '/core/state' },
+          { text: 'Data', link: '/core/data' },
+          { text: 'Routing', link: '/core/routing' }
         ]
       },
       {
-        text: 'Source Engine',
+        text: 'Key Systems',
         items: [
-          { text: 'Overview', link: '/extensions/' },
-          { text: 'Extension Bridge', link: '/extensions/bridge' },
-          { text: 'Matchmaker', link: '/extensions/matchmaker' }
+          { text: 'Source Engine', link: '/systems/source_engine' },
+          { text: 'Tracking', link: '/systems/tracking' },
+          { text: 'Player & Downloads', link: '/systems/player_and_downloads' }
         ]
       },
       {
-        text: 'Development',
+        text: 'Contributing',
         items: [
-          { text: 'Local Setup', link: '/development/setup' },
-          { text: 'Contributing Guidelines', link: '/development/contributing' }
+          { text: 'Guidelines', link: '/contributing/' },
+          { text: 'Common Tasks', link: '/contributing/common_tasks' }
         ]
       }
     ],

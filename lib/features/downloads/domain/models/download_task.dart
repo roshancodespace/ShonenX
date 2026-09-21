@@ -57,6 +57,8 @@ class DownloadTask {
   int downloadedBytes = 0;
 
   @ignore
+  String speed = '';
+  @ignore
   int downloadedSegments = 0;
   @ignore
   int totalSegments = 0;

@@ -41,56 +41,50 @@ class MediaSwitcherOverlay extends StatelessWidget {
         final colorScheme = Theme.of(context).colorScheme;
         final hasSearch = onSearchTap != null && !isSearchActive;
 
-        return Padding(
-          padding: const EdgeInsets.all(8),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Flexible(
-                child: Container(
-                  height: 48,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 4,
-                  ),
-                  decoration: _buildDecoration(colorScheme, roundness),
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        for (int i = 0; i < supportedTypes.length; i++)
-                          _MediaTabPill(
-                            type: supportedTypes[i],
-                            isSelected: controller.index == i,
-                            uiRoundness: innerRadius,
-                            onTap: () => controller.animateTo(i),
-                          ),
-                      ],
-                    ),
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(
+              child: Container(
+                height: 48,
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                decoration: _buildDecoration(colorScheme, roundness),
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      for (int i = 0; i < supportedTypes.length; i++)
+                        _MediaTabPill(
+                          type: supportedTypes[i],
+                          isSelected: controller.index == i,
+                          uiRoundness: innerRadius,
+                          onTap: () => controller.animateTo(i),
+                        ),
+                    ],
                   ),
                 ),
               ),
-              if (hasSearch) ...[
-                const SizedBox(width: 8),
-                GestureDetector(
-                  onTap: onSearchTap,
-                  behavior: HitTestBehavior.opaque,
-                  child: Container(
-                    width: 48,
-                    height: 48,
-                    decoration: _buildDecoration(colorScheme, roundness),
-                    alignment: Alignment.center,
-                    child: Icon(
-                      Icons.search_rounded,
-                      color: colorScheme.onSurfaceVariant,
-                      size: 22,
-                    ),
+            ),
+            if (hasSearch) ...[
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: onSearchTap,
+                behavior: HitTestBehavior.opaque,
+                child: Container(
+                  width: 48,
+                  height: 48,
+                  decoration: _buildDecoration(colorScheme, roundness),
+                  alignment: Alignment.center,
+                  child: Icon(
+                    Icons.search_rounded,
+                    color: colorScheme.onSurfaceVariant,
+                    size: 22,
                   ),
                 ),
-              ],
+              ),
             ],
-          ),
+          ],
         );
       },
     );

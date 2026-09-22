@@ -409,7 +409,11 @@ class PlayerController extends Notifier<PlayerState> {
         for (final sub in stream.subtitles) {
           if (!activeServerSeenUrls.contains(sub.url) && sub.url.isNotEmpty) {
             activeServerSeenUrls.add(sub.url);
-            labelledSubtitles.add(sub.copyWith(label: stream.quality));
+            labelledSubtitles.add(
+              sub.copyWith(
+                label: _resolveSubtitleLabel(sub, stream, activeServer),
+              ),
+            );
           }
         }
       }
@@ -455,6 +459,57 @@ class PlayerController extends Notifier<PlayerState> {
     }
   }
 
+  /// Formats a descriptive label for a subtitle track using server name,
+  /// non-default quality, and provider-specific details (avoiding raw 'Auto'/'Default').
+  String? _resolveSubtitleLabel(
+    SubtitleTrack sub,
+    VideoStream stream,
+    VideoServer? server,
+  ) {
+    final serverName = server?.name.trim();
+    final originalLabel = sub.label?.trim();
+    final quality = stream.quality.trim();
+    final hasQuality = quality.isNotEmpty && quality.toLowerCase() != 'auto';
+
+    final parts = <String>[];
+
+    // 1. Server name (e.g. "HD-1", "HD-2", "ZokoAnime")
+    if (serverName != null &&
+        serverName.isNotEmpty &&
+        serverName.toLowerCase() != 'default' &&
+        serverName.toLowerCase() != 'auto') {
+      parts.add(serverName);
+    }
+
+    // 2. Specific non-auto stream quality if present (e.g. "1080p")
+    if (hasQuality) {
+      parts.add(quality);
+    }
+
+    // 3. Provider-specific subtitle label if present and non-redundant
+    if (originalLabel != null &&
+        originalLabel.isNotEmpty &&
+        originalLabel.toLowerCase() != 'auto' &&
+        originalLabel.toLowerCase() != 'default' &&
+        originalLabel.toLowerCase() != sub.language.toLowerCase() &&
+        (serverName == null ||
+            !originalLabel.toLowerCase().contains(serverName.toLowerCase()))) {
+      parts.add(originalLabel);
+    }
+
+    if (parts.isEmpty) {
+      if (serverName != null &&
+          serverName.isNotEmpty &&
+          serverName.toLowerCase() != 'default' &&
+          serverName.toLowerCase() != 'auto') {
+        return serverName;
+      }
+      return null;
+    }
+
+    return parts.join(' • ');
+  }
+
   Future<void> _fetchAdditionalSubtitles(String episodeId) async {
     if (_source == null) return;
 
@@ -480,11 +535,14 @@ class PlayerController extends Notifier<PlayerState> {
     final Set<String> seenUrls = newSubtitles.map((e) => e.url).toSet();
 
     for (int i = 0; i < otherServers.length; i++) {
+      final server = otherServers[i];
       for (final stream in streamsList[i]) {
         for (final sub in stream.subtitles) {
           if (!seenUrls.contains(sub.url) && sub.url.isNotEmpty) {
             seenUrls.add(sub.url);
-            newSubtitles.add(sub.copyWith(label: stream.quality));
+            newSubtitles.add(
+              sub.copyWith(label: _resolveSubtitleLabel(sub, stream, server)),
+            );
           }
         }
       }

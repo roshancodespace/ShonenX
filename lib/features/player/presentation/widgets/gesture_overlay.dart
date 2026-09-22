@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -92,16 +93,18 @@ class _PlayerGestureOverlayState extends ConsumerState<PlayerGestureOverlay> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final prefs = ref.watch(playerPrefsProvider.select((s) => s.gesturePrefs));
+    final cs = Theme.of(context).colorScheme;
     final isDraggingVolume = prefs.swapVolumeAndBrightness
         ? _isLeftSwipe
         : !_isLeftSwipe;
     final dragValue = isDraggingVolume ? _volume : _brightness;
 
-    String speedText = _currentSpeed.toString();
-    if (speedText.endsWith('.0')) {
-      speedText = speedText.substring(0, speedText.length - 2);
+    String speedText = _currentSpeed.toStringAsFixed(2);
+    if (speedText.endsWith('.00')) {
+      speedText = speedText.substring(0, speedText.length - 3);
+    } else if (speedText.endsWith('0')) {
+      speedText = speedText.substring(0, speedText.length - 1);
     }
     speedText += 'x';
 
@@ -162,7 +165,6 @@ class _PlayerGestureOverlayState extends ConsumerState<PlayerGestureOverlay> {
                         final width = constraints.maxWidth;
                         final height = constraints.maxHeight;
 
-                        // Restrict dragging to within margins
                         if (dy < height * prefs.topMargin ||
                             dy > height * (1.0 - prefs.bottomMargin) ||
                             dx < width * prefs.leftMargin ||
@@ -222,7 +224,6 @@ class _PlayerGestureOverlayState extends ConsumerState<PlayerGestureOverlay> {
                         final width = constraints.maxWidth;
                         final height = constraints.maxHeight;
 
-                        // Restrict long press to within margins
                         if (dy < height * prefs.topMargin ||
                             dy > height * (1.0 - prefs.bottomMargin) ||
                             dx < width * prefs.leftMargin ||
@@ -270,7 +271,6 @@ class _PlayerGestureOverlayState extends ConsumerState<PlayerGestureOverlay> {
             },
           ),
         ),
-
         Positioned.fill(
           child: IgnorePointer(
             child: Stack(
@@ -337,97 +337,98 @@ class _PlayerGestureOverlayState extends ConsumerState<PlayerGestureOverlay> {
                     ),
                   ),
                 if (_isDragging)
-                  Positioned(
-                    bottom: 48,
-                    left: 0,
-                    right: 0,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              isDraggingVolume
-                                  ? (_volume <= 0.0
-                                        ? Icons.volume_mute_rounded
-                                        : (_volume < 0.5
-                                              ? Icons.volume_down_rounded
-                                              : Icons.volume_up_rounded))
-                                  : Icons.light_mode_rounded,
-                              color: Colors.white,
-                              size: 28,
-                            ),
-                            const SizedBox(width: 12),
-                            Text(
+                  Align(
+                    alignment: _isLeftSwipe
+                        ? Alignment.centerLeft
+                        : Alignment.centerRight,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 40),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 60,
+                            alignment: Alignment.center,
+                            child: Text(
                               '${(dragValue * 100).toInt()}%',
                               style: const TextStyle(
                                 color: Colors.white,
-                                fontSize: 20,
+                                fontSize: 16,
                                 fontWeight: FontWeight.w700,
-                                letterSpacing: 1.2,
+                                fontFeatures: [FontFeature.tabularFigures()],
                               ),
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        SizedBox(
-                          height: 20,
-                          width: double.infinity,
-                          child: CustomPaint(
-                            painter: _SkewedBlocksPainter(
-                              value: dragValue,
-                              isLeft: _isLeftSwipe,
-                              color: theme.colorScheme.primary,
+                          ),
+                          const SizedBox(height: 12),
+                          Container(
+                            width: 48,
+                            height: 160,
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.5),
+                              borderRadius: BorderRadius.circular(24),
+                            ),
+                            clipBehavior: Clip.antiAlias,
+                            alignment: Alignment.bottomCenter,
+                            child: FractionallySizedBox(
+                              heightFactor: dragValue,
+                              child: Container(color: cs.primary),
                             ),
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 12),
+                          Icon(
+                            isDraggingVolume
+                                ? (_volume <= 0.0
+                                      ? Icons.volume_mute_rounded
+                                      : (_volume < 0.5
+                                            ? Icons.volume_down_rounded
+                                            : Icons.volume_up_rounded))
+                                : Icons.light_mode_rounded,
+                            color: Colors.white,
+                            size: 28,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 if (_isSpeedScrubbing)
-                  Positioned(
-                    bottom: 48,
-                    left: 0,
-                    right: 0,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Row(
+                  Align(
+                    alignment: Alignment.topCenter,
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 48),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.6),
+                          borderRadius: BorderRadius.circular(32),
+                        ),
+                        child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             const Icon(
                               Icons.speed_rounded,
                               color: Colors.white,
-                              size: 28,
+                              size: 24,
                             ),
-                            const SizedBox(width: 12),
-                            Text(
-                              speedText,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 20,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 1.2,
+                            const SizedBox(width: 8),
+                            SizedBox(
+                              width: 56,
+                              child: Text(
+                                speedText,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                  fontFeatures: [FontFeature.tabularFigures()],
+                                ),
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 16),
-                        SizedBox(
-                          height: 20,
-                          width: double.infinity,
-                          child: CustomPaint(
-                            painter: _SkewedBlocksPainter(
-                              value:
-                                  (_currentSpeed - 0.25) /
-                                  2.75, // Normalize 0.25-3.0 to 0.0-1.0
-                              isLeft: false, // Start from left for speed
-                              color: theme.colorScheme.primary,
-                            ),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   ),
               ],
@@ -436,87 +437,5 @@ class _PlayerGestureOverlayState extends ConsumerState<PlayerGestureOverlay> {
         ),
       ],
     );
-  }
-}
-
-class _SkewedBlocksPainter extends CustomPainter {
-  final double value;
-  final bool isLeft;
-  final Color color;
-
-  _SkewedBlocksPainter({
-    required this.value,
-    required this.isLeft,
-    required this.color,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    const int totalBlocks = 32;
-    const double blockWidth = 8.0;
-    const double blockSpacing = 4.0;
-    const double skewOffset =
-        8.0; // How much the top is shifted right relative to bottom
-
-    final double totalWidth =
-        (totalBlocks * blockWidth) +
-        ((totalBlocks - 1) * blockSpacing) +
-        skewOffset;
-    final double startX = (size.width - totalWidth) / 2;
-
-    final activePaint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
-
-    final glowPaint = Paint()
-      ..color = color.withValues(alpha: 0.6)
-      ..style = PaintingStyle.fill
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
-
-    final inactivePaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.2)
-      ..style = PaintingStyle.fill;
-
-    final int activeBlocksCount = (value * totalBlocks).round();
-
-    for (int i = 0; i < totalBlocks; i++) {
-      // If it's volume (right swipe), we can fill from left-to-right, or we can just always fill left-to-right.
-      // A common pattern is filling from center outwards, or just left-to-right. Let's do left-to-right.
-      bool isActive = isLeft
-          ? (i < activeBlocksCount) // Fill left-to-right
-          : (i >=
-                totalBlocks -
-                    activeBlocksCount); // Fill right-to-left for volume, or keep it left-to-right. Let's keep it left-to-right for consistency, so i < activeBlocksCount.
-
-      // Actually, standard is left-to-right for all progress bars.
-      isActive = i < activeBlocksCount;
-
-      final double blockStartX = startX + i * (blockWidth + blockSpacing);
-
-      final path = Path();
-      // Bottom left
-      path.moveTo(blockStartX, size.height);
-      // Bottom right
-      path.lineTo(blockStartX + blockWidth, size.height);
-      // Top right (skewed right)
-      path.lineTo(blockStartX + blockWidth + skewOffset, 0);
-      // Top left (skewed right)
-      path.lineTo(blockStartX + skewOffset, 0);
-      path.close();
-
-      if (isActive) {
-        canvas.drawPath(path, glowPaint);
-        canvas.drawPath(path, activePaint);
-      } else {
-        canvas.drawPath(path, inactivePaint);
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _SkewedBlocksPainter oldDelegate) {
-    return oldDelegate.value != value ||
-        oldDelegate.isLeft != isLeft ||
-        oldDelegate.color != color;
   }
 }

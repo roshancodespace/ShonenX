@@ -315,7 +315,7 @@ class SettingsRadioTile<T> extends StatelessWidget {
 class SettingsSliderTile extends StatefulWidget {
   final IconData icon;
   final String title;
-  final String subtitle;
+  final String? subtitle;
   final double value;
   final double min;
   final double max;
@@ -328,7 +328,7 @@ class SettingsSliderTile extends StatefulWidget {
     super.key,
     required this.icon,
     required this.title,
-    required this.subtitle,
+    this.subtitle,
     required this.value,
     this.min = 0.0,
     this.max = 1.0,
@@ -427,13 +427,14 @@ class _SettingsSliderTileState extends State<SettingsSliderTile> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 2),
-          Text(
-            widget.subtitle,
-            style: TextStyle(
-              fontSize: 12,
-              color: theme.colorScheme.onSurfaceVariant,
+          if (widget.subtitle != null)
+            Text(
+              widget.subtitle!,
+              style: TextStyle(
+                fontSize: 12,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
-          ),
           Slider.adaptive(
             focusNode: _effectiveFocusNode,
             value: widget.value,

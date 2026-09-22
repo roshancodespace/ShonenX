@@ -259,7 +259,16 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
             value: widget.playerState.activeSubtitle,
             items: widget.playerState.subtitles,
             itemLabel: (s) => s.language,
-            subtitleBuilder: (s) => s.label,
+            subtitleBuilder: (s) {
+              final label = s.label?.trim();
+              if (label == null ||
+                  label.isEmpty ||
+                  label.toLowerCase() == 'auto' ||
+                  label.toLowerCase() == 'default') {
+                return null;
+              }
+              return label;
+            },
             onChanged: (v) {
               widget.controller.changeSubtitle(v);
             },
@@ -504,22 +513,31 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
                     context,
                   ).copyWith(dividerColor: Colors.transparent),
                   child: ExpansionTile(
+                    initiallyExpanded: entry.value.any(
+                      (sub) => activeSub == sub,
+                    ),
                     title: Text(
                       entry.key,
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
-                        color: theme.colorScheme.onSurface,
+                        color: entry.value.any((sub) => activeSub == sub)
+                            ? theme.colorScheme.primary
+                            : theme.colorScheme.onSurface,
                       ),
                     ),
                     childrenPadding: const EdgeInsets.only(left: 12),
                     children: [
-                      for (final sub in entry.value)
+                      for (int i = 0; i < entry.value.length; i++)
                         Padding(
                           padding: const EdgeInsets.only(bottom: 4),
                           child: _buildSubtitleTile(
-                            sub,
-                            activeSub == sub,
-                            title: sub.label ?? 'Default',
+                            entry.value[i],
+                            activeSub == entry.value[i],
+                            title: _resolveSubtitleItemTitle(
+                              entry.value[i],
+                              i,
+                              entry.value,
+                            ),
                           ),
                         ),
                     ],
@@ -531,6 +549,27 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
     );
   }
 
+  String _resolveSubtitleItemTitle(
+    SubtitleTrack sub,
+    int index,
+    List<SubtitleTrack> group,
+  ) {
+    final label = sub.label?.trim();
+    if (label != null &&
+        label.isNotEmpty &&
+        label.toLowerCase() != 'auto' &&
+        label.toLowerCase() != 'default') {
+      final duplicateCount = group
+          .where((s) => s.label?.trim() == label)
+          .length;
+      if (duplicateCount > 1) {
+        return '$label (${index + 1})';
+      }
+      return label;
+    }
+    return 'Track ${index + 1}';
+  }
+
   Widget _buildSubtitleTile(
     SubtitleTrack item,
     bool isSelected, {
@@ -538,6 +577,16 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
     String? subtitle,
   }) {
     final theme = Theme.of(context);
+    final cleanSubtitle =
+        (subtitle != null &&
+            subtitle.trim().isNotEmpty &&
+            subtitle.trim().toLowerCase() != 'auto' &&
+            subtitle.trim().toLowerCase() != 'default' &&
+            (title == null ||
+                subtitle.trim().toLowerCase() != title.trim().toLowerCase()))
+        ? subtitle.trim()
+        : null;
+
     return ListTile(
       selected: isSelected,
       selectedTileColor: theme.colorScheme.primary.withValues(alpha: 0.1),
@@ -560,9 +609,9 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
               : theme.colorScheme.onSurface,
         ),
       ),
-      subtitle: subtitle != null
+      subtitle: cleanSubtitle != null
           ? Text(
-              subtitle,
+              cleanSubtitle,
               style: TextStyle(
                 fontSize: 12,
                 color: theme.colorScheme.onSurfaceVariant,

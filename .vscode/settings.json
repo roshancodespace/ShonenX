@@ -1,3 +1,15 @@
 {
-  "dart.flutterSdkPath": ".fvm/versions/3.41.9"
+  "dart.flutterSdkPath": ".fvm/versions/3.41.9",
+  "dart.enableSdkFormatter": true,
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll": "explicit"
+  },
+  "editor.suggest.snippetsPreventQuickSuggestions": false,
+  "dart.showTodos": true,
+  "editor.quickSuggestions": {
+    "other": true,
+    "comments": false,
+    "strings": false
+  }
 }

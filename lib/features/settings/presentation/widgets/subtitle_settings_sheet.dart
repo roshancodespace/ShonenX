@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,7 +5,6 @@ import 'package:shonenx/core/utils/responsive.dart';
 import 'package:shonenx/features/player/domain/subtitle_prefs.dart';
 import 'package:shonenx/features/player/providers/subtitle_prefs_provider.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
-import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 
 class SubtitleSettingsSheet extends ConsumerStatefulWidget {
@@ -25,21 +22,18 @@ class _SubtitleSettingsSheetState extends ConsumerState<SubtitleSettingsSheet> {
   Widget build(BuildContext context) {
     final prefs = ref.watch(subtitlePrefsProvider);
     final notifier = ref.read(subtitlePrefsProvider.notifier);
-
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-
     final r = context.responsiveOrNull ?? ResponsiveData.from(context);
     final screenWidth = r.width;
     final bool isWide = r.isLandscape && r.widthTier.isAtLeast_medium;
-
     final responsiveFontSize = getResponsiveSubtitleSize(
       screenWidth,
       prefs.fontSize,
     );
 
     if (isWide) {
-      final double paneWidth = (screenWidth * 0.26).clamp(260.0, 360.0);
+      final double paneWidth = (screenWidth * 0.32).clamp(320.0, 380.0);
       final routeAnimation =
           ModalRoute.of(context)?.animation ??
           const AlwaysStoppedAnimation(1.0);
@@ -48,68 +42,115 @@ class _SubtitleSettingsSheetState extends ConsumerState<SubtitleSettingsSheet> {
         curve: Curves.easeOutCubic,
         reverseCurve: Curves.easeInCubic,
       );
-      final leftSlide = Tween<Offset>(
-        begin: const Offset(-1.0, 0.0),
-        end: Offset.zero,
-      ).animate(curve);
-      final rightSlide = Tween<Offset>(
+      final slide = Tween<Offset>(
         begin: const Offset(1.0, 0.0),
         end: Offset.zero,
       ).animate(curve);
 
       return SafeArea(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // LEFT PANE
-            SlideTransition(
-              position: leftSlide,
-              child: _buildMinimalPane(
-                context: context,
-                borderRadius: BorderRadiusGeometry.only(
-                  topRight: Radius.circular(GlobalUI.uiRoundness),
-                  bottomRight: Radius.circular(GlobalUI.uiRoundness),
+        child: Material(
+          color: Colors.transparent,
+          child: Row(
+            children: [
+              Expanded(
+                child: Center(
+                  child: _buildPreviewText(prefs, responsiveFontSize),
                 ),
-                width: paneWidth,
-                alignRight: false,
-                onReset: () => notifier.updatePrefs(const SubtitlePrefs()),
-                children: _buildBasicSettings(prefs, notifier, theme, cs),
               ),
-            ),
-
-            // MIDDLE
-            Expanded(
-              child: Center(
-                child: _buildPreviewText(prefs, responsiveFontSize),
-              ),
-            ),
-
-            // RIGHT PANE
-            SlideTransition(
-              position: rightSlide,
-              child: _buildMinimalPane(
-                context: context,
-                borderRadius: BorderRadiusGeometry.only(
-                  topLeft: Radius.circular(GlobalUI.uiRoundness),
-                  bottomLeft: Radius.circular(GlobalUI.uiRoundness),
+              SlideTransition(
+                position: slide,
+                child: Container(
+                  width: paneWidth,
+                  margin: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: cs.surface.withValues(alpha: 0.95),
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 24,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 16, 12, 8),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  'Subtitles',
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                              _HeaderIconButton(
+                                icon: Icons.refresh_rounded,
+                                onTap: () =>
+                                    notifier.updatePrefs(const SubtitlePrefs()),
+                              ),
+                              const SizedBox(width: 4),
+                              _HeaderIconButton(
+                                icon: Icons.close_rounded,
+                                onTap: () => Navigator.of(context).pop(),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Expanded(
+                          child: ListView(
+                            padding: const EdgeInsets.only(bottom: 16),
+                            children: [
+                              ..._buildBasicSettings(
+                                prefs,
+                                notifier,
+                                theme,
+                                cs,
+                              ),
+                              Theme(
+                                data: theme.copyWith(
+                                  dividerColor: Colors.transparent,
+                                ),
+                                child: ExpansionTile(
+                                  title: Text(
+                                    'Advanced Settings',
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      color: cs.primary,
+                                    ),
+                                  ),
+                                  children: _buildAdvancedSettings(
+                                    prefs,
+                                    notifier,
+                                    theme,
+                                    cs,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-                width: paneWidth,
-                alignRight: true,
-                onClose: () => Navigator.of(context).pop(),
-                children: _buildAdvancedSettings(prefs, notifier, theme, cs),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       );
     }
 
-    // 1-COLUMN PORTRAIT LAYOUT
     return AppBottomSheet(
       title: 'Subtitle Preferences',
       actions: [
         IconButton.filledTonal(
-          tooltip: 'Live Preview Toggle',
           style: IconButton.styleFrom(
             backgroundColor: _showLivePreview
                 ? cs.primaryContainer
@@ -128,7 +169,6 @@ class _SubtitleSettingsSheetState extends ConsumerState<SubtitleSettingsSheet> {
         ),
         const SizedBox(width: 8),
         IconButton.filledTonal(
-          tooltip: 'Reset to Defaults',
           style: IconButton.styleFrom(
             backgroundColor: cs.errorContainer,
             foregroundColor: cs.onErrorContainer,
@@ -143,7 +183,7 @@ class _SubtitleSettingsSheetState extends ConsumerState<SubtitleSettingsSheet> {
         children: [
           if (_showLivePreview) ...[
             Container(
-              padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+              padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 20),
               decoration: const BoxDecoration(
                 image: DecorationImage(
                   image: CachedNetworkImageProvider(
@@ -158,24 +198,21 @@ class _SubtitleSettingsSheetState extends ConsumerState<SubtitleSettingsSheet> {
             ),
             Divider(color: cs.outlineVariant.withValues(alpha: 0.3), height: 1),
           ],
-
           Flexible(
             child: ListView(
               shrinkWrap: true,
               children: [
                 ..._buildBasicSettings(prefs, notifier, theme, cs),
-                const SizedBox(height: 8),
                 Theme(
-                  data: Theme.of(
-                    context,
-                  ).copyWith(dividerColor: Colors.transparent),
+                  data: theme.copyWith(dividerColor: Colors.transparent),
                   child: ExpansionTile(
-                    title: const Text(
+                    title: Text(
                       'Advanced Settings',
-                      style: TextStyle(fontWeight: FontWeight.w600),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: cs.primary,
+                      ),
                     ),
-                    tilePadding: const EdgeInsets.symmetric(horizontal: 4),
-                    childrenPadding: const EdgeInsets.only(bottom: 8),
                     children: _buildAdvancedSettings(
                       prefs,
                       notifier,
@@ -188,62 +225,6 @@ class _SubtitleSettingsSheetState extends ConsumerState<SubtitleSettingsSheet> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildMinimalPane({
-    required BuildContext context,
-    required double width,
-    required bool alignRight,
-    required BorderRadiusGeometry borderRadius,
-    VoidCallback? onReset,
-    VoidCallback? onClose,
-    required List<Widget> children,
-  }) {
-    final cs = Theme.of(context).colorScheme;
-    final action = onClose != null
-        ? _HeaderIconButton(icon: Icons.close_rounded, onTap: onClose)
-        : onReset != null
-        ? _HeaderIconButton(icon: Icons.refresh_rounded, onTap: onReset)
-        : null;
-
-    return ClipRRect(
-      borderRadius: borderRadius,
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-        child: Container(
-          width: width,
-          decoration: BoxDecoration(color: cs.surface),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (action != null)
-                Padding(
-                  padding: EdgeInsets.only(
-                    top: 10,
-                    left: alignRight ? 10 : 14,
-                    right: alignRight ? 14 : 10,
-                    bottom: 2,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: alignRight
-                        ? MainAxisAlignment.end
-                        : MainAxisAlignment.start,
-                    children: [action],
-                  ),
-                )
-              else
-                const SizedBox(height: 10),
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.symmetric(vertical: 2),
-                  children: children,
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
@@ -264,8 +245,8 @@ class _SubtitleSettingsSheetState extends ConsumerState<SubtitleSettingsSheet> {
               ),
               decoration: prefs.backgroundColor != 0x00000000
                   ? BoxDecoration(
-                      color: prefs.bg,
-                      borderRadius: BorderRadius.circular(4.0),
+                      color: Color(prefs.backgroundColor),
+                      borderRadius: BorderRadius.circular(6.0),
                     )
                   : null,
               child: Stack(
@@ -309,56 +290,32 @@ class _SubtitleSettingsSheetState extends ConsumerState<SubtitleSettingsSheet> {
     return [
       SettingsSwitchTile(
         icon: Icons.subtitles_outlined,
-        title: 'Custom Overlay Engine',
-        subtitle: 'Overrides default player subtitles',
+        title: 'Custom Engine Overlay',
         value: prefs.useCustomSubtitle,
         onChanged: (value) {
           notifier.updatePrefs(prefs.copyWith(useCustomSubtitle: value));
         },
       ),
-      if (!prefs.useCustomSubtitle) ...[
-        const SizedBox(height: 8),
-        Container(
-          margin: const EdgeInsets.symmetric(horizontal: 14),
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: cs.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(16),
-          ),
+      if (!prefs.useCustomSubtitle)
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(
-                Icons.info_outline_rounded,
-                size: 18,
-                color: cs.onSurfaceVariant,
-              ),
-              const SizedBox(width: 12),
+              Icon(Icons.info_outline_rounded, size: 16, color: cs.error),
+              const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Native subtitles are active. Some appearance settings may not apply.',
+                  'Native subtitles active. Some appearance settings may be ignored.',
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: cs.onSurfaceVariant,
-                    height: 1.4,
+                    color: cs.error,
+                    height: 1.3,
                   ),
                 ),
               ),
             ],
           ),
         ),
-      ],
-      const SizedBox(height: 12),
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Text(
-          'APPEARANCE',
-          style: theme.textTheme.labelMedium?.copyWith(
-            color: cs.primary,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 0.5,
-          ),
-        ),
-      ),
       SettingsDropdownTile<String>(
         icon: Icons.font_download_outlined,
         title: 'Font Family',
@@ -375,7 +332,6 @@ class _SubtitleSettingsSheetState extends ConsumerState<SubtitleSettingsSheet> {
       SettingsSliderTile(
         icon: Icons.format_size_rounded,
         title: 'Size Scale',
-        subtitle: 'Responsive based on screen width',
         value: prefs.fontSize,
         min: 0.5,
         max: 3.0,
@@ -409,12 +365,12 @@ class _SubtitleSettingsSheetState extends ConsumerState<SubtitleSettingsSheet> {
       ),
       SettingsActionTile(
         icon: Icons.format_color_fill_rounded,
-        title: 'Background',
+        title: 'Background Color',
         trailing: _ColorIndicator(colorValue: prefs.backgroundColor),
         onTap: () {
           _showColorSheet(
             context,
-            title: 'Background',
+            title: 'Background Color',
             currentValue: prefs.backgroundColor,
             options: const [0x00000000, 0x80000000, 0xFF000000, 0x80FFFFFF],
             onChanged: (value) {
@@ -426,7 +382,6 @@ class _SubtitleSettingsSheetState extends ConsumerState<SubtitleSettingsSheet> {
       SettingsSwitchTile(
         icon: Icons.format_bold_rounded,
         title: 'Bold Text',
-        subtitle: 'Use thicker font weight',
         value: prefs.bold,
         onChanged: (value) {
           notifier.updatePrefs(prefs.copyWith(bold: value));
@@ -435,7 +390,6 @@ class _SubtitleSettingsSheetState extends ConsumerState<SubtitleSettingsSheet> {
       SettingsSliderTile(
         icon: Icons.format_line_spacing_rounded,
         title: 'Line Height',
-        subtitle: 'Vertical gap between subtitle lines',
         value: prefs.lineHeight,
         min: 0.8,
         max: 2.0,
@@ -474,7 +428,6 @@ class _SubtitleSettingsSheetState extends ConsumerState<SubtitleSettingsSheet> {
       SettingsSliderTile(
         icon: Icons.line_weight_rounded,
         title: 'Outline Size',
-        subtitle: 'Thickness of the stroke border',
         value: prefs.outlineSize,
         min: 0.0,
         max: 5.0,
@@ -486,12 +439,12 @@ class _SubtitleSettingsSheetState extends ConsumerState<SubtitleSettingsSheet> {
       ),
       SettingsActionTile(
         icon: Icons.blur_on_rounded,
-        title: 'Drop Shadow Color',
+        title: 'Shadow Color',
         trailing: _ColorIndicator(colorValue: prefs.shadowColor),
         onTap: () {
           _showColorSheet(
             context,
-            title: 'Drop Shadow Color',
+            title: 'Shadow Color',
             currentValue: prefs.shadowColor,
             options: const [0x00000000, 0x80000000, 0xFF000000],
             onChanged: (value) {
@@ -502,8 +455,7 @@ class _SubtitleSettingsSheetState extends ConsumerState<SubtitleSettingsSheet> {
       ),
       SettingsSliderTile(
         icon: Icons.blur_linear_rounded,
-        title: 'Drop Shadow Blur',
-        subtitle: 'Softness of drop shadow behind text',
+        title: 'Shadow Blur',
         value: prefs.shadowBlur,
         min: 0.0,
         max: 10.0,
@@ -516,7 +468,6 @@ class _SubtitleSettingsSheetState extends ConsumerState<SubtitleSettingsSheet> {
       SettingsSliderTile(
         icon: Icons.vertical_align_bottom_rounded,
         title: 'Bottom Padding',
-        subtitle: 'Distance from bottom edge',
         value: prefs.bottomPadding,
         min: 0,
         max: 100,
@@ -529,7 +480,6 @@ class _SubtitleSettingsSheetState extends ConsumerState<SubtitleSettingsSheet> {
       SettingsSliderTile(
         icon: Icons.padding_rounded,
         title: 'Background Padding',
-        subtitle: 'Padding around background container',
         value: prefs.padding,
         min: 0,
         max: 30,
@@ -542,7 +492,6 @@ class _SubtitleSettingsSheetState extends ConsumerState<SubtitleSettingsSheet> {
       SettingsSliderTile(
         icon: Icons.space_bar_rounded,
         title: 'Letter Spacing',
-        subtitle: 'Space between character letters',
         value: prefs.letterSpacing,
         min: -2.0,
         max: 5.0,
@@ -555,7 +504,6 @@ class _SubtitleSettingsSheetState extends ConsumerState<SubtitleSettingsSheet> {
       SettingsSliderTile(
         icon: Icons.notes_rounded,
         title: 'Word Spacing',
-        subtitle: 'Space between words',
         value: prefs.wordSpacing,
         min: -3.0,
         max: 10.0,
@@ -594,7 +542,7 @@ class _SubtitleSettingsSheetState extends ConsumerState<SubtitleSettingsSheet> {
           child: SafeArea(
             top: false,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+              padding: const EdgeInsets.all(24),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -605,10 +553,10 @@ class _SubtitleSettingsSheetState extends ConsumerState<SubtitleSettingsSheet> {
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20),
                   Wrap(
-                    spacing: 14,
-                    runSpacing: 14,
+                    spacing: 12,
+                    runSpacing: 12,
                     children: options.map((colorValue) {
                       final selected = currentValue == colorValue;
                       final transparent = colorValue == 0x00000000;
@@ -620,8 +568,8 @@ class _SubtitleSettingsSheetState extends ConsumerState<SubtitleSettingsSheet> {
                         },
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 150),
-                          width: 48,
-                          height: 48,
+                          width: 44,
+                          height: 44,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: transparent
@@ -653,11 +601,13 @@ class _SubtitleSettingsSheetState extends ConsumerState<SubtitleSettingsSheet> {
                   TextField(
                     controller: textController,
                     decoration: InputDecoration(
-                      labelText: 'Custom Hex (AARRGGBB)',
-                      border: const OutlineInputBorder(),
+                      labelText: 'Hex Code (AARRGGBB)',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16,
-                        vertical: 12,
+                        vertical: 14,
                       ),
                       suffixIcon: IconButton(
                         icon: const Icon(Icons.check_rounded),
@@ -704,8 +654,8 @@ class _HeaderIconButton extends StatelessWidget {
       customBorder: const CircleBorder(),
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.all(6),
-        child: Icon(icon, color: cs.onSurfaceVariant),
+        padding: const EdgeInsets.all(8),
+        child: Icon(icon, color: cs.onSurfaceVariant, size: 20),
       ),
     );
   }
@@ -722,8 +672,8 @@ class _ColorIndicator extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
 
     return Container(
-      width: 22,
-      height: 22,
+      width: 20,
+      height: 20,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: transparent ? cs.surfaceContainerHighest : Color(colorValue),

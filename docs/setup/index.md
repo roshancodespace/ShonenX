@@ -15,6 +15,20 @@ ShonenX relies on a native C++ runner and specific Rust networking bindings. You
     *   Required for native C++ desktop builds on Windows and Linux.
 4.  **Android Studio / NDK** 
     *   Required for Android builds. Make sure you have the NDK installed via the SDK Manager.
+5.  **Linux System Dependencies (for Linux desktop builds)**
+    *   Building the Linux desktop client requires development libraries for GTK, media playback (`libmpv`), and in-app webview (`WPE WebKit`):
+        *   **Ubuntu / Debian:**
+            ```bash
+            sudo apt install libgtk-3-dev libmpv-dev libwpewebkit-1.0-dev
+            ```
+        *   **Arch Linux:**
+            ```bash
+            sudo pacman -S gtk3 mpv wpewebkit
+            ```
+        *   **Fedora:**
+            ```bash
+            sudo dnf install gtk3-devel mpv-libs-devel wpewebkit-devel
+            ```
 
 ## Building the Repository
 
@@ -45,5 +59,19 @@ ShonenX relies on a native C++ runner and specific Rust networking bindings. You
 ## Common Build Issues
 
 - **Rust compilation errors:** Ensure your Rust toolchain is up to date (`rustup update`). The `rhttp` package compiles Rust bindings natively during the build phase. If it fails, check that your system's C compiler is accessible.
-- **Linux GTK errors:** You may need to install `libgtk-3-dev` and `libmpv-dev` via your package manager (e.g., `sudo apt install libgtk-3-dev libmpv-dev`).
+- **Linux missing WPE WebKit or build errors:** If CMake fails when building `flutter_inappwebview_linux` with:
+  ```
+  CMake Error at flutter/ephemeral/.plugin_symlinks/flutter_inappwebview_linux/linux/CMakeLists.txt:63 (message):
+    WPE WebKit not found.  Please install libwpewebkit-1.0-dev (Ubuntu/Debian)
+    or wpe-webkit package.
+
+    See WPE_BACKEND.md or https://wpewebkit.org/about/get-wpe.html
+
+  Error: Unable to generate build files
+  ```
+  Install the WPE WebKit development package for your distribution:
+  - **Ubuntu / Debian:** `sudo apt install libwpewebkit-1.0-dev`
+  - **Arch Linux:** `sudo pacman -S wpewebkit`
+  - **Fedora:** `sudo dnf install wpewebkit-devel`
+- **Linux GTK and libmpv errors:** If you encounter missing GTK or mpv headers/libraries, install `libgtk-3-dev` and `libmpv-dev` (Ubuntu/Debian: `sudo apt install libgtk-3-dev libmpv-dev`) or `gtk3` and `mpv` (Arch Linux: `sudo pacman -S gtk3 mpv`).
 - **Isar schema mismatches:** If the app crashes on startup regarding database schemas, wipe the local application data directory (usually `~/.local/share/shonenx` on Linux) and re-run.

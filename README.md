@@ -180,7 +180,8 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/roshancodespace/ShonenX/
 > Builds for macOS and iOS might be present in releases or might not be available at all, even if a release is marked stable for other platforms. Expect potential bugs, quirks, and manual sideloading/signing requirements.
 
 ### 🛠️ Build from Source
-**Prerequisites**: Flutter SDK ≥3.8.1, Git
+**Prerequisites**: Flutter SDK ≥3.8.1, Git, Rust
+- **Linux Dependencies**: Building on Linux requires GTK, `libmpv`, and `libwpewebkit` (Ubuntu/Debian: `sudo apt install libgtk-3-dev libmpv-dev libwpewebkit-1.0-dev`, Arch Linux: `sudo pacman -S gtk3 mpv wpewebkit`). See the [Local Setup Guide](docs/setup/index.md) for details.
 ```bash
 git clone https://github.com/roshancodespace/ShonenX.git
 cd ShonenX

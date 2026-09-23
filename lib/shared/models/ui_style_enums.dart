@@ -198,3 +198,13 @@ enum NavBarStyle {
   final String displayName;
   const NavBarStyle(this.displayName);
 }
+
+enum HomeHeaderStyle {
+  classic('Classic'),
+  minimal('Minimal'),
+  material('Material'),
+  prominent('Prominent');
+
+  final String displayName;
+  const HomeHeaderStyle(this.displayName);
+}

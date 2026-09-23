@@ -68,6 +68,23 @@ class UiSettingsScreen extends ConsumerWidget {
           ),
 
           SettingsSection(
+            title: 'Home Screen',
+            children: [
+              SettingsActionTile(
+                icon: Icons.view_headline_rounded,
+                title: 'Header Style',
+                subtitle: 'Layout and style of the home header area',
+                trailing: _Chip(
+                  label: prefs.homeHeaderStyle.displayName,
+                  cs: cs,
+                ),
+                onTap: () =>
+                    showHomeHeaderStyleSheet(context, ref, notifier, theme),
+              ),
+            ],
+          ),
+
+          SettingsSection(
             title: 'Media Cards',
             children: [
               SettingsActionTile(

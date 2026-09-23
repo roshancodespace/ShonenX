@@ -16,6 +16,7 @@ class UiPrefState {
   final ContinueReadingStyle continueReadingStyle;
   final EpisodeViewMode episodeViewMode;
   final NavBarStyle navBarStyle;
+  final HomeHeaderStyle homeHeaderStyle;
   final Map<String, bool> cardStyleWideModes;
   final bool showCardRatings;
   final bool showCardGenres;
@@ -29,6 +30,7 @@ class UiPrefState {
     this.continueReadingStyle = ContinueReadingStyle.classic,
     this.episodeViewMode = EpisodeViewMode.classic,
     this.navBarStyle = NavBarStyle.classic,
+    this.homeHeaderStyle = HomeHeaderStyle.classic,
     this.cardStyleWideModes = const {},
     this.showCardRatings = true,
     this.showCardGenres = true,
@@ -53,6 +55,7 @@ class UiPrefState {
     ContinueReadingStyle? continueReadingStyle,
     EpisodeViewMode? episodeViewMode,
     NavBarStyle? navBarStyle,
+    HomeHeaderStyle? homeHeaderStyle,
     Map<String, bool>? cardStyleWideModes,
     bool? showCardRatings,
     bool? showCardGenres,
@@ -67,6 +70,7 @@ class UiPrefState {
       continueReadingStyle: continueReadingStyle ?? this.continueReadingStyle,
       episodeViewMode: episodeViewMode ?? this.episodeViewMode,
       navBarStyle: navBarStyle ?? this.navBarStyle,
+      homeHeaderStyle: homeHeaderStyle ?? this.homeHeaderStyle,
       cardStyleWideModes: cardStyleWideModes ?? this.cardStyleWideModes,
       showCardRatings: showCardRatings ?? this.showCardRatings,
       showCardGenres: showCardGenres ?? this.showCardGenres,
@@ -82,6 +86,7 @@ class UiPrefState {
     'continueReadingStyle': continueReadingStyle.name,
     'episodeViewMode': episodeViewMode.name,
     'navBarStyle': navBarStyle.name,
+    'homeHeaderStyle': homeHeaderStyle.name,
     'cardStyleWideModes': cardStyleWideModes,
     'showCardRatings': showCardRatings,
     'showCardGenres': showCardGenres,
@@ -112,6 +117,10 @@ class UiPrefState {
         (e) => e.name == json['navBarStyle'],
         orElse: () => NavBarStyle.classic,
       ),
+      homeHeaderStyle: HomeHeaderStyle.values.firstWhere(
+        (e) => e.name == json['homeHeaderStyle'],
+        orElse: () => HomeHeaderStyle.classic,
+      ),
       cardStyleWideModes: (json['cardStyleWideModes'] is Map)
           ? Map<String, bool>.from(json['cardStyleWideModes'] as Map)
           : const {},
@@ -125,7 +134,7 @@ class UiPrefState {
 
   @override
   String toString() =>
-      'UiPrefState(cardStyle: $cardStyle, continueWatchingStyle: $continueWatchingStyle, continueReadingStyle: $continueReadingStyle, episodeViewMode: $episodeViewMode, navBarStyle: $navBarStyle, cardStyleWideModes: $cardStyleWideModes, showCardRatings: $showCardRatings, showCardGenres: $showCardGenres, showCardYear: $showCardYear, useNewUi: $useNewUi, sheetPhysics: $sheetPhysics)';
+      'UiPrefState(cardStyle: $cardStyle, continueWatchingStyle: $continueWatchingStyle, continueReadingStyle: $continueReadingStyle, episodeViewMode: $episodeViewMode, navBarStyle: $navBarStyle, homeHeaderStyle: $homeHeaderStyle, cardStyleWideModes: $cardStyleWideModes, showCardRatings: $showCardRatings, showCardGenres: $showCardGenres, showCardYear: $showCardYear, useNewUi: $useNewUi, sheetPhysics: $sheetPhysics)';
 
   @override
   bool operator ==(Object other) {
@@ -136,6 +145,7 @@ class UiPrefState {
         other.continueReadingStyle == continueReadingStyle &&
         other.episodeViewMode == episodeViewMode &&
         other.navBarStyle == navBarStyle &&
+        other.homeHeaderStyle == homeHeaderStyle &&
         other.showCardRatings == showCardRatings &&
         other.showCardGenres == showCardGenres &&
         other.showCardYear == showCardYear &&
@@ -151,6 +161,7 @@ class UiPrefState {
     continueReadingStyle,
     episodeViewMode,
     navBarStyle,
+    homeHeaderStyle,
     cardStyleWideModes,
     showCardRatings,
     showCardGenres,
@@ -249,6 +260,11 @@ class UiPrefsNotifier extends Notifier<UiPrefState> {
 
   void updateNavBarStyle(NavBarStyle style) {
     state = state.copyWith(navBarStyle: style);
+    _saveDb();
+  }
+
+  void updateHomeHeaderStyle(HomeHeaderStyle style) {
+    state = state.copyWith(homeHeaderStyle: style);
     _saveDb();
   }
 

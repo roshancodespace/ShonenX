@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,6 +14,8 @@ class PlayerGestureOverlay extends ConsumerStatefulWidget {
   final void Function(Duration) onSeek;
   final void Function(double) onSetSpeed;
   final double baseSpeed;
+  final bool isLocked;
+  final VoidCallback? onToggleLockedIcon;
 
   const PlayerGestureOverlay({
     super.key,
@@ -24,6 +25,8 @@ class PlayerGestureOverlay extends ConsumerStatefulWidget {
     required this.onSeek,
     required this.onSetSpeed,
     this.baseSpeed = 1.0,
+    this.isLocked = false,
+    this.onToggleLockedIcon,
   });
 
   @override
@@ -83,7 +86,7 @@ class _PlayerGestureOverlayState extends ConsumerState<PlayerGestureOverlay> {
   void dispose() {
     _seekAccumulationTimer?.cancel();
     try {
-      if (Platform.isAndroid) {
+      if (Platform.isAndroid || Platform.isIOS) {
         ScreenBrightness.instance.resetApplicationScreenBrightness();
       }
       VolumeController.instance.setVolume(_initialVolume);
@@ -121,6 +124,11 @@ class _PlayerGestureOverlayState extends ConsumerState<PlayerGestureOverlay> {
                 onTapUp: (details) {
                   final now = DateTime.now().millisecondsSinceEpoch;
 
+                  if (widget.isLocked) {
+                    widget.onToggleLockedIcon?.call();
+                    return;
+                  }
+
                   if (!prefs.enableGestures) {
                     widget.onToggleControls();
                     return;
@@ -157,7 +165,7 @@ class _PlayerGestureOverlayState extends ConsumerState<PlayerGestureOverlay> {
                     widget.onToggleControls();
                   }
                 },
-                onVerticalDragStart: !prefs.enableGestures
+                onVerticalDragStart: (!prefs.enableGestures || widget.isLocked)
                     ? null
                     : (details) {
                         final dx = details.localPosition.dx;
@@ -184,7 +192,7 @@ class _PlayerGestureOverlayState extends ConsumerState<PlayerGestureOverlay> {
                           });
                         }
                       },
-                onVerticalDragUpdate: !prefs.enableGestures
+                onVerticalDragUpdate: (!prefs.enableGestures || widget.isLocked)
                     ? null
                     : (details) {
                         if (!_isDragging) return;
@@ -208,7 +216,7 @@ class _PlayerGestureOverlayState extends ConsumerState<PlayerGestureOverlay> {
                           }
                         });
                       },
-                onVerticalDragEnd: !prefs.enableGestures
+                onVerticalDragEnd: (!prefs.enableGestures || widget.isLocked)
                     ? null
                     : (details) {
                         if (!_isDragging) return;
@@ -216,7 +224,7 @@ class _PlayerGestureOverlayState extends ConsumerState<PlayerGestureOverlay> {
                           _isDragging = false;
                         });
                       },
-                onLongPressStart: !prefs.enableGestures
+                onLongPressStart: (!prefs.enableGestures || widget.isLocked)
                     ? null
                     : (details) {
                         final dx = details.localPosition.dx;
@@ -259,7 +267,7 @@ class _PlayerGestureOverlayState extends ConsumerState<PlayerGestureOverlay> {
                           }
                         }
                       },
-                onLongPressEnd: !prefs.enableGestures
+                onLongPressEnd: (!prefs.enableGestures || widget.isLocked)
                     ? null
                     : (details) {
                         setState(() {

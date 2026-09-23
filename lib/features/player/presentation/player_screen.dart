@@ -362,12 +362,6 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     return Positioned.fill(
       child: Stack(
         children: [
-          Positioned.fill(
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: _toggleLockedIcon,
-            ),
-          ),
           AnimatedOpacity(
             opacity: _showLockedIcon ? 1.0 : 0.0,
             duration: const Duration(milliseconds: 250),
@@ -534,16 +528,17 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                 _buildVideoLayer(engine, playerState),
                 if (playerState.activeSubtitle != null)
                   const CustomSubtitleOverlay(),
-                if (!_lockControls)
-                  Positioned.fill(
-                    child: PlayerGestureOverlay(
-                      onToggleControls: _toggleControls,
-                      onHideControls: _hideControls,
-                      onRightClick: _toggleEpisodePanel,
-                      onSeek: engine.seekRelative,
-                      onSetSpeed: engine.setSpeed,
-                    ),
+                Positioned.fill(
+                  child: PlayerGestureOverlay(
+                    onToggleControls: _toggleControls,
+                    onHideControls: _hideControls,
+                    onRightClick: _toggleEpisodePanel,
+                    onSeek: engine.seekRelative,
+                    onSetSpeed: engine.setSpeed,
+                    isLocked: _lockControls,
+                    onToggleLockedIcon: _toggleLockedIcon,
                   ),
+                ),
                 if (_lockControls)
                   _buildLockedOverlay()
                 else

@@ -1,4 +1,3 @@
-import "package:flutter_markdown_plus/flutter_markdown_plus.dart";
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -17,6 +16,7 @@ import 'package:shonenx/features/tracking/providers/tracking_prefs_provider.dart
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/shared/widgets/app_dialog.dart';
 import 'package:shonenx/shared/widgets/tracker_avatar.dart';
+import 'package:shonenx/features/tracking/presentation/widgets/tracker_bio_renderer.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class TrackerProfileSheet extends ConsumerStatefulWidget {
@@ -453,14 +453,7 @@ class _TrackerProfileSheetState extends ConsumerState<TrackerProfileSheet> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: (profile?.bio ?? '').isNotEmpty
-                ? MarkdownBody(
-                    data: profile!.bio!,
-                    styleSheet: MarkdownStyleSheet(
-                      p: theme.textTheme.bodySmall?.copyWith(
-                        color: cs.onSurfaceVariant,
-                      ),
-                    ),
-                  )
+                ? TrackerBioRenderer(bio: profile!.bio!)
                 : Text(
                     'Offline tracking stored locally on device',
                     textAlign: TextAlign.center,

@@ -6,6 +6,7 @@ import 'package:screenshot/screenshot.dart';
 
 import 'package:collection/collection.dart';
 import 'package:shonenx/core/network/http_client.dart';
+import 'package:shonenx/core/utils/video.dart';
 import 'package:shonenx/features/discovery/domain/media_args.dart';
 import 'package:shonenx/features/discovery/providers/episodes_provider.dart';
 import 'package:shonenx/features/discord/providers/discord_rpc_provider.dart';
@@ -328,19 +329,53 @@ class PlayerController extends Notifier<PlayerState> {
         subtitles: [],
       );
 
+      final List<SubtitleTrack> internalSubtitles = [];
+      if (!mode.filePath.toLowerCase().contains('.m3u8')) {
+        try {
+          final tracks = await extractMkvTracksJson(mode.filePath);
+          for (final track in tracks) {
+            if (track['type'] == 'Subtitle') {
+              final trackNum = track['trackNumber']?.toString() ?? '';
+              final lang = track['language']?.toString() ?? 'Unknown';
+              final name = track['name']?.toString() ?? '';
+              final label = name.isNotEmpty ? '$lang - $name' : lang;
+
+              if (trackNum.isNotEmpty) {
+                internalSubtitles.add(
+                  SubtitleTrack(
+                    url: 'internal:$trackNum',
+                    language: lang,
+                    label: label,
+                  ),
+                );
+              }
+            }
+          }
+        } catch (e) {
+          // Ignore MKV extraction errors for offline data
+        }
+      }
+
+      final subtitles = [SubtitleTrack.none, ...internalSubtitles];
+      final activeSubtitle = _resolver.resolveSubtitle(subtitles);
+
       state = state.copyWith(
         streams: [localStream],
         activeStream: localStream,
         qualities: [localStream],
         activeQuality: localStream,
-        subtitles: [SubtitleTrack.none],
-        activeSubtitle: SubtitleTrack.none,
+        subtitles: subtitles,
+        activeSubtitle: activeSubtitle,
         isLoading: false,
       );
 
       await ref
           .read(videoEngineProvider)
-          .initialize(localStream, subtitle: null, startAt: Duration.zero);
+          .initialize(
+            localStream,
+            subtitle: activeSubtitle,
+            startAt: Duration.zero,
+          );
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
@@ -417,6 +452,35 @@ class PlayerController extends Notifier<PlayerState> {
           }
         }
       }
+
+      // If no external subtitles were found, try extracting internal tracks
+      if (labelledSubtitles.isEmpty &&
+          !activeStream.url.toLowerCase().contains('.m3u8')) {
+        try {
+          final tracks = await extractMkvTracksJson(activeStream.url);
+          for (final track in tracks) {
+            if (track['type'] == 'Subtitle') {
+              final trackNum = track['trackNumber']?.toString() ?? '';
+              final lang = track['language']?.toString() ?? 'Unknown';
+              final name = track['name']?.toString() ?? '';
+              final label = name.isNotEmpty ? '$lang - $name' : lang;
+
+              if (trackNum.isNotEmpty) {
+                labelledSubtitles.add(
+                  SubtitleTrack(
+                    url: 'internal:$trackNum',
+                    language: lang,
+                    label: label,
+                  ),
+                );
+              }
+            }
+          }
+        } catch (e) {
+          // Ignore MKV extraction errors
+        }
+      }
+
       final subtitles = [SubtitleTrack.none, ...labelledSubtitles];
       final activeSubtitle = _resolver.resolveSubtitle(subtitles);
 

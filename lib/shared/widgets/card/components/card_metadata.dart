@@ -284,33 +284,27 @@ class WideMetadataColumn extends StatelessWidget {
           ),
         ],
         if (progress != null || progressText != null) ...[
-          const SizedBox(height: 3),
-          Row(
-            children: [
-              if (progress != null)
-                Expanded(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: LinearProgressIndicator(
-                      value: progress!.clamp(0.0, 1.0),
-                      minHeight: 4,
-                      backgroundColor: cs.surfaceContainerHighest,
-                      valueColor: AlwaysStoppedAnimation<Color>(cs.primary),
-                    ),
-                  ),
-                ),
-              if (progressText != null) ...[
-                const SizedBox(width: 6),
-                Text(
-                  progressText!,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: cs.primary,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ],
-          ),
+          const SizedBox(height: 6),
+          if (progressText != null)
+            Text(
+              progressText!,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: cs.primary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          if (progressText != null && progress != null)
+            const SizedBox(height: 6),
+          if (progress != null)
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: progress!.clamp(0.0, 1.0),
+                minHeight: 4,
+                backgroundColor: cs.surfaceContainerHighest,
+                valueColor: AlwaysStoppedAnimation<Color>(cs.primary),
+              ),
+            ),
         ],
       ],
     );

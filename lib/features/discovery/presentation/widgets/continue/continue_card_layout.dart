@@ -63,7 +63,6 @@ class ContinueCardLayout extends StatelessWidget {
       subtitle: subtitle,
       progress: progress,
       progressText: progressText,
-      bottomLeftBadge: Text(badgeText),
     );
 
     if (!isLoading) return card;

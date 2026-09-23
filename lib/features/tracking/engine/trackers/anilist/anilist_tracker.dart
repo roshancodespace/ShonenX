@@ -197,15 +197,22 @@ class AnilistTracker extends BaseTracker
       }
 
       List<String>? parseFavs(Map? favMap) {
-        final nodes = favMap?['anime']?['nodes'] as List?;
-        if (nodes == null) return null;
+        if (favMap == null) return null;
         final res = <String>[];
-        for (final n in nodes) {
-          if (n is Map) {
-            final url = n['coverImage']?['large']?.toString();
-            if (url != null) res.add(url);
+        void addNodes(String key) {
+          final nodes = favMap[key]?['nodes'] as List?;
+          if (nodes != null) {
+            for (final n in nodes) {
+              if (n is Map) {
+                final url = n['coverImage']?['large']?.toString();
+                if (url != null) res.add(url);
+              }
+            }
           }
         }
+
+        addNodes('anime');
+        addNodes('manga');
         return res.isEmpty ? null : res;
       }
 

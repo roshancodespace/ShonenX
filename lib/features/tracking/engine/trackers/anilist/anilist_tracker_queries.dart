@@ -60,6 +60,9 @@ class AnilistTrackerQueries {
           anime(page: 1, perPage: 10) {
             nodes { coverImage { large } }
           }
+          manga(page: 1, perPage: 10) {
+            nodes { coverImage { large } }
+          }
         }
       }
     }

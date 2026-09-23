@@ -514,6 +514,7 @@ class PlayerController extends Notifier<PlayerState> {
           activeServer: state.activeServer,
           sourceInfo: _source?.sourceInfo,
         ),
+        resumedPosition: startPosition,
       );
       _updateDiscordRpc();
     } catch (e) {
@@ -816,6 +817,10 @@ class PlayerController extends Notifier<PlayerState> {
       _screenshotController,
       mediaTitle: _media?.title.availableTitle,
     );
+  }
+
+  void notifyUserSeeked() {
+    _progressTracker.notifyUserSeeked();
   }
 
   Future<void> captureExitThumbnail() async {

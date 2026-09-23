@@ -10,6 +10,25 @@ class WatchHistoryRepository {
     if (entry.positionInMilliseconds < 5000) return;
 
     await _isar.writeTxn(() async {
+      final existing = await _isar.watchHistoryEntrys
+          .filter()
+          .animeIdEqualTo(entry.animeId)
+          .and()
+          .episodeNumberEqualTo(entry.episodeNumber)
+          .findFirst();
+
+      // Guard: If an existing entry has substantial progress (> 60s)
+      // and the incoming update is < 15s, prevent overwriting mature progress with startup noise.
+      if (existing != null &&
+          existing.positionInMilliseconds > 60000 &&
+          entry.positionInMilliseconds < 15000) {
+        return;
+      }
+
+      if (existing != null) {
+        entry.id = existing.id;
+      }
+
       await _isar.watchHistoryEntrys.put(entry);
     });
   }

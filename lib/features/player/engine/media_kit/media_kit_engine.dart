@@ -60,6 +60,8 @@ class MediaKitEngine implements VideoEngine {
 
     await setPropSafe('cache', 'yes');
     await setPropSafe('demuxer-seekable-cache', 'yes');
+    await setPropSafe('force-seekable', 'yes');
+    await setPropSafe('hr-seek', 'yes');
     await setPropSafe('demuxer-max-bytes', '154857600');
     await setPropSafe('demuxer-max-back-bytes', '52428800');
     await setPropSafe('demuxer-lavf-probesize', '5000000');
@@ -209,25 +211,86 @@ class MediaKitEngine implements VideoEngine {
     }
   }
 
+  Future<void> _waitForSeekableAndSeek(Duration startAt) async {
+    try {
+      // Wait for stream duration to be established if not already
+      if (_player.state.duration <= Duration.zero) {
+        await _player.stream.duration
+            .firstWhere((dur) => dur > Duration.zero)
+            .timeout(const Duration(seconds: 5));
+      }
+    } catch (_) {
+      _log.w('Timeout waiting for stream duration, proceeding with seek');
+    }
+
+    // Clamp seek target within known duration if available
+    final knownDuration = _player.state.duration;
+    Duration target = startAt;
+    if (knownDuration > Duration.zero && target >= knownDuration) {
+      target = Duration.zero;
+    }
+
+    try {
+      await _player.seek(target);
+    } catch (e) {
+      _log.e('Failed to seek to $target: $e');
+    }
+
+    // Wait for the position stream to confirm that the seek landed near the target
+    try {
+      await _player.stream.position
+          .firstWhere(
+            (pos) => (pos.inMilliseconds - target.inMilliseconds).abs() < 15000,
+          )
+          .timeout(const Duration(seconds: 3));
+      _log.i('Successfully resumed playback near target: ${_player.state.position}');
+    } catch (_) {
+      // If position has not updated, retry seek once as a fallback
+      final currentPos = _player.state.position;
+      if ((currentPos.inMilliseconds - target.inMilliseconds).abs() > 15000) {
+        _log.w('Position is $currentPos, retrying seek to $target');
+        try {
+          await _player.seek(target);
+        } catch (_) {}
+      }
+    }
+  }
+
   @override
   Future<void> initialize(
     stream.VideoStream stream, {
     stream.SubtitleTrack? subtitle,
     Duration? startAt,
   }) async {
-    _log.i('Initializing player with URL: ${stream.url}');
+    _log.i('Initializing player with URL: ${stream.url}, startAt: $startAt');
     final media = Media(stream.url, httpHeaders: stream.headers);
 
-    await _player.open(media, play: true);
+    final bool hasResumePoint = startAt != null && startAt.inSeconds > 2;
 
-    await _waitUntilReady(() async {
-      if (subtitle != null) {
-        await setSubtitle(subtitle);
-      }
-      if (startAt != null) {
-        await _player.seek(startAt);
-      }
-    });
+    if (!hasResumePoint) {
+      // Normal playback from start
+      await _player.open(media, play: true);
+      await _waitUntilReady(() async {
+        if (subtitle != null) {
+          await setSubtitle(subtitle);
+        }
+      });
+      return;
+    }
+
+    // Playback with resume point:
+    // Open in paused state to avoid playing the first frame/audio at 0:00,
+    // wait for player to establish duration & ready state before seeking.
+    await _player.open(media, play: false);
+
+    if (subtitle != null) {
+      await setSubtitle(subtitle);
+    }
+
+    await _waitForSeekableAndSeek(startAt);
+
+    // Start playback directly from the resumed position
+    await _player.play();
   }
 
   @override

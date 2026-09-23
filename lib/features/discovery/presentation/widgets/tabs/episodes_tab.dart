@@ -109,11 +109,15 @@ class EpisodesTabWidget extends ConsumerWidget {
                     .where((e) => e.episodeNumber == episode.number)
                     .firstOrNull;
 
+                final isFinished = historyEntry != null &&
+                    historyEntry.durationInMilliseconds > 0 &&
+                    historyEntry.positionInMilliseconds >=
+                        (historyEntry.durationInMilliseconds * 0.92);
+
                 final Duration? startPosition;
                 if (historyEntry != null &&
                     historyEntry.positionInMilliseconds > 0 &&
-                    historyEntry.positionInMilliseconds <
-                        historyEntry.durationInMilliseconds) {
+                    !isFinished) {
                   startPosition = Duration(
                     milliseconds: historyEntry.positionInMilliseconds,
                   );

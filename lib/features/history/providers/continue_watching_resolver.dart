@@ -56,9 +56,14 @@ class ContinueWatchingResolver {
           );
 
     final episodesState = await episodesFuture;
-    final episode = episodesState.episodes.firstWhereOrNull(
+    var episode = episodesState.episodes.firstWhereOrNull(
       (e) => e.number == entry.episodeNumber,
     );
+
+    // Fallback for single-episode media / movies where episode number might be 0, 1, or 1.0
+    if (episode == null && episodesState.episodes.length == 1) {
+      episode = episodesState.episodes.first;
+    }
 
     if (episode == null) {
       throw Exception('Episode not found.');

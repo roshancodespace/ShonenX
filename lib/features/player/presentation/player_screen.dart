@@ -291,16 +291,22 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     );
   }
 
-  void _handlePop(
+  bool _isExiting = false;
+
+  Future<void> _handlePop(
     bool didPop,
     VideoEngine engine,
     PlayerController controller,
-  ) {
-    if (!didPop) {
-      try {
-        engine.pause();
-      } catch (_) {}
-      controller.captureExitThumbnail();
+  ) async {
+    if (didPop || _isExiting) return;
+    _isExiting = true;
+    try {
+      await engine.pause();
+    } catch (_) {}
+    try {
+      await controller.captureExitThumbnail();
+    } catch (_) {}
+    if (mounted) {
       context.pop();
     }
   }
@@ -356,7 +362,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
           mode: widget.mode,
           playerState: playerState,
           controller: controller,
-          onBack: context.pop,
+          onBack: () => _handlePop(false, engine, controller),
           onComments: _showCommentsSheet,
         ),
         CenterControls(
@@ -507,7 +513,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     });
 
     return PopScope(
-      canPop: false,
+      canPop: _isExiting,
       onPopInvokedWithResult: (didPop, _) =>
           _handlePop(didPop, engine, controller),
       child: Scaffold(
@@ -525,7 +531,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
             } else if (_isFullScreen) {
               _toggleFullScreen();
             } else {
-              context.pop();
+              _handlePop(false, engine, controller);
             }
           },
           child: MouseRegion(

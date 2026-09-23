@@ -44,15 +44,31 @@ class ProgressTracker {
   bool _initialCaptureDone = false;
   static const _thumbnailRefreshInterval = Duration(minutes: 2);
 
+  Duration? _resumedPosition;
+  bool _hasReachedResumePoint = true;
+  bool _userHasSeeked = false;
+
   ProgressTracker(this._ref);
 
   void setScreenshotController(ScreenshotController controller) {
     _screenshotController = controller;
   }
 
+  void notifyUserSeeked() {
+    _userHasSeeked = true;
+  }
+
   // Save progress every 5 seconds using context from the provider callback.
-  void start(ProgressContext Function() contextProvider) {
+  void start(
+    ProgressContext Function() contextProvider, {
+    Duration? resumedPosition,
+  }) {
     _contextProvider = contextProvider;
+    _resumedPosition = resumedPosition;
+    _hasReachedResumePoint =
+        resumedPosition == null || resumedPosition.inSeconds <= 10;
+    _userHasSeeked = false;
+
     _progressTimer?.cancel();
     _progressTimer = Timer.periodic(
       const Duration(seconds: 5),
@@ -69,6 +85,7 @@ class ProgressTracker {
     _cachedThumbnail = null;
     _lastThumbnailTime = null;
     _initialCaptureDone = false;
+    _userHasSeeked = false;
   }
 
   // Captures one final thumbnail and updates history before player closes.
@@ -116,6 +133,18 @@ class ProgressTracker {
 
     // Don't save if the player hasn't started playing yet
     if (position == Duration.zero || duration == Duration.zero) return;
+
+    // Protect against overwriting existing watch history with near-zero position
+    // before the player has confirmed reaching the resume point.
+    if (!_hasReachedResumePoint && !_userHasSeeked && _resumedPosition != null) {
+      if ((position.inMilliseconds - _resumedPosition!.inMilliseconds).abs() < 15000) {
+        _hasReachedResumePoint = true;
+      } else if (position.inSeconds < 15) {
+        // Player position is still near 0:00 during initial buffering/seeking.
+        // Prevent clobbering saved resume progress.
+        return;
+      }
+    }
 
     // Capture thumbnail only when enough time has elapsed
     if (!skipCapture && _shouldCaptureThumbnail) {

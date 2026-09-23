@@ -44,6 +44,7 @@ import 'package:shonenx/features/settings/presentation/security_settings_screen.
 import 'package:shonenx/features/settings/presentation/update_settings_screen.dart';
 import 'package:shonenx/features/settings/presentation/troubleshoot_settings_screen.dart';
 import 'package:shonenx/features/settings/presentation/subtitle_debug_screen.dart';
+import 'package:shonenx/features/settings/presentation/tracker_bio_debug_screen.dart';
 import 'package:shonenx/core/services/backup_service.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/core/network/cf_client.dart';
@@ -439,6 +440,10 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: 'subtitles',
                 builder: (context, state) => const SubtitleDebugScreen(),
+              ),
+              GoRoute(
+                path: 'tracker-bio',
+                builder: (context, state) => const TrackerBioDebugScreen(),
               ),
             ],
           ),

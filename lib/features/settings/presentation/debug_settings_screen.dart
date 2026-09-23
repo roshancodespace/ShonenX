@@ -62,6 +62,20 @@ class DebugSettingsScreen extends ConsumerWidget {
           ),
 
           SettingsSection(
+            title: 'Tracker Debug',
+            children: [
+              SettingsActionTile(
+                icon: Icons.person_search_outlined,
+                title: 'Tracker Bio Renderer',
+                subtitle: 'Test Markdown rendering for tracker profiles',
+                onTap: () {
+                  context.push('/settings/debug/tracker-bio');
+                },
+              ),
+            ],
+          ),
+
+          SettingsSection(
             title: 'App State & Onboarding',
             children: [
               SettingsActionTile(

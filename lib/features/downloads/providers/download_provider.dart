@@ -33,6 +33,7 @@ class DownloadManagerNotifier extends AsyncNotifier<DownloadManagerNotifier> {
   late bm.DownloadManager _manager;
   final Set<String> _trackedJobs = {};
   final Map<int, int> _lastNotifiedPct = {};
+  final Map<int, DateTime> _lastDbWriteTime = {};
 
   DownloadRepository get repo => ref.read(downloadRepositoryProvider);
 
@@ -149,6 +150,18 @@ class DownloadManagerNotifier extends AsyncNotifier<DownloadManagerNotifier> {
     final notif = NotificationService.instance;
 
     job.progressStream.listen((progress) async {
+      final now = DateTime.now();
+      final lastWrite = _lastDbWriteTime[dbTaskId];
+
+      // Throttle updates (DB read/write & notifications) to once per second,
+      // but always process the final 100% completion event.
+      if (progress.percentage < 1.0 &&
+          lastWrite != null &&
+          now.difference(lastWrite).inMilliseconds < 1000) {
+        return;
+      }
+      _lastDbWriteTime[dbTaskId] = now;
+
       final task = await repo.getTaskById(dbTaskId);
       if (task == null) return;
 
@@ -156,23 +169,23 @@ class DownloadManagerNotifier extends AsyncNotifier<DownloadManagerNotifier> {
       task.totalBytes = progress.totalBytes ?? 0;
       task.progress = progress.percentage;
       task.speed = progress.formattedSpeed;
-      task.updatedAt = DateTime.now();
+      task.updatedAt = now;
       await repo.putTask(task);
 
       final pct = (progress.percentage * 100).toInt();
-      if (pct % 2 == 0) {
-        final lastNotified = _lastNotifiedPct[dbTaskId] ?? -1;
-        if (pct > lastNotified) {
-          _lastNotifiedPct[dbTaskId] = pct;
-          final title = task.fileName.isNotEmpty
-              ? task.fileName
-              : 'Episode ${task.episodeNumber}';
-          await notif.showDownloadProgress(
-            id: dbTaskId,
-            title: title,
-            progress: progress.percentage,
-          );
-        }
+      final lastNotified = _lastNotifiedPct[dbTaskId] ?? -1;
+
+      // Update notification if the percentage changed
+      if (pct > lastNotified) {
+        _lastNotifiedPct[dbTaskId] = pct;
+        final title = task.fileName.isNotEmpty
+            ? task.fileName
+            : 'Episode ${task.episodeNumber}';
+        await notif.showDownloadProgress(
+          id: dbTaskId,
+          title: title,
+          progress: progress.percentage,
+        );
       }
     });
 
@@ -201,6 +214,7 @@ class DownloadManagerNotifier extends AsyncNotifier<DownloadManagerNotifier> {
           await repo.deleteTask(dbTaskId);
           _trackedJobs.remove(job.id);
           _lastNotifiedPct.remove(dbTaskId);
+          _lastDbWriteTime.remove(dbTaskId);
           return;
         case bm_core.DownloadStatus.failed:
           task.status = DownloadStatus.failed;
@@ -220,6 +234,7 @@ class DownloadManagerNotifier extends AsyncNotifier<DownloadManagerNotifier> {
           status == bm_core.DownloadStatus.cancelled) {
         _trackedJobs.remove(job.id);
         _lastNotifiedPct.remove(dbTaskId);
+        _lastDbWriteTime.remove(dbTaskId);
       }
     });
   }

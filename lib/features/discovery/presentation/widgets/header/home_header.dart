@@ -7,7 +7,6 @@ import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
 import 'package:shonenx/features/tracking/presentation/widgets/tracker_profile_sheet.dart';
 import 'package:shonenx/features/tracking/providers/tracker_profile_provider.dart';
 import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
-import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/shared/widgets/tracker_avatar.dart';
 import 'package:shonenx/source_engine/source_engine_provider.dart';
@@ -124,9 +123,7 @@ class HomeHeader extends ConsumerWidget {
     final primaryTrackerType = ref.watch(
       primaryTrackerProvider.select((s) => s.type),
     );
-    final uiRoundness = ref.watch(
-      themePrefsProvider.select((s) => s.uiRoundness),
-    );
+    final uiRoundness = GlobalUI.uiRoundness.clamp(0.0, 10.0);
 
     final rawUsername = profiles[primaryTrackerType]?.username;
     final username = (rawUsername != null && rawUsername.isNotEmpty)

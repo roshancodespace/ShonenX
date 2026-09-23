@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -35,6 +36,7 @@ class _TrackerProfileSheetState extends ConsumerState<TrackerProfileSheet> {
   late TextEditingController _nameController;
   late TextEditingController _bioController;
   String? _avatarPath;
+  String? _bannerPath;
 
   @override
   void initState() {
@@ -53,6 +55,7 @@ class _TrackerProfileSheetState extends ConsumerState<TrackerProfileSheet> {
     );
     _bioController = TextEditingController(text: currentProfile?.bio ?? '');
     _avatarPath = currentProfile?.avatarUrl;
+    _bannerPath = currentProfile?.bannerUrl;
   }
 
   @override
@@ -86,6 +89,13 @@ class _TrackerProfileSheetState extends ConsumerState<TrackerProfileSheet> {
     }
   }
 
+  Future<void> _pickBannerImage() async {
+    final res = await FilePicker.platform.pickFiles(type: FileType.image);
+    if (res != null && res.files.single.path != null) {
+      setState(() => _bannerPath = res.files.single.path);
+    }
+  }
+
   void _pasteUrl() {
     final controller = TextEditingController(text: _avatarPath ?? '');
     AppDialog.show(
@@ -114,6 +124,34 @@ class _TrackerProfileSheetState extends ConsumerState<TrackerProfileSheet> {
     );
   }
 
+  void _pasteBannerUrl() {
+    final controller = TextEditingController(text: _bannerPath ?? '');
+    AppDialog.show(
+      context: context,
+      title: 'Banner Image URL',
+      icon: Icon(
+        Icons.link_rounded,
+        color: Theme.of(context).colorScheme.primary,
+      ),
+      actions: [
+        TextButton(onPressed: () => context.pop(), child: const Text('Cancel')),
+        FilledButton(
+          onPressed: () {
+            setState(() => _bannerPath = controller.text.trim());
+            context.pop();
+          },
+          child: const Text('Set'),
+        ),
+      ],
+      child: TextField(
+        controller: controller,
+        decoration: const InputDecoration(
+          hintText: 'https://example.com/banner.png',
+        ),
+      ),
+    );
+  }
+
   void _save() {
     final username = _nameController.text.trim().isEmpty
         ? widget.trackerType == TrackerType.local
@@ -129,6 +167,7 @@ class _TrackerProfileSheetState extends ConsumerState<TrackerProfileSheet> {
             .copyWith(
               username: username,
               avatarUrl: _avatarPath,
+              bannerUrl: _bannerPath,
               bio: bio.isEmpty ? null : bio,
             );
 
@@ -190,13 +229,36 @@ class _TrackerProfileSheetState extends ConsumerState<TrackerProfileSheet> {
             style: TextStyle(fontSize: 13),
           ),
           const SizedBox(height: 12),
-          _rankTier(theme, cs, 'Mythic Otaku God', '3,000+ Episodes', true),
-          _rankTier(theme, cs, 'Grandmaster Watcher', '1,500+ Episodes', false),
-          _rankTier(theme, cs, 'Elite Anime Veteran', '1,000+ Episodes', false),
-          _rankTier(theme, cs, 'Seasoned Otaku', '500+ Episodes', false),
-          _rankTier(theme, cs, 'Dedicated Enthusiast', '100+ Episodes', false),
-          _rankTier(theme, cs, 'Apprentice Watcher', '20+ Episodes', false),
-          _rankTier(theme, cs, 'Novice Explorer', '1+ Episodes', false),
+          _rankTier(
+            theme,
+            cs,
+            'Ascended Anime Deity',
+            '15,000+ Episodes',
+            false,
+          ),
+          _rankTier(
+            theme,
+            cs,
+            'Celestial Otaku Overlord',
+            '10,000+ Episodes',
+            false,
+          ),
+          _rankTier(
+            theme,
+            cs,
+            'Legendary Weeb Master',
+            '8,000+ Episodes',
+            false,
+          ),
+          _rankTier(theme, cs, 'Mythic Anime God', '5,000+ Episodes', false),
+          _rankTier(theme, cs, 'Grandmaster Watcher', '3,000+ Episodes', true),
+          _rankTier(theme, cs, 'Elite Anime Veteran', '1,500+ Episodes', false),
+          _rankTier(theme, cs, 'Seasoned Otaku', '1,000+ Episodes', false),
+          _rankTier(theme, cs, 'Dedicated Enthusiast', '500+ Episodes', false),
+          _rankTier(theme, cs, 'Apprentice Watcher', '100+ Episodes', false),
+          _rankTier(theme, cs, 'Novice Explorer', '20+ Episodes', false),
+          _rankTier(theme, cs, 'Local Explorer', '1+ Episodes', false),
+          _rankTier(theme, cs, 'Guest Explorer', '0 Episodes', false),
           const SizedBox(height: 18),
           const Divider(),
           const SizedBox(height: 12),
@@ -352,6 +414,36 @@ class _TrackerProfileSheetState extends ConsumerState<TrackerProfileSheet> {
     );
   }
 
+  Widget _buildBannerImage(ThemeData theme, ColorScheme cs, String? url) {
+    if (url == null || url.trim().isEmpty) {
+      return Container(color: cs.surfaceContainerHighest);
+    }
+
+    final cleanUrl = url.trim();
+    if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) {
+      return CachedNetworkImage(
+        imageUrl: cleanUrl,
+        fit: BoxFit.cover,
+        errorWidget: (_, __, ___) =>
+            Container(color: cs.surfaceContainerHighest),
+      );
+    }
+
+    try {
+      final file = File(cleanUrl);
+      if (file.existsSync()) {
+        return Image.file(
+          file,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) =>
+              Container(color: cs.surfaceContainerHighest),
+        );
+      }
+    } catch (_) {}
+
+    return Container(color: cs.surfaceContainerHighest);
+  }
+
   Widget _buildDashboardView(
     ThemeData theme,
     ColorScheme cs,
@@ -369,300 +461,381 @@ class _TrackerProfileSheetState extends ConsumerState<TrackerProfileSheet> {
     final lastSynced = _formatTimeAgo(profile?.lastSyncedAt);
     final localMetricsAsync = ref.watch(shonenxLocalMetricsProvider);
 
-    return Column(
+    return CustomScrollView(
       key: const ValueKey('dash'),
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const SizedBox(height: 6),
-        Center(
-          child: ClipOval(
-            child: TrackerAvatarWidget(imageUrl: profile?.avatarUrl, size: 84),
-          ),
-        ),
-        const SizedBox(height: 14),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Flexible(
-              child: Text(
-                name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: cs.secondaryContainer,
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Text(
-                widget.trackerType.displayName,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: cs.onSecondaryContainer,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-            if (profile?.profileUrl != null) ...[
-              const SizedBox(width: 4),
-              IconButton(
-                onPressed: () => _openWeb(profile!.profileUrl),
-                visualDensity: VisualDensity.compact,
-                icon: Icon(
-                  Icons.open_in_new_rounded,
-                  size: 18,
-                  color: cs.primary,
-                ),
-                tooltip: 'Open in Browser',
-              ),
-            ],
-          ],
-        ),
-        const SizedBox(height: 4),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              gamerTitle,
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: cs.primary,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            if (isRemote) ...[
-              Text(
-                ' • ',
-                style: theme.textTheme.labelMedium?.copyWith(color: cs.outline),
-              ),
-              Text(
-                'Last synced: $lastSynced',
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: cs.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ],
-        ),
-        if ((profile?.bio ?? '').isNotEmpty || !isRemote) ...[
-          const SizedBox(height: 10),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: (profile?.bio ?? '').isNotEmpty
-                ? TrackerBioRenderer(bio: profile!.bio!)
-                : Text(
-                    'Offline tracking stored locally on device',
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: cs.onSurfaceVariant,
-                    ),
-                  ),
-          ),
-        ],
-        if (hasStats) ...[
-          const SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      shrinkWrap: true,
+      physics: const BouncingScrollPhysics(),
+      slivers: [
+        SliverToBoxAdapter(
+          child: Stack(
+            clipBehavior: Clip.none,
+            alignment: Alignment.topCenter,
             children: [
-              if (profile!.animeCount != null)
-                _cleanStat(theme, cs, profile.animeCount.toString(), 'Anime'),
-              if (profile.episodesWatched != null)
-                _cleanStat(
-                  theme,
-                  cs,
-                  profile.episodesWatched.toString(),
-                  'Episodes',
-                ),
-              if (profile.minutesWatched != null)
-                _cleanStat(
-                  theme,
-                  cs,
-                  (profile.minutesWatched! / 1440).toStringAsFixed(1),
-                  'Days',
-                ),
-              if (profile.meanScore != null && profile.meanScore! > 0)
-                _cleanStat(
-                  theme,
-                  cs,
-                  '★ ${profile.meanScore!.toStringAsFixed(1)}',
-                  'Score',
-                ),
-              if (profile.mangaCount != null)
-                _cleanStat(theme, cs, profile.mangaCount.toString(), 'Manga'),
-            ],
-          ),
-          if (profile.statusCounts != null &&
-              profile.statusCounts!.isNotEmpty) ...[
-            const SizedBox(height: 18),
-            _buildStatusDistribution(theme, cs, profile.statusCounts!),
-          ],
-        ],
-        if (profile?.favorites != null && profile!.favorites!.isNotEmpty) ...[
-          const SizedBox(height: 20),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Padding(
-              padding: const EdgeInsets.only(left: 4, bottom: 8),
-              child: Text(
-                'Favorites',
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ),
-          SizedBox(
-            height: 84,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: profile.favorites!.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
-              itemBuilder: (_, idx) {
-                return ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
-                  child: CachedNetworkImage(
-                    imageUrl: profile.favorites![idx],
-                    width: 58,
-                    height: 84,
-                    fit: BoxFit.cover,
-                    errorWidget: (_, __, ___) => Container(
-                      width: 58,
-                      height: 84,
-                      color: cs.surfaceContainerHighest,
-                      child: Icon(
-                        Icons.broken_image_rounded,
-                        size: 20,
-                        color: cs.outline,
-                      ),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(height: 6),
+                  SizedBox(
+                    height: 110,
+                    width: double.infinity,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
+                      child: _buildBannerImage(theme, cs, profile?.bannerUrl),
                     ),
                   ),
-                );
-              },
-            ),
-          ),
-        ],
-        localMetricsAsync.when(
-          data: (m) => _buildShonenxExclusiveCard(theme, cs, m),
-          loading: () => const SizedBox.shrink(),
-          error: (_, __) => const SizedBox.shrink(),
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: FilledButton.tonal(
-                onPressed: () => setState(() => _isEditing = true),
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size.fromHeight(48),
-                ),
-                child: const Text('Customize'),
-              ),
-            ),
-            if (isRemote && isLoggedIn) ...[
-              const SizedBox(width: 12),
-              Expanded(
-                child: FilledButton(
-                  onPressed: _isSyncing ? null : _syncRemote,
-                  style: FilledButton.styleFrom(
-                    minimumSize: const Size.fromHeight(48),
-                  ),
-                  child: _isSyncing
-                      ? SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: cs.onPrimary,
-                          ),
-                        )
-                      : const Text('Sync Profile'),
-                ),
-              ),
-            ],
-          ],
-        ),
-        if (!isPrimary) ...[
-          const SizedBox(height: 8),
-          TextButton(
-            onPressed: () {
-              ref
-                  .read(trackingPrefsProvider.notifier)
-                  .setPrimaryTracker(widget.trackerType);
-              context.pop();
-            },
-            style: TextButton.styleFrom(minimumSize: const Size.fromHeight(44)),
-            child: const Text('Set as Primary Tracker'),
-          ),
-        ],
-        if (isRemote) ...[
-          SizedBox(height: 16),
-          if (isLoggedIn)
-            TextButton(
-              onPressed: _logout,
-              style: TextButton.styleFrom(
-                foregroundColor: cs.error,
-                minimumSize: const Size.fromHeight(44),
-              ),
-              child: const Text('Log Out'),
-            )
-          else
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: FilledButton(
-                onPressed: isLoggingIn
-                    ? null
-                    : () async {
-                        final tracker = ref
-                            .read(availableTrackersProvider)
-                            .firstWhere((t) => t.type == widget.trackerType);
-                        if (tracker is RemoteTracker) {
-                          try {
-                            await ref
-                                .read(authTokensProvider.notifier)
-                                .login(tracker);
-                          } catch (e) {
-                            if (!mounted) return;
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  e.toString().replaceAll('Exception: ', ''),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 52),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Flexible(
+                              child: Text(
+                                name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.headlineSmall?.copyWith(
+                                  fontWeight: FontWeight.w800,
                                 ),
-                                backgroundColor: cs.error,
                               ),
-                            );
-                          }
-                        }
-                      },
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size.fromHeight(48),
-                ),
-                child: isLoggingIn
-                    ? Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: cs.onPrimary,
                             ),
-                          ),
-                          const SizedBox(width: 10),
-                          Text(
-                            'Connecting to ${widget.trackerType.displayName}...',
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: cs.secondaryContainer,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                widget.trackerType.displayName,
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: cs.onSecondaryContainer,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                            if (profile?.profileUrl != null) ...[
+                              const SizedBox(width: 4),
+                              IconButton(
+                                onPressed: () => _openWeb(profile!.profileUrl),
+                                visualDensity: VisualDensity.compact,
+                                icon: Icon(
+                                  Icons.open_in_new_rounded,
+                                  size: 18,
+                                  color: cs.primary,
+                                ),
+                                tooltip: 'Open in Browser',
+                              ),
+                            ],
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              gamerTitle,
+                              style: theme.textTheme.labelMedium?.copyWith(
+                                color: cs.primary,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            if (isRemote) ...[
+                              Text(
+                                ' • ',
+                                style: theme.textTheme.labelMedium?.copyWith(
+                                  color: cs.outline,
+                                ),
+                              ),
+                              Text(
+                                'Last synced: $lastSynced',
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: cs.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                        if ((profile?.bio ?? '').isNotEmpty || !isRemote) ...[
+                          const SizedBox(height: 10),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 24),
+                            child: (profile?.bio ?? '').isNotEmpty
+                                ? TrackerBioRenderer(bio: profile!.bio!)
+                                : Text(
+                                    'Offline tracking stored locally on device',
+                                    textAlign: TextAlign.center,
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: cs.onSurfaceVariant,
+                                    ),
+                                  ),
                           ),
                         ],
-                      )
-                    : Text('Connect ${widget.trackerType.displayName}'),
+                        if (hasStats) ...[
+                          const SizedBox(height: 20),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              if (profile!.animeCount != null)
+                                _cleanStat(
+                                  theme,
+                                  cs,
+                                  profile.animeCount.toString(),
+                                  'Anime',
+                                ),
+                              if (profile.episodesWatched != null)
+                                _cleanStat(
+                                  theme,
+                                  cs,
+                                  profile.episodesWatched.toString(),
+                                  'Episodes',
+                                ),
+                              if (profile.minutesWatched != null)
+                                _cleanStat(
+                                  theme,
+                                  cs,
+                                  (profile.minutesWatched! / 1440)
+                                      .toStringAsFixed(1),
+                                  'Days',
+                                ),
+                              if (profile.meanScore != null &&
+                                  profile.meanScore! > 0)
+                                _cleanStat(
+                                  theme,
+                                  cs,
+                                  '★ ${profile.meanScore!.toStringAsFixed(1)}',
+                                  'Score',
+                                ),
+                              if (profile.mangaCount != null)
+                                _cleanStat(
+                                  theme,
+                                  cs,
+                                  profile.mangaCount.toString(),
+                                  'Manga',
+                                ),
+                            ],
+                          ),
+                          if (profile.statusCounts != null &&
+                              profile.statusCounts!.isNotEmpty) ...[
+                            const SizedBox(height: 18),
+                            _buildStatusDistribution(
+                              theme,
+                              cs,
+                              profile.statusCounts!,
+                            ),
+                          ],
+                        ],
+                        if (profile?.favorites != null &&
+                            profile!.favorites!.isNotEmpty) ...[
+                          const SizedBox(height: 20),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Padding(
+                              padding: const EdgeInsets.only(
+                                left: 4,
+                                bottom: 8,
+                              ),
+                              child: Text(
+                                'Favorites',
+                                style: theme.textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(
+                            height: 84,
+                            child: ListView.separated(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: profile.favorites!.length,
+                              separatorBuilder: (_, __) =>
+                                  const SizedBox(width: 8),
+                              itemBuilder: (_, idx) {
+                                return ClipRRect(
+                                  borderRadius: BorderRadius.circular(6),
+                                  child: CachedNetworkImage(
+                                    imageUrl: profile.favorites![idx],
+                                    width: 58,
+                                    height: 84,
+                                    fit: BoxFit.cover,
+                                    errorWidget: (_, __, ___) => Container(
+                                      width: 58,
+                                      height: 84,
+                                      color: cs.surfaceContainerHighest,
+                                      child: Icon(
+                                        Icons.broken_image_rounded,
+                                        size: 20,
+                                        color: cs.outline,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                        localMetricsAsync.when(
+                          data: (m) => _buildShonenxExclusiveCard(theme, cs, m),
+                          loading: () => const SizedBox.shrink(),
+                          error: (_, __) => const SizedBox.shrink(),
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: FilledButton.tonal(
+                                onPressed: () =>
+                                    setState(() => _isEditing = true),
+                                style: FilledButton.styleFrom(
+                                  minimumSize: const Size.fromHeight(48),
+                                ),
+                                child: const Text('Customize'),
+                              ),
+                            ),
+                            if (isRemote && isLoggedIn) ...[
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: FilledButton(
+                                  onPressed: _isSyncing ? null : _syncRemote,
+                                  style: FilledButton.styleFrom(
+                                    minimumSize: const Size.fromHeight(48),
+                                  ),
+                                  child: _isSyncing
+                                      ? SizedBox(
+                                          width: 18,
+                                          height: 18,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: cs.onPrimary,
+                                          ),
+                                        )
+                                      : const Text('Sync Profile'),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                        if (!isPrimary) ...[
+                          const SizedBox(height: 8),
+                          TextButton(
+                            onPressed: () {
+                              ref
+                                  .read(trackingPrefsProvider.notifier)
+                                  .setPrimaryTracker(widget.trackerType);
+                              context.pop();
+                            },
+                            style: TextButton.styleFrom(
+                              minimumSize: const Size.fromHeight(44),
+                            ),
+                            child: const Text('Set as Primary Tracker'),
+                          ),
+                        ],
+                        if (isRemote) ...[
+                          SizedBox(height: 16),
+                          if (isLoggedIn)
+                            TextButton(
+                              onPressed: _logout,
+                              style: TextButton.styleFrom(
+                                foregroundColor: cs.error,
+                                minimumSize: const Size.fromHeight(44),
+                              ),
+                              child: const Text('Log Out'),
+                            )
+                          else
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: FilledButton(
+                                onPressed: isLoggingIn
+                                    ? null
+                                    : () async {
+                                        final tracker = ref
+                                            .read(availableTrackersProvider)
+                                            .firstWhere(
+                                              (t) =>
+                                                  t.type == widget.trackerType,
+                                            );
+                                        if (tracker is RemoteTracker) {
+                                          try {
+                                            await ref
+                                                .read(
+                                                  authTokensProvider.notifier,
+                                                )
+                                                .login(tracker);
+                                          } catch (e) {
+                                            if (!mounted) return;
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  e.toString().replaceAll(
+                                                    'Exception: ',
+                                                    '',
+                                                  ),
+                                                ),
+                                                backgroundColor: cs.error,
+                                              ),
+                                            );
+                                          }
+                                        }
+                                      },
+                                style: FilledButton.styleFrom(
+                                  minimumSize: const Size.fromHeight(48),
+                                ),
+                                child: isLoggingIn
+                                    ? Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          SizedBox(
+                                            width: 16,
+                                            height: 16,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: cs.onPrimary,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 10),
+                                          Text(
+                                            'Connecting to ${widget.trackerType.displayName}...',
+                                          ),
+                                        ],
+                                      )
+                                    : Text(
+                                        'Connect ${widget.trackerType.displayName}',
+                                      ),
+                              ),
+                            ),
+                        ],
+                        const SizedBox(height: 8),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ),
-        ],
-        const SizedBox(height: 8),
+              Positioned(
+                top: 110 + 6 - 42,
+                child: Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: cs.surfaceContainer, width: 4),
+                  ),
+                  child: ClipOval(
+                    child: TrackerAvatarWidget(
+                      imageUrl: profile?.avatarUrl,
+                      size: 84,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -761,104 +934,204 @@ class _TrackerProfileSheetState extends ConsumerState<TrackerProfileSheet> {
   }
 
   Widget _buildEditView(ThemeData theme, ColorScheme cs) {
-    return Column(
+    return CustomScrollView(
       key: const ValueKey('edit'),
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const SizedBox(height: 8),
-        Center(
+      shrinkWrap: true,
+      physics: const BouncingScrollPhysics(),
+      slivers: [
+        SliverToBoxAdapter(
           child: Stack(
+            clipBehavior: Clip.none,
+            alignment: Alignment.topCenter,
             children: [
-              ClipOval(
-                child: TrackerAvatarWidget(imageUrl: _avatarPath, size: 84),
-              ),
-              Positioned(
-                bottom: 0,
-                right: 0,
-                child: Material(
-                  color: cs.primary,
-                  shape: const CircleBorder(),
-                  child: PopupMenuButton<int>(
-                    tooltip: 'Change Avatar',
-                    icon: Icon(Icons.edit, size: 14, color: cs.onPrimary),
-                    onSelected: (val) {
-                      if (val == 0) _pickImage();
-                      if (val == 1) _pasteUrl();
-                      if (val == 2) setState(() => _avatarPath = null);
-                    },
-                    itemBuilder: (_) => [
-                      const PopupMenuItem(
-                        value: 0,
-                        child: Text('Pick Image File'),
-                      ),
-                      const PopupMenuItem(
-                        value: 1,
-                        child: Text('Paste Image URL'),
-                      ),
-                      if (_avatarPath != null)
-                        const PopupMenuItem(
-                          value: 2,
-                          child: Text('Remove Image'),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const SizedBox(height: 6),
+                  SizedBox(
+                    height: 110,
+                    width: double.infinity,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(
+                            GlobalUI.uiRoundness,
+                          ),
+                          child: _buildBannerImage(theme, cs, _bannerPath),
                         ),
-                    ],
+                        Positioned(
+                          top: 8,
+                          right: 8,
+                          child: Material(
+                            color: cs.primaryContainer,
+                            shape: const CircleBorder(),
+                            child: PopupMenuButton<int>(
+                              tooltip: 'Change Banner',
+                              icon: Icon(
+                                Icons.edit,
+                                size: 16,
+                                color: cs.onPrimaryContainer,
+                              ),
+                              onSelected: (val) {
+                                if (val == 0) _pickBannerImage();
+                                if (val == 1) _pasteBannerUrl();
+                                if (val == 2) {
+                                  setState(() => _bannerPath = null);
+                                }
+                              },
+                              itemBuilder: (_) => [
+                                const PopupMenuItem(
+                                  value: 0,
+                                  child: Text('Pick Image File'),
+                                ),
+                                const PopupMenuItem(
+                                  value: 1,
+                                  child: Text('Paste Image URL'),
+                                ),
+                                if (_bannerPath != null)
+                                  const PopupMenuItem(
+                                    value: 2,
+                                    child: Text('Remove Image'),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 52),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          controller: _nameController,
+                          decoration: InputDecoration(
+                            labelText: 'Override Display Name',
+                            hintText: widget.trackerType == TrackerType.local
+                                ? 'Guest'
+                                : widget.trackerType.displayName,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            prefixIcon: const Icon(Icons.person_outline),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: _bioController,
+                          maxLines: 3,
+                          decoration: InputDecoration(
+                            labelText: widget.trackerType == TrackerType.anilist
+                                ? 'About / Bio (Syncs with AniList)'
+                                : 'About / Bio (Local Override)',
+                            hintText:
+                                'Tell the otaku community about your taste...',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            prefixIcon: const Icon(Icons.info_outline),
+                          ),
+                        ),
+                        const SizedBox(height: 28),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextButton(
+                                onPressed: () => setState(() {
+                                  _initData();
+                                  _isEditing = false;
+                                }),
+                                style: TextButton.styleFrom(
+                                  minimumSize: const Size.fromHeight(48),
+                                ),
+                                child: const Text('Cancel'),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: FilledButton(
+                                onPressed: _save,
+                                style: FilledButton.styleFrom(
+                                  minimumSize: const Size.fromHeight(48),
+                                ),
+                                child: const Text('Save'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  Positioned(
+                    top: 110 + 6 - 42,
+                    child: Stack(
+                      children: [
+                        Container(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: cs.surfaceContainer,
+                              width: 4,
+                            ),
+                          ),
+                          child: ClipOval(
+                            child: TrackerAvatarWidget(
+                              imageUrl: _avatarPath,
+                              size: 84,
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: Material(
+                            color: cs.primary,
+                            shape: const CircleBorder(),
+                            child: PopupMenuButton<int>(
+                              tooltip: 'Change Avatar',
+                              icon: Icon(
+                                Icons.edit,
+                                size: 14,
+                                color: cs.onPrimary,
+                              ),
+                              onSelected: (val) {
+                                if (val == 0) _pickImage();
+                                if (val == 1) _pasteUrl();
+                                if (val == 2) {
+                                  setState(() => _avatarPath = null);
+                                }
+                              },
+                              itemBuilder: (_) => [
+                                const PopupMenuItem(
+                                  value: 0,
+                                  child: Text('Pick Image File'),
+                                ),
+                                const PopupMenuItem(
+                                  value: 1,
+                                  child: Text('Paste Image URL'),
+                                ),
+                                if (_avatarPath != null)
+                                  const PopupMenuItem(
+                                    value: 2,
+                                    child: Text('Remove Image'),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-        ),
-        const SizedBox(height: 24),
-        TextFormField(
-          controller: _nameController,
-          decoration: InputDecoration(
-            labelText: 'Override Display Name',
-            hintText: widget.trackerType == TrackerType.local
-                ? 'Guest'
-                : widget.trackerType.displayName,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-            prefixIcon: const Icon(Icons.person_outline),
-          ),
-        ),
-        const SizedBox(height: 16),
-        TextFormField(
-          controller: _bioController,
-          maxLines: 3,
-          decoration: InputDecoration(
-            labelText: widget.trackerType == TrackerType.anilist
-                ? 'About / Bio (Syncs with AniList)'
-                : 'About / Bio (Local Override)',
-            hintText: 'Tell the otaku community about your taste...',
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-            prefixIcon: const Icon(Icons.info_outline),
-          ),
-        ),
-        const SizedBox(height: 28),
-        Row(
-          children: [
-            Expanded(
-              child: TextButton(
-                onPressed: () => setState(() {
-                  _initData();
-                  _isEditing = false;
-                }),
-                style: TextButton.styleFrom(
-                  minimumSize: const Size.fromHeight(48),
-                ),
-                child: const Text('Cancel'),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: FilledButton(
-                onPressed: _save,
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size.fromHeight(48),
-                ),
-                child: const Text('Save'),
-              ),
-            ),
-          ],
         ),
       ],
     );

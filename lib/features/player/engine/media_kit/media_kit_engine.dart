@@ -353,6 +353,14 @@ class MediaKitEngine implements VideoEngine {
     if (subtitle == null || subtitle.url.isEmpty) {
       _log.d('Disabling subtitle');
       await _player.setSubtitleTrack(SubtitleTrack.no());
+    } else if (subtitle.url.startsWith('internal:')) {
+      final trackId = subtitle.url.replaceFirst('internal:', '');
+      _log.d(
+        'Setting internal subtitle: $trackId (lang: ${subtitle.language})',
+      );
+      await _player.setSubtitleTrack(
+        SubtitleTrack(trackId, null, subtitle.language),
+      );
     } else {
       _log.d('Setting subtitle: ${subtitle.url} (lang: ${subtitle.language})');
       await _player.setSubtitleTrack(

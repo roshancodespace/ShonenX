@@ -156,6 +156,10 @@ class VideoPlayerEngine implements VideoEngine {
       await _controller!.setClosedCaptionFile(null);
       return;
     }
+    if (subtitle.url.startsWith('internal:')) {
+      _log.d('Internal subtitles are not supported in VideoPlayerEngine');
+      return;
+    }
     _log.d('Setting subtitle: ${subtitle.url}');
     try {
       final response = await _http.get(subtitle.url);

@@ -76,7 +76,7 @@ class SelectEpisodesStep extends StatelessWidget {
             itemBuilder: (context, index) {
               final ep = state.widget.episodes[index];
               final isSelected = state.selectedEpisodes.contains(ep);
-              final isWatched = ep.number <= state.widget.watchedProgress;
+              final isWatched = state.isEpisodeWatched(ep);
               final epNumStr = ep.number.toString().contains('.0')
                   ? ep.number.toInt().toString()
                   : ep.number.toString();
@@ -226,16 +226,16 @@ class SelectEpisodesStep extends StatelessWidget {
   void _selectUnwatched() {
     state.updateState(() {
       state.selectedEpisodes = state.widget.episodes
-          .where((e) => e.number > state.widget.watchedProgress)
+          .where((e) => !state.isEpisodeWatched(e))
           .toSet();
     });
   }
 
   void _selectNext(int count) {
-    final unwatched = state.widget.episodes
-        .where((e) => e.number > state.widget.watchedProgress)
-        .toList();
-    final list = unwatched.isNotEmpty ? unwatched : state.widget.episodes;
+    final sorted = state.widget.episodes.toList()
+      ..sort((a, b) => a.number.compareTo(b.number));
+    final unwatched = sorted.where((e) => !state.isEpisodeWatched(e)).toList();
+    final list = unwatched.isNotEmpty ? unwatched : sorted;
     state.updateState(() {
       state.selectedEpisodes = list.take(count).toSet();
     });
@@ -250,9 +250,7 @@ class SelectEpisodesStep extends StatelessWidget {
       ..sort((a, b) => a.number.compareTo(b.number));
     if (sorted.isEmpty) return;
 
-    final unwatched = sorted.where(
-      (e) => e.number > state.widget.watchedProgress,
-    );
+    final unwatched = sorted.where((e) => !state.isEpisodeWatched(e));
     final initialStart = unwatched.isNotEmpty
         ? unwatched.first.number
         : sorted.first.number;

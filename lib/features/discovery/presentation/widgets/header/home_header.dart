@@ -381,25 +381,14 @@ class HomeHeader extends ConsumerWidget {
           ),
         ),
         const SizedBox(width: 8),
-        Material(
-          color: cs.surfaceContainerHigh,
-          borderRadius: pillRadius,
-          clipBehavior: Clip.antiAlias,
-          child: Padding(
-            padding: const EdgeInsets.all(
-              6,
-            ), // Uniform padding to match inner gap
-            child: _buildActionButtons(
-              context,
-              ref,
-              theme,
-              100,
-              buttonSize: 36,
-              iconSize: 18,
-              ghost: true,
-              gap: 6.0, // Matches the surrounding padding
-            ),
-          ),
+        _buildActionButtons(
+          context,
+          ref,
+          theme,
+          100,
+          buttonSize: 36,
+          iconSize: 18,
+          gap: 6.0,
         ),
       ],
     );
@@ -495,7 +484,7 @@ class HomeHeader extends ConsumerWidget {
             buttonSize: 32,
             iconSize: 18,
             ghost: true,
-            gap: 4.0, // Matches the container padding for perfect symmetry
+            gap: 4.0,
           ),
         ),
       ],

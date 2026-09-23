@@ -12,6 +12,10 @@ import 'package:shonenx/features/downloads/domain/models/download_task.dart';
 import 'package:shonenx/features/downloads/providers/download_prefs_provider.dart';
 import 'package:shonenx/features/downloads/providers/download_provider.dart';
 import 'package:shonenx/features/downloads/utils/download_url_helper.dart';
+import 'package:shonenx/features/history/providers/watch_history_provider.dart';
+import 'package:shonenx/features/tracking/providers/media_tracking_provider.dart';
+import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
+import 'package:shonenx/features/tracking/providers/tracking_prefs_provider.dart';
 import 'package:shonenx/shared/models/unified_episode.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/models/video_server.dart';
@@ -41,6 +45,7 @@ class BatchDownloadSheet extends ConsumerStatefulWidget {
   final SourceInfo source;
   final UnifiedMedia media;
   final bool forceOneDM;
+  final Set<double>? watchedEpisodeNumbers;
 
   const BatchDownloadSheet({
     super.key,
@@ -49,6 +54,7 @@ class BatchDownloadSheet extends ConsumerStatefulWidget {
     required this.source,
     required this.media,
     this.forceOneDM = false,
+    this.watchedEpisodeNumbers,
   });
 
   static Future<void> show(
@@ -58,6 +64,7 @@ class BatchDownloadSheet extends ConsumerStatefulWidget {
     SourceInfo source,
     UnifiedMedia media, {
     bool forceOneDM = false,
+    Set<double>? watchedEpisodeNumbers,
   }) {
     return AppBottomSheet.show(
       context: context,
@@ -68,6 +75,7 @@ class BatchDownloadSheet extends ConsumerStatefulWidget {
         source: source,
         media: media,
         forceOneDM: forceOneDM,
+        watchedEpisodeNumbers: watchedEpisodeNumbers,
       ),
     );
   }
@@ -102,18 +110,66 @@ class BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
   bool isQueueingCancelled = false;
   final List<int> queuedTaskIds = [];
 
+  late final Set<double> watchedEpisodeNumbers;
+  late final double effectiveWatchedProgress;
+
+  bool isEpisodeWatched(UnifiedEpisode ep) {
+    return watchedEpisodeNumbers.contains(ep.number) ||
+        (effectiveWatchedProgress > 0 && ep.number <= effectiveWatchedProgress);
+  }
+
+  void _initWatchedInfo() {
+    final watchHistoryEntries =
+        ref.read(historyEpisodesProvider(widget.media.id)).value ?? [];
+    final syncThreshold = ref.read(trackingPrefsProvider).syncThreshold;
+    final historyWatched = watchHistoryEntries
+        .where(
+          (e) =>
+              e.durationInMilliseconds > 0 &&
+              e.positionInMilliseconds >=
+                  e.durationInMilliseconds * syncThreshold,
+        )
+        .map((e) => e.episodeNumber)
+        .toSet();
+
+    watchedEpisodeNumbers = {
+      ...?widget.watchedEpisodeNumbers,
+      ...historyWatched,
+    };
+
+    final primaryTracker = ref.read(primaryTrackerProvider);
+    final trackingState = ref.read(
+      mediaTrackingProvider(TrackingQuery(primaryTracker.type, widget.media)),
+    );
+    final trackedProgress = trackingState.value?.progress.toDouble() ?? 0.0;
+
+    final maxHistoryEp = watchedEpisodeNumbers.fold<double>(
+      0.0,
+      (max, epNum) => epNum > max ? epNum : max,
+    );
+
+    effectiveWatchedProgress = [
+      widget.watchedProgress,
+      trackedProgress,
+      maxHistoryEp,
+    ].reduce((a, b) => a > b ? a : b);
+  }
+
   @override
   void initState() {
     super.initState();
-    final unwatched = widget.episodes
-        .where((e) => e.number > widget.watchedProgress)
+    _initWatchedInfo();
+    final sortedEpisodes = widget.episodes.toList()
+      ..sort((a, b) => a.number.compareTo(b.number));
+    final unwatched = sortedEpisodes
+        .where((e) => !isEpisodeWatched(e))
         .toList();
     if (unwatched.isNotEmpty && unwatched.length <= 12) {
       selectedEpisodes = unwatched.toSet();
     } else if (unwatched.isNotEmpty) {
       selectedEpisodes = unwatched.take(5).toSet();
     } else {
-      selectedEpisodes = widget.episodes.take(5).toSet();
+      selectedEpisodes = sortedEpisodes.take(5).toSet();
     }
   }
 

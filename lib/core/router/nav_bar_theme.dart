@@ -236,10 +236,10 @@ class NavBarThemeData {
       barRadius: (size) => 100.0,
       itemRadius: (size) => 100.0,
       barDecoration: BoxDecoration(color: cs.surfaceContainerHigh),
-      activeIconColor: cs.onSecondaryContainer,
+      activeIconColor: cs.onPrimaryContainer,
       inactiveIconColor: cs.onSurfaceVariant,
-      activeTextColor: cs.onSecondaryContainer,
-      activeItemDecoration: BoxDecoration(color: cs.secondaryContainer),
+      activeTextColor: cs.onPrimaryContainer,
+      activeItemDecoration: BoxDecoration(color: cs.primaryContainer),
       inactiveItemDecoration: const BoxDecoration(color: Colors.transparent),
       isMaterial3: true,
       activeScale: 1.0, // No bounce

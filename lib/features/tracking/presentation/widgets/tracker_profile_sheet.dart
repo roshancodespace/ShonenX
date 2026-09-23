@@ -1,3 +1,4 @@
+import "package:flutter_markdown_plus/flutter_markdown_plus.dart";
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -269,14 +270,18 @@ class _TrackerProfileSheetState extends ConsumerState<TrackerProfileSheet> {
 
   String _computeTitle(TrackerProfile? p) {
     final eps = p?.episodesWatched ?? 0;
-    if (eps >= 3000) return 'Mythic Otaku God';
-    if (eps >= 1500) return 'Grandmaster Watcher';
-    if (eps >= 1000) return 'Elite Anime Veteran';
-    if (eps >= 500) return 'Seasoned Otaku';
-    if (eps >= 100) return 'Dedicated Enthusiast';
-    if (eps >= 20) return 'Apprentice Watcher';
-    if (eps > 0) return 'Novice Explorer';
-    return 'Local Explorer';
+    if (eps >= 15000) return 'Ascended Anime Deity';
+    if (eps >= 10000) return 'Celestial Otaku Overlord';
+    if (eps >= 8000) return 'Legendary Weeb Master';
+    if (eps >= 5000) return 'Mythic Anime God';
+    if (eps >= 3000) return 'Grandmaster Watcher';
+    if (eps >= 1500) return 'Elite Anime Veteran';
+    if (eps >= 1000) return 'Seasoned Otaku';
+    if (eps >= 500) return 'Dedicated Enthusiast';
+    if (eps >= 100) return 'Apprentice Watcher';
+    if (eps >= 20) return 'Novice Explorer';
+    if (eps > 0) return 'Local Explorer';
+    return 'Guest Explorer';
   }
 
   @override
@@ -357,9 +362,6 @@ class _TrackerProfileSheetState extends ConsumerState<TrackerProfileSheet> {
     bool isLoggedIn,
     bool isLoggingIn,
   ) {
-    final cleanBio = (profile?.bio ?? '')
-        .replaceAll(RegExp(r'<[^>]*>'), '')
-        .trim();
     final name =
         profile?.username ??
         (isRemote ? widget.trackerType.displayName : 'Guest');
@@ -446,21 +448,26 @@ class _TrackerProfileSheetState extends ConsumerState<TrackerProfileSheet> {
             ],
           ],
         ),
-        if (cleanBio.isNotEmpty || !isRemote) ...[
+        if ((profile?.bio ?? '').isNotEmpty || !isRemote) ...[
           const SizedBox(height: 10),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Text(
-              cleanBio.isNotEmpty
-                  ? cleanBio
-                  : 'Offline tracking stored locally on device',
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: cs.onSurfaceVariant,
-              ),
-            ),
+            child: (profile?.bio ?? '').isNotEmpty
+                ? MarkdownBody(
+                    data: profile!.bio!,
+                    styleSheet: MarkdownStyleSheet(
+                      p: theme.textTheme.bodySmall?.copyWith(
+                        color: cs.onSurfaceVariant,
+                      ),
+                    ),
+                  )
+                : Text(
+                    'Offline tracking stored locally on device',
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: cs.onSurfaceVariant,
+                    ),
+                  ),
           ),
         ],
         if (hasStats) ...[

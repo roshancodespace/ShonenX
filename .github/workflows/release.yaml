@@ -213,13 +213,15 @@ jobs:
       - name: Create env file
         run: |
           ANILIST_ID="${{ secrets.ANILIST_CLIENT_ID }}"
-          ANILIST_ID="${ANILIST_ID:-6871|6871}"
+          ANILIST_ID="${ANILIST_ID:-51784|51784}"
+          ANILIST_SECRET="${{ secrets.ANILIST_CLIENT_SECRET }}"
+          ANILIST_SECRET="${ANILIST_SECRET:-RilknAXcBMEeNvHW6Pmiw11ljCB4ml2zMV4POKRG|RilknAXcBMEeNvHW6Pmiw11ljCB4ml2zMV4POKRG}"
           MAL_ID="${{ secrets.MAL_CLIENT_ID }}"
-          MAL_ID="${MAL_ID:-1714d6f2f4f7cc19644384f8c4629910|1714d6f2f4f7cc19644384f8c4629910}"
+          MAL_ID="${MAL_ID:-281bee8ed86f5e410705a2243c359761|281bee8ed86f5e410705a2243c359761}"
           cat > keys.json <<EOF
           {
             "ANILIST_CLIENT_ID": "${ANILIST_ID}",
-            "ANILIST_CLIENT_SECRET": "${{ secrets.ANILIST_CLIENT_SECRET }}",
+            "ANILIST_CLIENT_SECRET": "${ANILIST_SECRET}",
             "MAL_CLIENT_ID": "${MAL_ID}",
             "MAL_CLIENT_SECRET": "${{ secrets.MAL_CLIENT_SECRET }}",
             "SIMKL_CLIENT_ID": "${{ secrets.SIMKL_CLIENT_ID }}",
@@ -317,13 +319,15 @@ jobs:
       - name: Create env file
         run: |
           ANILIST_ID="${{ secrets.ANILIST_CLIENT_ID }}"
-          ANILIST_ID="${ANILIST_ID:-6871|6871}"
+          ANILIST_ID="${ANILIST_ID:-51784|51784}"
+          ANILIST_SECRET="${{ secrets.ANILIST_CLIENT_SECRET }}"
+          ANILIST_SECRET="${ANILIST_SECRET:-RilknAXcBMEeNvHW6Pmiw11ljCB4ml2zMV4POKRG|RilknAXcBMEeNvHW6Pmiw11ljCB4ml2zMV4POKRG}"
           MAL_ID="${{ secrets.MAL_CLIENT_ID }}"
-          MAL_ID="${MAL_ID:-1714d6f2f4f7cc19644384f8c4629910|1714d6f2f4f7cc19644384f8c4629910}"
+          MAL_ID="${MAL_ID:-281bee8ed86f5e410705a2243c359761|281bee8ed86f5e410705a2243c359761}"
           cat > keys.json <<EOF
           {
             "ANILIST_CLIENT_ID": "${ANILIST_ID}",
-            "ANILIST_CLIENT_SECRET": "${{ secrets.ANILIST_CLIENT_SECRET }}",
+            "ANILIST_CLIENT_SECRET": "${ANILIST_SECRET}",
             "MAL_CLIENT_ID": "${MAL_ID}",
             "MAL_CLIENT_SECRET": "${{ secrets.MAL_CLIENT_SECRET }}",
             "SIMKL_CLIENT_ID": "${{ secrets.SIMKL_CLIENT_ID }}",
@@ -407,13 +411,15 @@ jobs:
         shell: bash
         run: |
           ANILIST_ID="${{ secrets.ANILIST_CLIENT_ID }}"
-          ANILIST_ID="${ANILIST_ID:-6871|6871}"
+          ANILIST_ID="${ANILIST_ID:-51784|51784}"
+          ANILIST_SECRET="${{ secrets.ANILIST_CLIENT_SECRET }}"
+          ANILIST_SECRET="${ANILIST_SECRET:-RilknAXcBMEeNvHW6Pmiw11ljCB4ml2zMV4POKRG|RilknAXcBMEeNvHW6Pmiw11ljCB4ml2zMV4POKRG}"
           MAL_ID="${{ secrets.MAL_CLIENT_ID }}"
-          MAL_ID="${MAL_ID:-1714d6f2f4f7cc19644384f8c4629910|1714d6f2f4f7cc19644384f8c4629910}"
+          MAL_ID="${MAL_ID:-281bee8ed86f5e410705a2243c359761|281bee8ed86f5e410705a2243c359761}"
           cat > keys.json <<EOF
           {
             "ANILIST_CLIENT_ID": "${ANILIST_ID}",
-            "ANILIST_CLIENT_SECRET": "${{ secrets.ANILIST_CLIENT_SECRET }}",
+            "ANILIST_CLIENT_SECRET": "${ANILIST_SECRET}",
             "MAL_CLIENT_ID": "${MAL_ID}",
             "MAL_CLIENT_SECRET": "${{ secrets.MAL_CLIENT_SECRET }}",
             "SIMKL_CLIENT_ID": "${{ secrets.SIMKL_CLIENT_ID }}",
@@ -557,12 +563,28 @@ jobs:
         with:
           tag_name: ${{ needs.resolve-release-tag.outputs.tag_name }}
           name: KuroX ${{ needs.resolve-release-tag.outputs.tag_name }}
+          draft: false
           prerelease: ${{ needs.resolve-release-tag.outputs.is_prerelease == 'true' }}
           make_latest: true
+          target_commitish: ${{ github.sha }}
           body_path: release_notes.md
           files: release-artifacts/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Ensure Release is Published (Not Draft)
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.resolve-release-tag.outputs.tag_name }}
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Ensuring release $TAG is finalized and not left as a draft..."
+            if compgen -G "release-artifacts/*" > /dev/null; then
+              gh release upload "$TAG" release-artifacts/* --clobber || true
+            fi
+            gh release edit "$TAG" --draft=false || true
+          fi
 
       - name: Send Discord Release Notification
         if: github.event_name == 'push' || github.event.inputs.notify_discord == 'true'

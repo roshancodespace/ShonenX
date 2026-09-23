@@ -34,11 +34,10 @@ class AnilistAuthenticator implements Authenticator {
   bool get _hasSecret => _clientSecret.trim().isNotEmpty;
 
   @override
-  String get redirectUri =>
-      _isCustom ? 'shonenx://callback' : 'anilistlogin://callback';
+  String get redirectUri => 'anilistlogin://callback';
 
   @override
-  String get callbackScheme => _isCustom ? 'shonenx' : 'anilistlogin';
+  String get callbackScheme => 'anilistlogin';
 
   @override
   String get providerName => TrackerType.anilist.name;
@@ -53,11 +52,8 @@ class AnilistAuthenticator implements Authenticator {
     final authParams = <String, String>{
       'client_id': _clientId,
       'response_type': useImplicitGrant ? 'token' : 'code',
+      'redirect_uri': redirectUri,
     };
-
-    if (_isCustom) {
-      authParams['redirect_uri'] = redirectUri;
-    }
 
     final url = Uri.https('anilist.co', '/api/v2/oauth/authorize', authParams);
 
@@ -100,12 +96,10 @@ class AnilistAuthenticator implements Authenticator {
       "grant_type": "authorization_code",
       "client_id": _clientId,
       "code": code,
+      "redirect_uri": redirectUri,
     };
     if (_clientSecret.isNotEmpty) {
       tokenBody["client_secret"] = _clientSecret;
-    }
-    if (_isCustom) {
-      tokenBody["redirect_uri"] = redirectUri;
     }
 
     final tokenResponse = await _http.post(

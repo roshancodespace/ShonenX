@@ -38,11 +38,10 @@ class MalAuthenticator implements Authenticator {
       customCredentials != null && customCredentials!.clientId.isNotEmpty;
 
   @override
-  String get redirectUri =>
-      _isCustom ? 'shonenx://callback' : 'mallogin://callback';
+  String get redirectUri => 'mallogin://callback';
 
   @override
-  String get callbackScheme => _isCustom ? 'shonenx' : 'mallogin';
+  String get callbackScheme => 'mallogin';
 
   @override
   String get providerName => TrackerType.myanimelist.name;
@@ -92,13 +91,8 @@ class MalAuthenticator implements Authenticator {
         'code_challenge': codeVerifier, // PKCE plain method
         'code_challenge_method': 'plain',
         'state': state, // CSRF protection
+        'redirect_uri': redirectUri,
       };
-
-      // Only specify redirect_uri if custom credentials are used.
-      // Default bundled MAL client ID expects no redirect_uri (sending it returns 401).
-      if (_isCustom) {
-        authParams['redirect_uri'] = redirectUri;
-      }
 
       final authUri = Uri.https('myanimelist.net', '/v1/oauth2/authorize', authParams);
 
@@ -112,8 +106,8 @@ class MalAuthenticator implements Authenticator {
       );
 
       final sanitizedResult = result.contains('://')
-          ? result
-          : result.replaceFirst(':', '://');
+        ? result
+        : result.replaceFirst(':', '://');
       final parsedUrl = Uri.parse(sanitizedResult);
       final fragmentParams = parsedUrl.fragment.isNotEmpty
           ? Uri.splitQueryString(parsedUrl.fragment)
@@ -155,11 +149,8 @@ class MalAuthenticator implements Authenticator {
         'grant_type': 'authorization_code',
         'code': code,
         'code_verifier': codeVerifier,
+        'redirect_uri': redirectUri,
       };
-
-      if (_isCustom) {
-        bodyParams['redirect_uri'] = redirectUri;
-      }
 
       if (_clientSecret.isNotEmpty) {
         bodyParams['client_secret'] = _clientSecret;

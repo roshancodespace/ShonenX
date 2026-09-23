@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 
 import 'package:shonenx/core/router/app_navigator.dart';
+import 'package:shonenx/core/utils/image_headers.dart';
 import 'package:shonenx/features/tracking/providers/tracker_auth_provider.dart';
 import 'package:shonenx/features/comments/presentation/widgets/comments_tab.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/tabs/about_tab.dart';
@@ -285,7 +286,14 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen>
                                         child: Hero(
                                           tag: widget.tag,
                                           child: CachedNetworkImage(
-                                            imageUrl: displayMedia.cover ?? '',
+                                            imageUrl:
+                                                widget.media.cover ??
+                                                displayMedia.cover ??
+                                                '',
+                                            httpHeaders: decodeUrlHeaders(
+                                              widget.media.cover ??
+                                                  displayMedia.cover,
+                                            ),
                                             fit: BoxFit.cover,
                                             placeholder: (context, url) =>
                                                 Container(

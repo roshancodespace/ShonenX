@@ -71,11 +71,8 @@ class CardThumbnail extends StatelessWidget {
     final finalW = (w.isFinite && w > 0) ? w : double.infinity;
     final finalH = (h.isFinite && h > 0) ? h : double.infinity;
 
-    if ((media.cover ?? media.banner) != null && (media.cover ?? media.banner)!.isNotEmpty) {
-      final cacheW = (w.isFinite && w > 0 && w < 4000)
-          ? (w * 2.5).clamp(150.0, 1000.0).toInt()
-          : 600;
-
+    if ((media.cover ?? media.banner) != null &&
+        (media.cover ?? media.banner)!.isNotEmpty) {
       final rawUrl = (media.cover ?? media.banner)!.trim();
       Widget img;
 
@@ -87,8 +84,6 @@ class CardThumbnail extends StatelessWidget {
           height: finalH,
           fit: BoxFit.cover,
           alignment: Alignment.center,
-          memCacheWidth: cacheW,
-          maxWidthDiskCache: 800,
           fadeInDuration: const Duration(milliseconds: 220),
           placeholderFadeInDuration: const Duration(milliseconds: 120),
           placeholder: (_, __) => _buildPlaceholder(cs, finalW, finalH),
@@ -144,7 +139,11 @@ class CardThumbnail extends StatelessWidget {
       height: h,
       color: cs.surfaceContainerHighest,
       alignment: Alignment.center,
-      child: Icon(Icons.image_not_supported_rounded, color: cs.onSurfaceVariant, size: 28),
+      child: Icon(
+        Icons.image_not_supported_rounded,
+        color: cs.onSurfaceVariant,
+        size: 28,
+      ),
     );
   }
 }

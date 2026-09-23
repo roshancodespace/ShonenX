@@ -150,7 +150,7 @@ class _ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem>
       height: layout.height,
       child: RepaintBoundary(
         child: AnimatedScale(
-          scale: isActive ? 1.04 : 1.0,
+          scale: isActive ? 1.02 : 1.0,
           duration: const Duration(milliseconds: 140),
           curve: Curves.easeOutCubic,
           child: FittedBox(

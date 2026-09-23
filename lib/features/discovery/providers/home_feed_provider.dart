@@ -92,16 +92,44 @@ final homeFeedSectionsProvider = Provider<List<HomeFeedSection>>((ref) {
 
     final sections = <HomeFeedSection>[];
 
-    for (final info in activeAnime) {
-      sections.add(
-        HomeFeedSection(
-          id: 'src-anime-${info.id}',
-          title: '${info.name} (Anime)',
-          type: HomeSectionType.discovery,
-          mediaType: MediaType.ANIME,
-          sourceInfo: info,
-        ),
-      );
+    final continueAnime = const HomeFeedSection(
+      id: 'continue-watching',
+      title: 'Continue Watching',
+      type: HomeSectionType.continueMedia,
+      mediaType: MediaType.ANIME,
+    );
+
+    final continueManga = const HomeFeedSection(
+      id: 'continue-reading',
+      title: 'Continue Reading',
+      type: HomeSectionType.continueMedia,
+      mediaType: MediaType.MANGA,
+    );
+
+    if (activeAnime.isNotEmpty) {
+      final list = activeAnime.toList();
+      for (int i = 0; i < list.length; i++) {
+        sections.add(
+          HomeFeedSection(
+            id: 'src-anime-${list[i].id}',
+            title: '${list[i].name} (Anime)',
+            type: HomeSectionType.discovery,
+            mediaType: MediaType.ANIME,
+            sourceInfo: list[i],
+          ),
+        );
+        if (i == 1 || (i == 0 && list.length == 1)) {
+          sections.add(continueAnime);
+          if (activeManga.isNotEmpty) {
+            sections.add(continueManga);
+          }
+        }
+      }
+    } else {
+      sections.add(continueAnime);
+      if (activeManga.isNotEmpty) {
+        sections.add(continueManga);
+      }
     }
 
     for (final info in activeManga) {
@@ -136,60 +164,60 @@ final homeFeedSectionsProvider = Provider<List<HomeFeedSection>>((ref) {
 });
 
 final homeSectionFeedProvider =
-    FutureProvider.family<List<UnifiedMedia>, HomeFeedSection>(
-      retry: (retryCount, error) => null,
-      (ref, section) async {
-        // 1. Source extension mode
-        if (section.sourceInfo != null) {
-          return ref.watch(
-            singleSourceFeedProvider((
-              section.sourceInfo!,
-              section.mediaType,
-            )).future,
-          );
-        }
+    FutureProvider.family<
+      List<UnifiedMedia>,
+      HomeFeedSection
+    >(retry: (retryCount, error) => null, (ref, section) async {
+      // 1. Source extension mode
+      if (section.sourceInfo != null) {
+        return ref.watch(
+          singleSourceFeedProvider((
+            section.sourceInfo!,
+            section.mediaType,
+          )).future,
+        );
+      }
 
-        // 2. Tracker mode
-        final hs = section.homeSection;
-        if (hs == null || hs.type != HomeSectionType.discovery) return const [];
+      // 2. Tracker mode
+      final hs = section.homeSection;
+      if (hs == null || hs.type != HomeSectionType.discovery) return const [];
 
-        final tracker = ref.watch(metadataSourceProvider);
+      final tracker = ref.watch(metadataSourceProvider);
 
-        // Guard: don't call a tracker with a media type it doesn't support.
-        // This prevents e.g. AniList receiving TV/MOVIE from stale section definitions.
-        if (!tracker.supportsMediaType(section.mediaType)) {
-          return const [];
-        }
+      // Guard: don't call a tracker with a media type it doesn't support.
+      // This prevents e.g. AniList receiving TV/MOVIE from stale section definitions.
+      if (!tracker.supportsMediaType(section.mediaType)) {
+        return const [];
+      }
 
-        final adultMode = ref.watch(contentPrefsProvider).adultContentMode;
-        final category = hs.trackerCategory ?? TrackerCategory.trending;
-        final prefs = ref.watch(discoveryPrefsProvider);
-        final isAuto = prefs.metadataTrackerId == null;
-        final primaryTracker = ref.watch(primaryTrackerProvider);
+      final adultMode = ref.watch(contentPrefsProvider).adultContentMode;
+      final category = hs.trackerCategory ?? TrackerCategory.trending;
+      final prefs = ref.watch(discoveryPrefsProvider);
+      final isAuto = prefs.metadataTrackerId == null;
+      final primaryTracker = ref.watch(primaryTrackerProvider);
 
-        try {
-          final result = await tracker.getCategoryItems(
-            category,
-            type: section.mediaType,
-            adultMode: adultMode,
-            cacheDuration: const Duration(hours: 12),
-          );
-          return result.items;
-        } catch (e) {
-          Future.microtask(() {
-            ref
-                .read(discoveryTrackerErrorProvider.notifier)
-                .reportError(
-                  trackerType: tracker.type,
-                  error: e,
-                  isAuto: isAuto,
-                  primaryTrackerType: primaryTracker.type,
-                );
-          });
-          rethrow;
-        }
-      },
-    );
+      try {
+        final result = await tracker.getCategoryItems(
+          category,
+          type: section.mediaType,
+          adultMode: adultMode,
+          cacheDuration: const Duration(hours: 12),
+        );
+        return result.items;
+      } catch (e) {
+        Future.microtask(() {
+          ref
+              .read(discoveryTrackerErrorProvider.notifier)
+              .reportError(
+                trackerType: tracker.type,
+                error: e,
+                isAuto: isAuto,
+                primaryTrackerType: primaryTracker.type,
+              );
+        });
+        rethrow;
+      }
+    });
 
 final homeSpotlightItemsProvider = FutureProvider<List<UnifiedMedia>>(
   retry: (retryCount, error) => null,

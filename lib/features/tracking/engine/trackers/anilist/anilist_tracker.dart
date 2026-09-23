@@ -230,6 +230,7 @@ class AnilistTracker extends BaseTracker
         mangaCount: (mangaStats?['count'] as num?)?.toInt(),
         chaptersRead: (mangaStats?['chaptersRead'] as num?)?.toInt(),
         statusCounts: parseStatuses(animeStats?['statuses'] as List?),
+        mangaStatusCounts: parseStatuses(mangaStats?['statuses'] as List?),
         lastSyncedAt: DateTime.now(),
         favorites: parseFavs(viewer['favourites'] as Map?),
       );

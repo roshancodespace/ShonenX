@@ -12,6 +12,7 @@ class TrackerProfile {
   final int? mangaCount;
   final int? chaptersRead;
   final Map<String, int>? statusCounts;
+  final Map<String, int>? mangaStatusCounts;
   final DateTime? lastSyncedAt;
   final List<String>? favorites;
 
@@ -29,6 +30,7 @@ class TrackerProfile {
     this.mangaCount,
     this.chaptersRead,
     this.statusCounts,
+    this.mangaStatusCounts,
     this.lastSyncedAt,
     this.favorites,
   });
@@ -47,6 +49,7 @@ class TrackerProfile {
     int? mangaCount,
     int? chaptersRead,
     Map<String, int>? statusCounts,
+    Map<String, int>? mangaStatusCounts,
     DateTime? lastSyncedAt,
     List<String>? favorites,
   }) {
@@ -64,6 +67,7 @@ class TrackerProfile {
       mangaCount: mangaCount ?? this.mangaCount,
       chaptersRead: chaptersRead ?? this.chaptersRead,
       statusCounts: statusCounts ?? this.statusCounts,
+      mangaStatusCounts: mangaStatusCounts ?? this.mangaStatusCounts,
       lastSyncedAt: lastSyncedAt ?? this.lastSyncedAt,
       favorites: favorites ?? this.favorites,
     );
@@ -84,6 +88,7 @@ class TrackerProfile {
       'mangaCount': mangaCount,
       'chaptersRead': chaptersRead,
       'statusCounts': statusCounts,
+      'mangaStatusCounts': mangaStatusCounts,
       'lastSyncedAt': lastSyncedAt?.toIso8601String(),
       'favorites': favorites,
     };
@@ -105,6 +110,9 @@ class TrackerProfile {
       chaptersRead: (map['chaptersRead'] as num?)?.toInt(),
       statusCounts: map['statusCounts'] != null
           ? Map<String, int>.from(map['statusCounts'] as Map)
+          : null,
+      mangaStatusCounts: map['mangaStatusCounts'] != null
+          ? Map<String, int>.from(map['mangaStatusCounts'] as Map)
           : null,
       lastSyncedAt: DateTime.tryParse(map['lastSyncedAt']?.toString() ?? ''),
       favorites: (map['favorites'] as List?)?.map((e) => e.toString()).toList(),

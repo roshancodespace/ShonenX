@@ -2,7 +2,8 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/features/player/engine/media_kit/media_kit_engine.dart';
 import 'package:shonenx/features/player/engine/video_engine.dart';
-import 'package:shonenx/features/player/engine/video_player/video_player_engine.dart';
+import 'package:shonenx/features/player/engine/better_player/better_player_engine.dart';
+import 'package:shonenx/features/player/providers/better_player_prefs_provider.dart';
 import 'package:shonenx/features/player/providers/media_kit_prefs_provider.dart';
 import 'package:shonenx/features/player/providers/player_prefs_provider.dart';
 import 'package:shonenx/shared/models/video_stream.dart';
@@ -132,8 +133,14 @@ final videoEngineProvider = Provider.autoDispose<VideoEngine>((ref) {
 
       ref.onDispose(engine.dispose);
       return engine;
-    case PlayerType.videoPlayer:
-      final engine = VideoPlayerEngine(ref);
+    case PlayerType.betterPlayer:
+      final prefs = ref.read(betterPlayerPrefsProvider);
+      final engine = BetterPlayerEngine(prefs, ref);
+
+      ref.listen(betterPlayerPrefsProvider, (previous, next) async {
+        await engine.updatePrefs(next);
+      });
+
       ref.onDispose(engine.dispose);
       return engine;
   }

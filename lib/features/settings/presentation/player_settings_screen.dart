@@ -74,11 +74,11 @@ class PlayerSettingsScreen extends ConsumerWidget {
               ),
               if (Platform.isAndroid)
                 SettingsSelectionTile(
-                  title: 'Video Player (ExoPlayer)',
+                  title: 'Better Player (ExoPlayer)',
                   subtitle: 'Official Android native video rendering engine',
-                  isSelected: playerPrefs.playerType == PlayerType.videoPlayer,
+                  isSelected: playerPrefs.playerType == PlayerType.betterPlayer,
                   onSelect: () =>
-                      prefsNotifier.changePlayer(PlayerType.videoPlayer),
+                      prefsNotifier.changePlayer(PlayerType.betterPlayer),
                 ),
             ],
           ),

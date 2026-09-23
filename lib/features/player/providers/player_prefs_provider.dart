@@ -10,11 +10,13 @@ import 'package:shonenx/shared/models/video_server.dart';
 
 enum PlayerType {
   mediakit,
-  videoPlayer;
+  betterPlayer;
 
   factory PlayerType.fromString(String? value) {
-    if (value == 'betterplayer' || value == 'mdk' || value == 'videoPlayer') {
-      return PlayerType.videoPlayer;
+    if (value == 'betterplayer' ||
+        value == 'betterPlayer' ||
+        value == 'videoPlayer') {
+      return PlayerType.betterPlayer;
     }
     return PlayerType.mediakit;
   }

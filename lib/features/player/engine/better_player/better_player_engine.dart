@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:shonenx/core/network/http_client.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/player/engine/video_engine.dart';
 import 'package:shonenx/shared/models/video_stream.dart';
@@ -34,6 +35,58 @@ class BetterPlayerEngine implements VideoEngine {
     }
   }
 
+  Future<BetterPlayerVideoFormat> detectVideoFormat(
+    String url, {
+    Map<String, String>? headers,
+  }) async {
+    final cleanPath = url.split('?').first.split('#').first.toLowerCase();
+
+    if (cleanPath.endsWith('.mpd')) {
+      return BetterPlayerVideoFormat.dash;
+    } else if (cleanPath.endsWith('.m3u8') || cleanPath.endsWith('.m3u')) {
+      return BetterPlayerVideoFormat.hls;
+    } else if (cleanPath.endsWith('.ism') || cleanPath.endsWith('.isml')) {
+      return BetterPlayerVideoFormat.ss;
+    }
+
+    if (_detectDataSourceType(url) == BetterPlayerDataSourceType.network) {
+      try {
+        final response = await HTTP().head(url, headers: headers);
+        final contentType = response.headers?['content-type']?.toLowerCase();
+
+        if (contentType != null) {
+          if (contentType.contains('mpegurl') ||
+              contentType.contains('x-mpegurl')) {
+            return BetterPlayerVideoFormat.hls;
+          } else if (contentType.contains('dash+xml')) {
+            return BetterPlayerVideoFormat.dash;
+          } else if (contentType.contains('vnd.ms-sstr+xml')) {
+            return BetterPlayerVideoFormat.ss;
+          }
+        }
+      } catch (_) {
+        // Fallback or ignore
+      }
+    }
+
+    return BetterPlayerVideoFormat.other;
+  }
+
+  BetterPlayerDataSourceType _detectDataSourceType(String url) {
+    final uri = Uri.tryParse(url);
+    if (uri != null) {
+      if (uri.scheme == 'http' || uri.scheme == 'https') {
+        return BetterPlayerDataSourceType.network;
+      } else if (uri.scheme == 'file') {
+        return BetterPlayerDataSourceType.file;
+      }
+    }
+    if (url.startsWith('/')) {
+      return BetterPlayerDataSourceType.file;
+    }
+    return BetterPlayerDataSourceType.network;
+  }
+
   @override
   Future<void> initialize(
     VideoStream stream, {
@@ -65,9 +118,13 @@ class BetterPlayerEngine implements VideoEngine {
       );
     }
 
+    final dataSourceType = _detectDataSourceType(stream.url);
+    final videoFormat = await detectVideoFormat(stream.url, headers: headers);
+
     final dataSource = BetterPlayerDataSource(
-      BetterPlayerDataSourceType.network,
+      dataSourceType,
       stream.url,
+      videoFormat: videoFormat,
       headers: headers,
       subtitles: subtitles,
       useAsmsSubtitles: _prefs.useAsmsSubtitles,

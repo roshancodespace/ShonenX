@@ -54,25 +54,25 @@ class EpisodeMetadataService {
       List<EpisodeMetadata> metadata = [];
 
       if (mode == EpisodeMetadataProviderType.auto) {
-        // Auto fallback chain: Tenrai -> Kitsu -> AniZip
-        metadata = await _tenrai.fetchEpisodes(
+        // Auto fallback chain: AniZip -> Tenrai -> Kitsu
+        metadata = await _anizip.fetchEpisodes(
           media: media,
           onProgress: _notify,
         );
 
         if (metadata.isEmpty) {
-          _log.i('Tenrai returned no data, falling back to Kitsu');
-          _notify('Tenrai unavailable, switching to Kitsu...');
-          metadata = await _kitsu.fetchEpisodes(
+          _log.i('AniZip returned no data, falling back to Tenrai');
+          _notify('AniZip unavailable, switching to Tenrai...');
+          metadata = await _tenrai.fetchEpisodes(
             media: media,
             onProgress: _notify,
           );
         }
 
         if (metadata.isEmpty) {
-          _log.i('Kitsu returned no data, falling back to AniZip');
-          _notify('Kitsu unavailable, switching to AniZip...');
-          metadata = await _anizip.fetchEpisodes(
+          _log.i('Tenrai returned no data, falling back to Kitsu');
+          _notify('Tenrai unavailable, switching to Kitsu...');
+          metadata = await _kitsu.fetchEpisodes(
             media: media,
             onProgress: _notify,
           );

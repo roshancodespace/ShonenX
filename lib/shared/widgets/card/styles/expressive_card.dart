@@ -41,7 +41,7 @@ class ExpressiveCard extends StatelessWidget {
     this.topRightBadge,
     this.bottomLeftBadge,
     this.bottomRightBadge,
-    });
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -63,7 +63,10 @@ class ExpressiveCard extends StatelessWidget {
         width: width,
         height: height,
         decoration: BoxDecoration(
-          color: Color.alphaBlend(cs.primary.withValues(alpha: 0.08), cs.surfaceContainerLow),
+          color: Color.alphaBlend(
+            cs.primary.withValues(alpha: 0.08),
+            cs.surfaceContainerHigh,
+          ),
           borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
           border: Border.all(
             color: isActive
@@ -79,8 +82,28 @@ class ExpressiveCard extends StatelessWidget {
           children: [
             Stack(
               children: [
-                CardThumbnail(media: media, isActive: isActive, progress: progress, heroTag: heroTag, width: double.maxFinite, height: imgH, radiusOverride: GlobalUI.uiRoundness * 0.8),
-                CardBadgeOverlay(media: media, styleName: 'expressive', isWideMode: isWideMode, isActive: isActive, showRatings: showRatings, progress: progress, progressText: progressText, topLeftBadge: topLeftBadge, topRightBadge: topRightBadge, bottomLeftBadge: bottomLeftBadge, bottomRightBadge: bottomRightBadge,),
+                CardThumbnail(
+                  media: media,
+                  isActive: isActive,
+                  progress: progress,
+                  heroTag: heroTag,
+                  width: double.maxFinite,
+                  height: imgH,
+                  radiusOverride: GlobalUI.uiRoundness * 0.8,
+                ),
+                CardBadgeOverlay(
+                  media: media,
+                  styleName: 'expressive',
+                  isWideMode: isWideMode,
+                  isActive: isActive,
+                  showRatings: showRatings,
+                  progress: progress,
+                  progressText: progressText,
+                  topLeftBadge: topLeftBadge,
+                  topRightBadge: topRightBadge,
+                  bottomLeftBadge: bottomLeftBadge,
+                  bottomRightBadge: bottomRightBadge,
+                ),
               ],
             ),
             const SizedBox(height: 8),
@@ -101,7 +124,13 @@ class ExpressiveCard extends StatelessWidget {
               const Spacer(),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: PortraitMetadataRow(media: media, showRatings: showRatings, showYear: showYear, showGenres: showGenres, subtitle: subtitle),
+                child: PortraitMetadataRow(
+                  media: media,
+                  showRatings: showRatings,
+                  showYear: showYear,
+                  showGenres: showGenres,
+                  subtitle: subtitle,
+                ),
               ),
             ],
           ],
@@ -119,7 +148,10 @@ class ExpressiveCard extends StatelessWidget {
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: Color.alphaBlend(cs.primary.withValues(alpha: 0.08), cs.surfaceContainerLow),
+        color: Color.alphaBlend(
+          cs.primary.withValues(alpha: 0.08),
+          cs.surfaceContainerHigh,
+        ),
         borderRadius: BorderRadius.circular(GlobalUI.uiRoundness * 1.5),
         border: Border.all(
           color: isActive
@@ -134,15 +166,45 @@ class ExpressiveCard extends StatelessWidget {
         children: [
           Stack(
             children: [
-              CardThumbnail(media: media, isActive: isActive, progress: progress, heroTag: heroTag, width: thumbW, height: height, radiusOverride: GlobalUI.uiRoundness * 1.2),
-              CardBadgeOverlay(media: media, styleName: 'expressive', isWideMode: isWideMode, isActive: isActive, showRatings: showRatings, progress: progress, progressText: progressText, topLeftBadge: topLeftBadge, topRightBadge: topRightBadge, bottomLeftBadge: bottomLeftBadge, bottomRightBadge: bottomRightBadge,),
+              CardThumbnail(
+                media: media,
+                isActive: isActive,
+                progress: progress,
+                heroTag: heroTag,
+                width: thumbW,
+                height: height,
+                radiusOverride: GlobalUI.uiRoundness * 1.2,
+              ),
+              CardBadgeOverlay(
+                media: media,
+                styleName: 'expressive',
+                isWideMode: isWideMode,
+                isActive: isActive,
+                showRatings: showRatings,
+                progress: progress,
+                progressText: progressText,
+                topLeftBadge: topLeftBadge,
+                topRightBadge: topRightBadge,
+                bottomLeftBadge: bottomLeftBadge,
+                bottomRightBadge: bottomRightBadge,
+              ),
             ],
           ),
           const SizedBox(width: 10),
           Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
-              child: WideMetadataColumn(media: media, showRatings: showRatings, showYear: showYear, showGenres: showGenres, subtitle: subtitle, height: height, progress: progress, progressText: progressText, topRightBadge: topRightBadge),
+              child: WideMetadataColumn(
+                media: media,
+                showRatings: showRatings,
+                showYear: showYear,
+                showGenres: showGenres,
+                subtitle: subtitle,
+                height: height,
+                progress: progress,
+                progressText: progressText,
+                topRightBadge: topRightBadge,
+              ),
             ),
           ),
         ],
@@ -154,8 +216,10 @@ class ExpressiveCard extends StatelessWidget {
     if (subtitle != null && subtitle!.isNotEmpty) return subtitle;
     final items = <String>[];
     if (showYear && media.year != null) items.add(media.year.toString());
-    if (media.status != null && media.status!.isNotEmpty) items.add(media.status!);
-    if (showGenres && media.genres != null && media.genres!.isNotEmpty) items.add(media.genres!.first);
+    if (media.status != null && media.status!.isNotEmpty)
+      items.add(media.status!);
+    if (showGenres && media.genres != null && media.genres!.isNotEmpty)
+      items.add(media.genres!.first);
     if (items.isEmpty) return null;
     return items.join(' • ');
   }

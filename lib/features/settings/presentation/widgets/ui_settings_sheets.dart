@@ -7,6 +7,7 @@ import 'package:shonenx/features/discovery/presentation/widgets/cards/media_card
 import 'package:shonenx/features/discovery/presentation/widgets/continue/continue_reading_card.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/continue/continue_watching_card.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/episodes_panel/episode_tiles.dart';
+import 'package:shonenx/features/discovery/presentation/widgets/header/home_header.dart';
 import 'package:shonenx/features/history/domain/models/read_history_entry.dart';
 import 'package:shonenx/features/history/domain/models/watch_history_entry.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
@@ -583,6 +584,96 @@ void showNavBarStyleSheet(
                       subtitle: _navBarStyleDesc(style),
                       selectedColor: cs.primary,
                       onTap: () => notifier.updateNavBarStyle(style),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        );
+      },
+    ),
+  );
+}
+
+// ── Home Header Sheet ────────────────────────────────────────────────────────
+
+void showHomeHeaderStyleSheet(
+  BuildContext context,
+  WidgetRef ref,
+  UiPrefsNotifier notifier,
+  ThemeData theme,
+) {
+  final cs = theme.colorScheme;
+
+  AppBottomSheet.show(
+    context: context,
+    title: 'Home Header Style',
+    child: Consumer(
+      builder: (_, r, _) {
+        final current = r.watch(
+          uiPrefsProvider.select((s) => s.homeHeaderStyle),
+        );
+
+        return SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 4),
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: cs.surfaceContainerLowest,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: cs.outlineVariant.withValues(alpha: 0.3),
+                        width: 1.0,
+                      ),
+                    ),
+                    child: HomeHeader(styleOverride: current, isPreview: true),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  'Header Layout Preset',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: cs.onSurfaceVariant,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                child: GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    mainAxisExtent: 58,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                  ),
+                  itemCount: HomeHeaderStyle.values.length,
+                  itemBuilder: (context, index) {
+                    final style = HomeHeaderStyle.values[index];
+                    return _StyleGridCard(
+                      selected: current == style,
+                      icon: _homeHeaderStyleIcon(style),
+                      title: style.displayName,
+                      subtitle: _homeHeaderStyleDesc(style),
+                      selectedColor: cs.primary,
+                      onTap: () => notifier.updateHomeHeaderStyle(style),
                     );
                   },
                 ),
@@ -1380,6 +1471,20 @@ IconData _navBarStyleIcon(NavBarStyle style) => switch (style) {
   NavBarStyle.frosted => Icons.blur_on_rounded,
   NavBarStyle.material => Icons.android_rounded,
   NavBarStyle.docked => Icons.dock_outlined,
+};
+
+String _homeHeaderStyleDesc(HomeHeaderStyle style) => switch (style) {
+  HomeHeaderStyle.classic => 'Balanced avatar and greeting',
+  HomeHeaderStyle.minimal => 'Compact single-line row',
+  HomeHeaderStyle.material => 'Segmented pill layout',
+  HomeHeaderStyle.prominent => 'Expressive hero layout',
+};
+
+IconData _homeHeaderStyleIcon(HomeHeaderStyle style) => switch (style) {
+  HomeHeaderStyle.classic => Icons.view_headline_rounded,
+  HomeHeaderStyle.minimal => Icons.density_small_rounded,
+  HomeHeaderStyle.material => Icons.branding_watermark_outlined,
+  HomeHeaderStyle.prominent => Icons.featured_play_list_rounded,
 };
 
 void showSheetPhysicsSheet(BuildContext context, WidgetRef ref) {

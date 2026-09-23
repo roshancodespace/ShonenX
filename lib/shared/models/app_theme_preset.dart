@@ -45,6 +45,7 @@ class AppThemePreset {
   final ContinueReadingStyle continueReadingStyle;
   final EpisodeViewMode episodeViewMode;
   final NavBarStyle navBarStyle;
+  final HomeHeaderStyle homeHeaderStyle;
   final Map<String, bool> cardStyleWideModes;
 
   const AppThemePreset({
@@ -85,6 +86,7 @@ class AppThemePreset {
     this.continueReadingStyle = ContinueReadingStyle.classic,
     this.episodeViewMode = EpisodeViewMode.classic,
     this.navBarStyle = NavBarStyle.classic,
+    this.homeHeaderStyle = HomeHeaderStyle.classic,
     this.cardStyleWideModes = const {},
   });
 
@@ -132,6 +134,7 @@ class AppThemePreset {
       continueReadingStyle: uiPrefs.continueReadingStyle,
       episodeViewMode: uiPrefs.episodeViewMode,
       navBarStyle: uiPrefs.navBarStyle,
+      homeHeaderStyle: uiPrefs.homeHeaderStyle,
       cardStyleWideModes: uiPrefs.cardStyleWideModes,
     );
   }
@@ -185,6 +188,7 @@ class AppThemePreset {
       continueReadingStyle: continueReadingStyle,
       episodeViewMode: episodeViewMode,
       navBarStyle: navBarStyle,
+      homeHeaderStyle: homeHeaderStyle,
       cardStyleWideModes: {
         ...current.cardStyleWideModes,
         ...cardStyleWideModes,
@@ -231,6 +235,7 @@ class AppThemePreset {
       'continueReadingStyle': continueReadingStyle.name,
       'episodeViewMode': episodeViewMode.name,
       'navBarStyle': navBarStyle.name,
+      'homeHeaderStyle': homeHeaderStyle.name,
       'cardStyleWideModes': cardStyleWideModes,
     };
   }
@@ -345,6 +350,10 @@ class AppThemePreset {
       navBarStyle: NavBarStyle.values.firstWhere(
         (e) => e.name == map['navBarStyle'],
         orElse: () => NavBarStyle.classic,
+      ),
+      homeHeaderStyle: HomeHeaderStyle.values.firstWhere(
+        (e) => e.name == map['homeHeaderStyle'],
+        orElse: () => HomeHeaderStyle.classic,
       ),
       cardStyleWideModes: (map['cardStyleWideModes'] is Map)
           ? Map<String, bool>.from(map['cardStyleWideModes'] as Map)

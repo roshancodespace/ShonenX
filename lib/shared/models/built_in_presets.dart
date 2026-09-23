@@ -39,6 +39,7 @@ class BuiltInPresets {
         "cr_expressive": true,
       },
       episodeViewMode: EpisodeViewMode.classic,
+      homeHeaderStyle: HomeHeaderStyle.prominent,
     ),
     AppThemePreset(
       id: '2',
@@ -63,6 +64,7 @@ class BuiltInPresets {
       continueWatchingStyle: ContinueWatchingStyle.editorial,
       continueReadingStyle: ContinueReadingStyle.editorial,
       episodeViewMode: EpisodeViewMode.classic,
+      homeHeaderStyle: HomeHeaderStyle.minimal,
     ),
     AppThemePreset(
       id: '3',
@@ -88,6 +90,7 @@ class BuiltInPresets {
       continueWatchingStyle: ContinueWatchingStyle.material,
       continueReadingStyle: ContinueReadingStyle.material,
       episodeViewMode: EpisodeViewMode.classic,
+      homeHeaderStyle: HomeHeaderStyle.material,
     ),
     AppThemePreset(
       id: '4',
@@ -111,6 +114,7 @@ class BuiltInPresets {
       continueWatchingStyle: ContinueWatchingStyle.expressive,
       continueReadingStyle: ContinueReadingStyle.expressive,
       episodeViewMode: EpisodeViewMode.classic,
+      homeHeaderStyle: HomeHeaderStyle.classic,
     ),
     AppThemePreset(
       id: '5',
@@ -136,6 +140,7 @@ class BuiltInPresets {
       continueReadingStyle: ContinueReadingStyle.wideBanner,
       episodeViewMode: EpisodeViewMode.classic,
       navBarStyle: NavBarStyle.minimal,
+      homeHeaderStyle: HomeHeaderStyle.minimal,
     ),
   ];
 }

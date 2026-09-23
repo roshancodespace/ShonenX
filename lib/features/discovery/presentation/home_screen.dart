@@ -14,70 +14,12 @@ import 'package:shonenx/features/discovery/providers/home_feed_provider.dart';
 import 'package:shonenx/features/library/providers/cloud_library_provider.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
 import 'package:shonenx/source_engine/source_engine_provider.dart';
-import 'package:shonenx/features/tracking/presentation/widgets/tracker_profile_sheet.dart';
-import 'package:shonenx/features/tracking/providers/tracker_profile_provider.dart';
 import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
+import 'package:shonenx/features/discovery/presentation/widgets/header/home_header.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
-import 'package:shonenx/shared/widgets/tracker_avatar.dart';
-
-class _HeaderButton extends StatelessWidget {
-  final IconData? icon;
-  final Widget? iconWidget;
-  final Widget Function(BuildContext context, Color color)? iconBuilder;
-  final VoidCallback onTap;
-  final String tooltip;
-  final bool active;
-  final double? borderRadius;
-
-  const _HeaderButton({
-    this.icon,
-    this.iconWidget,
-    this.iconBuilder,
-    required this.onTap,
-    required this.tooltip,
-    this.active = false,
-    this.borderRadius,
-  }) : assert(icon != null || iconWidget != null || iconBuilder != null);
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final radius = BorderRadius.circular(borderRadius ?? GlobalUI.uiRoundness);
-    final iconColor = active
-        ? theme.colorScheme.onPrimaryContainer
-        : theme.colorScheme.onSurface;
-
-    final Widget childWidget = iconBuilder != null
-        ? iconBuilder!(context, iconColor)
-        : (iconWidget ?? Icon(icon, size: 20, color: iconColor));
-
-    return Tooltip(
-      message: tooltip,
-      child: Material(
-        color: active
-            ? theme.colorScheme.primaryContainer
-            : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-        borderRadius: radius,
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: radius,
-          child: Padding(
-            padding: const EdgeInsets.all(8),
-            child: SizedBox(
-              width: 20,
-              height: 20,
-              child: Center(child: childWidget),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -91,7 +33,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final activeSections = ref.watch(homeFeedSectionsProvider);
 
     ref.listen<DiscoveryTrackerErrorInfo?>(discoveryTrackerErrorProvider, (
@@ -148,13 +89,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
           slivers: [
             // Top Header Bar
-            SliverToBoxAdapter(
+            const SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 10,
-                ),
-                child: _buildHeader(context, ref, theme),
+                padding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                child: HomeHeader(),
               ),
             ),
 
@@ -216,132 +154,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildHeader(BuildContext context, WidgetRef ref, ThemeData theme) {
-    final profiles = ref.watch(trackerProfileProvider);
-    final primaryTrackerType = ref.watch(
-      primaryTrackerProvider.select((s) => s.type),
-    );
-    final uiRoundness = ref.watch(
-      themePrefsProvider.select((s) => s.uiRoundness),
-    );
-
-    return Row(
-      children: [
-        Expanded(
-          child: GestureDetector(
-            onTap: () => showModalBottomSheet(
-              context: context,
-              isScrollControlled: true,
-              useRootNavigator: true,
-              useSafeArea: true,
-              builder: (_) =>
-                  TrackerProfileSheet(trackerType: primaryTrackerType),
-            ),
-            behavior: HitTestBehavior.opaque,
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(2),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(uiRoundness),
-                    color: theme.colorScheme.primaryContainer,
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
-                    child: TrackerAvatarWidget(
-                      imageUrl: profiles[primaryTrackerType]?.avatarUrl,
-                      size: 48,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'Welcome back',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.labelLarge?.copyWith(
-                          color: theme.colorScheme.primary,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.2,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        profiles[primaryTrackerType]?.username ?? 'Guest',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          height: 1.1,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Consumer(
-              builder: (context, ref, _) {
-                final prefs = ref.watch(discoveryPrefsProvider);
-                final isTracker = prefs.mode == MetadataMode.tracker;
-
-                if (isTracker) {
-                  final metadataTracker = ref.watch(metadataSourceProvider);
-                  final trackerType = metadataTracker.type;
-                  final isAuto = prefs.metadataTrackerId == null;
-                  final tooltip = isAuto
-                      ? 'Discovery Mode: Auto (${trackerType.displayName})'
-                      : 'Discovery Mode: ${trackerType.displayName}';
-
-                  return _HeaderButton(
-                    tooltip: tooltip,
-                    borderRadius: uiRoundness,
-                    onTap: () => DiscoveryModeSheet.show(context),
-                    iconBuilder: (context, color) =>
-                        trackerType.getIconWidget(size: 20, color: color),
-                    active: true,
-                  );
-                } else {
-                  return _HeaderButton(
-                    tooltip: 'Discovery Mode: Extensions',
-                    borderRadius: uiRoundness,
-                    onTap: () => DiscoveryModeSheet.show(context),
-                    icon: Icons.extension_rounded,
-                    active: false,
-                  );
-                }
-              },
-            ),
-            const SizedBox(width: 8),
-            _HeaderButton(
-              tooltip: 'Airing Calendar',
-              borderRadius: uiRoundness,
-              onTap: () => context.pushCalendar(),
-              icon: Icons.calendar_month_outlined,
-            ),
-            const SizedBox(width: 8),
-            _HeaderButton(
-              tooltip: 'Settings',
-              borderRadius: uiRoundness,
-              onTap: () => context.pushSettings(),
-              icon: Icons.settings_outlined,
-            ),
-          ],
-        ),
-      ],
     );
   }
 

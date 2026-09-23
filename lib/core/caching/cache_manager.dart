@@ -239,10 +239,10 @@ class CacheManager {
   }
 
   String getCategoryName(String key) {
-    if (key.contains('/api/anime/search')) return 'Search Queries';
-    if (key.contains('/api/anime/eps/')) return 'Episode Metadata';
-    if (key.contains('/api/anime/servers/')) return 'Server Lists';
-    if (key.contains('/api/anime/oppai/')) return 'Stream Sources';
+    if (key.contains('search')) return 'Search Queries';
+    if (key.contains('episode')) return 'Episode Metadata';
+    if (key.contains('server')) return 'Server Lists';
+    if (key.contains('source')) return 'Stream Sources';
     return 'General / Others';
   }
 }

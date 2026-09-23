@@ -822,18 +822,18 @@ class _SideNavBar extends ConsumerWidget {
     }
 
     final barWidth = h.pick(
-      spacious: 90.0,
-      normal: 82.0,
-      compact: 72.0,
-      tight: 64.0,
+      spacious: 80.0,
+      normal: 72.0,
+      compact: 64.0,
+      tight: 54.0,
       cramped: 56.0,
     );
     final hPad = isDocked
         ? 0.0
         : h.pick(
-            spacious: 12.0,
-            normal: 10.0,
-            compact: 8.0,
+            spacious: 10.0,
+            normal: 8.0,
+            compact: 6.0,
             tight: 6.0,
             cramped: 4.0,
           );

@@ -232,10 +232,10 @@ class NavBarThemeData {
     bool isDownloadActive,
   ) {
     return NavBarThemeData(
-      blurSigma: null, // Zero blur
-      barRadius: (size) => size / 2,
-      itemRadius: (size) => size / 2, // Standard pill
-      barDecoration: BoxDecoration(color: cs.surfaceContainerLow),
+      blurSigma: null,
+      barRadius: (size) => 100.0,
+      itemRadius: (size) => 100.0,
+      barDecoration: BoxDecoration(color: cs.surfaceContainerHigh),
       activeIconColor: cs.onSecondaryContainer,
       inactiveIconColor: cs.onSurfaceVariant,
       activeTextColor: cs.onSecondaryContainer,
@@ -246,7 +246,7 @@ class NavBarThemeData {
       downloadButtonDecoration: BoxDecoration(
         color: isDownloadActive
             ? cs.secondaryContainer
-            : cs.surfaceContainerLow,
+            : cs.surfaceContainerHigh,
       ),
       downloadIconColor: isDownloadActive
           ? cs.onSecondaryContainer

@@ -175,9 +175,11 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
       (max, epNum) => epNum > max ? epNum : max,
     );
 
-    final effectiveWatchedProgress = widget.watchedProgress > 0
-        ? widget.watchedProgress
-        : (trackedProgress > 0 ? trackedProgress : maxHistoryEp);
+    final effectiveWatchedProgress = [
+      widget.watchedProgress,
+      trackedProgress,
+      maxHistoryEp,
+    ].reduce((a, b) => a > b ? a : b);
 
     final effectiveCurrentEpisodeNumber =
         widget.currentEpisodeNumber ??
@@ -546,9 +548,10 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
                               onPressed: () => BatchDownloadSheet.show(
                                 context,
                                 finalEpisodes,
-                                widget.watchedProgress,
+                                effectiveWatchedProgress,
                                 state.source,
                                 widget.media,
+                                watchedEpisodeNumbers: historyWatchedSet,
                               ),
                               icon: const Icon(
                                 Icons.download_for_offline_outlined,

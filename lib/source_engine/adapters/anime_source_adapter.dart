@@ -187,7 +187,7 @@ class AnimeSourceAdapter extends BaseSourceAdapter implements AnimeSource {
     }
 
     return UnifiedEpisode(
-      id: '${e.url ?? ''}|${e.episodeNumber}',
+      id: '${e.url ?? ''}##${e.episodeNumber}',
       season: season,
       title: (cleanTitle == null || cleanTitle.trim().isEmpty)
           ? null
@@ -231,7 +231,7 @@ class AnimeSourceAdapter extends BaseSourceAdapter implements AnimeSource {
     final methodLog = log.child('getSources');
     try {
       methodLog.i('episodeId=$episodeId server=${server.name}');
-      final parts = episodeId.split('|');
+      final parts = episodeId.split('##');
       final url = parts[0];
       final epNum = parts.length > 1 ? parts[1] : '1';
 

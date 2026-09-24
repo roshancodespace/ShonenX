@@ -315,6 +315,35 @@ class MediaPreferenceNotifier extends AsyncNotifier<MediaPreferenceState> {
     return setPreferredTracker(trackerType);
   }
 
+  Future<void> syncDirectMatchToDb(
+    SourceInfo sourceInfo,
+    String matchedMediaId,
+    String matchedMediaTitle,
+  ) async {
+    final log = _log.child('syncDirectMatchToDb');
+    try {
+      final existing = await _isar.mediaPreferences.getByMediaTitle(
+        args.mediaTitle,
+      );
+      final pref =
+          existing ?? (MediaPreference()..mediaTitle = args.mediaTitle);
+
+      pref.preferredSourceId = sourceInfo.id;
+      pref.preferredSourceName = sourceInfo.name;
+      pref.preferredSourceType = sourceInfo.type.name;
+      pref.matchedMediaId = matchedMediaId;
+      pref.matchedMediaTitle = matchedMediaTitle;
+
+      await _isar.writeTxn(() async => await _isar.mediaPreferences.put(pref));
+
+      log.s(
+        'Synced direct match to DB: "$matchedMediaTitle" ($matchedMediaId) on "${sourceInfo.name}"',
+      );
+    } catch (e, st) {
+      log.e('Failed to sync direct match', e, st);
+    }
+  }
+
   Future<void> updatePrefs(
     SourceInfo sourceInfo,
     String matchedMediaId,

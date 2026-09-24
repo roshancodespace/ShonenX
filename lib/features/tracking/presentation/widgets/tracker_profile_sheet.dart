@@ -1068,67 +1068,63 @@ class _TrackerProfileSheetState extends ConsumerState<TrackerProfileSheet> {
                       ],
                     ),
                   ),
-                  Positioned(
-                    top: 110 + 6 - 42,
-                    child: Stack(
-                      children: [
-                        Container(
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: cs.surfaceContainer,
-                              width: 4,
-                            ),
-                          ),
-                          child: ClipOval(
-                            child: TrackerAvatarWidget(
-                              imageUrl: _avatarPath,
-                              size: 84,
-                            ),
-                          ),
-                        ),
-                        Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: Material(
-                            color: cs.primary,
-                            shape: const CircleBorder(),
-                            child: PopupMenuButton<int>(
-                              tooltip: 'Change Avatar',
-                              icon: Icon(
-                                Icons.edit,
-                                size: 14,
-                                color: cs.onPrimary,
-                              ),
-                              onSelected: (val) {
-                                if (val == 0) _pickImage();
-                                if (val == 1) _pasteUrl();
-                                if (val == 2) {
-                                  setState(() => _avatarPath = null);
-                                }
-                              },
-                              itemBuilder: (_) => [
-                                const PopupMenuItem(
-                                  value: 0,
-                                  child: Text('Pick Image File'),
-                                ),
-                                const PopupMenuItem(
-                                  value: 1,
-                                  child: Text('Paste Image URL'),
-                                ),
-                                if (_avatarPath != null)
-                                  const PopupMenuItem(
-                                    value: 2,
-                                    child: Text('Remove Image'),
-                                  ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                 ],
+              ),
+              Positioned(
+                top: 110 + 6 - 42,
+                child: Stack(
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: cs.surfaceContainer,
+                          width: 4,
+                        ),
+                      ),
+                      child: ClipOval(
+                        child: TrackerAvatarWidget(
+                          imageUrl: _avatarPath,
+                          size: 84,
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: Material(
+                        color: cs.primary,
+                        shape: const CircleBorder(),
+                        child: PopupMenuButton<int>(
+                          tooltip: 'Change Avatar',
+                          icon: Icon(Icons.edit, size: 14, color: cs.onPrimary),
+                          onSelected: (val) {
+                            if (val == 0) _pickImage();
+                            if (val == 1) _pasteUrl();
+                            if (val == 2) {
+                              setState(() => _avatarPath = null);
+                            }
+                          },
+                          itemBuilder: (_) => [
+                            const PopupMenuItem(
+                              value: 0,
+                              child: Text('Pick Image File'),
+                            ),
+                            const PopupMenuItem(
+                              value: 1,
+                              child: Text('Paste Image URL'),
+                            ),
+                            if (_avatarPath != null)
+                              const PopupMenuItem(
+                                value: 2,
+                                child: Text('Remove Image'),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),

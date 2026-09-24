@@ -203,7 +203,8 @@ enum HomeHeaderStyle {
   classic('Classic'),
   minimal('Minimal'),
   material('Material'),
-  prominent('Prominent');
+  prominent('Prominent'),
+  docked('Docked');
 
   final String displayName;
   const HomeHeaderStyle(this.displayName);

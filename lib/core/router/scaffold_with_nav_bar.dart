@@ -775,44 +775,29 @@ class _SideNavBar extends ConsumerWidget {
               ),
               Padding(
                 padding: const EdgeInsets.only(bottom: 24.0),
-                child: InkWell(
-                  onTap: () => navigationShell.goBranch(
-                    3,
-                    initialLocation: 3 == navigationShell.currentIndex,
-                  ),
-                  borderRadius: BorderRadius.circular(8),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: navigationShell.currentIndex == 3
-                                ? cs.primaryContainer
-                                : Colors.transparent,
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: const _DockedDownloadIcon(),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Downloads',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                            color: navigationShell.currentIndex == 3
-                                ? cs.onPrimaryContainer
-                                : cs.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _DockedActionItem(
+                      icon: const _DockedDownloadIcon(),
+                      label: 'Downloads',
+                      isActive: navigationShell.currentIndex == 3,
+                      onTap: () => navigationShell.goBranch(
+                        3,
+                        initialLocation: 3 == navigationShell.currentIndex,
+                      ),
+                      cs: cs,
                     ),
-                  ),
+
+                    const SizedBox(height: 8),
+                    _DockedActionItem(
+                      icon: const Icon(Icons.settings_outlined),
+                      label: 'Settings',
+                      isActive: false,
+                      onTap: () => context.push('/settings'),
+                      cs: cs,
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -1273,6 +1258,60 @@ class _DockedDownloadIcon extends ConsumerWidget {
             ),
           const Icon(Icons.download_outlined),
         ],
+      ),
+    );
+  }
+}
+
+class _DockedActionItem extends StatelessWidget {
+  final Widget icon;
+  final String label;
+  final bool isActive;
+  final VoidCallback onTap;
+  final ColorScheme cs;
+
+  const _DockedActionItem({
+    required this.icon,
+    required this.label,
+    required this.isActive,
+    required this.onTap,
+    required this.cs,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+              decoration: BoxDecoration(
+                color: isActive ? cs.primaryContainer : Colors.transparent,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: IconTheme(
+                data: IconThemeData(
+                  color: isActive ? cs.onPrimaryContainer : cs.onSurfaceVariant,
+                ),
+                child: icon,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                color: isActive ? cs.onPrimaryContainer : cs.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

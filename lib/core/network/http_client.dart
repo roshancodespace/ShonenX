@@ -127,6 +127,7 @@ class HTTP {
     Map<String, String>? queryParameters,
     Object? body,
     Duration? cacheDuration,
+    bool suppressLogs = false,
   }) async {
     if (method == 'GET') {
       final requestKey = _buildRequestKey(url, headers, queryParameters, body);
@@ -142,6 +143,7 @@ class HTTP {
             queryParameters: queryParameters,
             body: body,
             cacheDuration: cacheDuration,
+            suppressLogs: suppressLogs,
           ).whenComplete(() {
             if (identical(_inFlightGetRequests[requestKey], request)) {
               _inFlightGetRequests.remove(requestKey);
@@ -158,6 +160,7 @@ class HTTP {
       queryParameters: queryParameters,
       body: body,
       cacheDuration: cacheDuration,
+      suppressLogs: suppressLogs,
     );
   }
 
@@ -191,6 +194,7 @@ class HTTP {
     Map<String, String>? queryParameters,
     Object? body,
     Duration? cacheDuration,
+    bool suppressLogs = false,
   }) async {
     final key = _buildKey(url, queryParameters, body);
 
@@ -204,7 +208,7 @@ class HTTP {
         _cache!.cacheConfig.enableCaching &&
         !_cache!.cacheConfig.bypassCache &&
         isCacheable) {
-      final cached = await _cache!.get(key);
+      final cached = await _cache!.get(key, suppressLogs: suppressLogs);
       if (cached != null) {
         return HttpResponse(200, Uint8List.fromList(cached.bodyBytes));
       }
@@ -300,6 +304,7 @@ class HTTP {
           ..etag = lowerHeaders[HttpHeaders.etagHeader]
           ..lastModified = lowerHeaders[HttpHeaders.lastModifiedHeader],
         effectiveTtl,
+        suppressLogs: suppressLogs,
       );
     }
     return response;
@@ -310,6 +315,7 @@ class HTTP {
     Map<String, String>? headers,
     Map<String, String>? queryParameters,
     Duration? cacheDuration = Duration.zero,
+    bool suppressLogs = false,
   }) {
     return _request(
       'GET',
@@ -317,6 +323,7 @@ class HTTP {
       headers: headers,
       queryParameters: queryParameters,
       cacheDuration: cacheDuration,
+      suppressLogs: suppressLogs,
     );
   }
 
@@ -326,6 +333,7 @@ class HTTP {
     Map<String, String>? queryParameters,
     Object? body,
     Duration? cacheDuration,
+    bool suppressLogs = false,
   }) {
     return _request(
       'POST',
@@ -334,6 +342,7 @@ class HTTP {
       body: body,
       queryParameters: queryParameters,
       cacheDuration: cacheDuration,
+      suppressLogs: suppressLogs,
     );
   }
 
@@ -342,6 +351,7 @@ class HTTP {
     Map<String, String>? headers,
     Map<String, String>? queryParameters,
     Object? body,
+    bool suppressLogs = false,
   }) {
     return _request(
       'PUT',
@@ -349,6 +359,7 @@ class HTTP {
       headers: headers,
       body: body,
       queryParameters: queryParameters,
+      suppressLogs: suppressLogs,
     );
   }
 
@@ -357,6 +368,7 @@ class HTTP {
     Map<String, String>? headers,
     Map<String, String>? queryParameters,
     Object? body,
+    bool suppressLogs = false,
   }) {
     return _request(
       'PATCH',
@@ -364,6 +376,7 @@ class HTTP {
       headers: headers,
       body: body,
       queryParameters: queryParameters,
+      suppressLogs: suppressLogs,
     );
   }
 
@@ -371,12 +384,14 @@ class HTTP {
     String url, {
     Map<String, String>? headers,
     Map<String, String>? queryParameters,
+    bool suppressLogs = false,
   }) {
     return _request(
       'DELETE',
       url,
       headers: headers,
       queryParameters: queryParameters,
+      suppressLogs: suppressLogs,
     );
   }
 
@@ -384,12 +399,14 @@ class HTTP {
     String url, {
     Map<String, String>? headers,
     Map<String, String>? queryParameters,
+    bool suppressLogs = false,
   }) {
     return _request(
       'HEAD',
       url,
       headers: headers,
       queryParameters: queryParameters,
+      suppressLogs: suppressLogs,
     );
   }
 }

@@ -75,43 +75,48 @@ class CacheManager {
     }
   }
 
-  Future<CacheEntry?> get(String key) async {
+  Future<CacheEntry?> get(String key, {bool suppressLogs = false}) async {
     final log = _log.child('get');
 
     try {
       final entry = await _isar.cacheEntrys.getByKey(key);
 
       if (entry == null) {
-        log.v('MISS: $key');
+        if (!suppressLogs) log.v('MISS: $key');
         return null;
       }
 
       if (entry.expiry.isBefore(DateTime.now())) {
-        log.i('EXPIRED: $key → deleting');
-        await delete(key);
+        if (!suppressLogs) log.i('EXPIRED: $key → deleting');
+        await delete(key, suppressLogs: suppressLogs);
         return null;
       }
 
       entry.bodyBytes = _decompressIfNeeded(entry.bodyBytes);
 
-      log.s('HIT: $key');
+      if (!suppressLogs) log.s('HIT: $key');
       return entry;
     } catch (e, st) {
-      log.e('READ FAILED: $key', e, st);
+      if (!suppressLogs) log.e('READ FAILED: $key', e, st);
       return null;
     }
   }
 
-  Future<void> put(CacheEntry entry, Duration cacheDuration) async {
+  Future<void> put(
+    CacheEntry entry,
+    Duration cacheDuration, {
+    bool suppressLogs = false,
+  }) async {
     final log = _log.child('put');
 
     try {
       entry.expiry = DateTime.now().add(cacheDuration);
 
       if (entry.bodyBytes.length > _oneMb) {
-        log.v(
-          'Compressing bodyBytes (${entry.bodyBytes.length} bytes) with gzip: ${entry.key}',
-        );
+        if (!suppressLogs)
+          log.v(
+            'Compressing bodyBytes (${entry.bodyBytes.length} bytes) with gzip: ${entry.key}',
+          );
         entry.bodyBytes = gzip.encode(entry.bodyBytes);
       }
 
@@ -119,9 +124,10 @@ class CacheManager {
         await _isar.cacheEntrys.put(entry);
       });
 
-      log.s('STORED: ${entry.key} (ttl: ${cacheDuration.inMinutes}m)');
+      if (!suppressLogs)
+        log.s('STORED: ${entry.key} (ttl: ${cacheDuration.inMinutes}m)');
     } catch (e, st) {
-      log.e('WRITE FAILED: ${entry.key}', e, st);
+      if (!suppressLogs) log.e('WRITE FAILED: ${entry.key}', e, st);
     }
   }
 
@@ -144,7 +150,7 @@ class CacheManager {
     return bytes;
   }
 
-  Future<void> delete(String key) async {
+  Future<void> delete(String key, {bool suppressLogs = false}) async {
     final log = _log.child('delete');
 
     try {
@@ -152,9 +158,9 @@ class CacheManager {
         await _isar.cacheEntrys.deleteByKey(key);
       });
 
-      log.s('DELETED: $key');
+      if (!suppressLogs) log.s('DELETED: $key');
     } catch (e, st) {
-      log.e('DELETE FAILED: $key', e, st);
+      if (!suppressLogs) log.e('DELETE FAILED: $key', e, st);
     }
   }
 

@@ -102,7 +102,11 @@ class MediaMatchNotifier extends AsyncNotifier<MatchedMediaState> {
         Future.microtask(() {
           ref
               .read(mediaPreferenceProvider(args).notifier)
-              .updatePrefs(sourceInfo, args.providerId!, args.mediaTitle);
+              .syncDirectMatchToDb(
+                sourceInfo,
+                args.providerId!,
+                args.mediaTitle,
+              );
         });
       }
 

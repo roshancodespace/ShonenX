@@ -77,19 +77,6 @@ class MediaKitEngine implements VideoEngine {
       await setPropSafe('af', '');
     }
 
-    await setPropSafe('cache', 'yes');
-    await setPropSafe('demuxer-seekable-cache', 'yes');
-    await setPropSafe('demuxer-max-bytes', '154857600');
-    await setPropSafe('demuxer-max-back-bytes', '52428800');
-    await setPropSafe('demuxer-lavf-probesize', '5000000');
-    await setPropSafe('demuxer-lavf-analyzeduration', '5000000');
-
-    final readaheadSecs = prefs.maxBuffer.inSeconds < 60
-        ? '60'
-        : prefs.maxBuffer.inSeconds.toString();
-    await setPropSafe('cache-secs', readaheadSecs);
-    await setPropSafe('demuxer-readahead-secs', readaheadSecs);
-
     await setPropSafe('brightness', prefs.colorPreset.brightness.toString());
     await setPropSafe('contrast', prefs.colorPreset.contrast.toString());
     await setPropSafe('saturation', prefs.colorPreset.saturation.toString());
@@ -217,6 +204,18 @@ class MediaKitEngine implements VideoEngine {
           ref
               .read(videoEngineStateProvider.notifier)
               .updateState(activeAudioTrack: _mapAudioTrack(track.audio));
+        }
+      }),
+      _player.stream.error.listen((error) {
+        if (!_disposed) {
+          _log.e('Player stream error: $error');
+        }
+      }),
+      _player.stream.log.listen((event) {
+        if (!_disposed && event.level == 'error') {
+          _log.e('MPV: [${event.level}] ${event.prefix}: ${event.text}');
+        } else if (!_disposed && event.level == 'warn') {
+          _log.w('MPV: [${event.level}] ${event.prefix}: ${event.text}');
         }
       }),
     ]);

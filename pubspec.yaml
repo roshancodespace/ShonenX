@@ -108,7 +108,6 @@ dependency_overrides:
       url: https://github.com/media-kit/media-kit.git
       ref: main
       path: ./libs/android/media_kit_libs_android_video
-
   libtorrent_flutter:
     path: packages/anymex_extension_bridge/packages/libtorrent_flutter
 

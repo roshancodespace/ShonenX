@@ -1478,6 +1478,7 @@ String _homeHeaderStyleDesc(HomeHeaderStyle style) => switch (style) {
   HomeHeaderStyle.minimal => 'Compact single-line row',
   HomeHeaderStyle.material => 'Segmented pill layout',
   HomeHeaderStyle.prominent => 'Expressive hero layout',
+  HomeHeaderStyle.docked => 'Seamless side-by-side tv layout',
 };
 
 IconData _homeHeaderStyleIcon(HomeHeaderStyle style) => switch (style) {
@@ -1485,6 +1486,7 @@ IconData _homeHeaderStyleIcon(HomeHeaderStyle style) => switch (style) {
   HomeHeaderStyle.minimal => Icons.density_small_rounded,
   HomeHeaderStyle.material => Icons.branding_watermark_outlined,
   HomeHeaderStyle.prominent => Icons.featured_play_list_rounded,
+  HomeHeaderStyle.docked => Icons.tv_rounded,
 };
 
 void showSheetPhysicsSheet(BuildContext context, WidgetRef ref) {

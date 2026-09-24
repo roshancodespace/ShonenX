@@ -89,11 +89,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
           slivers: [
             // Top Header Bar
-            const SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                child: HomeHeader(),
-              ),
+            Consumer(
+              builder: (context, ref, _) {
+                final style = ref.watch(
+                  uiPrefsProvider.select((s) => s.homeHeaderStyle),
+                );
+                final isDocked = style == HomeHeaderStyle.docked;
+                return SliverToBoxAdapter(
+                  child: Padding(
+                    padding: isDocked
+                        ? const EdgeInsets.only(top: 0)
+                        : const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 10,
+                          ),
+                    child: HomeHeader(),
+                  ),
+                );
+              },
             ),
 
             // Tracker Outage Alert Banner

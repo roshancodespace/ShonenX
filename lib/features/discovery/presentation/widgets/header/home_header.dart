@@ -168,6 +168,15 @@ class HomeHeader extends ConsumerWidget {
         username,
         avatarUrl,
       ),
+      HomeHeaderStyle.docked => _buildDocked(
+        context,
+        ref,
+        theme,
+        uiRoundness,
+        primaryTrackerType,
+        username,
+        avatarUrl,
+      ),
     };
   }
 
@@ -470,7 +479,7 @@ class HomeHeader extends ConsumerWidget {
         Container(
           padding: const EdgeInsets.all(4), // Uniform padding
           decoration: BoxDecoration(
-            color: cs.surfaceContainerHigh.withValues(alpha: 0.4),
+            color: cs.surfaceContainer,
             borderRadius: BorderRadius.circular(uiRoundness),
           ),
           child: _buildActionButtons(
@@ -485,6 +494,89 @@ class HomeHeader extends ConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildDocked(
+    BuildContext context,
+    WidgetRef ref,
+    ThemeData theme,
+    double uiRoundness,
+    TrackerType primaryTrackerType,
+    String username,
+    String? avatarUrl,
+  ) {
+    final cs = theme.colorScheme;
+    final timeGreeting = _getTimeGreeting();
+
+    return Container(
+      decoration: BoxDecoration(color: cs.surfaceContainer),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: GestureDetector(
+              onTap: () => _onProfileTap(context, primaryTrackerType),
+              behavior: HitTestBehavior.opaque,
+              child: Row(
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: cs.primary.withValues(alpha: 0.5),
+                        width: 1.5,
+                      ),
+                    ),
+                    child: ClipOval(
+                      child: TrackerAvatarWidget(imageUrl: avatarUrl, size: 40),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          timeGreeting,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: cs.onSurfaceVariant,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        Text(
+                          username,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.3,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          _buildActionButtons(
+            context,
+            ref,
+            theme,
+            uiRoundness * 0.7,
+            buttonSize: 34,
+            iconSize: 18,
+            ghost: true,
+            gap: 4.0,
+          ),
+        ],
+      ),
     );
   }
 

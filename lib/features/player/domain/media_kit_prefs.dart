@@ -91,6 +91,11 @@ class MediaKitPrefs {
   final MediaKitColorPreset colorPreset;
   final String rawConfiguration;
   final bool libassEnabled;
+  final int brightness;
+  final int contrast;
+  final int saturation;
+  final int gamma;
+  final int hue;
 
   const MediaKitPrefs({
     this.enableHardwareAcceleration = true,
@@ -105,6 +110,11 @@ class MediaKitPrefs {
     this.colorPreset = MediaKitColorPreset.default_,
     this.rawConfiguration = '',
     this.libassEnabled = false,
+    this.brightness = 0,
+    this.contrast = 0,
+    this.saturation = 0,
+    this.gamma = 0,
+    this.hue = 0,
   });
 
   MediaKitPrefs copyWith({
@@ -120,6 +130,11 @@ class MediaKitPrefs {
     MediaKitColorPreset? colorPreset,
     String? rawConfiguration,
     bool? libassEnabled,
+    int? brightness,
+    int? contrast,
+    int? saturation,
+    int? gamma,
+    int? hue,
   }) {
     return MediaKitPrefs(
       enableHardwareAcceleration:
@@ -135,6 +150,11 @@ class MediaKitPrefs {
       colorPreset: colorPreset ?? this.colorPreset,
       rawConfiguration: rawConfiguration ?? this.rawConfiguration,
       libassEnabled: libassEnabled ?? this.libassEnabled,
+      brightness: brightness ?? this.brightness,
+      contrast: contrast ?? this.contrast,
+      saturation: saturation ?? this.saturation,
+      gamma: gamma ?? this.gamma,
+      hue: hue ?? this.hue,
     );
   }
 
@@ -153,7 +173,12 @@ class MediaKitPrefs {
             other.audioNormalizePreset == audioNormalizePreset &&
             other.colorPreset == colorPreset &&
             other.rawConfiguration == rawConfiguration &&
-            other.libassEnabled == libassEnabled);
+            other.libassEnabled == libassEnabled &&
+            other.brightness == brightness &&
+            other.contrast == contrast &&
+            other.saturation == saturation &&
+            other.gamma == gamma &&
+            other.hue == hue);
   }
 
   @override
@@ -170,6 +195,11 @@ class MediaKitPrefs {
     colorPreset,
     rawConfiguration,
     libassEnabled,
+    brightness,
+    contrast,
+    saturation,
+    gamma,
+    hue,
   );
 
   @override
@@ -186,8 +216,81 @@ class MediaKitPrefs {
         'audioNorm: $audioNormalizePreset, '
         'colorPreset: $colorPreset, '
         'rawConfiguration: $rawConfiguration, '
-        'libassEnabled: $libassEnabled'
+        'libassEnabled: $libassEnabled, '
+        'brightness: $brightness, '
+        'contrast: $contrast, '
+        'saturation: $saturation, '
+        'gamma: $gamma, '
+        'hue: $hue'
         ')';
+  }
+
+  List<String> diff(MediaKitPrefs other) {
+    final changes = <String>[];
+    if (brightness != other.brightness) {
+      changes.add('brightness: $brightness -> ${other.brightness}');
+    }
+    if (contrast != other.contrast) {
+      changes.add('contrast: $contrast -> ${other.contrast}');
+    }
+    if (saturation != other.saturation) {
+      changes.add('saturation: $saturation -> ${other.saturation}');
+    }
+    if (gamma != other.gamma) {
+      changes.add('gamma: $gamma -> ${other.gamma}');
+    }
+    if (hue != other.hue) {
+      changes.add('hue: $hue -> ${other.hue}');
+    }
+    if (colorPreset != other.colorPreset) {
+      changes.add(
+        'colorPreset: ${colorPreset.name} -> ${other.colorPreset.name}',
+      );
+    }
+    if (hwdec != other.hwdec) {
+      changes.add('hwdec: $hwdec -> ${other.hwdec}');
+    }
+    if (vo != other.vo) {
+      changes.add('vo: $vo -> ${other.vo}');
+    }
+    if (enableHardwareAcceleration != other.enableHardwareAcceleration) {
+      changes.add(
+        'hwaccel: $enableHardwareAcceleration -> ${other.enableHardwareAcceleration}',
+      );
+    }
+    if (enableLowLatency != other.enableLowLatency) {
+      changes.add('lowLatency: $enableLowLatency -> ${other.enableLowLatency}');
+    }
+    if (minBuffer != other.minBuffer) {
+      changes.add(
+        'minBuffer: ${minBuffer.inSeconds}s -> ${other.minBuffer.inSeconds}s',
+      );
+    }
+    if (maxBuffer != other.maxBuffer) {
+      changes.add(
+        'maxBuffer: ${maxBuffer.inSeconds}s -> ${other.maxBuffer.inSeconds}s',
+      );
+    }
+    if (audioChannel != other.audioChannel) {
+      changes.add(
+        'audioChannel: ${audioChannel.name} -> ${other.audioChannel.name}',
+      );
+    }
+    if (boostVolume != other.boostVolume) {
+      changes.add('boostVolume: $boostVolume -> ${other.boostVolume}');
+    }
+    if (audioNormalizePreset != other.audioNormalizePreset) {
+      changes.add(
+        'audioNormalize: ${audioNormalizePreset.name} -> ${other.audioNormalizePreset.name}',
+      );
+    }
+    if (libassEnabled != other.libassEnabled) {
+      changes.add('libass: $libassEnabled -> ${other.libassEnabled}');
+    }
+    if (rawConfiguration != other.rawConfiguration) {
+      changes.add('rawConfiguration changed');
+    }
+    return changes;
   }
 
   factory MediaKitPrefs.fromMap(Map<String, dynamic> map) {
@@ -216,6 +319,11 @@ class MediaKitPrefs {
       ),
       rawConfiguration: map['rawConfiguration'] as String? ?? '',
       libassEnabled: map['libassEnabled'] as bool? ?? true,
+      brightness: map['brightness'] as int? ?? 0,
+      contrast: map['contrast'] as int? ?? 0,
+      saturation: map['saturation'] as int? ?? 0,
+      gamma: map['gamma'] as int? ?? 0,
+      hue: map['hue'] as int? ?? 0,
     );
   }
 
@@ -233,6 +341,11 @@ class MediaKitPrefs {
       'colorPreset': colorPreset.value,
       'rawConfiguration': rawConfiguration,
       'libassEnabled': libassEnabled,
+      'brightness': brightness,
+      'contrast': contrast,
+      'saturation': saturation,
+      'gamma': gamma,
+      'hue': hue,
     };
   }
 

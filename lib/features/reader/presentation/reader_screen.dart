@@ -328,7 +328,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                 duration: const Duration(milliseconds: 250),
                 opacity: state.showOverlay ? 1.0 : 0.0,
                 child: ReaderAppBar(
-                  mediaTitle: widget.mode.media.title.availableTitle,
+                  mediaTitle: widget.mode.media.title.getPreferedTitle,
                   episodeNumber: widget.mode.episode.number,
                   themeInfo: themeInfo,
                   uiRoundness: GlobalUI.uiRoundness,

@@ -128,7 +128,7 @@ class _HomeSectionRow extends ConsumerWidget {
       title: section.title,
       itemBuilder: (context, item) {
         return TvMediaCard(
-          title: item.title.availableTitle,
+          title: item.title.getPreferedTitle,
           cover: item.cover ?? '',
           banner: item.banner,
           score: item.score,

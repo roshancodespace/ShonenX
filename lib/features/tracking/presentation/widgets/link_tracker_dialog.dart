@@ -87,7 +87,7 @@ class _LinkTrackerSheetState extends ConsumerState<LinkTrackerSheet> {
           TrackerMapping()
             ..trackingId = result.id
             ..trackerId = widget.tracker.type.id
-            ..trackingTitle = result.title.availableTitle,
+            ..trackingTitle = result.title.getPreferedTitle,
         );
 
     context.pop();
@@ -161,7 +161,7 @@ class _LinkTrackerSheetState extends ConsumerState<LinkTrackerSheet> {
                             child: Icon(Icons.movie_creation_outlined),
                           ),
                     title: Text(
-                      result.title.availableTitle,
+                      result.title.getPreferedTitle,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(fontWeight: FontWeight.w600),

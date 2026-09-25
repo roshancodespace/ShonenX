@@ -21,7 +21,7 @@ abstract class MediaSource {
     List<String> tags = const [],
   });
 
-  Future<List<UnifiedMedia>> getTrending({int page = 1});
+  Future<List<UnifiedMedia>> getTrending({int page = 1}) async => const [];
 
   Future<UnifiedMedia> getDetails(String providerId, MediaType type);
 

@@ -394,15 +394,15 @@ class SearchNotifier extends AsyncNotifier<PaginatedResult<UnifiedMedia>?> {
     switch (arg.sort) {
       case SearchSort.alphabeticalAZ:
         filtered.sort(
-          (a, b) => a.title.availableTitle.toLowerCase().compareTo(
-            b.title.availableTitle.toLowerCase(),
+          (a, b) => a.title.getPreferedTitle.toLowerCase().compareTo(
+            b.title.getPreferedTitle.toLowerCase(),
           ),
         );
         break;
       case SearchSort.alphabeticalZA:
         filtered.sort(
-          (a, b) => b.title.availableTitle.toLowerCase().compareTo(
-            a.title.availableTitle.toLowerCase(),
+          (a, b) => b.title.getPreferedTitle.toLowerCase().compareTo(
+            a.title.getPreferedTitle.toLowerCase(),
           ),
         );
         break;

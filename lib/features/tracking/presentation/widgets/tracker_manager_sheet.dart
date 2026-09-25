@@ -104,7 +104,7 @@ class _AvailableTrackerRow extends StatelessWidget {
             builder: (_) => LinkTrackerSheet(
               primaryMediaId: media.id,
               mediaType: media.type,
-              initialSearchQuery: media.title.availableTitle,
+              initialSearchQuery: media.title.getPreferedTitle,
               tracker: tracker as RemoteTracker,
             ),
           );
@@ -380,7 +380,7 @@ class _LinkedTrackerRow extends ConsumerWidget {
                         builder: (_) => LinkTrackerSheet(
                           primaryMediaId: media.id,
                           mediaType: media.type,
-                          initialSearchQuery: media.title.availableTitle,
+                          initialSearchQuery: media.title.getPreferedTitle,
                           tracker: tracker as RemoteTracker,
                         ),
                       );
@@ -474,7 +474,7 @@ class _LinkedTrackerRow extends ConsumerWidget {
                       builder: (_) => LinkTrackerSheet(
                         primaryMediaId: media.id,
                         mediaType: media.type,
-                        initialSearchQuery: media.title.availableTitle,
+                        initialSearchQuery: media.title.getPreferedTitle,
                         tracker: tracker as RemoteTracker,
                       ),
                     );

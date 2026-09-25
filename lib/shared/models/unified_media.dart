@@ -341,7 +341,7 @@ class MediaTitle {
 
   const MediaTitle({this.romaji, this.english, this.native});
 
-  String get availableTitle {
+  String get getPreferedTitle {
     String? getValid(String? val) =>
         (val != null && val.trim().isNotEmpty) ? val.trim() : null;
 

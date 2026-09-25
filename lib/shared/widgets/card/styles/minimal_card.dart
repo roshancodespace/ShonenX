@@ -41,7 +41,7 @@ class MinimalCard extends StatelessWidget {
     this.topRightBadge,
     this.bottomLeftBadge,
     this.bottomRightBadge,
-    });
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -62,9 +62,7 @@ class MinimalCard extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
         border: Border.all(
-          color: isActive
-              ? cs.primary
-              : Colors.transparent,
+          color: isActive ? cs.primary : Colors.transparent,
           width: isActive ? 2.5 : 1.0,
           strokeAlign: BorderSide.strokeAlignOutside,
         ),
@@ -74,7 +72,15 @@ class MinimalCard extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            CardThumbnail(media: media, isActive: isActive, progress: progress, heroTag: heroTag, width: width, height: height, radiusOverride: GlobalUI.uiRoundness),
+            CardThumbnail(
+              media: media,
+              isActive: isActive,
+              progress: progress,
+              heroTag: heroTag,
+              width: width,
+              height: height,
+              radiusOverride: GlobalUI.uiRoundness,
+            ),
             DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -88,7 +94,19 @@ class MinimalCard extends StatelessWidget {
                 ),
               ),
             ),
-            CardBadgeOverlay(media: media, styleName: 'minimal', isWideMode: isWideMode, isActive: isActive, showRatings: showRatings, progress: progress, progressText: progressText, topLeftBadge: topLeftBadge, topRightBadge: topRightBadge, bottomLeftBadge: bottomLeftBadge, bottomRightBadge: bottomRightBadge,),
+            CardBadgeOverlay(
+              media: media,
+              styleName: 'minimal',
+              isWideMode: isWideMode,
+              isActive: isActive,
+              showRatings: showRatings,
+              progress: progress,
+              progressText: progressText,
+              topLeftBadge: topLeftBadge,
+              topRightBadge: topRightBadge,
+              bottomLeftBadge: bottomLeftBadge,
+              bottomRightBadge: bottomRightBadge,
+            ),
             Positioned(
               left: 10,
               right: 10,
@@ -98,7 +116,7 @@ class MinimalCard extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    media.title.availableTitle,
+                    media.title.getPreferedTitle,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.labelLarge?.copyWith(
@@ -115,9 +133,16 @@ class MinimalCard extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         if (_getSubtitle() != null)
-                          Expanded(child: PortraitMetadataRow(media: media, showRatings: showRatings, showYear: showYear, showGenres: showGenres, subtitle: subtitle)),
-                        if (progressText != null ||
-                            progress != null)
+                          Expanded(
+                            child: PortraitMetadataRow(
+                              media: media,
+                              showRatings: showRatings,
+                              showYear: showYear,
+                              showGenres: showGenres,
+                              subtitle: subtitle,
+                            ),
+                          ),
+                        if (progressText != null || progress != null)
                           Text(
                             progressText ??
                                 '${(progress!.clamp(0.0, 1.0) * 100).toInt()}%',
@@ -148,9 +173,7 @@ class MinimalCard extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
         border: Border.all(
-          color: isActive
-              ? cs.primary
-              : Colors.transparent,
+          color: isActive ? cs.primary : Colors.transparent,
           width: isActive ? 2.5 : 1.0,
           strokeAlign: BorderSide.strokeAlignOutside,
         ),
@@ -160,7 +183,15 @@ class MinimalCard extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            CardThumbnail(media: media, isActive: isActive, progress: progress, heroTag: heroTag, width: width, height: height, radiusOverride: GlobalUI.uiRoundness),
+            CardThumbnail(
+              media: media,
+              isActive: isActive,
+              progress: progress,
+              heroTag: heroTag,
+              width: width,
+              height: height,
+              radiusOverride: GlobalUI.uiRoundness,
+            ),
             DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -175,13 +206,36 @@ class MinimalCard extends StatelessWidget {
                 ),
               ),
             ),
-            CardBadgeOverlay(media: media, styleName: 'minimal', isWideMode: isWideMode, isActive: isActive, showRatings: showRatings, progress: progress, progressText: progressText, topLeftBadge: topLeftBadge, topRightBadge: topRightBadge, bottomLeftBadge: bottomLeftBadge, bottomRightBadge: bottomRightBadge,),
+            CardBadgeOverlay(
+              media: media,
+              styleName: 'minimal',
+              isWideMode: isWideMode,
+              isActive: isActive,
+              showRatings: showRatings,
+              progress: progress,
+              progressText: progressText,
+              topLeftBadge: topLeftBadge,
+              topRightBadge: topRightBadge,
+              bottomLeftBadge: bottomLeftBadge,
+              bottomRightBadge: bottomRightBadge,
+            ),
             Positioned(
               left: 12,
               right: 12,
               bottom: 6,
               top: 6,
-              child: WideMetadataColumn(media: media, showRatings: showRatings, showYear: showYear, showGenres: showGenres, subtitle: subtitle, textColor: Colors.white, height: height, progress: progress, progressText: progressText, topRightBadge: topRightBadge),
+              child: WideMetadataColumn(
+                media: media,
+                showRatings: showRatings,
+                showYear: showYear,
+                showGenres: showGenres,
+                subtitle: subtitle,
+                textColor: Colors.white,
+                height: height,
+                progress: progress,
+                progressText: progressText,
+                topRightBadge: topRightBadge,
+              ),
             ),
           ],
         ),
@@ -193,8 +247,10 @@ class MinimalCard extends StatelessWidget {
     if (subtitle != null && subtitle!.isNotEmpty) return subtitle;
     final items = <String>[];
     if (showYear && media.year != null) items.add(media.year.toString());
-    if (media.status != null && media.status!.isNotEmpty) items.add(media.status!);
-    if (showGenres && media.genres != null && media.genres!.isNotEmpty) items.add(media.genres!.first);
+    if (media.status != null && media.status!.isNotEmpty)
+      items.add(media.status!);
+    if (showGenres && media.genres != null && media.genres!.isNotEmpty)
+      items.add(media.genres!.first);
     if (items.isEmpty) return null;
     return items.join(' • ');
   }

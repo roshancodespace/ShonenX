@@ -92,7 +92,7 @@ class _ManualMatchSheetState extends ConsumerState<ManualMatchSheet> {
 
     ref
         .read(mediaPreferenceProvider(args).notifier)
-        .setManualMatch(result.id, result.title.availableTitle);
+        .setManualMatch(result.id, result.title.getPreferedTitle);
 
     context.pop(true);
   }

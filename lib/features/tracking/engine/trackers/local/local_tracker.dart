@@ -40,7 +40,7 @@ class LocalTracker implements TrackingService {
       entry ??= LibraryEntry()
         ..providerId = trackingId
         ..format = media.format
-        ..title = media.title.availableTitle
+        ..title = media.title.getPreferedTitle
         ..cover = media.cover ?? ''
         ..type = media.type.id
         ..episodes = media.episodes

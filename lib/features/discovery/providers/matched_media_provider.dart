@@ -144,7 +144,7 @@ class MediaMatchNotifier extends AsyncNotifier<MatchedMediaState> {
     final result = await MediaMatchService(
       sourceImpl,
       args.type,
-    ).findBestMatch(args.mediaTitle);
+    ).findBestMatch(args.toMedia().title);
 
     if (result == null) {
       _log.w('No match found on ${prefs.sourceInfo.name}');
@@ -152,21 +152,21 @@ class MediaMatchNotifier extends AsyncNotifier<MatchedMediaState> {
     }
 
     _log.s(
-      'Matched → "${result.title.availableTitle}" (${result.id}) on ${prefs.sourceInfo.name}',
+      'Matched → "${result.title.getPreferedTitle}" (${result.id}) on ${prefs.sourceInfo.name}',
     );
 
     // Cache the match in Isar DB to bypass matchmaker on next launch
     Future.microtask(() {
       ref
           .read(mediaPreferenceProvider(args).notifier)
-          .saveAutoMatch(result.id, result.title.availableTitle);
+          .saveAutoMatch(result.id, result.title.getPreferedTitle);
     });
 
     return MatchedMediaState(
       sourceInfo: prefs.sourceInfo,
       matchedMedia: MatchedMedia(
         id: result.id,
-        title: result.title.availableTitle,
+        title: result.title.getPreferedTitle,
       ),
     );
   }

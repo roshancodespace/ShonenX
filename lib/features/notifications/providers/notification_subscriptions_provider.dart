@@ -169,7 +169,7 @@ class NotificationSubscriptionsNotifier
     final sub = NotificationSubscription()
       ..type = subType
       ..referenceId = media.id
-      ..title = media.title.availableTitle
+      ..title = media.title.getPreferedTitle
       ..image = media.cover ?? media.banner ?? ''
       ..isEnabled = true
       ..mode = SubscriptionMode.nextOnly

@@ -93,7 +93,7 @@ class DiscordRpcService {
 
     final pos = positionMs ?? timeStampMs ?? 0;
     final dur = durationMs ?? 0;
-    final title = anime.title.availableTitle;
+    final title = anime.title.getPreferedTitle;
     final epCount = totalEpisodes != null ? '/$totalEpisodes' : '';
     final epLabel = 'Episode $episodeNumber$epCount';
 
@@ -173,7 +173,7 @@ class DiscordRpcService {
     _mediaStartMs ??= DateTime.now().millisecondsSinceEpoch;
     _browsingStartMs = null;
 
-    final title = manga.title.availableTitle;
+    final title = manga.title.getPreferedTitle;
     final chTotal = totalChapters != null ? '/$totalChapters' : '';
     final chLabel = chapterNumber != null
         ? 'Chapter $chapterNumber$chTotal'
@@ -221,7 +221,7 @@ class DiscordRpcService {
     _mediaStartMs = DateTime.now().millisecondsSinceEpoch;
     _browsingStartMs = null;
 
-    final title = media.title.availableTitle;
+    final title = media.title.getPreferedTitle;
     final typeStr = media.type == MediaType.MANGA ? 'Manga' : 'Anime';
     final coverUrl = media.cover ?? media.banner;
     final mediaUrl = 'https://anilist.co/${media.type.id}/${media.id}';

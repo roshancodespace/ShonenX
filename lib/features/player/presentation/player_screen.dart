@@ -53,7 +53,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
   /// Display title: either the anime title or the local file name.
   String get _mediaTitle {
     if (widget.mode is PlayerModeOnline) {
-      return (widget.mode as PlayerModeOnline).media.title.availableTitle;
+      return (widget.mode as PlayerModeOnline).media.title.getPreferedTitle;
     }
     return (widget.mode as PlayerModeOffline).title ?? 'Local Media';
   }

@@ -395,13 +395,13 @@ class _DownloadSheetState extends ConsumerState<DownloadSheet> {
         : widget.episode.number.toString();
 
     var fileName = prefs.fileNameFormat == FileNameFormat.titleAndEpisode
-        ? '${widget.media.title.availableTitle} - Episode $epNum.mp4'
+        ? '${widget.media.title.getPreferedTitle} - Episode $epNum.mp4'
         : 'Episode $epNum.mp4';
     fileName = fileName.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
 
     String targetDir = prefs.downloadPath;
     if (prefs.createSubfolders) {
-      final animeFolderName = widget.media.title.availableTitle.replaceAll(
+      final animeFolderName = widget.media.title.getPreferedTitle.replaceAll(
         RegExp(r'[\\/:*?"<>|]'),
         '_',
       );
@@ -455,7 +455,7 @@ class _DownloadSheetState extends ConsumerState<DownloadSheet> {
         ? widget.episode.number.toInt().toString()
         : widget.episode.number.toString();
     final fileName =
-        '${widget.media.title.availableTitle} - Episode $epNum.mp4';
+        '${widget.media.title.getPreferedTitle} - Episode $epNum.mp4';
 
     final mergedHeaders = DownloadUrlHelper.extractHeadersFromUrl(
       stream.url,
@@ -506,7 +506,7 @@ class _DownloadSheetState extends ConsumerState<DownloadSheet> {
             if (stream.headers != null)
               'android.media.intent.extra.HTTP_HEADERS': stream.headers,
             'title':
-                '${widget.media.title.availableTitle} - Ep ${widget.episode.number}',
+                '${widget.media.title.getPreferedTitle} - Ep ${widget.episode.number}',
           },
         );
         await intent.launch();
@@ -523,7 +523,7 @@ class _DownloadSheetState extends ConsumerState<DownloadSheet> {
     }
 
     final title =
-        '${widget.media.title.availableTitle} - Ep ${widget.episode.number}';
+        '${widget.media.title.getPreferedTitle} - Ep ${widget.episode.number}';
     bool launched = false;
 
     if (Platform.isLinux || Platform.isWindows || Platform.isMacOS) {

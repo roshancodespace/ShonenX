@@ -110,7 +110,7 @@ class ExpressiveCard extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4),
               child: Text(
-                media.title.availableTitle,
+                media.title.getPreferedTitle,
                 maxLines: progress != null ? 1 : 2,
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.labelLarge?.copyWith(

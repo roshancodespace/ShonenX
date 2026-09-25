@@ -446,7 +446,7 @@ class _TvEpisodeShelfState extends ConsumerState<TvEpisodeShelf> {
                         AppFocusHover(
                           onTap: () => TvManualMatchDialog.show(
                             context,
-                            mediaTitle: widget.media.title.availableTitle,
+                            mediaTitle: widget.media.title.getPreferedTitle,
                             type: widget.media.type,
                             matchArgs: mediaArgs,
                             currentSource: state.source,
@@ -787,7 +787,7 @@ class _TvEpisodeShelfState extends ConsumerState<TvEpisodeShelf> {
                 AppFocusHover(
                   onTap: () => TvManualMatchDialog.show(
                     context,
-                    mediaTitle: widget.media.title.availableTitle,
+                    mediaTitle: widget.media.title.getPreferedTitle,
                     type: widget.media.type,
                     matchArgs: mediaArgs,
                     currentSource: currentSource,
@@ -927,7 +927,7 @@ class _TvEpisodeShelfState extends ConsumerState<TvEpisodeShelf> {
                 AppFocusHover(
                   onTap: () => TvManualMatchDialog.show(
                     context,
-                    mediaTitle: widget.media.title.availableTitle,
+                    mediaTitle: widget.media.title.getPreferedTitle,
                     type: widget.media.type,
                     matchArgs: mediaArgs,
                     currentSource: currentSource,

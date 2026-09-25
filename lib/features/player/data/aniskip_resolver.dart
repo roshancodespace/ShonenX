@@ -28,7 +28,7 @@ class AniSkipResolver {
       return null;
     }
 
-    final title = media.title.availableTitle;
+    final title = media.title.getPreferedTitle;
 
     // 2. Check externalIds.mal
     final extMalStr = media.externalIds.mal;

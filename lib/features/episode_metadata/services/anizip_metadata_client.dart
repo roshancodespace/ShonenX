@@ -70,7 +70,7 @@ class AniZipEpisodeMetadataClient implements EpisodeMetadataProvider {
 
     // 3. Title-based Fallback (Simkl, generic scrapers, or sources with no cross-IDs)
     _log.i(
-      'No direct ID found for AniZip; resolving by title for "${media.title.availableTitle}" (origin: ${media.providerId ?? media.sourceId})',
+      'No direct ID found for AniZip; resolving by title for "${media.title.getPreferedTitle}" (origin: ${media.providerId ?? media.sourceId})',
     );
     return await _resolveIdByTitle(media);
   }
@@ -96,7 +96,7 @@ class AniZipEpisodeMetadataClient implements EpisodeMetadataProvider {
     }
 
     _log.w(
-      'Could not resolve AniZip ID by title for "${media.title.availableTitle}"',
+      'Could not resolve AniZip ID by title for "${media.title.getPreferedTitle}"',
     );
     return null;
   }
@@ -105,7 +105,7 @@ class AniZipEpisodeMetadataClient implements EpisodeMetadataProvider {
     UnifiedMedia media,
     List<String> targetTitles,
   ) async {
-    final title = media.title.availableTitle;
+    final title = media.title.getPreferedTitle;
     if (title.trim().isEmpty) return null;
 
     try {

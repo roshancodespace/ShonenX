@@ -128,6 +128,7 @@ class HTTP {
     Object? body,
     Duration? cacheDuration,
     bool suppressLogs = false,
+    String? Function(String)? cacheInterceptor,
   }) async {
     if (method == 'GET') {
       final requestKey = _buildRequestKey(url, headers, queryParameters, body);
@@ -144,6 +145,7 @@ class HTTP {
             body: body,
             cacheDuration: cacheDuration,
             suppressLogs: suppressLogs,
+            cacheInterceptor: cacheInterceptor,
           ).whenComplete(() {
             if (identical(_inFlightGetRequests[requestKey], request)) {
               _inFlightGetRequests.remove(requestKey);
@@ -161,6 +163,7 @@ class HTTP {
       body: body,
       cacheDuration: cacheDuration,
       suppressLogs: suppressLogs,
+      cacheInterceptor: cacheInterceptor,
     );
   }
 
@@ -195,6 +198,7 @@ class HTTP {
     Object? body,
     Duration? cacheDuration,
     bool suppressLogs = false,
+    String? Function(String)? cacheInterceptor,
   }) async {
     final key = _buildKey(url, queryParameters, body);
 
@@ -279,7 +283,7 @@ class HTTP {
         ? <String, String>{}
         : {'content-type': contentType};
 
-    final response = HttpResponse(
+    var response = HttpResponse(
       res.statusCode,
       bodyBytes,
       headers: responseHeaders,
@@ -297,15 +301,35 @@ class HTTP {
         res.statusCode >= 200 &&
         res.statusCode < 300 &&
         bodyBytes.isNotEmpty) {
-      await _cache!.put(
-        CacheEntry()
-          ..key = key
-          ..bodyBytes = bodyBytes
-          ..etag = lowerHeaders[HttpHeaders.etagHeader]
-          ..lastModified = lowerHeaders[HttpHeaders.lastModifiedHeader],
-        effectiveTtl,
-        suppressLogs: suppressLogs,
-      );
+      Uint8List bytesToCache = bodyBytes;
+      bool shouldCache = true;
+
+      if (cacheInterceptor != null) {
+        final intercepted = cacheInterceptor(response.body);
+        if (intercepted == null) {
+          shouldCache = false;
+        } else {
+          bytesToCache = Uint8List.fromList(utf8.encode(intercepted));
+          // Modify response to match what we cache
+          response = HttpResponse(
+            res.statusCode,
+            bytesToCache,
+            headers: responseHeaders,
+          );
+        }
+      }
+
+      if (shouldCache) {
+        await _cache!.put(
+          CacheEntry()
+            ..key = key
+            ..bodyBytes = bytesToCache
+            ..etag = lowerHeaders[HttpHeaders.etagHeader]
+            ..lastModified = lowerHeaders[HttpHeaders.lastModifiedHeader],
+          effectiveTtl,
+          suppressLogs: suppressLogs,
+        );
+      }
     }
     return response;
   }
@@ -316,6 +340,7 @@ class HTTP {
     Map<String, String>? queryParameters,
     Duration? cacheDuration = Duration.zero,
     bool suppressLogs = false,
+    String? Function(String)? cacheInterceptor,
   }) {
     return _request(
       'GET',
@@ -324,6 +349,7 @@ class HTTP {
       queryParameters: queryParameters,
       cacheDuration: cacheDuration,
       suppressLogs: suppressLogs,
+      cacheInterceptor: cacheInterceptor,
     );
   }
 
@@ -334,6 +360,7 @@ class HTTP {
     Object? body,
     Duration? cacheDuration,
     bool suppressLogs = false,
+    String? Function(String)? cacheInterceptor,
   }) {
     return _request(
       'POST',
@@ -343,6 +370,7 @@ class HTTP {
       queryParameters: queryParameters,
       cacheDuration: cacheDuration,
       suppressLogs: suppressLogs,
+      cacheInterceptor: cacheInterceptor,
     );
   }
 

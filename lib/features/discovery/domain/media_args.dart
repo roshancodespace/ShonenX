@@ -42,7 +42,7 @@ class MediaArgs {
   /// Recommended factory when a [UnifiedMedia] is available.
   factory MediaArgs.fromMedia(UnifiedMedia media) {
     return MediaArgs(
-      mediaTitle: media.title.availableTitle,
+      mediaTitle: media.title.getPreferedTitle,
       type: media.type,
       sourceId: media.sourceId,
       providerId: media.sourceId != null

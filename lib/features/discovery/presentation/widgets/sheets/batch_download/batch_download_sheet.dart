@@ -431,16 +431,14 @@ class BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
         }
 
         var fileName = prefs.fileNameFormat == FileNameFormat.titleAndEpisode
-            ? '${widget.media.title.availableTitle} - Episode $epNumStr.mp4'
+            ? '${widget.media.title.getPreferedTitle} - Episode $epNumStr.mp4'
             : 'Episode $epNumStr.mp4';
         fileName = fileName.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
 
         String targetDir = prefs.downloadPath;
         if (prefs.createSubfolders) {
-          final animeFolderName = widget.media.title.availableTitle.replaceAll(
-            RegExp(r'[\\/:*?"<>|]'),
-            '_',
-          );
+          final animeFolderName = widget.media.title.getPreferedTitle
+              .replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
           targetDir = '$targetDir/$animeFolderName';
         }
 

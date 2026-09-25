@@ -114,7 +114,7 @@ class AboutTabWidget extends ConsumerWidget {
           child: _CharactersList(
             mediaId: media.id,
             mediaType: media.type,
-            mediaTitle: media.title.availableTitle,
+            mediaTitle: media.title.getPreferedTitle,
             characters: media.characters ?? [],
             uiRoundness: uiRoundness,
           ),
@@ -1092,7 +1092,7 @@ class _RecommendationsList extends ConsumerWidget {
       listPadding: EdgeInsets.zero,
       itemBuilder: (context, rec) {
         return MediaCard(
-                media: rec,
+          media: rec,
           tag: 'details-rec-${rec.id}',
           onTap: () => context.pushReplacementDetails(
             mediaType: rec.type,

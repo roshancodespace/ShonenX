@@ -1,10 +1,10 @@
 import 'dart:async';
 
-import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
+import 'package:shonenx/core/network/http_client.dart';
 
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/player/domain/media_kit_prefs.dart';
@@ -67,6 +67,11 @@ class MediaKitEngine implements VideoEngine {
     await setPropSafe('audio-channels', prefs.audioChannel.value);
     await setPropSafe('volume-max', '200');
 
+    await setPropSafe('cache', 'yes');
+    await setPropSafe('cache-secs', prefs.maxBuffer.inSeconds.toString());
+    await setPropSafe('demuxer-max-bytes', '134217728'); // 128MB
+    await setPropSafe('demuxer-max-back-bytes', '67108864'); // 64MB
+
     try {
       await _player.setVolume(prefs.boostVolume ? 140 : 100);
     } catch (_) {}
@@ -116,7 +121,12 @@ class MediaKitEngine implements VideoEngine {
 
     await _player.dispose();
 
-    _player = Player(configuration: const PlayerConfiguration(libass: true));
+    _player = Player(
+      configuration: PlayerConfiguration(
+        libass: prefs.libassEnabled,
+        bufferSize: 64 * 1024 * 1024, // 64MB
+      ),
+    );
     _controller = VideoController(
       _player,
       configuration: VideoControllerConfiguration(
@@ -143,7 +153,12 @@ class MediaKitEngine implements VideoEngine {
   }
 
   MediaKitEngine(this.prefs, this.ref) {
-    _player = Player(configuration: const PlayerConfiguration(libass: true));
+    _player = Player(
+      configuration: PlayerConfiguration(
+        libass: prefs.libassEnabled,
+        bufferSize: 64 * 1024 * 1024, // 64MB
+      ),
+    );
     _controller = VideoController(
       _player,
       configuration: VideoControllerConfiguration(
@@ -261,15 +276,15 @@ class MediaKitEngine implements VideoEngine {
 
   @override
   Future<void> initialize(
-    stream.VideoStream stream, {
+    stream.VideoStream videoStream, {
     stream.SubtitleTrack? subtitle,
     Duration? startAt,
   }) async {
-    _currentStream = stream;
+    _currentStream = videoStream;
     _currentSubtitle = subtitle;
 
-    _log.i('Initializing player with URL: ${stream.url}');
-    final media = Media(stream.url, httpHeaders: stream.headers);
+    _log.i('Initializing player with URL: ${videoStream.url}');
+    final media = Media(videoStream.url, httpHeaders: videoStream.headers);
 
     await _player.open(media, play: true);
 
@@ -295,6 +310,8 @@ class MediaKitEngine implements VideoEngine {
           subtitlePrefs.fontSize,
         );
 
+        final bool shouldShowFlutterSubtitle = !prefs.libassEnabled;
+
         return ValueListenableBuilder<int>(
           valueListenable: _playerVersion,
           builder: (context, version, _) {
@@ -302,14 +319,19 @@ class MediaKitEngine implements VideoEngine {
               controller: _controller,
               controls: NoVideoControls,
               fit: fit,
-              subtitleViewConfiguration: SubtitleViewConfiguration(
-                padding: EdgeInsets.only(bottom: subtitlePrefs.bottomPadding),
-                style: getSubtitleStrokeStyleInShadowForm(
-                  subtitlePrefs,
-                  responsiveFontSize,
-                ),
-                textScaler: TextScaler.linear(subtitlePrefs.fontSize / 1.2),
-              ),
+              subtitleViewConfiguration: shouldShowFlutterSubtitle
+                  ? SubtitleViewConfiguration(
+                      padding: EdgeInsets.only(
+                        bottom: subtitlePrefs.bottomPadding,
+                      ),
+                      style: getSubtitleStrokeStyleInShadowForm(
+                        subtitlePrefs,
+                        responsiveFontSize,
+                      ),
+                    )
+                  : const SubtitleViewConfiguration(
+                      style: TextStyle(color: Colors.transparent),
+                    ),
             );
           },
         );
@@ -349,6 +371,8 @@ class MediaKitEngine implements VideoEngine {
 
   @override
   Future<void> setSubtitle(stream.SubtitleTrack? subtitle) async {
+    _currentSubtitle = subtitle;
+
     if (subtitle == null || subtitle.url.isEmpty) {
       _log.d('Disabling subtitle');
       await _player.setSubtitleTrack(SubtitleTrack.no());
@@ -360,6 +384,29 @@ class MediaKitEngine implements VideoEngine {
       await _player.setSubtitleTrack(
         SubtitleTrack(trackId, null, subtitle.language),
       );
+    } else if (subtitle.url.startsWith('http')) {
+      _log.d('Downloading external subtitle: ${subtitle.url}');
+      try {
+        final http = ref.read(httpClientProvider);
+        final res = await http.get(
+          subtitle.url,
+          cacheDuration: const Duration(days: 7),
+        );
+        if (res.body.trim().isNotEmpty) {
+          await _player.setSubtitleTrack(
+            SubtitleTrack.data(
+              res.body,
+              title: subtitle.language,
+              language: subtitle.language,
+            ),
+          );
+        }
+      } catch (e) {
+        _log.e('Failed to download subtitle from ${subtitle.url}: $e');
+        await _player.setSubtitleTrack(
+          SubtitleTrack.uri(subtitle.url, language: subtitle.language),
+        );
+      }
     } else {
       _log.d('Setting subtitle: ${subtitle.url} (lang: ${subtitle.language})');
       await _player.setSubtitleTrack(

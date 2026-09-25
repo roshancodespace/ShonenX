@@ -33,7 +33,10 @@ class MediaKitEngine implements VideoEngine {
   StreamSubscription<Duration>? _positionSubscription;
 
   Future<void> updatePrefs(MediaKitPrefs newPrefs) async {
-    _log.d('Updating preferences');
+    final changes = prefs.diff(newPrefs);
+    if (changes.isNotEmpty) {
+      _log.d('Updating preferences: ${changes.join(', ')}');
+    }
     if (_disposed) return;
 
     final requiresReinit =
@@ -82,11 +85,11 @@ class MediaKitEngine implements VideoEngine {
       await setPropSafe('af', '');
     }
 
-    await setPropSafe('brightness', prefs.colorPreset.brightness.toString());
-    await setPropSafe('contrast', prefs.colorPreset.contrast.toString());
-    await setPropSafe('saturation', prefs.colorPreset.saturation.toString());
-    await setPropSafe('gamma', prefs.colorPreset.gamma.toString());
-    await setPropSafe('hue', prefs.colorPreset.hue.toString());
+    await setPropSafe('brightness', prefs.brightness.toString());
+    await setPropSafe('contrast', prefs.contrast.toString());
+    await setPropSafe('saturation', prefs.saturation.toString());
+    await setPropSafe('gamma', prefs.gamma.toString());
+    await setPropSafe('hue', prefs.hue.toString());
 
     if (prefs.rawConfiguration.isNotEmpty) {
       for (final line in prefs.rawConfiguration.split('\n')) {
@@ -340,7 +343,7 @@ class MediaKitEngine implements VideoEngine {
   }
 
   @override
-  Widget? buildSettingsView(BuildContext context) => MediaKitSettings();
+  Widget? buildSettingsView(BuildContext context) => MediaKitAdvancedSettings();
 
   @override
   Future<void> play() => _player.play();

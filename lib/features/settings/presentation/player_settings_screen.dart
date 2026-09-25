@@ -68,7 +68,7 @@ class PlayerSettingsScreen extends ConsumerWidget {
                   showModalBottomSheet(
                     context: context,
                     isScrollControlled: true,
-                    builder: (_) => const MediaKitSettings(),
+                    builder: (_) => const MediaKitAdvancedSettings(),
                   );
                 },
               ),

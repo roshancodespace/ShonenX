@@ -4,6 +4,8 @@ import 'package:shonenx/core/utils/formatting.dart';
 import 'package:shonenx/features/player/domain/player_mode.dart';
 import 'package:shonenx/features/player/engine/video_engine.dart';
 import 'package:shonenx/features/player/presentation/widgets/keyboard_shortcuts_sheet.dart';
+import 'package:shonenx/features/player/presentation/widgets/media_kit/media_kit_settings.dart';
+import 'package:shonenx/features/player/presentation/widgets/media_kit/video_adjustments.dart';
 import 'package:shonenx/features/player/presentation/widgets/player_controls.dart';
 import 'package:shonenx/features/player/providers/player_controller.dart';
 import 'package:shonenx/features/player/providers/video_engine_provider.dart';
@@ -275,6 +277,8 @@ class TopControls extends ConsumerWidget {
     final hasMultipleQualities =
         mode is PlayerModeOnline && playerState.qualities.length > 1;
 
+    final hasEngineSettings = engine.buildSettingsView(context) != null;
+
     AppBottomSheet.show(
       context: context,
       title: 'Player Settings',
@@ -395,12 +399,22 @@ class TopControls extends ConsumerWidget {
               ],
             ),
             SettingsSection(
-              title: 'Customization & Engine',
+              title: 'Customization',
               children: [
+                if (hasEngineSettings)
+                  SettingsNavTile(
+                    icon: Icons.tune_rounded,
+                    title: 'Color Adjustments',
+                    subtitle: 'Brightness, contrast, saturation, hue',
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      VideoAdjustmentsOverlay.show(context);
+                    },
+                  ),
                 SettingsNavTile(
                   icon: Icons.subtitles_outlined,
                   title: 'Subtitle Customization',
-                  subtitle: 'Adjust font, colors, size, and background',
+                  subtitle: 'Font, colors, size, and background',
                   onTap: () {
                     Navigator.of(context).pop();
                     showModalBottomSheet(
@@ -414,22 +428,6 @@ class TopControls extends ConsumerWidget {
                     );
                   },
                 ),
-                if (engine.buildSettingsView(context) != null)
-                  SettingsNavTile(
-                    icon: Icons.video_settings_outlined,
-                    title: 'Decoder & Engine Settings',
-                    subtitle: 'Hardware decoding, audio output, and caching',
-                    onTap: () {
-                      Navigator.of(context).pop();
-                      showModalBottomSheet(
-                        context: context,
-                        isScrollControlled: true,
-                        useSafeArea: true,
-                        builder: (context) =>
-                            engine.buildSettingsView(context)!,
-                      );
-                    },
-                  ),
                 SettingsNavTile(
                   icon: Icons.keyboard_alt_outlined,
                   title: 'Keyboard Shortcuts',
@@ -441,6 +439,23 @@ class TopControls extends ConsumerWidget {
                 ),
               ],
             ),
+            if (hasEngineSettings)
+              Theme(
+                data: theme.copyWith(dividerColor: Colors.transparent),
+                child: ExpansionTile(
+                  tilePadding: const EdgeInsets.symmetric(horizontal: 10),
+                  title: Text(
+                    'ADVANCED ENGINE',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.1,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                  children: const [MediaKitAdvancedSettings()],
+                ),
+              ),
             if (isCompact &&
                 ((mode is PlayerModeOnline && onComments != null) || true))
               SettingsSection(

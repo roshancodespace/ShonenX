@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -10,6 +11,13 @@ class AppBottomSheet extends ConsumerWidget {
   final EdgeInsetsGeometry contentPadding;
   final List<Widget>? actions;
   final IconData? titleIcon;
+  final bool isFloating;
+  final bool? showDragHandle;
+  final Color? backgroundColor;
+  final double? blurSigma;
+  final BoxBorder? border;
+  final BorderRadius? borderRadius;
+  final EdgeInsetsGeometry? margin;
 
   const AppBottomSheet({
     super.key,
@@ -19,6 +27,13 @@ class AppBottomSheet extends ConsumerWidget {
     this.contentPadding = const EdgeInsets.fromLTRB(16, 0, 16, 16),
     this.actions,
     this.titleIcon,
+    this.isFloating = false,
+    this.showDragHandle,
+    this.backgroundColor,
+    this.blurSigma,
+    this.border,
+    this.borderRadius,
+    this.margin,
   });
 
   static const AnimationStyle hammerAnimationStyle = AnimationStyle(
@@ -45,6 +60,15 @@ class AppBottomSheet extends ConsumerWidget {
     bool useRootNavigator = false,
     bool enableDrag = true,
     bool useSafeArea = true,
+    bool isFloating = false,
+    bool? showDragHandle,
+    Color? backgroundColor,
+    Color? barrierColor,
+    double? blurSigma,
+    double maxWidth = 600,
+    BoxBorder? border,
+    BorderRadius? borderRadius,
+    EdgeInsetsGeometry? margin,
     EdgeInsetsGeometry headerPadding = const EdgeInsets.symmetric(
       horizontal: 16,
     ),
@@ -72,9 +96,10 @@ class AppBottomSheet extends ConsumerWidget {
       useRootNavigator: useRootNavigator,
       enableDrag: enableDrag,
       useSafeArea: useSafeArea,
+      barrierColor: barrierColor,
       backgroundColor: Colors.transparent,
       constraints: BoxConstraints(
-        maxWidth: 600,
+        maxWidth: maxWidth,
         maxHeight: MediaQuery.of(context).size.height * 0.88,
       ),
       sheetAnimationStyle: effectiveAnimationStyle,
@@ -85,6 +110,13 @@ class AppBottomSheet extends ConsumerWidget {
           actions: actions,
           headerPadding: headerPadding,
           contentPadding: contentPadding,
+          isFloating: isFloating,
+          showDragHandle: showDragHandle,
+          backgroundColor: backgroundColor,
+          blurSigma: blurSigma,
+          border: border,
+          borderRadius: borderRadius,
+          margin: margin,
           child: child,
         );
       },
@@ -223,19 +255,40 @@ class AppBottomSheet extends ConsumerWidget {
     final cs = Theme.of(context).colorScheme;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final hasTilt = ref.watch(uiPrefsProvider.select((p) => p.sheetPhysics));
+    final roundness = GlobalUI.uiRoundness;
 
-    Widget sheetContent = Container(
-      margin: EdgeInsets.only(bottom: bottomInset),
-      decoration: BoxDecoration(
-        color: cs.surfaceContainer,
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(GlobalUI.uiRoundness),
-        ),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
+    final effectiveShowDragHandle = showDragHandle ?? !isFloating;
+    final effectiveBorderRadius =
+        borderRadius ??
+        (isFloating
+            ? BorderRadius.circular(roundness)
+            : BorderRadius.vertical(top: Radius.circular(roundness)));
+
+    final effectiveBackgroundColor =
+        backgroundColor ??
+        (isFloating
+            ? cs.surfaceContainerHigh.withValues(alpha: 0.9)
+            : cs.surfaceContainer.withValues(alpha: 0.9));
+
+    final effectiveMargin =
+        margin ??
+        (isFloating
+            ? EdgeInsets.only(left: 16, right: 16, bottom: bottomInset + 16)
+            : EdgeInsets.only(bottom: bottomInset));
+
+    final effectiveBorder =
+        border ??
+        (isFloating
+            ? Border.all(color: cs.outlineVariant.withValues(alpha: 0.35))
+            : null);
+
+    final effectiveBlur = blurSigma ?? (isFloating ? 20.0 : null);
+
+    Widget innerContent = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (effectiveShowDragHandle)
           Center(
             child: Container(
               margin: const EdgeInsets.only(top: 14),
@@ -247,44 +300,104 @@ class AppBottomSheet extends ConsumerWidget {
               ),
             ),
           ),
-          Padding(
-            padding: headerPadding,
-            child: Row(
-              children: [
-                if (titleIcon != null) ...[
-                  Icon(titleIcon, color: cs.primary, size: 22),
-                  const SizedBox(width: 10),
-                ],
-                Expanded(
-                  child: Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                if (actions != null) ...[...actions!, const SizedBox(width: 8)],
-                IconButton(
-                  style: IconButton.styleFrom(
-                    backgroundColor: cs.errorContainer,
-                    foregroundColor: cs.onErrorContainer,
-                  ),
-                  icon: const Icon(Icons.close, size: 20),
-                  onPressed: () => Navigator.pop(context),
-                ),
+        Padding(
+          padding: effectiveShowDragHandle
+              ? headerPadding
+              : (headerPadding is EdgeInsets
+                    ? (headerPadding as EdgeInsets).copyWith(top: 14)
+                    : headerPadding),
+          child: Row(
+            children: [
+              if (titleIcon != null) ...[
+                Icon(titleIcon, color: cs.primary, size: 22),
+                const SizedBox(width: 10),
               ],
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (actions != null) ...[...actions!, const SizedBox(width: 8)],
+              IconButton(
+                style: IconButton.styleFrom(
+                  backgroundColor: cs.surfaceContainerHighest.withValues(
+                    alpha: 0.6,
+                  ),
+                  foregroundColor: cs.onSurfaceVariant,
+                ),
+                icon: const Icon(Icons.close_rounded, size: 20),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        Flexible(
+          child: Padding(padding: contentPadding, child: child),
+        ),
+      ],
+    );
+
+    Widget sheetContent;
+    if (effectiveBlur != null && effectiveBlur > 0) {
+      sheetContent = Container(
+        margin: effectiveMargin,
+        decoration: BoxDecoration(
+          borderRadius: effectiveBorderRadius,
+          boxShadow: isFloating
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.25),
+                    blurRadius: 24,
+                    offset: const Offset(0, 8),
+                  ),
+                ]
+              : null,
+        ),
+        child: ClipRRect(
+          borderRadius: effectiveBorderRadius,
+          child: BackdropFilter(
+            filter: ImageFilter.blur(
+              sigmaX: effectiveBlur,
+              sigmaY: effectiveBlur,
+            ),
+            child: Container(
+              decoration: BoxDecoration(
+                color: effectiveBackgroundColor,
+                borderRadius: effectiveBorderRadius,
+                border: effectiveBorder,
+              ),
+              child: innerContent,
             ),
           ),
-          const SizedBox(height: 12),
-          Flexible(
-            child: Padding(padding: contentPadding, child: child),
-          ),
-        ],
-      ),
-    );
+        ),
+      );
+    } else {
+      sheetContent = Container(
+        margin: effectiveMargin,
+        decoration: BoxDecoration(
+          color: effectiveBackgroundColor,
+          borderRadius: effectiveBorderRadius,
+          border: effectiveBorder,
+          boxShadow: isFloating
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.25),
+                    blurRadius: 24,
+                    offset: const Offset(0, 8),
+                  ),
+                ]
+              : null,
+        ),
+        child: innerContent,
+      );
+    }
 
     if (hasTilt) {
       sheetContent = TweenAnimationBuilder<double>(

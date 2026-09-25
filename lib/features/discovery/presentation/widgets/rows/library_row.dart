@@ -55,7 +55,7 @@ class LibraryRow extends ConsumerWidget {
       final cardTag = '$tagPrefix-$status-${entry.providerId}';
 
       return MediaCard(
-                media: entry.toUnifiedMedia(),
+        media: entry.toUnifiedMedia(),
         tag: cardTag,
         progress: progress,
         progressText: progressText,
@@ -78,6 +78,22 @@ class LibraryRow extends ConsumerWidget {
         data: asyncData,
         itemBuilder: (context, entry) =>
             buildCard(context, entry, 'local-library'),
+        skeletonItemBuilder: (context, index) {
+          return MediaCard(
+            media: UnifiedMedia(
+              id: 'skeleton-${status.id}-$index',
+              type: MediaType.ANIME,
+              title: const MediaTitle(english: 'Placeholder Title'),
+              cover: '',
+              format: 'TV',
+              score: 8.5,
+              year: 2026,
+            ),
+            tag: 'skeleton-${status.id}-$index',
+            style: style,
+            onTap: () {},
+          );
+        },
       );
     } else {
       final asyncData = ref.watch(

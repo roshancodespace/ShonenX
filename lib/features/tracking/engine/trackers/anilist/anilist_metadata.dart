@@ -406,7 +406,7 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
         native: titleJson['native'],
       );
 
-      String status = 'Unknown';
+      String status = '';
       switch (json['status']) {
         case 'RELEASING':
           status = 'Ongoing';

@@ -1,6 +1,8 @@
 import 'dart:ui';
 
 import 'dart:async';
+import 'dart:io';
+import 'package:flutter_single_instance/flutter_single_instance.dart';
 import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -81,6 +83,23 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
     _appLinks.getInitialLink().then((uri) {
       if (uri != null) _handleDeepLink(uri);
     });
+
+    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+      FlutterSingleInstance.onFocus = (metadata) {
+        if (metadata.containsKey('args')) {
+          final argsList = metadata['args'] as List<dynamic>?;
+          if (argsList != null && argsList.isNotEmpty) {
+            for (final arg in argsList) {
+              final uri = Uri.tryParse(arg.toString());
+              if (uri != null && uri.scheme.isNotEmpty) {
+                _handleDeepLink(uri);
+                break;
+              }
+            }
+          }
+        }
+      };
+    }
   }
 
   void _handleDeepLink(Uri uri) {

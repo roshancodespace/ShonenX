@@ -48,7 +48,7 @@ void main(List<String> args) async {
 
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
     if (!await FlutterSingleInstance().isFirstInstance()) {
-      await FlutterSingleInstance().focus();
+      await FlutterSingleInstance().focus({"args": args});
       exit(0);
     }
   }

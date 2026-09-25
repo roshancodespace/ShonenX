@@ -137,6 +137,15 @@ class PlayerController extends Notifier<PlayerState> {
     );
     _progressTracker = ProgressTracker(ref);
 
+    _progressTracker.start(
+      () => ProgressContext(
+        media: _media,
+        activeEpisode: state.activeEpisode,
+        activeServer: state.activeServer,
+        sourceInfo: _source?.sourceInfo,
+      ),
+    );
+
     ref.onDispose(() {
       _isDisposed = true;
       _endingSkipCooldownTimer?.cancel();
@@ -448,15 +457,7 @@ class PlayerController extends Notifier<PlayerState> {
           startAt: startPosition,
           episode: episode,
         ).then((_) {
-          // Start progress tracking timer & update Discord Rich Presence
-          _progressTracker.start(
-            () => ProgressContext(
-              media: _media,
-              activeEpisode: state.activeEpisode,
-              activeServer: state.activeServer,
-              sourceInfo: _source?.sourceInfo,
-            ),
-          );
+          // Update Discord Rich Presence
           _updateDiscordRpc();
           _fetchSkipsIfNeeded();
         }),
@@ -534,10 +535,14 @@ class PlayerController extends Notifier<PlayerState> {
           _resolver.preferredQuality != null &&
           _resolver.preferredQuality != 'Auto') {
         final currentPos = ref.read(videoEngineProvider).currentPosition;
+        final finalStartAt = currentPos.inSeconds > 0
+            ? currentPos
+            : startPosition;
+
         await _initVideoPlayer(
           qualityResult.active,
           subtitle: activeSubtitle,
-          startAt: currentPos, // resume from where the Auto stream got to
+          startAt: finalStartAt,
           episode: episode,
         );
       }

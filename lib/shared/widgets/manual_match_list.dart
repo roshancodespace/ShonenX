@@ -49,7 +49,7 @@ class ManualMatchList extends StatelessWidget {
                     child: Icon(Icons.movie_creation_outlined),
                   ),
             title: Text(
-              result.title.availableTitle,
+              result.title.getPreferedTitle,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(fontWeight: FontWeight.w600),

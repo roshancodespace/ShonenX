@@ -41,7 +41,7 @@ class EditorialCard extends StatelessWidget {
     this.topRightBadge,
     this.bottomLeftBadge,
     this.bottomRightBadge,
-    });
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -91,9 +91,9 @@ class EditorialCard extends StatelessWidget {
                 progress: progress,
                 progressText: progressText,
                 topLeftBadge: topLeftBadge,
-      topRightBadge: topRightBadge,
-      bottomLeftBadge: bottomLeftBadge,
-      bottomRightBadge: bottomRightBadge,
+                topRightBadge: topRightBadge,
+                bottomLeftBadge: bottomLeftBadge,
+                bottomRightBadge: bottomRightBadge,
               ),
             ],
           ),
@@ -104,7 +104,7 @@ class EditorialCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  media.title.availableTitle,
+                  media.title.getPreferedTitle,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.titleMedium?.copyWith(
@@ -174,20 +174,23 @@ class EditorialCard extends StatelessWidget {
                   progress: progress,
                   progressText: progressText,
                   topLeftBadge: topLeftBadge,
-      topRightBadge: topRightBadge,
-      bottomLeftBadge: bottomLeftBadge,
-      bottomRightBadge: bottomRightBadge,
+                  topRightBadge: topRightBadge,
+                  bottomLeftBadge: bottomLeftBadge,
+                  bottomRightBadge: bottomRightBadge,
                 ),
               ],
             ),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 12,
+                  horizontal: 10,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      media.title.availableTitle,
+                      media.title.getPreferedTitle,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.titleMedium?.copyWith(

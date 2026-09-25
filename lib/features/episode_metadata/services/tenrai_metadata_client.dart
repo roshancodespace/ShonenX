@@ -42,7 +42,7 @@ class TenraiEpisodeMetadataClient implements EpisodeMetadataProvider {
 
     // 3. Fallback: Fuzzy Search by Title via Tenrai API
     _log.i(
-      'No direct MAL ID found for Tenrai; resolving by title for "${media.title.availableTitle}"',
+      'No direct MAL ID found for Tenrai; resolving by title for "${media.title.getPreferedTitle}"',
     );
     return await _resolveIdByTitle(media);
   }

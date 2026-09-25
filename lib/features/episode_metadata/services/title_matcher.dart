@@ -14,7 +14,7 @@ class TitleMatcher {
     add(media.title.english);
     add(media.title.romaji);
     add(media.title.native);
-    add(media.title.availableTitle);
+    add(media.title.getPreferedTitle);
     return titles;
   }
 

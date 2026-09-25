@@ -42,7 +42,7 @@ class JikanEpisodeMetadataClient implements EpisodeMetadataProvider {
 
     // 3. Fallback: Fuzzy Search by Title via Jikan API
     _log.i(
-      'No direct MAL ID found for Jikan; resolving by title for "${media.title.availableTitle}"',
+      'No direct MAL ID found for Jikan; resolving by title for "${media.title.getPreferedTitle}"',
     );
     return await _resolveIdByTitle(media);
   }

@@ -320,7 +320,7 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen>
                                           CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          displayMedia.title.availableTitle,
+                                          displayMedia.title.getPreferedTitle,
                                           style: textTheme.titleLarge,
                                           maxLines: 2,
                                           overflow: TextOverflow.ellipsis,

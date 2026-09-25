@@ -413,31 +413,63 @@ class PlayerController extends Notifier<PlayerState> {
     );
 
     try {
-      // Step 1: Fetch available video servers for this episode
+      // Fetch available video servers for this episode
       List<VideoServer> servers = state.servers;
       if (force || server == null || isNewEpisode) {
         servers = await _source!.getServers(episode.id);
         if (servers.isEmpty) throw Exception('No servers available.');
       }
 
-      // Step 2: Pick server matching user's preferred type (sub/dub) or explicit choice
+      // Pick server matching user's preferred type
       final activeServer = _resolver.resolveServer(servers, explicit: server);
+      state = state.copyWith(servers: servers, activeServer: activeServer);
 
-      // Step 3: Fetch video stream mirrors from selected server
+      // Fetch video stream mirrors from selected server
       final streams = await _source!.getSources(episode.id, activeServer);
       if (streams.isEmpty) throw Exception('No streams available.');
 
-      // Step 4: Pick stream matching preferred sub/dub type & quality settings
+      // Pick stream matching preferred sub/dub type & quality settings
       final activeStream = _resolver.resolveStream(streams);
 
-      // Step 5: Parse HLS M3U8 manifest into individual quality options (1080p, 720p, etc.)
+      // Start playback immediately with active stream
+      state = state.copyWith(
+        streams: streams,
+        activeStream: activeStream,
+        qualities: [activeStream],
+        activeQuality: activeStream,
+        isLoading: false,
+      );
+
+      // Fire off video initialization with the active stream immediately
+      unawaited(
+        _initVideoPlayer(
+          activeStream,
+          subtitle: SubtitleTrack.none,
+          startAt: startPosition,
+          episode: episode,
+        ).then((_) {
+          // Start progress tracking timer & update Discord Rich Presence
+          _progressTracker.start(
+            () => ProgressContext(
+              media: _media,
+              activeEpisode: state.activeEpisode,
+              activeServer: state.activeServer,
+              sourceInfo: _source?.sourceInfo,
+            ),
+          );
+          _updateDiscordRpc();
+          _fetchSkipsIfNeeded();
+        }),
+      );
+
+      // Background resolve qualities (M3U8 parsing)
       final httpClient = ref.read(httpClientProvider);
       final qualityResult = await _resolver.resolveQualities(
+        streams,
         activeStream,
         httpClient,
       );
 
-      // Step 6: Select preferred subtitle language (or default to Off)
       final Set<String> activeServerSeenUrls = {};
       final List<SubtitleTrack> labelledSubtitles = [];
       for (final stream in streams) {
@@ -484,39 +516,34 @@ class PlayerController extends Notifier<PlayerState> {
       final subtitles = [SubtitleTrack.none, ...labelledSubtitles];
       final activeSubtitle = _resolver.resolveSubtitle(subtitles);
 
-      // Step 7: Update controller state with resolved active options
+      // Update controller state with resolved active options
       state = state.copyWith(
-        servers: servers,
-        activeServer: activeServer,
-        streams: streams,
-        activeStream: activeStream,
         qualities: qualityResult.list,
         activeQuality: qualityResult.active,
         subtitles: subtitles,
         activeSubtitle: activeSubtitle,
-        isLoading: false,
       );
 
-      // Step 8: Initialize video engine with selected quality and subtitle track
-      await _initVideoPlayer(
-        qualityResult.active,
-        subtitle: activeSubtitle,
-        startAt: startPosition,
-        episode: episode,
-      );
+      // Apply subtitle to the already running video engine
+      if (activeSubtitle != SubtitleTrack.none) {
+        _applyNativeSubtitle(activeSubtitle);
+      }
 
-      // Step 9: Start progress tracking timer & update Discord Rich Presence
-      _progressTracker.start(
-        () => ProgressContext(
-          media: _media,
-          activeEpisode: state.activeEpisode,
-          activeServer: state.activeServer,
-          sourceInfo: _source?.sourceInfo,
-        ),
-      );
-      _updateDiscordRpc();
-      _fetchSkipsIfNeeded();
-      _fetchAdditionalSubtitles(episode.id);
+      // Re-initialize if the active quality changed from what we initially loaded
+      if (qualityResult.active.url != activeStream.url &&
+          _resolver.preferredQuality != null &&
+          _resolver.preferredQuality != 'Auto') {
+        final currentPos = ref.read(videoEngineProvider).currentPosition;
+        await _initVideoPlayer(
+          qualityResult.active,
+          subtitle: activeSubtitle,
+          startAt: currentPos, // resume from where the Auto stream got to
+          episode: episode,
+        );
+      }
+
+      // Background fetch extra subs
+      unawaited(_fetchAdditionalSubtitles(episode.id));
     } catch (e) {
       if (!ref.mounted) return;
       state = state.copyWith(isLoading: false, error: e.toString());
@@ -703,6 +730,7 @@ class PlayerController extends Notifier<PlayerState> {
     try {
       final httpClient = ref.read(httpClientProvider);
       final qualityResult = await _resolver.resolveQualities(
+        state.streams,
         newStream,
         httpClient,
       );
@@ -967,7 +995,7 @@ class PlayerController extends Notifier<PlayerState> {
     ref.read(videoEngineProvider).pause();
     return ScreenshotHelper.captureAndShare(
       _screenshotController,
-      mediaTitle: _media?.title.availableTitle,
+      mediaTitle: _media?.title.getPreferedTitle,
     );
   }
 

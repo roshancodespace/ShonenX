@@ -1209,7 +1209,7 @@ class _TvPosterCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              media.title.availableTitle,
+              media.title.getPreferedTitle,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(

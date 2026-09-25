@@ -115,28 +115,44 @@ class SelectionResolver {
   }
 
   Future<({List<VideoStream> list, VideoStream active})> resolveQualities(
-    VideoStream source,
+    List<VideoStream> streams,
+    VideoStream activeStream,
     HTTP httpClient,
   ) async {
-    final qualitiesList = <VideoStream>[source.copyWith(quality: 'Auto')];
+    final qualitiesList = <VideoStream>[];
+    bool extractedFromM3u8 = false;
 
     // Try to parse individual qualities from the HLS manifest
-    try {
-      final parsed = await httpClient.splitM3U8(
-        source.url,
-        headers: source.headers,
-      );
-      for (final q in parsed) {
-        qualitiesList.add(
-          VideoStream(
-            url: q.url,
-            headers: source.headers,
-            quality: q.quality,
-            subtitles: source.subtitles,
-          ),
+    if (activeStream.url.toLowerCase().contains('.m3u8')) {
+      try {
+        final parsed = await httpClient.splitM3U8(
+          activeStream.url,
+          headers: activeStream.headers,
         );
+        if (parsed.isNotEmpty) {
+          qualitiesList.add(activeStream.copyWith(quality: 'Auto'));
+          for (final q in parsed) {
+            qualitiesList.add(
+              VideoStream(
+                url: q.url,
+                headers: activeStream.headers,
+                quality: q.quality,
+                subtitles: activeStream.subtitles,
+              ),
+            );
+          }
+          extractedFromM3u8 = true;
+        }
+      } catch (_) {}
+    }
+
+    if (!extractedFromM3u8) {
+      if (streams.length > 1) {
+        qualitiesList.addAll(streams);
+      } else {
+        qualitiesList.add(activeStream);
       }
-    } catch (_) {}
+    }
 
     // Pick the preferred quality from the parsed list
     VideoStream activeQuality = qualitiesList.first;

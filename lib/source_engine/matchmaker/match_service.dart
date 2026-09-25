@@ -9,39 +9,37 @@ class MediaMatchService {
 
   MediaMatchService(this._mediaSource, this._type);
 
-  Future<UnifiedMedia?> findBestMatch(
-    String cleanTitle, {
-    String? romajiTitle,
-  }) async {
-    var results = await _mediaSource.search(cleanTitle, _type);
+  Future<UnifiedMedia?> findBestMatch(MediaTitle mediaTitle) async {
+    var results = await _mediaSource.search(mediaTitle.getPreferedTitle, _type);
 
-    if (results.isEmpty && romajiTitle != null) {
-      results = await _mediaSource.search(romajiTitle, _type);
+    if (results.isEmpty && mediaTitle.romaji != null) {
+      results = await _mediaSource.search(mediaTitle.romaji!, _type);
     }
 
     if (results.isEmpty) {
       return null;
     }
 
-    final target = cleanTitle.toLowerCase();
+    final target = mediaTitle.getPreferedTitle.toLowerCase();
     final nonAlphanumeric = RegExp(r'[^a-zA-Z0-9]');
     final cleanTarget = target.replaceAll(nonAlphanumeric, '');
-    final cleanRomajiTarget = romajiTitle?.toLowerCase().replaceAll(
+    final cleanRomajiTarget = mediaTitle.romaji?.toLowerCase().replaceAll(
       nonAlphanumeric,
       '',
     );
 
     int getScore(UnifiedMedia m) {
       int maxScore = 0;
-      final candidates = [
-        m.title.english,
-        m.title.romaji,
-        m.title.native,
-        m.title.availableTitle,
-      ]
-          .where((t) => t != null && t.trim().isNotEmpty)
-          .map((t) => t!.toLowerCase().replaceAll(nonAlphanumeric, ''))
-          .toSet();
+      final candidates =
+          [
+                m.title.english,
+                m.title.romaji,
+                m.title.native,
+                m.title.getPreferedTitle,
+              ]
+              .where((t) => t != null && t.trim().isNotEmpty)
+              .map((t) => t!.toLowerCase().replaceAll(nonAlphanumeric, ''))
+              .toSet();
 
       final targets = [
         cleanTarget,

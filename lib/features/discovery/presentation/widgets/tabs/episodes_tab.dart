@@ -235,7 +235,7 @@ class _EpisodesHeader extends ConsumerWidget {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final textTheme = theme.textTheme;
-    final title = media.title.availableTitle;
+    final title = media.title.getPreferedTitle;
 
     final availableSources =
         ref.watch(media.type.availableSourcesProvider).value ?? [];

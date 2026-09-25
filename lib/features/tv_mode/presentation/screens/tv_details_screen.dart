@@ -423,7 +423,7 @@ class _TvDetailsScreenState extends ConsumerState<TvDetailsScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                media.title.availableTitle,
+                media.title.getPreferedTitle,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
@@ -546,7 +546,7 @@ class _TvDetailsScreenState extends ConsumerState<TvDetailsScreen> {
                   scaleFactor: 1.0,
                   onTap: () => _showSynopsisDialog(
                     context,
-                    media.title.availableTitle,
+                    media.title.getPreferedTitle,
                     media.description!,
                   ),
                   builder: (context, isFocused, isHovered) {
@@ -704,7 +704,7 @@ class _TvDetailsScreenState extends ConsumerState<TvDetailsScreen> {
                     AppFocusHover(
                       onTap: () => TvManualMatchDialog.show(
                         context,
-                        mediaTitle: media.title.availableTitle,
+                        mediaTitle: media.title.getPreferedTitle,
                         type: media.type,
                         matchArgs: mediaArgs,
                         currentSource: effectiveSource,
@@ -925,7 +925,7 @@ class _TvDetailsScreenState extends ConsumerState<TvDetailsScreen> {
           context,
           mediaId: media.id,
           mediaType: media.type,
-          mediaTitle: media.title.availableTitle,
+          mediaTitle: media.title.getPreferedTitle,
           initialCharacters: characters,
         ),
         builder: (context, isFocused, isHovered) {
@@ -1221,7 +1221,7 @@ class _TvDetailsScreenState extends ConsumerState<TvDetailsScreen> {
             listPadding: EdgeInsets.zero,
             itemBuilder: (context, item) {
               return TvMediaCard(
-                title: item.title.availableTitle,
+                title: item.title.getPreferedTitle,
                 cover: item.cover ?? '',
                 banner: item.banner,
                 score: item.score,
@@ -1265,7 +1265,7 @@ class _TvDetailsScreenState extends ConsumerState<TvDetailsScreen> {
       listPadding: EdgeInsets.zero,
       itemBuilder: (context, item) {
         return TvMediaCard(
-          title: item.title.availableTitle,
+          title: item.title.getPreferedTitle,
           cover: item.cover ?? '',
           banner: item.banner,
           score: item.score,

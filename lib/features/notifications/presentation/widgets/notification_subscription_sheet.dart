@@ -42,7 +42,7 @@ final _sheetScheduleProvider = FutureProvider.autoDispose
           if (targetTrackerService is RemoteTracker) {
             try {
               final results = await targetTrackerService.searchMedia(
-                media.title.availableTitle,
+                media.title.getPreferedTitle,
                 type: media.type,
               );
               if (results.isNotEmpty) targetId = results.first.id;
@@ -123,7 +123,7 @@ class _NotificationSubscriptionSheetState
     final sub = NotificationSubscription()
       ..type = subType
       ..referenceId = widget.media.id
-      ..title = widget.media.title.availableTitle
+      ..title = widget.media.title.getPreferedTitle
       ..image = widget.media.cover ?? widget.media.banner ?? ''
       ..isEnabled = _isEnabled
       ..mode = _mode
@@ -508,7 +508,7 @@ class _NotificationSubscriptionSheetState
                             useSafeArea: true,
                             useRootNavigator: true,
                             builder: (_) => ManualTrackerMatchSheet(
-                              mediaTitle: widget.media.title.availableTitle,
+                              mediaTitle: widget.media.title.getPreferedTitle,
                               type: widget.media.type,
                               targetTracker: tracker,
                             ),

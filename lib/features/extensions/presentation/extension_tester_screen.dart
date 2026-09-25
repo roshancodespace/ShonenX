@@ -359,7 +359,7 @@ class _ExtensionTesterScreenState extends ConsumerState<ExtensionTesterScreen> {
       if (searchResults.isEmpty) {
         throw Exception('No results returned for search query "$query"');
       }
-      final firstTitle = searchResults.first.title.availableTitle;
+      final firstTitle = searchResults.first.title.getPreferedTitle;
       _updateStepResult(
         source.id,
         TestStepType.search,

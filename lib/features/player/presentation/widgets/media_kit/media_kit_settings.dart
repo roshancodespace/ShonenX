@@ -43,23 +43,21 @@ class MediaKitSettings extends ConsumerWidget {
               value: prefs.hwdec,
               items: const [
                 DropdownMenuItem(
-                  value: 'auto-copy',
-                  child: Text('Auto Copy (Recommended)'),
-                ),
-                DropdownMenuItem(value: 'auto-safe', child: Text('Auto Safe')),
-                DropdownMenuItem(
                   value: 'auto',
-                  child: Text('Auto (Best Performance)'),
+                  child: Text('HW+ Decoder (Performance)'),
                 ),
                 DropdownMenuItem(
-                  value: 'd3d11va-copy',
-                  child: Text('DirectX 11 Copy'),
+                  value: 'auto-copy',
+                  child: Text('HW Decoder (Standard)'),
                 ),
                 DropdownMenuItem(
-                  value: 'dxva2-copy',
-                  child: Text('DirectX Legacy Copy'),
+                  value: 'auto-safe',
+                  child: Text('HW Decoder (Safe Mode)'),
                 ),
-                DropdownMenuItem(value: 'no', child: Text('Software Decoding')),
+                DropdownMenuItem(
+                  value: 'no',
+                  child: Text('SW Decoder (Software)'),
+                ),
               ],
               onChanged: (value) {
                 if (value != null) {

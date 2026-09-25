@@ -36,7 +36,7 @@ class KitsuEpisodeMetadataClient implements EpisodeMetadataProvider {
 
     // 3. Fallback: Fuzzy Search by Title
     _log.i(
-      'No direct ID found for Kitsu; resolving by title for "${media.title.availableTitle}"',
+      'No direct ID found for Kitsu; resolving by title for "${media.title.getPreferedTitle}"',
     );
     return await _resolveIdByTitle(media);
   }

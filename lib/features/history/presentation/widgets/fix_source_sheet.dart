@@ -106,7 +106,11 @@ class _FixSourceSheetState extends ConsumerState<FixSourceSheet> {
     // Update both the source and the manual match preference atomically
     ref
         .read(mediaPreferenceProvider(args).notifier)
-        .updatePrefs(_selectedSource!, result.id, result.title.availableTitle);
+        .updatePrefs(
+          _selectedSource!,
+          result.id,
+          result.title.getPreferedTitle,
+        );
 
     context.pop(true);
   }

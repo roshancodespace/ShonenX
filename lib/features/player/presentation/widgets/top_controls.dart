@@ -38,7 +38,7 @@ class TopControls extends ConsumerWidget {
     final isCompact = mediaQuery.size.width < 600;
 
     final animeTitle = mode is PlayerModeOnline
-        ? (mode as PlayerModeOnline).media.title.availableTitle
+        ? (mode as PlayerModeOnline).media.title.getPreferedTitle
         : (mode as PlayerModeOffline).title ?? 'Local Media';
 
     final episodeNumber = playerState.activeEpisode?.number;

@@ -183,7 +183,7 @@ class WideMetadataColumn extends StatelessWidget {
           children: [
             Expanded(
               child: MarqueeText(
-                text: media.title.availableTitle,
+                text: media.title.getPreferedTitle,
                 style:
                     theme.textTheme.labelLarge?.copyWith(
                       fontWeight: FontWeight.w800,

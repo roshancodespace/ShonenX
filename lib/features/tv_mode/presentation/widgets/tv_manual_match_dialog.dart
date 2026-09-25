@@ -119,7 +119,7 @@ class _TvManualMatchContentState extends ConsumerState<_TvManualMatchContent> {
   void _onSelect(UnifiedMedia result) {
     ref
         .read(mediaPreferenceProvider(widget.matchArgs).notifier)
-        .setManualMatch(result.id, result.title.availableTitle);
+        .setManualMatch(result.id, result.title.getPreferedTitle);
 
     Navigator.of(context).pop();
   }
@@ -368,7 +368,7 @@ class _TvManualMatchContentState extends ConsumerState<_TvManualMatchContent> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          item.title.availableTitle,
+                          item.title.getPreferedTitle,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(

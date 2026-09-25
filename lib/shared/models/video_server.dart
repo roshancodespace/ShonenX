@@ -8,6 +8,10 @@ class VideoServer {
     required this.name,
     this.type = ServerType.unknown,
   });
+
+  static List<VideoServer> defaultServers(ServerType type) => [
+    VideoServer(id: 'default', name: 'Default', type: type),
+  ];
 }
 
 enum ServerType {

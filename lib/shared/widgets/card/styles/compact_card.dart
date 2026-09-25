@@ -41,7 +41,7 @@ class CompactCard extends StatelessWidget {
     this.topRightBadge,
     this.bottomLeftBadge,
     this.bottomRightBadge,
-    });
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -77,8 +77,28 @@ class CompactCard extends StatelessWidget {
         children: [
           Stack(
             children: [
-              CardThumbnail(media: media, isActive: isActive, progress: progress, heroTag: heroTag, width: width, height: imgH, radiusOverride: GlobalUI.uiRoundness * 0.7),
-              CardBadgeOverlay(media: media, styleName: 'compact', isWideMode: isWideMode, isActive: isActive, showRatings: showRatings, progress: progress, progressText: progressText, topLeftBadge: topLeftBadge, topRightBadge: topRightBadge, bottomLeftBadge: bottomLeftBadge, bottomRightBadge: bottomRightBadge,),
+              CardThumbnail(
+                media: media,
+                isActive: isActive,
+                progress: progress,
+                heroTag: heroTag,
+                width: width,
+                height: imgH,
+                radiusOverride: GlobalUI.uiRoundness * 0.7,
+              ),
+              CardBadgeOverlay(
+                media: media,
+                styleName: 'compact',
+                isWideMode: isWideMode,
+                isActive: isActive,
+                showRatings: showRatings,
+                progress: progress,
+                progressText: progressText,
+                topLeftBadge: topLeftBadge,
+                topRightBadge: topRightBadge,
+                bottomLeftBadge: bottomLeftBadge,
+                bottomRightBadge: bottomRightBadge,
+              ),
             ],
           ),
           const SizedBox(height: 4),
@@ -86,7 +106,7 @@ class CompactCard extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 2),
               child: Text(
-                media.title.availableTitle,
+                media.title.getPreferedTitle,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.labelMedium?.copyWith(
@@ -126,13 +146,45 @@ class CompactCard extends StatelessWidget {
         children: [
           Stack(
             children: [
-              CardThumbnail(media: media, isActive: isActive, progress: progress, heroTag: heroTag, width: thumbW, height: height, radiusOverride: GlobalUI.uiRoundness * 0.7),
-              CardBadgeOverlay(media: media, styleName: 'compact', isWideMode: isWideMode, isActive: isActive, showRatings: false, progress: progress, progressText: progressText, topLeftBadge: topLeftBadge, topRightBadge: topRightBadge, bottomLeftBadge: bottomLeftBadge, bottomRightBadge: bottomRightBadge,),
+              CardThumbnail(
+                media: media,
+                isActive: isActive,
+                progress: progress,
+                heroTag: heroTag,
+                width: thumbW,
+                height: height,
+                radiusOverride: GlobalUI.uiRoundness * 0.7,
+              ),
+              CardBadgeOverlay(
+                media: media,
+                styleName: 'compact',
+                isWideMode: isWideMode,
+                isActive: isActive,
+                showRatings: false,
+                progress: progress,
+                progressText: progressText,
+                topLeftBadge: topLeftBadge,
+                topRightBadge: topRightBadge,
+                bottomLeftBadge: bottomLeftBadge,
+                bottomRightBadge: bottomRightBadge,
+              ),
             ],
           ),
           const SizedBox(width: 6),
           Expanded(
-            child: ClipRect(child: WideMetadataColumn(media: media, showRatings: showRatings, showYear: showYear, showGenres: showGenres, subtitle: subtitle, height: height, progress: progress, progressText: progressText, topRightBadge: topRightBadge)),
+            child: ClipRect(
+              child: WideMetadataColumn(
+                media: media,
+                showRatings: showRatings,
+                showYear: showYear,
+                showGenres: showGenres,
+                subtitle: subtitle,
+                height: height,
+                progress: progress,
+                progressText: progressText,
+                topRightBadge: topRightBadge,
+              ),
+            ),
           ),
         ],
       ),

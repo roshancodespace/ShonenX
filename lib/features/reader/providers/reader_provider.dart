@@ -125,7 +125,7 @@ class ReaderNotifier extends Notifier<ReaderState> {
       ..mangaId = arg.media.id
       ..mangaIdMal = arg.media.idMal
       ..externalIds = arg.media.externalIds
-      ..mangaTitle = arg.media.title.availableTitle
+      ..mangaTitle = arg.media.title.getPreferedTitle
       ..cover = arg.media.cover
       ..banner = arg.media.banner
       ..positionPage = savedPageNumber

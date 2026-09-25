@@ -222,7 +222,10 @@ class EpisodeMetadataService {
       return result;
     } catch (e, st) {
       _notify('');
-      _log.e('Enrichment failed for "${media.title.availableTitle}"', [e, st]);
+      _log.e('Enrichment failed for "${media.title.getPreferedTitle}"', [
+        e,
+        st,
+      ]);
       return sourceEpisodes;
     }
   }

@@ -41,7 +41,7 @@ class NeonCard extends StatelessWidget {
     this.topRightBadge,
     this.bottomLeftBadge,
     this.bottomRightBadge,
-    });
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -67,15 +67,15 @@ class NeonCard extends StatelessWidget {
           color: isDark ? const Color(0xFF0C0E14) : cs.surfaceContainerLowest,
           borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
           border: Border.all(
-          color: isActive ? cs.primary : cs.outlineVariant.withValues(alpha: 0.15),
-          width: isActive ? 1.5 : 1.0,
-          strokeAlign: BorderSide.strokeAlignOutside,
-        ),
+            color: isActive
+                ? cs.primary
+                : cs.outlineVariant.withValues(alpha: 0.15),
+            width: isActive ? 1.5 : 1.0,
+            strokeAlign: BorderSide.strokeAlignOutside,
+          ),
           boxShadow: [
             BoxShadow(
-              color: cs.primary.withValues(
-                alpha: isActive ? 0.48 : 0.22,
-              ),
+              color: cs.primary.withValues(alpha: isActive ? 0.48 : 0.22),
               blurRadius: isActive ? 20 : 10,
               spreadRadius: isActive ? 1 : 0,
             ),
@@ -87,15 +87,35 @@ class NeonCard extends StatelessWidget {
           children: [
             Stack(
               children: [
-                CardThumbnail(media: media, isActive: isActive, progress: progress, heroTag: heroTag, width: double.maxFinite, height: imgH, radiusOverride: GlobalUI.uiRoundness * 0.8),
-                CardBadgeOverlay(media: media, styleName: 'neon', isWideMode: isWideMode, isActive: isActive, showRatings: showRatings, progress: progress, progressText: progressText, topLeftBadge: topLeftBadge, topRightBadge: topRightBadge, bottomLeftBadge: bottomLeftBadge, bottomRightBadge: bottomRightBadge,),
+                CardThumbnail(
+                  media: media,
+                  isActive: isActive,
+                  progress: progress,
+                  heroTag: heroTag,
+                  width: double.maxFinite,
+                  height: imgH,
+                  radiusOverride: GlobalUI.uiRoundness * 0.8,
+                ),
+                CardBadgeOverlay(
+                  media: media,
+                  styleName: 'neon',
+                  isWideMode: isWideMode,
+                  isActive: isActive,
+                  showRatings: showRatings,
+                  progress: progress,
+                  progressText: progressText,
+                  topLeftBadge: topLeftBadge,
+                  topRightBadge: topRightBadge,
+                  bottomLeftBadge: bottomLeftBadge,
+                  bottomRightBadge: bottomRightBadge,
+                ),
               ],
             ),
             const SizedBox(height: 8),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4),
               child: Text(
-                media.title.availableTitle,
+                media.title.getPreferedTitle,
                 maxLines: progress != null ? 1 : 2,
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.labelLarge?.copyWith(
@@ -109,7 +129,13 @@ class NeonCard extends StatelessWidget {
               const Spacer(),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: PortraitMetadataRow(media: media, showRatings: showRatings, showYear: showYear, showGenres: showGenres, subtitle: subtitle),
+                child: PortraitMetadataRow(
+                  media: media,
+                  showRatings: showRatings,
+                  showYear: showYear,
+                  showGenres: showGenres,
+                  subtitle: subtitle,
+                ),
               ),
             ],
           ],
@@ -131,7 +157,9 @@ class NeonCard extends StatelessWidget {
         color: isDark ? const Color(0xFF0C0E14) : cs.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
         border: Border.all(
-          color: isActive ? cs.primary : cs.outlineVariant.withValues(alpha: 0.15),
+          color: isActive
+              ? cs.primary
+              : cs.outlineVariant.withValues(alpha: 0.15),
           width: isActive ? 1.5 : 1.0,
           strokeAlign: BorderSide.strokeAlignOutside,
         ),
@@ -147,15 +175,46 @@ class NeonCard extends StatelessWidget {
         children: [
           Stack(
             children: [
-              CardThumbnail(media: media, isActive: isActive, progress: progress, heroTag: heroTag, width: thumbW, height: height, radiusOverride: GlobalUI.uiRoundness * 0.8),
-              CardBadgeOverlay(media: media, styleName: 'neon', isWideMode: isWideMode, isActive: isActive, showRatings: showRatings, progress: progress, progressText: progressText, topLeftBadge: topLeftBadge, topRightBadge: topRightBadge, bottomLeftBadge: bottomLeftBadge, bottomRightBadge: bottomRightBadge,),
+              CardThumbnail(
+                media: media,
+                isActive: isActive,
+                progress: progress,
+                heroTag: heroTag,
+                width: thumbW,
+                height: height,
+                radiusOverride: GlobalUI.uiRoundness * 0.8,
+              ),
+              CardBadgeOverlay(
+                media: media,
+                styleName: 'neon',
+                isWideMode: isWideMode,
+                isActive: isActive,
+                showRatings: showRatings,
+                progress: progress,
+                progressText: progressText,
+                topLeftBadge: topLeftBadge,
+                topRightBadge: topRightBadge,
+                bottomLeftBadge: bottomLeftBadge,
+                bottomRightBadge: bottomRightBadge,
+              ),
             ],
           ),
           const SizedBox(width: 10),
           Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
-              child: WideMetadataColumn(media: media, showRatings: showRatings, showYear: showYear, showGenres: showGenres, subtitle: subtitle, textColor: isDark ? Colors.white : cs.onSurface, height: height, progress: progress, progressText: progressText, topRightBadge: topRightBadge),
+              child: WideMetadataColumn(
+                media: media,
+                showRatings: showRatings,
+                showYear: showYear,
+                showGenres: showGenres,
+                subtitle: subtitle,
+                textColor: isDark ? Colors.white : cs.onSurface,
+                height: height,
+                progress: progress,
+                progressText: progressText,
+                topRightBadge: topRightBadge,
+              ),
             ),
           ),
         ],
@@ -167,8 +226,10 @@ class NeonCard extends StatelessWidget {
     if (subtitle != null && subtitle!.isNotEmpty) return subtitle;
     final items = <String>[];
     if (showYear && media.year != null) items.add(media.year.toString());
-    if (media.status != null && media.status!.isNotEmpty) items.add(media.status!);
-    if (showGenres && media.genres != null && media.genres!.isNotEmpty) items.add(media.genres!.first);
+    if (media.status != null && media.status!.isNotEmpty)
+      items.add(media.status!);
+    if (showGenres && media.genres != null && media.genres!.isNotEmpty)
+      items.add(media.genres!.first);
     if (items.isEmpty) return null;
     return items.join(' • ');
   }

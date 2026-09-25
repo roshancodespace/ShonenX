@@ -154,7 +154,7 @@ Future<void> autoLinkTrackers({
       toSave[tracker.type] = TrackerMapping()
         ..trackerId = tracker.type.id
         ..trackingId = trackingId
-        ..trackingTitle = media.title.availableTitle;
+        ..trackingTitle = media.title.getPreferedTitle;
     }
   }
 

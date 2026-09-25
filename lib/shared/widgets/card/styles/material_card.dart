@@ -116,7 +116,7 @@ class MaterialCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      media.title.availableTitle,
+                      media.title.getPreferedTitle,
                       maxLines: progress != null ? 1 : 2,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.titleSmall?.copyWith(

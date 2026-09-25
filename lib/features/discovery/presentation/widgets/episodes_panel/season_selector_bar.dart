@@ -78,20 +78,20 @@ class SeasonSelectorBar extends StatelessWidget {
         _SeasonPill(
           icon: Icons.skip_previous_rounded,
           tag: _resolveSeasonTag(rel, fallback: 'Prequel'),
-          title: rel.title.availableTitle,
+          title: rel.title.getPreferedTitle,
           onTap: () => _navigateToRelation(context, rel),
         ),
       _SeasonPill(
         icon: Icons.check_rounded,
         tag: _resolveSeasonTag(currentMedia, fallback: 'Current'),
-        title: currentMedia.title.availableTitle,
+        title: currentMedia.title.getPreferedTitle,
         isCurrent: true,
       ),
       for (final rel in sequels)
         _SeasonPill(
           icon: Icons.skip_next_rounded,
           tag: _resolveSeasonTag(rel, fallback: 'Sequel'),
-          title: rel.title.availableTitle,
+          title: rel.title.getPreferedTitle,
           onTap: () => _navigateToRelation(context, rel),
         ),
     ];
@@ -124,7 +124,7 @@ class SeasonSelectorBar extends StatelessWidget {
   }
 
   String _resolveSeasonTag(UnifiedMedia media, {required String fallback}) {
-    final title = media.title.availableTitle;
+    final title = media.title.getPreferedTitle;
 
     // Check "Season 2" or "S2"
     final seasonMatch = _seasonRegex.firstMatch(title);

@@ -268,7 +268,7 @@ class AppBottomSheet extends ConsumerWidget {
         backgroundColor ??
         (isFloating
             ? cs.surfaceContainerHigh.withValues(alpha: 0.9)
-            : cs.surfaceContainer.withValues(alpha: 0.9));
+            : cs.surfaceContainer);
 
     final effectiveMargin =
         margin ??

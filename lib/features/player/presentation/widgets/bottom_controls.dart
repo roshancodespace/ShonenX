@@ -320,7 +320,7 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
                           ? Colors.white54
                           : Colors.white,
                     )
-                  : const Icon(Icons.subtitles_outlined),
+                  : const Icon(Icons.subtitles_outlined, color: Colors.white),
             ),
           ),
 

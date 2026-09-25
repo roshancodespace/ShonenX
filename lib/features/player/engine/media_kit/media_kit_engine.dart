@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
-import 'package:shonenx/core/network/http_client.dart';
 
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/player/domain/media_kit_prefs.dart';
@@ -387,29 +386,6 @@ class MediaKitEngine implements VideoEngine {
       await _player.setSubtitleTrack(
         SubtitleTrack(trackId, null, subtitle.language),
       );
-    } else if (subtitle.url.startsWith('http')) {
-      _log.d('Downloading external subtitle: ${subtitle.url}');
-      try {
-        final http = ref.read(httpClientProvider);
-        final res = await http.get(
-          subtitle.url,
-          cacheDuration: const Duration(days: 7),
-        );
-        if (res.body.trim().isNotEmpty) {
-          await _player.setSubtitleTrack(
-            SubtitleTrack.data(
-              res.body,
-              title: subtitle.language,
-              language: subtitle.language,
-            ),
-          );
-        }
-      } catch (e) {
-        _log.e('Failed to download subtitle from ${subtitle.url}: $e');
-        await _player.setSubtitleTrack(
-          SubtitleTrack.uri(subtitle.url, language: subtitle.language),
-        );
-      }
     } else {
       _log.d('Setting subtitle: ${subtitle.url} (lang: ${subtitle.language})');
       await _player.setSubtitleTrack(

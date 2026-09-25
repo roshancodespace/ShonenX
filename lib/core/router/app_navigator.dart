@@ -188,5 +188,5 @@ extension AppNavigator on BuildContext {
   // History / Continue
   void pushContinueHistory(MediaType type) => push('/continue/${type.id}');
   void pushContinueHistoryItem(MediaType type, String mediaId) =>
-      push('/continue/${type.id}/$mediaId');
+      push('/continue/${type.id}/${Uri.encodeComponent(mediaId)}');
 }

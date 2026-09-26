@@ -37,6 +37,7 @@ class CalendarDayRow extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 20.0),
       child: HorizontalSection<CalendarEntry>(
+        height: MediaCardStyle.classic.getLayout().height,
         titleWidget: Row(
           children: [
             Text(
@@ -115,8 +116,6 @@ class CalendarDayRow extends StatelessWidget {
         ),
         listPadding: const EdgeInsets.symmetric(horizontal: 12.0),
         data: asyncData,
-        height: 212,
-        gap: 12.0,
         skeletonCount: 8,
         skeletonItemBuilder: (context, index) {
           return CalendarAiringCard(
@@ -132,6 +131,7 @@ class CalendarDayRow extends StatelessWidget {
               score: 8.5,
               source: source ?? CalendarSource.anilist,
             ),
+            style: MediaCardStyle.classic,
           );
         },
         emptyWidget: Padding(
@@ -148,6 +148,7 @@ class CalendarDayRow extends StatelessWidget {
           return CalendarAiringCard(
             key: ValueKey('${entry.source.name}_${entry.id}'),
             entry: entry,
+            style: MediaCardStyle.classic,
           );
         },
       ),

@@ -169,7 +169,11 @@ class DiscordRpcNotifier extends Notifier<DiscordRpcState>
     if (!state.isEnabled) return;
     if (!state.customSettings.enableDetailsPresence) return;
     await _ensureConnected();
-    await _rpcService.updateMediaPresence(media: media);
+    await _rpcService.updateMediaPresence(
+      media: media,
+      showMediaImage: state.customSettings.showMediaImage,
+      showButtons: state.customSettings.showButtons,
+    );
     state = state.copyWith(isConnected: _rpcService.isConnected);
   }
 
@@ -194,6 +198,10 @@ class DiscordRpcNotifier extends Notifier<DiscordRpcState>
       durationMs: durationMs,
       totalEpisodes: totalEpisodes,
       isPlaying: isPlaying,
+      showEpisodeNumber: state.customSettings.showEpisodeNumber,
+      showProgress: state.customSettings.showProgress,
+      showMediaImage: state.customSettings.showMediaImage,
+      showButtons: state.customSettings.showButtons,
     );
     state = state.copyWith(isConnected: _rpcService.isConnected);
   }
@@ -232,6 +240,10 @@ class DiscordRpcNotifier extends Notifier<DiscordRpcState>
       currentPage: currentPage,
       totalPages: totalPages,
       totalChapters: totalChapters,
+      showEpisodeNumber: state.customSettings.showEpisodeNumber,
+      showProgress: state.customSettings.showProgress,
+      showMediaImage: state.customSettings.showMediaImage,
+      showButtons: state.customSettings.showButtons,
     );
     state = state.copyWith(isConnected: _rpcService.isConnected);
   }

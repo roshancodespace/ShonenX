@@ -535,6 +535,9 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
       return UnifiedMedia(
         id: anilistId ?? '',
         idMal: malId,
+        url: anilistId != null
+            ? 'https://anilist.co/${type.name.toLowerCase()}/$anilistId'
+            : null,
         externalIds: MediaExternalIds(anilist: anilistId, mal: malId),
         type: type,
         airingAt: airingAt,

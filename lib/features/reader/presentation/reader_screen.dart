@@ -100,8 +100,6 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
         );
   }
 
-  // ──────────────── System UI ────────────────
-
   void _enableImmersiveMode() {
     SystemChrome.setEnabledSystemUIMode(
       SystemUiMode.immersiveSticky,
@@ -124,8 +122,6 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     } catch (_) {}
   }
 
-  // ──────────────── Controls ────────────────
-
   void _toggleOverlay() {
     final controller = ref.read(readerProvider(widget.mode).notifier);
     final currentShow = ref.read(readerProvider(widget.mode)).showOverlay;
@@ -146,8 +142,6 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     }
     ref.read(readerProvider(widget.mode).notifier).setPage(page);
   }
-
-  // ──────────────── Keyboard ────────────────
 
   bool _onKeyEvent(KeyEvent event) {
     if (event is! KeyDownEvent) return false;
@@ -183,8 +177,6 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     }
     return false;
   }
-
-  // ──────────────── Chapter Navigation ────────────────
 
   void _skipToChapter({required bool next}) {
     final episodesState = ref.read(episodesListProvider(_matchArgs)).value;
@@ -248,8 +240,6 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     );
   }
 
-  // ──────────────── Theme ────────────────
-
   ReaderThemeInfo _getThemeInfo(ReaderBackgroundColor bgColorPref) {
     switch (bgColorPref) {
       case ReaderBackgroundColor.white:
@@ -273,17 +263,18 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     }
   }
 
-  // ──────────────── Build ────────────────
-
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(readerProvider(widget.mode));
     final prefs = ref.watch(readerPrefsProvider);
     final themeInfo = _getThemeInfo(prefs.backgroundColor);
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _updateDiscordRpc(state);
-    });
+    ref.listen(
+      readerProvider(widget.mode).select((s) => (s.currentPage, s.totalPages)),
+      (prev, next) {
+        if (mounted) _updateDiscordRpc(ref.read(readerProvider(widget.mode)));
+      },
+    );
 
     return Scaffold(
       backgroundColor: themeInfo.bgColor,
@@ -292,7 +283,6 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // ── Main Content ──
           MediaQuery.removePadding(
             context: context,
             removeTop: true,
@@ -315,7 +305,6 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
             ),
           ),
 
-          // ── Top Overlay (App Bar) ──
           AnimatedPositioned(
             duration: const Duration(milliseconds: 250),
             curve: Curves.easeOutCubic,
@@ -337,7 +326,6 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
             ),
           ),
 
-          // ── Bottom Overlay (Controls) ──
           if (state.totalPages > 0)
             AnimatedPositioned(
               duration: const Duration(milliseconds: 250),
@@ -406,8 +394,6 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       ),
     );
   }
-
-  // ──────────────── Sub-builders ────────────────
 
   Widget _buildReaderView(
     List<ChapterPage> pages,

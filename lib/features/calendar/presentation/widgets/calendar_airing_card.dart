@@ -11,8 +11,13 @@ import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 
 class CalendarAiringCard extends ConsumerWidget {
   final CalendarEntry entry;
+  final MediaCardStyle style;
 
-  const CalendarAiringCard({super.key, required this.entry});
+  const CalendarAiringCard({
+    super.key,
+    required this.entry,
+    required this.style,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -50,8 +55,6 @@ class CalendarAiringCard extends ConsumerWidget {
         countdownStr = 'Now';
       }
     }
-
-    final style = ref.watch(uiPrefsProvider.select((s) => s.cardStyle));
 
     return MediaCard(
       forceWideMode: false,

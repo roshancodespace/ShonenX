@@ -17,8 +17,7 @@ class Env {
   static String get ANILIST_CLIENT_ID =>
       _rawAnilistId.trim().isEmpty ? _defaultAnilistId : _rawAnilistId;
 
-  static const _defaultAnilistSecret =
-      'RilknAXcBMEeNvHW6Pmiw11ljCB4ml2zMV4POKRG|RilknAXcBMEeNvHW6Pmiw11ljCB4ml2zMV4POKRG';
+  static const _defaultAnilistSecret = '';
   static const _rawAnilistSecret = String.fromEnvironment(
     'ANILIST_CLIENT_SECRET',
     defaultValue: _defaultAnilistSecret,

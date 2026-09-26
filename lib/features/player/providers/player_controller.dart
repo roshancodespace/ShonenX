@@ -9,6 +9,7 @@ import 'package:screenshot/screenshot.dart';
 import 'package:collection/collection.dart';
 import 'package:shonenx/core/network/http_client.dart';
 import 'package:shonenx/features/downloads/data/offline_progress_repository.dart';
+import 'package:shonenx/features/history/providers/watch_history_provider.dart';
 import 'package:shonenx/features/discovery/domain/media_args.dart';
 import 'package:shonenx/features/discovery/providers/episodes_provider.dart';
 import 'package:shonenx/features/discord/providers/discord_rpc_provider.dart';
@@ -494,6 +495,24 @@ class PlayerController extends Notifier<PlayerState> {
         isLoading: false,
       );
 
+      // If startPosition wasn't provided (e.g. episode switch inside player), check saved watch history
+      Duration? effectiveStartPosition = startPosition;
+      if (effectiveStartPosition == null && _media != null) {
+        try {
+          final existing = await ref
+              .read(watchHistoryRepositoryProvider)
+              .getEntry(_media!.id, episode.number);
+          if (existing != null &&
+              existing.positionInMilliseconds > 5000 &&
+              (existing.durationInMilliseconds == 0 ||
+                  existing.positionInMilliseconds <
+                      (existing.durationInMilliseconds * 0.92))) {
+            effectiveStartPosition =
+                Duration(milliseconds: existing.positionInMilliseconds);
+          }
+        } catch (_) {}
+      }
+
       // Step 8: Initialize video engine with selected quality and subtitle track
       final useCustomSub = ref.read(subtitlePrefsProvider).useCustomSubtitle;
       await ref
@@ -503,7 +522,7 @@ class PlayerController extends Notifier<PlayerState> {
             subtitle: useCustomSub || activeSubtitle.url.isEmpty
                 ? null
                 : activeSubtitle,
-            startAt: startPosition,
+            startAt: effectiveStartPosition,
           );
 
       // Step 9: Start progress tracking timer & update Discord Rich Presence
@@ -514,7 +533,7 @@ class PlayerController extends Notifier<PlayerState> {
           activeServer: state.activeServer,
           sourceInfo: _source?.sourceInfo,
         ),
-        resumedPosition: startPosition,
+        resumedPosition: effectiveStartPosition,
       );
       _updateDiscordRpc();
     } catch (e) {

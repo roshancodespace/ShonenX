@@ -73,10 +73,12 @@ class TraktAuthenticator implements Authenticator {
       },
     );
 
-    final String? accessToken = tokenResponse.json['access_token'];
+    final json = tokenResponse.json;
+    final String? accessToken = json is Map ? json['access_token']?.toString() : null;
 
     if (accessToken == null || accessToken.isEmpty) {
-      throw Exception('Trakt Auth Error: Failed to exchange token.');
+      final err = json is Map ? (json['error_description'] ?? json['error']) : tokenResponse.body;
+      throw Exception('Trakt Auth Error: Failed to exchange token${err != null ? ' ($err)' : ''}.');
     }
 
     return accessToken;

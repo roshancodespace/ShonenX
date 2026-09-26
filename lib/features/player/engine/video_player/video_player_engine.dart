@@ -175,7 +175,7 @@ class VideoPlayerEngine implements VideoEngine {
 
   @override
   Future<void> setAudioTrack(AudioTrack track) async {
-    throw UnimplementedError("Not supported by video_player");
+    _log.w("Audio track switching is not supported by video_player engine");
   }
 
   @override

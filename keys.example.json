@@ -1,6 +1,6 @@
 {
     "ANILIST_CLIENT_ID": "mobile|desktop",
-    "ANILIST_CLIENT_SECRET": "mobile|desktop",
+    "ANILIST_CLIENT_SECRET": "",
     "MAL_CLIENT_ID": "mobile|desktop",
     "MAL_CLIENT_SECRET": "mobile|desktop",
     "SIMKL_CLIENT_ID": "mobile|desktop",

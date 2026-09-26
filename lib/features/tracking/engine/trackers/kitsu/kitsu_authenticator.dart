@@ -92,12 +92,13 @@ class _KitsuLoginFormState extends State<_KitsuLoginForm> {
       );
 
       final json = response.json;
-      final String? accessToken = json['access_token'];
+      final String? accessToken = json is Map ? json['access_token']?.toString() : null;
 
       if (accessToken != null && accessToken.isNotEmpty) {
         if (mounted) Navigator.of(context).pop(accessToken);
       } else {
-        throw Exception('Failed to retrieve access token.');
+        final err = json is Map ? (json['error_description'] ?? json['error']) : null;
+        throw Exception(err ?? 'Failed to retrieve access token.');
       }
     } catch (e) {
       String msg = 'Failed to login. Please check your credentials.';

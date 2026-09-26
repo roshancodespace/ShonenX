@@ -47,7 +47,10 @@ class AnilistAuthenticator implements Authenticator {
 
   @override
   Future<String> performLogin() async {
-    final useImplicitGrant = !_hasSecret;
+    // For default/bundled client (public client ID 51784), always use the standard
+    // Implicit Grant flow (response_type=token). Client secrets must not be used or
+    // required in public mobile/desktop apps, avoiding invalid_client errors.
+    final useImplicitGrant = !_isCustom || !_hasSecret;
 
     final authParams = <String, String>{
       'client_id': _clientId,
@@ -71,10 +74,23 @@ class AnilistAuthenticator implements Authenticator {
         : result.replaceFirst(':', '://');
     final uri = Uri.parse(sanitizedResult);
 
+    final fragmentParams = uri.fragment.isNotEmpty
+        ? Uri.splitQueryString(uri.fragment)
+        : const <String, String>{};
+
+    // Check for error in redirect
+    final error = uri.queryParameters['error'] ?? fragmentParams['error'];
+    final errorDescription = uri.queryParameters['error_description'] ??
+        fragmentParams['error_description'];
+    if (error != null && error.isNotEmpty) {
+      throw Exception(
+        'AniList Auth Error: $error${errorDescription != null ? ' ($errorDescription)' : ''}',
+      );
+    }
+
     // Implicit grant returns '#access_token=...' in URL fragment
     String? accessToken;
     if (uri.fragment.isNotEmpty) {
-      final fragmentParams = Uri.splitQueryString(uri.fragment);
       accessToken = fragmentParams['access_token'];
     }
     accessToken ??= uri.queryParameters['access_token'];
@@ -83,10 +99,11 @@ class AnilistAuthenticator implements Authenticator {
       return accessToken;
     }
 
+    if (useImplicitGrant) {
+      throw Exception('AniList Auth Error: Failed to obtain access token.');
+    }
+
     // If authorization code grant flow with secret
-    final fragmentParams = uri.fragment.isNotEmpty
-        ? Uri.splitQueryString(uri.fragment)
-        : const <String, String>{};
     final code = uri.queryParameters['code'] ?? fragmentParams['code'];
     if (code == null || code.isEmpty) {
       throw Exception('AniList Auth Error: Failed to obtain access token or code.');

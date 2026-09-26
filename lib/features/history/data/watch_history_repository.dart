@@ -33,6 +33,18 @@ class WatchHistoryRepository {
     });
   }
 
+  Future<WatchHistoryEntry?> getEntry(
+    String animeId,
+    double episodeNumber,
+  ) async {
+    return _isar.watchHistoryEntrys
+        .filter()
+        .animeIdEqualTo(animeId)
+        .and()
+        .episodeNumberEqualTo(episodeNumber)
+        .findFirst();
+  }
+
   Future<void> deleteEntry(int id) async {
     await _isar.writeTxn(() async {
       await _isar.watchHistoryEntrys.delete(id);

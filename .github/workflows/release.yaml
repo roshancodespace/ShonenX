@@ -215,7 +215,7 @@ jobs:
           ANILIST_ID="${{ secrets.ANILIST_CLIENT_ID }}"
           ANILIST_ID="${ANILIST_ID:-51784|51784}"
           ANILIST_SECRET="${{ secrets.ANILIST_CLIENT_SECRET }}"
-          ANILIST_SECRET="${ANILIST_SECRET:-RilknAXcBMEeNvHW6Pmiw11ljCB4ml2zMV4POKRG|RilknAXcBMEeNvHW6Pmiw11ljCB4ml2zMV4POKRG}"
+          ANILIST_SECRET="${ANILIST_SECRET:-}"
           MAL_ID="${{ secrets.MAL_CLIENT_ID }}"
           MAL_ID="${MAL_ID:-281bee8ed86f5e410705a2243c359761|281bee8ed86f5e410705a2243c359761}"
           cat > keys.json <<EOF
@@ -321,7 +321,7 @@ jobs:
           ANILIST_ID="${{ secrets.ANILIST_CLIENT_ID }}"
           ANILIST_ID="${ANILIST_ID:-51784|51784}"
           ANILIST_SECRET="${{ secrets.ANILIST_CLIENT_SECRET }}"
-          ANILIST_SECRET="${ANILIST_SECRET:-RilknAXcBMEeNvHW6Pmiw11ljCB4ml2zMV4POKRG|RilknAXcBMEeNvHW6Pmiw11ljCB4ml2zMV4POKRG}"
+          ANILIST_SECRET="${ANILIST_SECRET:-}"
           MAL_ID="${{ secrets.MAL_CLIENT_ID }}"
           MAL_ID="${MAL_ID:-281bee8ed86f5e410705a2243c359761|281bee8ed86f5e410705a2243c359761}"
           cat > keys.json <<EOF
@@ -413,7 +413,7 @@ jobs:
           ANILIST_ID="${{ secrets.ANILIST_CLIENT_ID }}"
           ANILIST_ID="${ANILIST_ID:-51784|51784}"
           ANILIST_SECRET="${{ secrets.ANILIST_CLIENT_SECRET }}"
-          ANILIST_SECRET="${ANILIST_SECRET:-RilknAXcBMEeNvHW6Pmiw11ljCB4ml2zMV4POKRG|RilknAXcBMEeNvHW6Pmiw11ljCB4ml2zMV4POKRG}"
+          ANILIST_SECRET="${ANILIST_SECRET:-}"
           MAL_ID="${{ secrets.MAL_CLIENT_ID }}"
           MAL_ID="${MAL_ID:-281bee8ed86f5e410705a2243c359761|281bee8ed86f5e410705a2243c359761}"
           cat > keys.json <<EOF

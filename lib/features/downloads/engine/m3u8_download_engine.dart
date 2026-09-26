@@ -117,13 +117,21 @@ class M3U8DownloadEngine implements DownloadEngine {
     _commandPort?.send('cancel');
     _cleanup();
 
-    if (!_isRunning) {
-      final file = File(task.savePath);
-      if (await file.exists()) {
+    final file = File(task.savePath);
+    if (await file.exists()) {
+      try {
         await file.delete();
-      }
-      onStatus(DownloadStatus.canceled);
+      } catch (_) {}
     }
+
+    final tempDir = Directory('${p.dirname(task.savePath)}/.temp_${task.id}');
+    if (await tempDir.exists()) {
+      try {
+        await tempDir.delete(recursive: true);
+      } catch (_) {}
+    }
+
+    onStatus(DownloadStatus.canceled);
   }
 
   void _cleanup() {
@@ -131,6 +139,7 @@ class M3U8DownloadEngine implements DownloadEngine {
     _isolate = null;
     _commandPort = null;
     _isRunning = false;
+    _receivePort.close();
   }
 }
 

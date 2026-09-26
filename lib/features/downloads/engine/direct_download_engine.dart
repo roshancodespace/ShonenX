@@ -57,9 +57,19 @@ class DirectDownloadEngine implements DownloadEngine {
       }
 
       final contentLength = response.contentLength;
-      final total = contentLength == -1 ? -1 : downloaded + contentLength;
+      final int total;
 
-      fileHandle = await file.open(mode: FileMode.append);
+      if (response.statusCode == 200) {
+        // Server ignored Range header or does not support resuming; start fresh to prevent file corruption
+        downloaded = 0;
+        total = contentLength;
+        fileHandle = await file.open(mode: FileMode.write);
+      } else {
+        // 206 Partial Content: resume appending
+        total = contentLength == -1 ? -1 : downloaded + contentLength;
+        fileHandle = await file.open(mode: FileMode.append);
+      }
+
       int lastDbWrite = 0;
 
       await for (final chunk in response) {

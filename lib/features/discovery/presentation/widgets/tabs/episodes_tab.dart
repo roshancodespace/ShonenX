@@ -6,7 +6,7 @@ import 'package:shonenx/core/router/app_navigator.dart';
 import 'package:shonenx/features/discovery/domain/media_args.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/sheets/download_sheet.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/episodes_panel/episode_list_panel.dart';
-import 'package:shonenx/features/discovery/presentation/widgets/episodes_panel/season_selector_bar.dart';
+
 import 'package:shonenx/features/discovery/presentation/widgets/sheets/manual_match_sheet.dart';
 import 'package:shonenx/features/discovery/providers/matched_media_provider.dart';
 import 'package:shonenx/features/discovery/providers/media_preference_provider.dart';
@@ -20,6 +20,7 @@ import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/shared/widgets/app_focus_hover.dart';
 import 'package:shonenx/shared/widgets/source_selector_list.dart';
 import 'package:shonenx/shared/widgets/staggered_fade_in.dart';
+import 'package:shonenx/core/widgets/cloudflare_webview.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
 import 'package:shonenx/source_engine/utils/media_type_extensions.dart';
 import 'package:shonenx/features/history/providers/watch_history_provider.dart';
@@ -53,10 +54,7 @@ class EpisodesTabWidget extends ConsumerWidget {
       children: [
         if (media.sourceId == null && !isTv) ...[
           StaggeredFadeIn(index: 0, child: _EpisodesHeader(media: media)),
-          StaggeredFadeIn(
-            index: 1,
-            child: SeasonSelectorBar(currentMedia: media),
-          ),
+
           Container(
             width: double.maxFinite,
             height: 1,
@@ -261,95 +259,139 @@ class _EpisodesHeader extends ConsumerWidget {
           matchedMediaState.value?.matchedMedia?.title ?? 'No match found';
     }
 
-    final sourceName =
-        matchedMediaState.value?.sourceInfo.name ??
-        sourceState?.sourceInfo.name ??
-        'Unknown';
+    final activeSourceInfo =
+        matchedMediaState.value?.sourceInfo ?? sourceState?.sourceInfo;
+    final sourceName = activeSourceInfo?.name ?? 'Unknown';
+
+    final iconWidget = Container(
+      width: 36,
+      height: 36,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: hasError ? cs.errorContainer : cs.secondaryContainer,
+      ),
+      child: Icon(
+        hasError ? Icons.error_outline_rounded : Icons.auto_awesome_rounded,
+        size: 18,
+        color: hasError ? cs.onErrorContainer : cs.onSecondaryContainer,
+      ),
+    );
+
+    final titleWidget = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              hasError ? 'ERROR' : 'MATCHED',
+              style: textTheme.labelMedium?.copyWith(
+                color: hasError ? cs.error : cs.primary,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.3,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                '· $sourceName',
+                style: textTheme.labelMedium?.copyWith(
+                  color: cs.onSurfaceVariant.withValues(alpha: 0.7),
+                  fontWeight: FontWeight.w500,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+        Text(
+          matchedTitle,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: hasError ? cs.error : null,
+          ),
+        ),
+      ],
+    );
+
+    final buttonsWidget = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _HeaderButton(
+          icon: Icons.swap_horiz_rounded,
+          label: 'Source',
+          onTap: () =>
+              _showSourceSelector(context, ref, media, sourceState?.sourceInfo),
+        ),
+        const SizedBox(width: 8),
+        if (activeSourceInfo?.baseUrl?.isNotEmpty == true) ...[
+          _HeaderButton(
+            icon: Icons.security_rounded,
+            label: 'CF Bypass',
+            onTap: () {
+              CloudflareWebView.open(context, activeSourceInfo!.baseUrl!);
+            },
+          ),
+          const SizedBox(width: 8),
+        ],
+        _HeaderButton(
+          icon: Icons.help_outline_rounded,
+          label: 'Fix',
+          onTap: () {
+            showModalBottomSheet(
+              context: context,
+              builder: (_) => ManualMatchSheet(
+                mediaTitle: title,
+                type: media.type,
+                matchArgs: matchArgs,
+              ),
+            );
+          },
+        ),
+      ],
+    );
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: hasError ? cs.errorContainer : cs.secondaryContainer,
-            ),
-            child: Icon(
-              hasError
-                  ? Icons.error_outline_rounded
-                  : Icons.auto_awesome_rounded,
-              size: 18,
-              color: hasError ? cs.onErrorContainer : cs.onSecondaryContainer,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          if (constraints.maxWidth >= 600) {
+            // Desktop/Tablet layout: single row
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                iconWidget,
+                const SizedBox(width: 12),
+                Expanded(child: titleWidget),
+                const SizedBox(width: 16),
+                buttonsWidget,
+              ],
+            );
+          } else {
+            // Mobile layout: two rows
+            return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Text(
-                      hasError ? 'ERROR' : 'MATCHED',
-                      style: textTheme.labelMedium?.copyWith(
-                        color: hasError ? cs.error : cs.primary,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.3,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      '· $sourceName',
-                      style: textTheme.labelMedium?.copyWith(
-                        color: cs.onSurfaceVariant.withValues(alpha: 0.7),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
+                    iconWidget,
+                    const SizedBox(width: 12),
+                    Expanded(child: titleWidget),
                   ],
                 ),
-                Text(
-                  matchedTitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: hasError ? cs.error : null,
-                  ),
+                const SizedBox(height: 12),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: buttonsWidget,
                 ),
               ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          _HeaderButton(
-            icon: Icons.swap_horiz_rounded,
-            label: 'Source',
-            onTap: () => _showSourceSelector(
-              context,
-              ref,
-              media,
-              sourceState?.sourceInfo,
-            ),
-          ),
-          const SizedBox(width: 6),
-          _HeaderButton(
-            icon: Icons.help_outline_rounded,
-            label: 'Fix',
-            onTap: () {
-              showModalBottomSheet(
-                context: context,
-                builder: (_) => ManualMatchSheet(
-                  mediaTitle: title,
-                  type: media.type,
-                  matchArgs: matchArgs,
-                ),
-              );
-            },
-          ),
-        ],
+            );
+          }
+        },
       ),
     );
   }

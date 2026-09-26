@@ -7,8 +7,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
+import 'package:shonenx/core/network/http_client.dart';
 
-import 'package:shonenx/core/network/cf_client.dart';
 import 'package:shonenx/features/player/presentation/widgets/custom_subtitle_overlay.dart';
 import 'package:shonenx/features/player/providers/custom_subtitle_provider.dart';
 import 'package:shonenx/features/player/providers/video_engine_provider.dart';
@@ -225,7 +225,7 @@ class _SubtitleDebugView extends ConsumerWidget {
 
     ref.read(_debugIsLoadingProvider.notifier).state = true;
     try {
-      final response = await CFClient.instance.get(url);
+      final response = await ref.read(httpClientProvider).get(url);
       if (response.statusCode == 200) {
         final content = utf8.decode(response.bodyBytes, allowMalformed: true);
         ref.read(_debugSubtitleContentProvider.notifier).state = content;

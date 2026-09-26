@@ -47,7 +47,6 @@ import 'package:shonenx/features/settings/presentation/subtitle_debug_screen.dar
 import 'package:shonenx/features/settings/presentation/tracker_bio_debug_screen.dart';
 import 'package:shonenx/core/services/backup_service.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
-import 'package:shonenx/core/network/cf_client.dart';
 
 final rootNavigatorKey = GlobalKey<NavigatorState>();
 final _homeNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'home');
@@ -60,8 +59,6 @@ final _downloadsNavigatorKey = GlobalKey<NavigatorState>(
 final startupUriProvider = Provider<Uri?>((ref) => null);
 
 final routerProvider = Provider<GoRouter>((ref) {
-  CFClient.navigatorKey = rootNavigatorKey;
-
   final startupUri = ref.watch(startupUriProvider);
 
   return GoRouter(

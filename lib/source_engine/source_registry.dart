@@ -145,6 +145,7 @@ final availableAnimeSourcesProvider = FutureProvider<List<SourceInfo>>(
             type: SourceType.inbuilt,
             mediaType: MediaType.ANIME,
             iconUrl: s.sourceInfo.iconUrl,
+            baseUrl: s.sourceInfo.baseUrl,
           ),
         )
         .toList();
@@ -179,6 +180,7 @@ final availableAnimeSourcesProvider = FutureProvider<List<SourceInfo>>(
               type: SourceType.extension,
               mediaType: MediaType.ANIME,
               iconUrl: ext.iconUrl,
+              baseUrl: ext.baseUrl,
               lang: ext.lang,
               isNsfw: ext.isNsfw ?? false,
             ),
@@ -216,6 +218,7 @@ final availableMangaSourcesProvider = FutureProvider<List<SourceInfo>>(
             id: s.sourceInfo.id,
             name: s.sourceInfo.name,
             type: SourceType.inbuilt,
+            baseUrl: s.sourceInfo.baseUrl,
             mediaType: MediaType.MANGA,
           ),
         )
@@ -251,6 +254,7 @@ final availableMangaSourcesProvider = FutureProvider<List<SourceInfo>>(
               type: SourceType.extension,
               mediaType: MediaType.MANGA,
               iconUrl: ext.iconUrl,
+              baseUrl: ext.baseUrl,
               lang: ext.lang,
               isNsfw: ext.isNsfw ?? false,
             ),
@@ -313,6 +317,7 @@ final availableNovelSourcesProvider = FutureProvider<List<SourceInfo>>(
               type: SourceType.extension,
               mediaType: MediaType.MANGA,
               iconUrl: ext.iconUrl,
+              baseUrl: ext.baseUrl,
               lang: ext.lang,
               isNsfw: ext.isNsfw ?? false,
             ),

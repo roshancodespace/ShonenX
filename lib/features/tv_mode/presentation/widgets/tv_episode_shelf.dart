@@ -24,6 +24,7 @@ import 'package:shonenx/shared/models/ui_style_enums.dart';
 import 'package:shonenx/shared/models/unified_episode.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
+import 'package:shonenx/core/widgets/cloudflare_webview.dart';
 
 class _EpisodeChunk {
   final String label;
@@ -442,6 +443,55 @@ class _TvEpisodeShelfState extends ConsumerState<TvEpisodeShelf> {
                             );
                           },
                         ),
+                        if (state.source.baseUrl?.isNotEmpty == true) ...[
+                          const SizedBox(width: 8),
+                          AppFocusHover(
+                            onTap: () {
+                              CloudflareWebView.open(
+                                context,
+                                state.source.baseUrl!,
+                              );
+                            },
+                            builder: (context, isFocused, isHovered) {
+                              final active = isFocused || isHovered;
+                              return Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 11,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: active
+                                      ? Colors.white
+                                      : Colors.white.withValues(alpha: 0.06),
+                                  borderRadius: BorderRadius.circular(radius),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.security_rounded,
+                                      size: 13,
+                                      color: active
+                                          ? Colors.black
+                                          : Colors.white70,
+                                    ),
+                                    const SizedBox(width: 5),
+                                    Text(
+                                      'CF Bypass',
+                                      style: TextStyle(
+                                        color: active
+                                            ? Colors.black
+                                            : Colors.white70,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                        ],
                         const SizedBox(width: 8),
                         AppFocusHover(
                           onTap: () => TvManualMatchDialog.show(

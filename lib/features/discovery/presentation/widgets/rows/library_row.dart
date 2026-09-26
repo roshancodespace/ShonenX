@@ -84,10 +84,6 @@ class LibraryRow extends ConsumerWidget {
               id: 'skeleton-${status.id}-$index',
               type: MediaType.ANIME,
               title: const MediaTitle(english: 'Placeholder Title'),
-              cover: '',
-              format: 'TV',
-              score: 8.5,
-              year: 2026,
             ),
             tag: 'skeleton-${status.id}-$index',
             style: style,
@@ -109,6 +105,17 @@ class LibraryRow extends ConsumerWidget {
         emptyText: 'No items in this list.',
         data: asyncData,
         itemBuilder: (context, entry) => buildCard(context, entry, 'library'),
+        skeletonItemBuilder: (context, index) {
+          return MediaCard(
+            media: UnifiedMedia(
+              id: 'skeleton-${status.id}-$index',
+              type: MediaType.ANIME,
+            ),
+            tag: 'skeleton-${status.id}-$index',
+            style: style,
+            onTap: () {},
+          );
+        },
       );
     }
   }

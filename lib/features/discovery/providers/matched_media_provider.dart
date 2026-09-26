@@ -74,7 +74,7 @@ final matchedMediaProvider =
       MediaMatchNotifier,
       MatchedMediaState,
       MediaArgs
-    >(MediaMatchNotifier.new);
+    >(MediaMatchNotifier.new, retry: (_, _) => null);
 
 class MediaMatchNotifier extends AsyncNotifier<MatchedMediaState> {
   late final MediaArgs args;

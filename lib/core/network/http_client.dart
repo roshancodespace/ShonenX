@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rhttp/rhttp.dart' as rhttp;
 import 'package:shonenx/core/caching/cache_manager.dart';
 import 'package:shonenx/core/caching/domain/cache_entry.dart';
+import 'package:shonenx/core/network/cookie_manager.dart';
 
 class HttpResponse {
   final int statusCode;
@@ -39,13 +40,14 @@ class HttpResponse {
 class HTTP {
   HTTP._internal({CacheManager? cacheManager})
     : _client = rhttp.RhttpClient.createSync(
-        settings: const rhttp.ClientSettings(
+        settings: rhttp.ClientSettings(
           throwOnStatusCode: false,
           userAgent:
               'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          timeoutSettings: rhttp.TimeoutSettings(
+          tlsSettings: const rhttp.TlsSettings(verifyCertificates: false),
+          timeoutSettings: const rhttp.TimeoutSettings(
             timeout: Duration(seconds: 30),
-            connectTimeout: Duration(seconds: 30),
+            connectTimeout: Duration(seconds: 15),
           ),
         ),
       ),
@@ -219,6 +221,9 @@ class HTTP {
     }
 
     final requestHeaders = Map<String, String>.from(headers ?? {});
+
+    final userAgent = await CookieManager().getUserAgent(url);
+    requestHeaders['user-agent'] = userAgent;
     rhttp.HttpBody? rBody;
 
     if (body != null) {

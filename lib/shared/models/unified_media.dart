@@ -251,6 +251,7 @@ class UnifiedMedia {
   final String? _idMal;
   String? get idMal => externalIds.mal ?? _idMal;
 
+  final String? url;
   final MediaTitle title;
   final String? format;
   final String? cover;
@@ -286,6 +287,7 @@ class UnifiedMedia {
     required this.type,
     this.sourceId,
     this.sourceName,
+    this.url,
     this.title = const MediaTitle(),
     this.providerId,
     String? idMal,
@@ -383,6 +385,7 @@ extension UnifiedMediaX on UnifiedMedia {
       providerId: other.providerId ?? providerId,
       externalIds: externalIds.merge(other.externalIds),
       idMal: other.idMal ?? idMal,
+      url: other.url ?? url,
       format: other.format ?? format,
 
       title: title.merge(other.title),

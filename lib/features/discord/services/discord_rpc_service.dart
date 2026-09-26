@@ -88,6 +88,10 @@ class DiscordRpcService {
     int? timeStampMs,
     int? totalEpisodes,
     bool isPlaying = true,
+    bool showEpisodeNumber = true,
+    bool showProgress = true,
+    bool showMediaImage = true,
+    bool showButtons = true,
   }) async {
     _resetTimestamps(media: true);
 
@@ -95,21 +99,47 @@ class DiscordRpcService {
     final dur = durationMs ?? 0;
     final title = anime.title.getPreferedTitle;
     final epCount = totalEpisodes != null ? '/$totalEpisodes' : '';
-    final epLabel = 'Episode $episodeNumber$epCount';
+    final epLabel = showEpisodeNumber
+        ? 'Episode $episodeNumber$epCount'
+        : 'Watching';
+
+    final stateParts = <String>[];
+    if (showEpisodeNumber) stateParts.add(epLabel);
+    if (episodeTitle != null) stateParts.add(episodeTitle);
+
+    final baseStateText = _joinNonEmpty(
+      stateParts.isEmpty ? [epLabel] : stateParts,
+    );
+    final progressText = (showProgress && !isPlaying)
+        ? _progressText(pos, dur)
+        : null;
 
     final stateText = isPlaying
-        ? _joinNonEmpty([epLabel, episodeTitle])
-        : '${_joinNonEmpty([epLabel, _progressText(pos, dur)])} (Paused)';
+        ? baseStateText
+        : '${_joinNonEmpty([baseStateText, progressText])} (Paused)';
 
-    final coverUrl = anime.cover ?? anime.banner;
-    final mediaUrl = 'https://anilist.co/anime/${anime.id}';
+    final coverUrl = showMediaImage ? (anime.cover ?? anime.banner) : null;
+    final mediaUrl = anime.url ?? 'https://anilist.co/anime/${anime.id}';
 
     final now = DateTime.now().millisecondsSinceEpoch;
-    final startMs = isPlaying ? (pos > 0 ? now - pos : now) : null;
-    final endMs =
-        (isPlaying && dur > 0 && pos > 0 && dur > pos && startMs != null)
-        ? startMs + dur
-        : null;
+    int? startMs;
+    int? endMs;
+
+    if (isPlaying && showProgress) {
+      startMs = pos > 0 ? now - pos : now;
+      endMs = (dur > 0 && pos > 0 && dur > pos) ? startMs + dur : null;
+
+      // Deduplicate timestamp jitter to avoid spamming updates for the same state
+      final lastStart = _lastDesktopActivity?.timestamps?.start;
+      if (lastStart != null &&
+          _lastDesktopActivity?.details == title &&
+          (lastStart - startMs).abs() < 2500) {
+        startMs = lastStart;
+        if (endMs != null) {
+          endMs = startMs + dur;
+        }
+      }
+    }
 
     _log.i('Anime presence: $title ($stateText)');
 
@@ -127,7 +157,9 @@ class DiscordRpcService {
           smallImage: _appIconUrl,
           smallText: 'ShonenX',
         ),
-        buttons: [RPCButton(label: 'View Anime', url: mediaUrl)],
+        buttons: showButtons
+            ? [RPCButton(label: 'View Anime', url: mediaUrl)]
+            : [],
       ),
       gateway: _gatewayPresence(
         name: title,
@@ -140,8 +172,8 @@ class DiscordRpcService {
         },
         coverUrl: coverUrl,
         largeText: title,
-        buttonLabel: 'View Anime',
-        buttonUrl: mediaUrl,
+        buttonLabel: showButtons ? 'View Anime' : null,
+        buttonUrl: showButtons ? mediaUrl : null,
       ),
     );
   }
@@ -161,7 +193,6 @@ class DiscordRpcService {
     isPlaying: false,
   );
 
-  /// Updates presence for manga reading.
   Future<void> updateMangaPresence({
     required UnifiedMedia manga,
     int? chapterNumber,
@@ -169,22 +200,36 @@ class DiscordRpcService {
     int? currentPage,
     int? totalPages,
     int? totalChapters,
+    bool showEpisodeNumber = true,
+    bool showProgress = true,
+    bool showMediaImage = true,
+    bool showButtons = true,
   }) async {
     _mediaStartMs ??= DateTime.now().millisecondsSinceEpoch;
     _browsingStartMs = null;
 
     final title = manga.title.getPreferedTitle;
     final chTotal = totalChapters != null ? '/$totalChapters' : '';
-    final chLabel = chapterNumber != null
+    final chLabel = (chapterNumber != null && showEpisodeNumber)
         ? 'Chapter $chapterNumber$chTotal'
         : 'Reading';
-    final pageLabel = (currentPage != null && totalPages != null)
+
+    final pageLabel =
+        (currentPage != null && totalPages != null && showProgress)
         ? 'Page $currentPage/$totalPages'
         : null;
-    final stateText = _joinNonEmpty([chLabel, chapterTitle, pageLabel]);
 
-    final coverUrl = manga.cover ?? manga.banner;
-    final mediaUrl = 'https://anilist.co/manga/${manga.id}';
+    final stateParts = <String>[];
+    if (showEpisodeNumber || chapterNumber == null) stateParts.add(chLabel);
+    if (chapterTitle != null) stateParts.add(chapterTitle);
+    if (pageLabel != null) stateParts.add(pageLabel);
+
+    final stateText = _joinNonEmpty(
+      stateParts.isEmpty ? ['Reading'] : stateParts,
+    );
+
+    final coverUrl = showMediaImage ? (manga.cover ?? manga.banner) : null;
+    final mediaUrl = manga.url ?? 'https://anilist.co/manga/${manga.id}';
 
     _log.i('Manga presence: $title ($stateText)');
 
@@ -200,7 +245,9 @@ class DiscordRpcService {
           smallImage: _appIconUrl,
           smallText: 'ShonenX',
         ),
-        buttons: [RPCButton(label: 'View Manga', url: mediaUrl)],
+        buttons: showButtons
+            ? [RPCButton(label: 'View Manga', url: mediaUrl)]
+            : [],
       ),
       gateway: _gatewayPresence(
         name: title,
@@ -210,21 +257,27 @@ class DiscordRpcService {
         timestamps: {'start': _mediaStartMs},
         coverUrl: coverUrl,
         largeText: title,
-        buttonLabel: 'View Manga',
-        buttonUrl: mediaUrl,
+        buttonLabel: showButtons ? 'View Manga' : null,
+        buttonUrl: showButtons ? mediaUrl : null,
       ),
     );
   }
 
   /// Updates presence when viewing media details.
-  Future<void> updateMediaPresence({required UnifiedMedia media}) async {
+  Future<void> updateMediaPresence({
+    required UnifiedMedia media,
+    bool showMediaImage = true,
+    bool showButtons = true,
+  }) async {
     _mediaStartMs = DateTime.now().millisecondsSinceEpoch;
     _browsingStartMs = null;
 
     final title = media.title.getPreferedTitle;
     final typeStr = media.type == MediaType.MANGA ? 'Manga' : 'Anime';
-    final coverUrl = media.cover ?? media.banner;
-    final mediaUrl = 'https://anilist.co/${media.type.id}/${media.id}';
+    final coverUrl = showMediaImage ? (media.cover ?? media.banner) : null;
+    final mediaUrl =
+        media.url ??
+        'https://anilist.co/${media.type.name.toLowerCase()}/${media.id}';
     final stateText = 'Viewing $typeStr Details';
 
     _log.i('Media presence: $title');
@@ -240,7 +293,9 @@ class DiscordRpcService {
           smallImage: _appIconUrl,
           smallText: 'ShonenX',
         ),
-        buttons: [RPCButton(label: 'View $typeStr', url: mediaUrl)],
+        buttons: showButtons
+            ? [RPCButton(label: 'View $typeStr', url: mediaUrl)]
+            : [],
       ),
       gateway: _gatewayPresence(
         name: title,
@@ -250,8 +305,8 @@ class DiscordRpcService {
         timestamps: {'start': _mediaStartMs},
         coverUrl: coverUrl,
         largeText: title,
-        buttonLabel: 'View $typeStr',
-        buttonUrl: mediaUrl,
+        buttonLabel: showButtons ? 'View $typeStr' : null,
+        buttonUrl: showButtons ? mediaUrl : null,
       ),
     );
   }
@@ -331,19 +386,41 @@ class DiscordRpcService {
     required RPCActivity desktop,
     required Future<Map<String, dynamic>> gateway,
   }) async {
-    _lastDesktopActivity = desktop;
-
+    // Deduplicate Desktop IPC updates
     if (isDesktopPlatform && _desktop.isConnected) {
-      try {
-        _desktop.setActivity(desktop);
-      } catch (_) {}
+      if (_lastDesktopActivity?.state != desktop.state ||
+          _lastDesktopActivity?.details != desktop.details ||
+          _lastDesktopActivity?.timestamps?.start !=
+              desktop.timestamps?.start ||
+          _lastDesktopActivity?.timestamps?.end != desktop.timestamps?.end ||
+          _lastDesktopActivity?.assets?.largeImage !=
+              desktop.assets?.largeImage) {
+        _lastDesktopActivity = desktop;
+        try {
+          _desktop.setActivity(desktop);
+        } catch (_) {}
+      }
+    } else {
+      _lastDesktopActivity = desktop;
     }
 
+    // Deduplicate Gateway WebSocket updates
     if (_gateway.isConnected) {
       try {
         final payload = await gateway;
-        _lastGatewayPayload = payload;
-        _gateway.send(payload);
+        final payloadJson = jsonEncode(payload);
+        final lastPayloadJson = _lastGatewayPayload != null
+            ? jsonEncode(_lastGatewayPayload)
+            : null;
+
+        if (payloadJson != lastPayloadJson) {
+          _lastGatewayPayload = payload;
+          _gateway.send(payload);
+        }
+      } catch (_) {}
+    } else {
+      try {
+        _lastGatewayPayload = await gateway;
       } catch (_) {}
     }
   }

@@ -297,7 +297,7 @@ Icon=$ICON_DIR/shonenx.png
 Terminal=false
 Type=Application
 Categories=Network;Entertainment;
-MimeType=x-scheme-handler/aniyomi;x-scheme-handler/tachiyomi;x-scheme-handler/mangayomi;x-scheme-handler/cloudstream;x-scheme-handler/cloudstreamrepo;x-scheme-handler/kotatsu;x-scheme-handler/sora;x-scheme-handler/shonenx;
+MimeType=x-scheme-handler/aniyomi;x-scheme-handler/tachiyomi;x-scheme-handler/mangayomi;x-scheme-handler/cloudstream;x-scheme-handler/cloudstreamrepo;x-scheme-handler/kotatsu;x-scheme-handler/sora;x-scheme-handler/shonenx;x-scheme-handler/mihon;
 EOF
         command -v update-desktop-database >/dev/null 2>&1 && update-desktop-database "$DESKTOP_DIR" || true
         
@@ -310,6 +310,7 @@ EOF
             xdg-mime default shonenx.desktop x-scheme-handler/kotatsu
             xdg-mime default shonenx.desktop x-scheme-handler/sora
             xdg-mime default shonenx.desktop x-scheme-handler/shonenx
+            xdg-mime default shonenx.desktop x-scheme-handler/mihon
         fi
     fi
 

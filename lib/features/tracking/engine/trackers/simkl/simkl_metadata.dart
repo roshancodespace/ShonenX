@@ -305,6 +305,9 @@ mixin SimklMetadata on BaseTracker implements RemoteTracker {
       id: id,
       providerId: id,
       type: type,
+      url: id.isNotEmpty
+          ? 'https://simkl.com/${type.name.toLowerCase()}/$id'
+          : null,
       idMal: idMal,
       externalIds: externalIds,
       title: title,

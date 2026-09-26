@@ -490,6 +490,9 @@ mixin MalMetadata on BaseTracker implements RemoteTracker {
       return UnifiedMedia(
         id: malId ?? '',
         idMal: malId,
+        url: malId != null
+            ? 'https://myanimelist.net/${type.name.toLowerCase()}/$malId'
+            : null,
         externalIds: MediaExternalIds(mal: malId),
         type: type,
         providerId: malId ?? '',

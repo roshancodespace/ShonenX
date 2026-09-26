@@ -608,6 +608,9 @@ mixin KitsuMetadata on BaseTracker implements RemoteTracker {
         id: kitsuId,
         providerId: kitsuId,
         idMal: idMal,
+        url: kitsuId.isNotEmpty
+            ? 'https://kitsu.io/${type.name.toLowerCase()}/$kitsuId'
+            : null,
         externalIds: MediaExternalIds(kitsu: kitsuId, mal: idMal),
         title: title,
         type: type,

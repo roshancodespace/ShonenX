@@ -370,14 +370,6 @@ class DiscordSettingsScreen extends ConsumerWidget {
                             .toggleEnabled(value);
                       },
                     ),
-                    if (rpcState.isEnabled)
-                      SettingsActionTile(
-                        icon: Icons.edit_note_rounded,
-                        title: 'Idle Activity Status',
-                        subtitle:
-                            '${settings.idleActivity} • ${settings.idleDetails}',
-                        onTap: () => _showEditIdleSheet(context, ref, settings),
-                      ),
                   ],
                 ),
 
@@ -433,6 +425,73 @@ class DiscordSettingsScreen extends ConsumerWidget {
                               .read(discordRpcProvider.notifier)
                               .updateCustomSettings(
                                 settings.copyWith(enableReaderPresence: val),
+                              );
+                        },
+                      ),
+                    ],
+                  ),
+
+                if (rpcState.isEnabled)
+                  SettingsSection(
+                    title: 'Presence Customization',
+                    children: [
+                      SettingsActionTile(
+                        icon: Icons.edit_note_rounded,
+                        title: 'Idle Activity Status',
+                        subtitle:
+                            '${settings.idleActivity} • ${settings.idleDetails}',
+                        onTap: () => _showEditIdleSheet(context, ref, settings),
+                      ),
+                      SettingsSwitchTile(
+                        icon: Icons.numbers_rounded,
+                        title: 'Show Episode/Chapter Numbers',
+                        subtitle:
+                            'Include the current episode or chapter number',
+                        value: settings.showEpisodeNumber,
+                        onChanged: (val) {
+                          ref
+                              .read(discordRpcProvider.notifier)
+                              .updateCustomSettings(
+                                settings.copyWith(showEpisodeNumber: val),
+                              );
+                        },
+                      ),
+                      SettingsSwitchTile(
+                        icon: Icons.timer_outlined,
+                        title: 'Show Watch/Read Progress',
+                        subtitle: 'Display elapsed time and page progress',
+                        value: settings.showProgress,
+                        onChanged: (val) {
+                          ref
+                              .read(discordRpcProvider.notifier)
+                              .updateCustomSettings(
+                                settings.copyWith(showProgress: val),
+                              );
+                        },
+                      ),
+                      SettingsSwitchTile(
+                        icon: Icons.image_outlined,
+                        title: 'Show Media Cover Images',
+                        subtitle: 'Display the anime/manga poster in Discord',
+                        value: settings.showMediaImage,
+                        onChanged: (val) {
+                          ref
+                              .read(discordRpcProvider.notifier)
+                              .updateCustomSettings(
+                                settings.copyWith(showMediaImage: val),
+                              );
+                        },
+                      ),
+                      SettingsSwitchTile(
+                        icon: Icons.smart_button_rounded,
+                        title: 'Show View Buttons',
+                        subtitle: 'Add a clickable button to the Anilist page',
+                        value: settings.showButtons,
+                        onChanged: (val) {
+                          ref
+                              .read(discordRpcProvider.notifier)
+                              .updateCustomSettings(
+                                settings.copyWith(showButtons: val),
                               );
                         },
                       ),

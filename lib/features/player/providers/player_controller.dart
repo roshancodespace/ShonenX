@@ -121,6 +121,7 @@ class PlayerController extends Notifier<PlayerState> {
   Timer? _endingSkipCooldownTimer;
 
   bool _isDisposed = false;
+  bool _isNativeSubtitleDisabled = false;
 
   @override
   PlayerState build() {
@@ -857,9 +858,13 @@ class PlayerController extends Notifier<PlayerState> {
     final useCustom = ref.read(subtitlePrefsProvider).useCustomSubtitle;
     try {
       if (useCustom || subtitle?.url.isEmpty == true) {
-        await ref.read(videoEngineProvider).setSubtitle(null);
+        if (!_isNativeSubtitleDisabled) {
+          await ref.read(videoEngineProvider).setSubtitle(null);
+          _isNativeSubtitleDisabled = true;
+        }
       } else {
         await ref.read(videoEngineProvider).setSubtitle(subtitle);
+        _isNativeSubtitleDisabled = false;
       }
     } catch (e) {
       state = state.copyWith(error: 'Failed to switch subtitle: $e');

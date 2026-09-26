@@ -12,7 +12,10 @@ import 'package:shonenx/shared/models/unified_episode.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/shared/widgets/staggered_fade_in.dart';
+import 'package:shonenx/core/network/cf_client.dart';
+import 'package:shonenx/features/discovery/providers/media_preference_provider.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
+import 'package:shonenx/source_engine/source_registry.dart';
 
 import 'package:shonenx/features/history/providers/read_history_provider.dart';
 import 'package:shonenx/features/history/providers/watch_history_provider.dart';
@@ -200,46 +203,110 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
           ),
         );
       },
-      error: (e, _) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.error_outline_rounded,
-                size: 48,
-                color: Theme.of(context).colorScheme.error,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                e.toString().contains('Cloudflare')
-                    ? 'Cloudflare verification failed. Please try turning off "In-app Cloudflare Bypass" in settings to use the proxy, or perform a manual match.'
-                    : 'Failed to fetch episodes: $e',
-                textAlign: TextAlign.center,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton.icon(
-                onPressed: isBusy ? null : () => _triggerRetry(matchArgs),
-                icon: isBusy
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.refresh_rounded),
-                label: Text(isBusy ? 'Fetching...' : 'Retry Search'),
-              ),
-            ],
+      error: (e, _) {
+        final errText = e.toString().toLowerCase();
+        final isCfError = errText.contains('cloudflare') ||
+            errText.contains('403') ||
+            errText.contains('503') ||
+            errText.contains('turnstile') ||
+            errText.contains('challenge');
+
+        return Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  isCfError ? Icons.security_rounded : Icons.error_outline_rounded,
+                  size: 48,
+                  color: isCfError
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).colorScheme.error,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  isCfError
+                      ? 'Cloudflare protection detected for this source. Solve the verification challenge to load content.'
+                      : 'Failed to fetch episodes: $e',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
+                ),
+                const SizedBox(height: 16),
+                if (isCfError) ...[
+                  FilledButton.icon(
+                    onPressed: isBusy
+                        ? null
+                        : () async {
+                            final currentPref = ref
+                                .read(mediaPreferenceProvider(matchArgs))
+                                .value;
+                            final currentSource = currentPref?.sourceInfo;
+                            final allSources = ref
+                                    .read(allAvailableSourcesProvider)
+                                    .value ??
+                                [];
+                            final matchedSource = allSources
+                                .where((s) => s.id == currentSource?.id)
+                                .firstOrNull;
+                            final url = currentSource?.baseUrl ??
+                                matchedSource?.baseUrl;
+
+                            if (url != null && url.isNotEmpty) {
+                              final solved = await CFClient.solveForUrl(
+                                context,
+                                url,
+                                title:
+                                    '${currentSource?.name ?? "Source"} Verification',
+                              );
+                              if (solved && context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      'Verification completed for ${currentSource?.name ?? "source"}! Retrying...',
+                                    ),
+                                  ),
+                                );
+                                _triggerRetry(matchArgs);
+                              }
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'No base URL found to solve Cloudflare.',
+                                  ),
+                                ),
+                              );
+                            }
+                          },
+                    icon: const Icon(Icons.verified_user_rounded),
+                    label: const Text('Solve Cloudflare Verification'),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                ElevatedButton.icon(
+                  onPressed: isBusy ? null : () => _triggerRetry(matchArgs),
+                  icon: isBusy
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.refresh_rounded),
+                  label: Text(isBusy ? 'Fetching...' : 'Retry Search'),
+                ),
+              ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
       data: (state) {
         if (state.episodes.isEmpty) {
+          final hasBaseUrl = state.source.baseUrl != null &&
+              state.source.baseUrl!.isNotEmpty;
           return Center(
             child: Padding(
               padding: const EdgeInsets.all(24.0),
@@ -271,6 +338,30 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
                     ),
                     textAlign: TextAlign.center,
                   ),
+                  if (hasBaseUrl) ...[
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      icon: const Icon(Icons.security_rounded, size: 18),
+                      label: const Text('Solve Cloudflare / Verify Source'),
+                      onPressed: () async {
+                        final solved = await CFClient.solveForUrl(
+                          context,
+                          state.source.baseUrl!,
+                          title: '${state.source.name} Verification',
+                        );
+                        if (solved && context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Verification completed for ${state.source.name}! Retrying...',
+                              ),
+                            ),
+                          );
+                          _triggerRetry(matchArgs);
+                        }
+                      },
+                    ),
+                  ],
                   const SizedBox(height: 20),
                   ElevatedButton.icon(
                     onPressed: isBusy ? null : () => _triggerRetry(matchArgs),

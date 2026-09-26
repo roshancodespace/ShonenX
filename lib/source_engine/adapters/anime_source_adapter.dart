@@ -38,6 +38,13 @@ class AnimeSourceAdapter extends BaseSourceAdapter implements AnimeSource {
           .toList();
     } catch (e, st) {
       methodLog.e('getEpisodes failed', e, st);
+      final err = e.toString().toLowerCase();
+      if (err.contains('cloudflare') ||
+          err.contains('403') ||
+          err.contains('503') ||
+          err.contains('turnstile')) {
+        rethrow;
+      }
       return [];
     }
   }
@@ -128,6 +135,13 @@ class AnimeSourceAdapter extends BaseSourceAdapter implements AnimeSource {
           .toList();
     } catch (e, st) {
       methodLog.e('getSources failed', e, st);
+      final err = e.toString().toLowerCase();
+      if (err.contains('cloudflare') ||
+          err.contains('403') ||
+          err.contains('503') ||
+          err.contains('turnstile')) {
+        rethrow;
+      }
       return [];
     }
   }

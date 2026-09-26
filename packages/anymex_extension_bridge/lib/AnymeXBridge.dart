@@ -227,17 +227,25 @@ class AnymeXRuntimeBridge {
   /// [url]          – origin URL the cookies belong to.
   /// [cookieString] – the raw `Set-Cookie` / `Cookie` header string,
   static Future<void> setCookies(String url, String cookieString) async {
+    final effective = url.startsWith('http://') || url.startsWith('https://')
+        ? url
+        : 'https://$url';
     try {
-      final host = Uri.parse(url).host;
+      final host = Uri.parse(effective).host;
       if (host.isNotEmpty) {
         cookiesMap[host] = cookieString;
+        final parts = host.split('.');
+        if (parts.length > 2) {
+          final parentDomain = parts.sublist(parts.length - 2).join('.');
+          cookiesMap[parentDomain] = cookieString;
+        }
       }
     } catch (_) {}
     if (!isSupportedPlatform) return;
     if (Platform.isAndroid) {
       try {
         await _channel.invokeMethod<void>('setCookies', {
-          'url': url,
+          'url': effective,
           'cookieString': cookieString,
         });
       } catch (e) {
@@ -246,7 +254,7 @@ class AnymeXRuntimeBridge {
     } else {
       try {
         await BridgeDispatcher().invokeMethod('setCookies', {
-          'url': url,
+          'url': effective,
           'cookieString': cookieString,
         });
       } catch (e) {
@@ -260,17 +268,25 @@ class AnymeXRuntimeBridge {
   /// [url]       – origin URL whose domain this UA should apply to.
   /// [userAgent] – the User-Agent string captured from the WebView solve.
   static Future<void> setUserAgent(String url, String userAgent) async {
+    final effective = url.startsWith('http://') || url.startsWith('https://')
+        ? url
+        : 'https://$url';
     try {
-      final host = Uri.parse(url).host;
+      final host = Uri.parse(effective).host;
       if (host.isNotEmpty) {
         userAgentMap[host] = userAgent;
+        final parts = host.split('.');
+        if (parts.length > 2) {
+          final parentDomain = parts.sublist(parts.length - 2).join('.');
+          userAgentMap[parentDomain] = userAgent;
+        }
       }
     } catch (_) {}
     if (!isSupportedPlatform) return;
     if (Platform.isAndroid) {
       try {
         await _channel.invokeMethod<void>('setUserAgent', {
-          'url': url,
+          'url': effective,
           'userAgent': userAgent,
         });
       } catch (e) {
@@ -279,7 +295,7 @@ class AnymeXRuntimeBridge {
     } else {
       try {
         await BridgeDispatcher().invokeMethod('setUserAgent', {
-          'url': url,
+          'url': effective,
           'userAgent': userAgent,
         });
       } catch (e) {

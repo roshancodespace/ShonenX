@@ -219,9 +219,10 @@ class SourceSelectorList extends ConsumerWidget {
                         FutureBuilder<List<SourceSetting>>(
                           future: sourceImpl.getSettingsSchema(),
                           builder: (context, snapshot) {
-                            final hasSettings =
-                                snapshot.hasData && snapshot.data!.isNotEmpty;
-                            if (!hasSettings) {
+                            final schema = snapshot.data ?? const [];
+                            final hasBaseUrl = sourceInfo.baseUrl != null &&
+                                sourceInfo.baseUrl!.isNotEmpty;
+                            if (schema.isEmpty && !hasBaseUrl) {
                               return const SizedBox.shrink();
                             }
 
@@ -236,7 +237,7 @@ class SourceSelectorList extends ConsumerWidget {
                                   backgroundColor: Colors.transparent,
                                   builder: (context) => SourceSettingsSheet(
                                     source: sourceInfo,
-                                    schema: snapshot.data!,
+                                    schema: schema,
                                   ),
                                 ).then((_) {
                                   if (onSettingsClosed != null) {

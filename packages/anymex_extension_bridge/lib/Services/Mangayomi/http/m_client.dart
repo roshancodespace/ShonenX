@@ -141,7 +141,12 @@ class MCookieManager extends InterceptorContract {
         .firstWhereOrNull((e) => e.key.toLowerCase() == 'user-agent')
         ?.value;
     String? finalUA;
-    if (existingUA != null && existingUA.isNotEmpty && !existingUA.startsWith('Dart/')) {
+    if (userAgent != null && userAgent.isNotEmpty) {
+      // Prioritize the User-Agent that passed Cloudflare verification
+      finalUA = userAgent;
+    } else if (existingUA != null &&
+        existingUA.isNotEmpty &&
+        !existingUA.startsWith('Dart/')) {
       finalUA = existingUA;
       AnymeXRuntimeBridge.userAgentMap[host] = existingUA;
       final parts = host.split('.');
@@ -222,13 +227,16 @@ class LoggerInterceptor extends InterceptorContract {
   Future<BaseResponse> interceptResponse({
     required BaseResponse response,
   }) async {
+    final server = response.headers["server"]?.toLowerCase() ?? "";
     final cloudflare = [403, 503].contains(response.statusCode) &&
-        ["cloudflare-nginx", "cloudflare"].contains(response.headers["server"]);
+        (server.contains("cloudflare") ||
+            response.headers.containsKey("cf-ray") ||
+            response.headers.containsKey("cf-cache-status"));
     debugPrint(
       "----- Response -----\n${response.request?.method}: ${response.request?.url}, statusCode: ${response.statusCode} ${cloudflare ? "Failed to bypass Cloudflare" : ""}",
     );
     if (cloudflare) {
-      debugPrint("${response.statusCode} Failed to bypass Cloudflare");
+      debugPrint("⚠️ [Cloudflare Block] ${response.statusCode} Failed to bypass Cloudflare for ${response.request?.url}");
     }
     return response;
   }

@@ -33,6 +33,13 @@ class MangaSourceAdapter extends BaseSourceAdapter implements MangaSource {
           .toList();
     } catch (e, st) {
       methodLog.e('getChapters failed', e, st);
+      final err = e.toString().toLowerCase();
+      if (err.contains('cloudflare') ||
+          err.contains('403') ||
+          err.contains('503') ||
+          err.contains('turnstile')) {
+        rethrow;
+      }
       return [];
     }
   }
@@ -63,6 +70,13 @@ class MangaSourceAdapter extends BaseSourceAdapter implements MangaSource {
       }).toList();
     } catch (e, st) {
       methodLog.e('getPages failed', e, st);
+      final err = e.toString().toLowerCase();
+      if (err.contains('cloudflare') ||
+          err.contains('403') ||
+          err.contains('503') ||
+          err.contains('turnstile')) {
+        rethrow;
+      }
       return [];
     }
   }

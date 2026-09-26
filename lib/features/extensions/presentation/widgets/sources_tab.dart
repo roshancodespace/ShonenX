@@ -81,7 +81,10 @@ class _SourceSettingsButton extends ConsumerWidget {
     return FutureBuilder<List<SourceSetting>>(
       future: sourceImpl.getSettingsSchema(),
       builder: (context, snapshot) {
-        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+        final schema = snapshot.data ?? const [];
+        final hasBaseUrl =
+            sourceInfo.baseUrl != null && sourceInfo.baseUrl!.isNotEmpty;
+        if (schema.isEmpty && !hasBaseUrl) {
           return const SizedBox.shrink();
         }
 
@@ -96,7 +99,7 @@ class _SourceSettingsButton extends ConsumerWidget {
               backgroundColor: Colors.transparent,
               builder: (context) => SourceSettingsSheet(
                 source: sourceInfo,
-                schema: snapshot.data!,
+                schema: schema,
               ),
             );
           },
@@ -1315,7 +1318,10 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
     return FutureBuilder<List<SourceSetting>>(
       future: sourceImpl.getSettingsSchema(),
       builder: (context, snapshot) {
-        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+        final schema = snapshot.data ?? const [];
+        final hasBaseUrl =
+            sourceInfo.baseUrl != null && sourceInfo.baseUrl!.isNotEmpty;
+        if (schema.isEmpty && !hasBaseUrl) {
           return const SizedBox.shrink();
         }
 
@@ -1328,7 +1334,7 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
               backgroundColor: Colors.transparent,
               builder: (context) => SourceSettingsSheet(
                 source: sourceInfo,
-                schema: snapshot.data!,
+                schema: schema,
               ),
             );
           },

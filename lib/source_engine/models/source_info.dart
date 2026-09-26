@@ -34,12 +34,35 @@ class SourceInfo {
   @override
   int get hashCode => Object.hash(id, type, mediaType);
 
+  SourceInfo copyWith({
+    String? id,
+    String? name,
+    SourceType? type,
+    MediaType? mediaType,
+    String? iconUrl,
+    String? baseUrl,
+    String? lang,
+    bool? isNsfw,
+  }) {
+    return SourceInfo(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      type: type ?? this.type,
+      mediaType: mediaType ?? this.mediaType,
+      iconUrl: iconUrl ?? this.iconUrl,
+      baseUrl: baseUrl ?? this.baseUrl,
+      lang: lang ?? this.lang,
+      isNsfw: isNsfw ?? this.isNsfw,
+    );
+  }
+
   Map<String, dynamic> toMap() => {
     'id': id,
     'name': name,
     'type': type.name,
     'mediaType': mediaType.name,
     'iconUrl': iconUrl,
+    'baseUrl': baseUrl,
     'lang': lang,
     'isNsfw': isNsfw,
   };
@@ -54,6 +77,7 @@ class SourceInfo {
         orElse: () => MediaType.ANIME,
       ),
       iconUrl: map['iconUrl'],
+      baseUrl: map['baseUrl'],
       lang: map['lang'],
       isNsfw: map['isNsfw'] ?? false,
     );

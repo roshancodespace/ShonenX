@@ -13,6 +13,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:rhttp/rhttp.dart';
 import 'package:shonenx/core/caching/cache_manager.dart';
 import 'package:shonenx/core/caching/domain/cache_entry.dart';
+import 'package:shonenx/core/network/cf_client.dart';
 import 'package:shonenx/core/network/http_adapter.dart';
 import 'package:shonenx/core/network/http_client.dart';
 import 'package:shonenx/core/services/notification_service.dart';
@@ -199,6 +200,7 @@ class AppInit {
       );
 
       await AnymeXRuntimeBridge.checkAndInitialize();
+      await CFClient.instance.init();
 
       final extManager = Get.find<ExtensionManager>();
 

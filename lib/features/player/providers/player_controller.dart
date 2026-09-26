@@ -314,6 +314,30 @@ class PlayerController extends Notifier<PlayerState> {
     }
   }
 
+  // Extracts embedded subtitle tracks from MKV/non-HLS files
+  Future<List<SubtitleTrack>> _extractInternalSubtitles(String url) async {
+    if (url.toLowerCase().contains('.m3u8')) return [];
+    try {
+      final tracks = await extractMkvTracksJson(url);
+      return [
+        for (final track in tracks)
+          if (track['type'] == 'Subtitle' &&
+              (track['trackNumber']?.toString() ?? '').isNotEmpty)
+            SubtitleTrack(
+              url: 'internal:${track['trackNumber']}',
+              language: track['language']?.toString() ?? 'Unknown',
+              label: () {
+                final lang = track['language']?.toString() ?? 'Unknown';
+                final name = track['name']?.toString() ?? '';
+                return name.isNotEmpty ? '$lang - $name' : lang;
+              }(),
+            ),
+      ];
+    } catch (_) {
+      return [];
+    }
+  }
+
   /// Loads a local file for offline playback (no servers, no quality picker).
   Future<void> _loadOfflineData(PlayerModeOffline mode) async {
     ref.read(videoEngineProvider).pause();
@@ -338,32 +362,7 @@ class PlayerController extends Notifier<PlayerState> {
         subtitles: [],
       );
 
-      final List<SubtitleTrack> internalSubtitles = [];
-      if (!mode.filePath.toLowerCase().contains('.m3u8')) {
-        try {
-          final tracks = await extractMkvTracksJson(mode.filePath);
-          for (final track in tracks) {
-            if (track['type'] == 'Subtitle') {
-              final trackNum = track['trackNumber']?.toString() ?? '';
-              final lang = track['language']?.toString() ?? 'Unknown';
-              final name = track['name']?.toString() ?? '';
-              final label = name.isNotEmpty ? '$lang - $name' : lang;
-
-              if (trackNum.isNotEmpty) {
-                internalSubtitles.add(
-                  SubtitleTrack(
-                    url: 'internal:$trackNum',
-                    language: lang,
-                    label: label,
-                  ),
-                );
-              }
-            }
-          }
-        } catch (e) {
-          // Ignore MKV extraction errors for offline data
-        }
-      }
+      final internalSubtitles = await _extractInternalSubtitles(mode.filePath);
 
       final subtitles = [SubtitleTrack.none, ...internalSubtitles];
       final activeSubtitle = _resolver.resolveSubtitle(subtitles);
@@ -456,11 +455,7 @@ class PlayerController extends Notifier<PlayerState> {
           subtitle: SubtitleTrack.none,
           startAt: startPosition,
           episode: episode,
-        ).then((_) {
-          // Update Discord Rich Presence
-          _updateDiscordRpc();
-          _fetchSkipsIfNeeded();
-        }),
+        ).then((_) => _updateDiscordRpc()),
       );
 
       // Background resolve qualities (M3U8 parsing)
@@ -487,31 +482,10 @@ class PlayerController extends Notifier<PlayerState> {
       }
 
       // If no external subtitles were found, try extracting internal tracks
-      if (labelledSubtitles.isEmpty &&
-          !activeStream.url.toLowerCase().contains('.m3u8')) {
-        try {
-          final tracks = await extractMkvTracksJson(activeStream.url);
-          for (final track in tracks) {
-            if (track['type'] == 'Subtitle') {
-              final trackNum = track['trackNumber']?.toString() ?? '';
-              final lang = track['language']?.toString() ?? 'Unknown';
-              final name = track['name']?.toString() ?? '';
-              final label = name.isNotEmpty ? '$lang - $name' : lang;
-
-              if (trackNum.isNotEmpty) {
-                labelledSubtitles.add(
-                  SubtitleTrack(
-                    url: 'internal:$trackNum',
-                    language: lang,
-                    label: label,
-                  ),
-                );
-              }
-            }
-          }
-        } catch (e) {
-          // Ignore MKV extraction errors
-        }
+      if (labelledSubtitles.isEmpty) {
+        labelledSubtitles.addAll(
+          await _extractInternalSubtitles(activeStream.url),
+        );
       }
 
       final subtitles = [SubtitleTrack.none, ...labelledSubtitles];
@@ -555,8 +529,6 @@ class PlayerController extends Notifier<PlayerState> {
     }
   }
 
-  /// Formats a descriptive label for a subtitle track using server name,
-  /// non-default quality, and provider-specific details (avoiding raw 'Auto'/'Default').
   String? _resolveSubtitleLabel(
     SubtitleTrack sub,
     VideoStream stream,
@@ -565,44 +537,30 @@ class PlayerController extends Notifier<PlayerState> {
     final serverName = server?.name.trim();
     final originalLabel = sub.label?.trim();
     final quality = stream.quality.trim();
+    final serverLower = serverName?.toLowerCase() ?? '';
+    final hasValidServer =
+        serverName != null &&
+        serverLower.isNotEmpty &&
+        serverLower != 'default' &&
+        serverLower != 'auto';
     final hasQuality = quality.isNotEmpty && quality.toLowerCase() != 'auto';
 
     final parts = <String>[];
 
-    // 1. Server name (e.g. "HD-1", "HD-2", "ZokoAnime")
-    if (serverName != null &&
-        serverName.isNotEmpty &&
-        serverName.toLowerCase() != 'default' &&
-        serverName.toLowerCase() != 'auto') {
-      parts.add(serverName);
-    }
+    if (hasValidServer) parts.add(serverName);
+    if (hasQuality) parts.add(quality);
 
-    // 2. Specific non-auto stream quality if present (e.g. "1080p")
-    if (hasQuality) {
-      parts.add(quality);
-    }
-
-    // 3. Provider-specific subtitle label if present and non-redundant
     if (originalLabel != null &&
         originalLabel.isNotEmpty &&
         originalLabel.toLowerCase() != 'auto' &&
         originalLabel.toLowerCase() != 'default' &&
         originalLabel.toLowerCase() != sub.language.toLowerCase() &&
-        (serverName == null ||
-            !originalLabel.toLowerCase().contains(serverName.toLowerCase()))) {
+        (!hasValidServer ||
+            !originalLabel.toLowerCase().contains(serverLower))) {
       parts.add(originalLabel);
     }
 
-    if (parts.isEmpty) {
-      if (serverName != null &&
-          serverName.isNotEmpty &&
-          serverName.toLowerCase() != 'default' &&
-          serverName.toLowerCase() != 'auto') {
-        return serverName;
-      }
-      return null;
-    }
-
+    if (parts.isEmpty) return null;
     return parts.join(' • ');
   }
 

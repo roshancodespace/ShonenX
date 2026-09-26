@@ -50,12 +50,10 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
 
   static const _controlsAutoHideDuration = Duration(seconds: 3);
 
-  /// Display title: either the anime title or the local file name.
   String get _mediaTitle {
-    if (widget.mode is PlayerModeOnline) {
-      return (widget.mode as PlayerModeOnline).media.title.getPreferedTitle;
-    }
-    return (widget.mode as PlayerModeOffline).title ?? 'Local Media';
+    final mode = widget.mode;
+    if (mode is PlayerModeOnline) return mode.media.title.getPreferedTitle;
+    return (mode as PlayerModeOffline).title ?? 'Local Media';
   }
 
   @override
@@ -155,7 +153,6 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
 
   void _showLockedIconTemporarily() {
     if (!_lockControls) return;
-    _lockedIconTimer?.cancel();
     if (!_showLockedIcon && mounted) setState(() => _showLockedIcon = true);
     _startLockedIconTimer();
   }
@@ -262,31 +259,25 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
           height: double.infinity,
           child: Material(
             color: Theme.of(context).colorScheme.surface,
-            child: Column(
-              children: [
-                Expanded(
-                  child: Consumer(
-                    builder: (context, ref, child) {
-                      final currentEpisode = ref.watch(
-                        playerControllerProvider.select((s) => s.activeEpisode),
-                      );
-                      if (currentEpisode == null) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-                      return EpisodeListPanel(
-                        media: (widget.mode as PlayerModeOnline).media,
-                        currentEpisodeNumber: currentEpisode.number,
-                        onEpisodeTap: (episode, sourceInfo) {
-                          Navigator.of(context).pop();
-                          ref
-                              .read(playerControllerProvider.notifier)
-                              .loadEpisode(episode);
-                        },
-                      );
-                    },
-                  ),
-                ),
-              ],
+            child: Consumer(
+              builder: (context, ref, child) {
+                final currentEpisode = ref.watch(
+                  playerControllerProvider.select((s) => s.activeEpisode),
+                );
+                if (currentEpisode == null) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                return EpisodeListPanel(
+                  media: (widget.mode as PlayerModeOnline).media,
+                  currentEpisodeNumber: currentEpisode.number,
+                  onEpisodeTap: (episode, sourceInfo) {
+                    Navigator.of(context).pop();
+                    ref
+                        .read(playerControllerProvider.notifier)
+                        .loadEpisode(episode);
+                  },
+                );
+              },
             ),
           ),
         ),
@@ -360,34 +351,30 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
 
   Widget _buildLockedOverlay() {
     return Positioned.fill(
-      child: Stack(
-        children: [
-          AnimatedOpacity(
-            opacity: _showLockedIcon ? 1.0 : 0.0,
-            duration: const Duration(milliseconds: 250),
-            child: IgnorePointer(
-              ignoring: !_showLockedIcon,
-              child: SafeArea(
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Padding(
-                    padding: const EdgeInsets.only(left: 32),
-                    child: IconButton.filled(
-                      style: IconButton.styleFrom(
-                        backgroundColor: Colors.black.withValues(alpha: 0.55),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.all(12),
-                      ),
-                      icon: const Icon(Icons.lock_outline_rounded, size: 26),
-                      tooltip: 'Unlock',
-                      onPressed: _unlockScreen,
-                    ),
+      child: AnimatedOpacity(
+        opacity: _showLockedIcon ? 1.0 : 0.0,
+        duration: const Duration(milliseconds: 250),
+        child: IgnorePointer(
+          ignoring: !_showLockedIcon,
+          child: SafeArea(
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Padding(
+                padding: const EdgeInsets.only(left: 32),
+                child: IconButton.filled(
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.black.withValues(alpha: 0.55),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.all(12),
                   ),
+                  icon: const Icon(Icons.lock_outline_rounded, size: 26),
+                  tooltip: 'Unlock',
+                  onPressed: _unlockScreen,
                 ),
               ),
             ),
           ),
-        ],
+        ),
       ),
     );
   }

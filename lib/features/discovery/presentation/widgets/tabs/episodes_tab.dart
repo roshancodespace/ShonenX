@@ -19,6 +19,7 @@ import 'package:shonenx/features/discovery/providers/episodes_provider.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/shared/widgets/app_focus_hover.dart';
 import 'package:shonenx/shared/widgets/source_selector_list.dart';
+import 'package:shonenx/shared/widgets/smart_image.dart';
 import 'package:shonenx/shared/widgets/staggered_fade_in.dart';
 import 'package:shonenx/core/widgets/cloudflare_webview.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
@@ -263,6 +264,8 @@ class _EpisodesHeader extends ConsumerWidget {
         matchedMediaState.value?.sourceInfo ?? sourceState?.sourceInfo;
     final sourceName = activeSourceInfo?.name ?? 'Unknown';
 
+    final String? sourceIconUrl = activeSourceInfo?.iconUrl;
+
     final iconWidget = Container(
       width: 36,
       height: 36,
@@ -270,11 +273,28 @@ class _EpisodesHeader extends ConsumerWidget {
         shape: BoxShape.circle,
         color: hasError ? cs.errorContainer : cs.secondaryContainer,
       ),
-      child: Icon(
-        hasError ? Icons.error_outline_rounded : Icons.auto_awesome_rounded,
-        size: 18,
-        color: hasError ? cs.onErrorContainer : cs.onSecondaryContainer,
-      ),
+      clipBehavior: Clip.antiAlias,
+      child: hasError
+          ? Icon(
+              Icons.error_outline_rounded,
+              size: 18,
+              color: cs.onErrorContainer,
+            )
+          : (sourceIconUrl != null && sourceIconUrl.isNotEmpty)
+          ? SmartImage(
+              imageUrl: sourceIconUrl,
+              fit: BoxFit.cover,
+              errorWidget: (context, url, error) => Icon(
+                Icons.auto_awesome_rounded,
+                size: 18,
+                color: cs.onSecondaryContainer,
+              ),
+            )
+          : Icon(
+              Icons.auto_awesome_rounded,
+              size: 18,
+              color: cs.onSecondaryContainer,
+            ),
     );
 
     final titleWidget = Column(

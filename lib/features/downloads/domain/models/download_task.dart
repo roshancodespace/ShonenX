@@ -51,6 +51,7 @@ class DownloadTask {
   DownloadStatus status = DownloadStatus.pending;
 
   bool isM3u8 = false;
+  bool requiresHlsServer = false;
 
   double progress = 0.0;
   int totalBytes = 0;

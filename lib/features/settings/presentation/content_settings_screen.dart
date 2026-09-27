@@ -117,7 +117,7 @@ class ContentSettingsScreen extends ConsumerWidget {
                   activeProvider: activeProvider,
                   icon: Icons.auto_mode_rounded,
                   title: 'Auto (Recommended)',
-                  subtitle: 'Tenrai → Kitsu → AniZip (Thumbnails & metadata)',
+                  subtitle: 'Anizip → Tenrai → Kitsu',
                   showDivider: true,
                   onTap: () {
                     ref

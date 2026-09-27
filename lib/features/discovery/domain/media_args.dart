@@ -1,27 +1,11 @@
 import 'package:shonenx/shared/models/unified_media.dart';
 
-/// Context arguments used to identify media when resolving preferences,
-/// matching across sources, and fetching episodes.
-///
-/// - Always prefer [MediaArgs.fromMedia] when a [UnifiedMedia] instance is available.
-/// - For title-only contexts (e.g. history entries, notifications), use [MediaArgs.fromTitle].
 class MediaArgs {
-  /// The primary title used for preferences lookup and search-based matching.
   final String mediaTitle;
-
-  /// Media type (Anime, Manga, etc.).
   final MediaType type;
-
-  /// Non-null only if the media originated directly from an extension source.
   final String? sourceId;
-
-  /// The content ID on the extension source (e.g. "/category/naruto")
-  /// when originating directly from a source. Null for AniList/catalog media.
   final String? providerId;
-
-  /// Canonical catalog ID (e.g. AniList ID).
   final String? mediaId;
-
   final String? mediaIdMal;
   final String? mediaTitleRomaji;
   final String? mediaTitleNative;
@@ -38,6 +22,30 @@ class MediaArgs {
     this.mediaTitleNative,
     this.externalIds,
   });
+
+  MediaArgs copyWith({
+    String? mediaTitle,
+    MediaType? type,
+    String? sourceId,
+    String? providerId,
+    String? mediaId,
+    String? mediaIdMal,
+    String? mediaTitleRomaji,
+    String? mediaTitleNative,
+    MediaExternalIds? externalIds,
+  }) {
+    return MediaArgs(
+      mediaTitle: mediaTitle ?? this.mediaTitle,
+      type: type ?? this.type,
+      sourceId: sourceId ?? this.sourceId,
+      providerId: providerId ?? this.providerId,
+      mediaId: mediaId ?? this.mediaId,
+      mediaIdMal: mediaIdMal ?? this.mediaIdMal,
+      mediaTitleRomaji: mediaTitleRomaji ?? this.mediaTitleRomaji,
+      mediaTitleNative: mediaTitleNative ?? this.mediaTitleNative,
+      externalIds: externalIds ?? this.externalIds,
+    );
+  }
 
   /// Recommended factory when a [UnifiedMedia] is available.
   factory MediaArgs.fromMedia(UnifiedMedia media) {

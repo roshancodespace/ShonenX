@@ -98,6 +98,7 @@ android/app/build/
 *.zip
 *.flatpak
 *.AppImage
+*.patch
 .flatpak-builder/
 
 node_modules

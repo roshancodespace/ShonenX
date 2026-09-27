@@ -6,7 +6,6 @@ import 'package:shonenx/features/discovery/domain/media_args.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/episodes_panel/episode_tiles.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/sheets/batch_download/batch_download_sheet.dart';
 import 'package:shonenx/features/discovery/providers/episodes_provider.dart';
-import 'package:shonenx/features/discovery/providers/matched_media_provider.dart';
 import 'package:shonenx/features/reader/providers/preferred_scanlator_provider.dart';
 import 'package:shonenx/shared/models/unified_episode.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
@@ -102,30 +101,19 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
     super.dispose();
   }
 
-  void _triggerRetry(MediaArgs matchArgs) {
+  void _triggerRetry(MediaArgs matchArgs) async {
     if (_isRetrying) return;
     setState(() {
       _isRetrying = true;
     });
-    ref.invalidate(matchedMediaProvider(matchArgs));
-    ref.invalidate(episodesListProvider(matchArgs));
-    if (widget.media.sourceId != null) {
-      ref.invalidate(
-        sourceEpisodesProvider((
-          providerId: widget.media.id,
-          sourceId: widget.media.sourceId!,
-          sourceType: null,
-          type: widget.media.type,
-        )),
-      );
+
+    await ref.read(episodesListProvider(matchArgs).notifier).refreshEpisodes();
+
+    if (mounted) {
+      setState(() {
+        _isRetrying = false;
+      });
     }
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) {
-        setState(() {
-          _isRetrying = false;
-        });
-      }
-    });
   }
 
   @override
@@ -560,6 +548,13 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
                               color: cs.primary,
                               tooltip: 'Batch Download',
                             ),
+                          IconButton(
+                            onPressed: () => _triggerRetry(matchArgs),
+                            icon: const Icon(Icons.refresh_rounded),
+                            iconSize: 20,
+                            color: cs.primary,
+                            tooltip: 'Refresh Episodes',
+                          ),
                           _ViewModeToggle(
                             current: viewMode,
                             onChanged: (m) => ref
@@ -599,17 +594,22 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
             Expanded(
               child: StaggeredFadeIn(
                 index: staggerIndex++,
-                child: _buildEpisodeView(
-                  context,
-                  episodes: finalEpisodes,
-                  source: state.source,
-                  viewMode: viewMode,
-                  effectiveWatchedProgress: effectiveWatchedProgress,
-                  historyWatchedSet: historyWatchedSet,
-                  currentIndex: finalEpisodes.indexWhere(
-                    (ep) => ep.number == effectiveCurrentEpisodeNumber,
+                child: RefreshIndicator(
+                  onRefresh: () async {
+                    _triggerRetry(MediaArgs.fromMedia(widget.media));
+                  },
+                  child: _buildEpisodeView(
+                    context,
+                    episodes: finalEpisodes,
+                    source: state.source,
+                    viewMode: viewMode,
+                    effectiveWatchedProgress: effectiveWatchedProgress,
+                    historyWatchedSet: historyWatchedSet,
+                    currentIndex: finalEpisodes.indexWhere(
+                      (ep) => ep.number == effectiveCurrentEpisodeNumber,
+                    ),
+                    currentEpisodeNumber: effectiveCurrentEpisodeNumber,
                   ),
-                  currentEpisodeNumber: effectiveCurrentEpisodeNumber,
                 ),
               ),
             ),
@@ -766,71 +766,90 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
 
         final fallbackThumbnailUrl = widget.media.banner ?? widget.media.cover;
 
+        Widget buildItem(BuildContext context, int i) {
+          final ep = episodes[i];
+          final isCurrent = currentEpisodeNumber == ep.number;
+          final isWatched =
+              effectiveWatchedProgress >= ep.number ||
+              historyWatchedSet.contains(ep.number);
+          final actions =
+              widget.episodeActionsBuilder?.call(
+                context,
+                ep,
+                isCurrent,
+                isWatched,
+              ) ??
+              const [];
+
+          switch (viewMode) {
+            case EpisodeViewMode.classic:
+              return EpisodeClassicTile(
+                episode: ep,
+                mediaType: widget.media.type,
+                isCurrent: isCurrent,
+                isWatched: isWatched,
+                imageFadeDirection: widget.imageFadeDirection,
+                imageFadeStops: widget.imageFadeStops,
+                imageOpacity: widget.imageOpacity,
+                imageBlurSigma: widget.imageBlurSigma,
+                isFiller: ep.isFiller,
+                fallbackThumbnailUrl: fallbackThumbnailUrl,
+                actions: actions,
+                onTap: () => widget.onEpisodeTap(ep, source),
+              );
+            case EpisodeViewMode.compact:
+              return EpisodeCompactTile(
+                episode: ep,
+                mediaType: widget.media.type,
+                isCurrent: isCurrent,
+                isWatched: isWatched,
+                isFiller: ep.isFiller,
+                fallbackThumbnailUrl: fallbackThumbnailUrl,
+                actions: actions,
+                onTap: () => widget.onEpisodeTap(ep, source),
+              );
+            case EpisodeViewMode.cover:
+              return EpisodeCoverTile(
+                episode: ep,
+                mediaType: widget.media.type,
+                isCurrent: isCurrent,
+                isWatched: isWatched,
+                isFiller: ep.isFiller,
+                fallbackThumbnailUrl: fallbackThumbnailUrl,
+                actions: actions,
+                onTap: () => widget.onEpisodeTap(ep, source),
+              );
+            case EpisodeViewMode.grid:
+              return EpisodeGridTile(
+                episode: ep,
+                mediaType: widget.media.type,
+                isCurrent: isCurrent,
+                isWatched: isWatched,
+                isFiller: ep.isFiller,
+                fallbackThumbnailUrl: fallbackThumbnailUrl,
+                actions: actions,
+                onTap: () => widget.onEpisodeTap(ep, source),
+              );
+            case EpisodeViewMode.box:
+              return EpisodeBoxTile(
+                episode: ep,
+                mediaType: widget.media.type,
+                isCurrent: isCurrent,
+                isFiller: ep.isFiller,
+                isWatched: isWatched,
+                fallbackThumbnailUrl: fallbackThumbnailUrl,
+                onTap: () => widget.onEpisodeTap(ep, source),
+              );
+          }
+        }
+
         switch (viewMode) {
           case EpisodeViewMode.classic:
-            return ListView.builder(
-              controller: widget.useScrollController ? _scrollController : null,
-              itemCount: episodes.length,
-              itemBuilder: (context, i) {
-                final ep = episodes[i];
-                final isCurrent = currentEpisodeNumber == ep.number;
-                final isWatched =
-                    effectiveWatchedProgress >= ep.number ||
-                    historyWatchedSet.contains(ep.number);
-
-                return EpisodeClassicTile(
-                  episode: ep,
-                  mediaType: widget.media.type,
-                  isCurrent: isCurrent,
-                  isWatched: isWatched,
-                  imageFadeDirection: widget.imageFadeDirection,
-                  imageFadeStops: widget.imageFadeStops,
-                  imageOpacity: widget.imageOpacity,
-                  imageBlurSigma: widget.imageBlurSigma,
-                  isFiller: ep.isFiller,
-                  fallbackThumbnailUrl: fallbackThumbnailUrl,
-                  actions:
-                      widget.episodeActionsBuilder?.call(
-                        context,
-                        ep,
-                        isCurrent,
-                        isWatched,
-                      ) ??
-                      const [],
-                  onTap: () => widget.onEpisodeTap(ep, source),
-                );
-              },
-            );
-
           case EpisodeViewMode.compact:
             return ListView.builder(
               controller: widget.useScrollController ? _scrollController : null,
               itemCount: episodes.length,
-              itemBuilder: (context, i) {
-                final ep = episodes[i];
-                final isCurrent = currentEpisodeNumber == ep.number;
-                final isWatched =
-                    effectiveWatchedProgress >= ep.number ||
-                    historyWatchedSet.contains(ep.number);
-
-                return EpisodeCompactTile(
-                  episode: ep,
-                  mediaType: widget.media.type,
-                  isCurrent: isCurrent,
-                  isWatched: isWatched,
-                  isFiller: ep.isFiller,
-                  fallbackThumbnailUrl: fallbackThumbnailUrl,
-                  actions:
-                      widget.episodeActionsBuilder?.call(
-                        context,
-                        ep,
-                        isCurrent,
-                        isWatched,
-                      ) ??
-                      const [],
-                  onTap: () => widget.onEpisodeTap(ep, source),
-                );
-              },
+              itemBuilder: buildItem,
             );
 
           case EpisodeViewMode.cover:
@@ -862,31 +881,7 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
                 mainAxisExtent: 90.0,
               ),
               itemCount: episodes.length,
-              itemBuilder: (context, i) {
-                final ep = episodes[i];
-                final isCurrent = currentEpisodeNumber == ep.number;
-                final isWatched =
-                    effectiveWatchedProgress >= ep.number ||
-                    historyWatchedSet.contains(ep.number);
-
-                return EpisodeCoverTile(
-                  episode: ep,
-                  mediaType: widget.media.type,
-                  isCurrent: isCurrent,
-                  isWatched: isWatched,
-                  isFiller: ep.isFiller,
-                  fallbackThumbnailUrl: fallbackThumbnailUrl,
-                  actions:
-                      widget.episodeActionsBuilder?.call(
-                        context,
-                        ep,
-                        isCurrent,
-                        isWatched,
-                      ) ??
-                      const [],
-                  onTap: () => widget.onEpisodeTap(ep, source),
-                );
-              },
+              itemBuilder: buildItem,
             );
 
           case EpisodeViewMode.grid:
@@ -918,31 +913,7 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
                 childAspectRatio: 16 / 10,
               ),
               itemCount: episodes.length,
-              itemBuilder: (context, i) {
-                final ep = episodes[i];
-                final isCurrent = currentEpisodeNumber == ep.number;
-                final isWatched =
-                    effectiveWatchedProgress >= ep.number ||
-                    historyWatchedSet.contains(ep.number);
-
-                return EpisodeGridTile(
-                  episode: ep,
-                  mediaType: widget.media.type,
-                  isCurrent: isCurrent,
-                  isWatched: isWatched,
-                  isFiller: ep.isFiller,
-                  fallbackThumbnailUrl: fallbackThumbnailUrl,
-                  actions:
-                      widget.episodeActionsBuilder?.call(
-                        context,
-                        ep,
-                        isCurrent,
-                        isWatched,
-                      ) ??
-                      const [],
-                  onTap: () => widget.onEpisodeTap(ep, source),
-                );
-              },
+              itemBuilder: buildItem,
             );
 
           case EpisodeViewMode.box:
@@ -972,23 +943,7 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
                 childAspectRatio: 1,
               ),
               itemCount: episodes.length,
-              itemBuilder: (context, i) {
-                final ep = episodes[i];
-                final isCurrent = currentEpisodeNumber == ep.number;
-                final isWatched =
-                    effectiveWatchedProgress >= ep.number ||
-                    historyWatchedSet.contains(ep.number);
-
-                return EpisodeBoxTile(
-                  episode: ep,
-                  mediaType: widget.media.type,
-                  isCurrent: isCurrent,
-                  isFiller: ep.isFiller,
-                  isWatched: isWatched,
-                  fallbackThumbnailUrl: fallbackThumbnailUrl,
-                  onTap: () => widget.onEpisodeTap(ep, source),
-                );
-              },
+              itemBuilder: buildItem,
             );
         }
       },
@@ -1003,92 +958,27 @@ class _ViewModeToggle extends ConsumerWidget {
   const _ViewModeToggle({required this.current, required this.onChanged});
 
   static IconData _iconForMode(EpisodeViewMode mode) => switch (mode) {
-    EpisodeViewMode.classic => Icons.view_agenda_outlined,
-    EpisodeViewMode.grid => Icons.grid_view_outlined,
-    EpisodeViewMode.box => Icons.tag_outlined,
+    EpisodeViewMode.classic => Icons.view_list_rounded,
+    EpisodeViewMode.grid => Icons.grid_view_rounded,
+    EpisodeViewMode.box => Icons.apps_rounded,
     EpisodeViewMode.compact => Icons.format_list_bulleted_rounded,
-    EpisodeViewMode.cover => Icons.video_library_outlined,
+    EpisodeViewMode.cover => Icons.photo_library_rounded,
   };
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cs = Theme.of(context).colorScheme;
-    final radius = BorderRadius.circular(GlobalUI.uiRoundness);
 
-    return Theme(
-      data: Theme.of(context).copyWith(
-        hoverColor: Colors.transparent,
-        highlightColor: Colors.transparent,
-        splashColor: Colors.transparent,
-      ),
-      child: PopupMenuButton<EpisodeViewMode>(
-        initialValue: current,
-        onSelected: onChanged,
-        tooltip: 'Episode View Mode',
-        shape: RoundedRectangleBorder(borderRadius: radius),
-        color: cs.surfaceContainerHigh,
-        position: PopupMenuPosition.under,
-        itemBuilder: (context) {
-          return EpisodeViewMode.values.map((mode) {
-            final isSelected = mode == current;
-            return PopupMenuItem<EpisodeViewMode>(
-              value: mode,
-              child: Row(
-                children: [
-                  Icon(
-                    _iconForMode(mode),
-                    size: 20,
-                    color: isSelected ? cs.primary : cs.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    mode.displayName,
-                    style: TextStyle(
-                      color: isSelected ? cs.primary : cs.onSurface,
-                      fontWeight: isSelected
-                          ? FontWeight.w700
-                          : FontWeight.w500,
-                      fontSize: 14,
-                    ),
-                  ),
-                  if (isSelected) ...[
-                    const Spacer(),
-                    Icon(Icons.check_rounded, size: 18, color: cs.primary),
-                  ],
-                ],
-              ),
-            );
-          }).toList();
-        },
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            color: cs.surfaceContainerHighest.withValues(alpha: 0.6),
-            borderRadius: radius,
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(_iconForMode(current), size: 16, color: cs.primary),
-              const SizedBox(width: 6),
-              Text(
-                current.displayName,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: cs.onSurface,
-                ),
-              ),
-              const SizedBox(width: 4),
-              Icon(
-                Icons.expand_more_rounded,
-                size: 16,
-                color: cs.onSurfaceVariant,
-              ),
-            ],
-          ),
-        ),
-      ),
+    return IconButton(
+      onPressed: () {
+        final values = EpisodeViewMode.values;
+        final nextIndex = (values.indexOf(current) + 1) % values.length;
+        onChanged(values[nextIndex]);
+      },
+      tooltip: 'Episode View Mode',
+      icon: Icon(_iconForMode(current)),
+      iconSize: 20,
+      color: cs.primary,
     );
   }
 }

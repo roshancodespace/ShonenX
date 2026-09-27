@@ -176,6 +176,7 @@ abstract class BaseSourceAdapter implements MediaSource {
     List<String> sort = const ['SEARCH_MATCH'],
     List<String> genres = const [],
     List<String> tags = const [],
+    bool forceRefresh = false,
   }) async {
     final methodLog = log.child('search');
     try {

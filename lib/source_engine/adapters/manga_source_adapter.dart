@@ -13,7 +13,10 @@ class MangaSourceAdapter extends BaseSourceAdapter implements MangaSource {
   final log = AppLogger.scope(MangaSourceAdapter);
 
   @override
-  Future<List<UnifiedChapter>> getChapters(String mangaId) async {
+  Future<List<UnifiedChapter>> getChapters(
+    String mangaId, {
+    bool forceRefresh = false,
+  }) async {
     final methodLog = log.child('getChapters');
     try {
       final detail = await getRawDetail(mangaId);

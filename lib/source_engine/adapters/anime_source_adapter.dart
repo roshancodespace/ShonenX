@@ -15,7 +15,10 @@ class AnimeSourceAdapter extends BaseSourceAdapter implements AnimeSource {
   final log = AppLogger.scope(AnimeSourceAdapter);
 
   @override
-  Future<List<UnifiedEpisode>> getEpisodes(String animeId) async {
+  Future<List<UnifiedEpisode>> getEpisodes(
+    String animeId, {
+    bool forceRefresh = false,
+  }) async {
     final methodLog = log.child('getEpisodes');
     try {
       final detail = await getRawDetail(animeId);

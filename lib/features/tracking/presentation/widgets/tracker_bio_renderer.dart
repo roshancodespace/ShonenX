@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:shonenx/features/tracking/utils/tracker_bio_parser.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shonenx/shared/widgets/smart_image.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class TrackerBioRenderer extends StatelessWidget {
@@ -30,7 +30,7 @@ class TrackerBioRenderer extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 8.0),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(12),
-            child: CachedNetworkImage(
+            child: SmartImage(
               imageUrl: uri.toString(),
               fit: BoxFit.cover,
               errorWidget: (context, url, error) => const SizedBox.shrink(),

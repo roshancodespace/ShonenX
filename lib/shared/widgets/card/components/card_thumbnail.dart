@@ -1,7 +1,5 @@
-import 'dart:convert';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shonenx/shared/widgets/smart_image.dart';
 import 'package:flutter/material.dart';
-import 'package:shonenx/core/utils/image_headers.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 
@@ -74,39 +72,17 @@ class CardThumbnail extends StatelessWidget {
     if ((media.cover ?? media.banner) != null &&
         (media.cover ?? media.banner)!.isNotEmpty) {
       final rawUrl = (media.cover ?? media.banner)!.trim();
-      Widget img;
-
-      if (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')) {
-        img = CachedNetworkImage(
-          imageUrl: rawUrl,
-          httpHeaders: decodeUrlHeaders(rawUrl),
-          width: finalW,
-          height: finalH,
-          fit: BoxFit.cover,
-          alignment: Alignment.center,
-          fadeInDuration: const Duration(milliseconds: 220),
-          placeholderFadeInDuration: const Duration(milliseconds: 120),
-          placeholder: (_, __) => _buildPlaceholder(cs, finalW, finalH),
-          errorWidget: (_, __, ___) => _buildFallback(cs, finalW, finalH),
-        );
-      } else {
-        try {
-          final base64String = rawUrl.contains(',')
-              ? rawUrl.split(',').last.trim()
-              : rawUrl;
-          img = Image.memory(
-            base64Decode(base64String),
-            width: finalW,
-            height: finalH,
-            fit: BoxFit.cover,
-            alignment: Alignment.center,
-            gaplessPlayback: true,
-            errorBuilder: (_, __, ___) => _buildFallback(cs, finalW, finalH),
-          );
-        } catch (_) {
-          img = _buildFallback(cs, finalW, finalH);
-        }
-      }
+      Widget img = SmartImage(
+        imageUrl: rawUrl,
+        width: finalW,
+        height: finalH,
+        fit: BoxFit.cover,
+        alignment: Alignment.center,
+        fadeInDuration: const Duration(milliseconds: 220),
+        placeholderFadeInDuration: const Duration(milliseconds: 120),
+        placeholder: (_, __) => _buildPlaceholder(cs, finalW, finalH),
+        errorWidget: (_, __, ___) => _buildFallback(cs, finalW, finalH),
+      );
 
       if (heroTag != null && heroTag!.isNotEmpty) {
         img = Hero(tag: heroTag!, child: img);

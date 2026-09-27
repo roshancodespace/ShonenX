@@ -1,7 +1,6 @@
 import 'dart:ui';
-import 'dart:convert';
 
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shonenx/shared/widgets/smart_image.dart';
 import 'package:flutter/material.dart';
 import 'package:shonenx/core/utils/formatting.dart';
 import 'package:shonenx/core/utils/image_headers.dart';
@@ -95,30 +94,16 @@ abstract class BaseEpisodeTile extends StatelessWidget {
     BoxFit fit = BoxFit.cover,
     Widget Function(BuildContext, Object, StackTrace?)? errorBuilder,
   }) {
-    if (imageUrl == null || imageUrl!.isEmpty) {
+    if (resolvedThumbnailUrl == null || resolvedThumbnailUrl!.isEmpty) {
       return const SizedBox.shrink();
     }
 
-    if (imageUrl!.startsWith('data:image/')) {
-      try {
-        final base64String = imageUrl!.split(',').last;
-        return Image.memory(
-          base64Decode(base64String),
-          fit: fit,
-          errorBuilder: errorBuilder ?? (_, __, ___) => const SizedBox.shrink(),
-        );
-      } catch (e) {
-        return const SizedBox.shrink();
-      }
-    }
-
-    return Image(
-      image: CachedNetworkImageProvider(
-        imageUrl!,
-        headers: imageHeaders.isEmpty ? null : imageHeaders,
-      ),
+    return SmartImage(
+      imageUrl: resolvedThumbnailUrl!,
       fit: fit,
-      errorBuilder: errorBuilder ?? (_, __, ___) => const SizedBox.shrink(),
+      errorWidget: errorBuilder != null
+          ? (context, url, error) => errorBuilder(context, error, null)
+          : null,
     );
   }
 

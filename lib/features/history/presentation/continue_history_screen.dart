@@ -1,4 +1,4 @@
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shonenx/shared/widgets/smart_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -320,9 +320,11 @@ class _ContinueHistoryScreenState extends ConsumerState<ContinueHistoryScreen> {
                                       : 1.0,
                                   duration: const Duration(milliseconds: 200),
                                   child: MediaCard(
-                media: UnifiedMedia(
+                                    media: UnifiedMedia(
                                       id: id,
-                                      type: isAnime ? MediaType.ANIME : MediaType.MANGA,
+                                      type: isAnime
+                                          ? MediaType.ANIME
+                                          : MediaType.MANGA,
                                       title: MediaTitle(english: title),
                                       cover: imageUrl,
                                     ),
@@ -525,7 +527,7 @@ class _ContinueHistoryItemsScreenState
                             ).createShader(rect);
                           },
                           blendMode: BlendMode.dstIn,
-                          child: CachedNetworkImage(
+                          child: SmartImage(
                             imageUrl: imageUrl,
                             fit: BoxFit.cover,
                             errorWidget: (_, __, ___) => const SizedBox(),

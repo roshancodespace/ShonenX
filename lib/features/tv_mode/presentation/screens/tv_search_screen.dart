@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shonenx/shared/widgets/smart_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/router/app_navigator.dart';
@@ -1022,7 +1022,7 @@ class _TvSourceQuickTileCard extends StatelessWidget {
                       ),
                     ),
                     child: source.iconUrl != null && source.iconUrl!.isNotEmpty
-                        ? CachedNetworkImage(
+                        ? SmartImage(
                             imageUrl: source.iconUrl!,
                             fit: BoxFit.contain,
                             errorWidget: (_, __, ___) => Icon(

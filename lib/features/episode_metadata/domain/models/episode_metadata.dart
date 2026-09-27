@@ -48,12 +48,27 @@ class EpisodeMetadata {
   EpisodeMetadata merge(EpisodeMetadata other) {
     return EpisodeMetadata(
       number: number,
-      title: (other.title != null && other.title!.isNotEmpty) ? other.title : title,
-      japaneseTitle: (other.japaneseTitle != null && other.japaneseTitle!.isNotEmpty) ? other.japaneseTitle : japaneseTitle,
-      romanjiTitle: (other.romanjiTitle != null && other.romanjiTitle!.isNotEmpty) ? other.romanjiTitle : romanjiTitle,
-      description: (other.description != null && other.description!.isNotEmpty) ? other.description : description,
-      thumbnailUrl: (other.thumbnailUrl != null && other.thumbnailUrl!.isNotEmpty) ? other.thumbnailUrl : thumbnailUrl,
-      airDate: (other.airDate != null && other.airDate!.isNotEmpty) ? other.airDate : airDate,
+      title: (other.title != null && other.title!.isNotEmpty)
+          ? other.title
+          : title,
+      japaneseTitle:
+          (other.japaneseTitle != null && other.japaneseTitle!.isNotEmpty)
+          ? other.japaneseTitle
+          : japaneseTitle,
+      romanjiTitle:
+          (other.romanjiTitle != null && other.romanjiTitle!.isNotEmpty)
+          ? other.romanjiTitle
+          : romanjiTitle,
+      description: (other.description != null && other.description!.isNotEmpty)
+          ? other.description
+          : description,
+      thumbnailUrl:
+          (other.thumbnailUrl != null && other.thumbnailUrl!.isNotEmpty)
+          ? other.thumbnailUrl
+          : thumbnailUrl,
+      airDate: (other.airDate != null && other.airDate!.isNotEmpty)
+          ? other.airDate
+          : airDate,
       isFiller: other.isFiller ?? isFiller,
       score: other.score ?? score,
     );

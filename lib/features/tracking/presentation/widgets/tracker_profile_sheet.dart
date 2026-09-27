@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shonenx/shared/widgets/smart_image.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -421,7 +421,7 @@ class _TrackerProfileSheetState extends ConsumerState<TrackerProfileSheet> {
 
     final cleanUrl = url.trim();
     if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) {
-      return CachedNetworkImage(
+      return SmartImage(
         imageUrl: cleanUrl,
         fit: BoxFit.cover,
         errorWidget: (_, __, ___) =>
@@ -658,7 +658,7 @@ class _TrackerProfileSheetState extends ConsumerState<TrackerProfileSheet> {
                               itemBuilder: (_, idx) {
                                 return ClipRRect(
                                   borderRadius: BorderRadius.circular(6),
-                                  child: CachedNetworkImage(
+                                  child: SmartImage(
                                     imageUrl: profile.favorites![idx],
                                     width: 58,
                                     height: 84,

@@ -24,8 +24,5 @@ class PlayerModeOffline extends PlayerMode {
   final String filePath;
   final String? title;
 
-  const PlayerModeOffline({
-    required this.filePath,
-    this.title,
-  });
+  const PlayerModeOffline({required this.filePath, this.title});
 }

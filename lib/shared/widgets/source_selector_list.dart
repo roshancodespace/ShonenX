@@ -1,4 +1,4 @@
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shonenx/shared/widgets/smart_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -248,7 +248,7 @@ class _SourceGroupCardTileState extends ConsumerState<_SourceGroupCardTile> {
       leading: ClipRRect(
         borderRadius: BorderRadius.circular(6),
         child: (iconUrlToUse != null && iconUrlToUse.isNotEmpty)
-            ? CachedNetworkImage(
+            ? SmartImage(
                 imageUrl: iconUrlToUse,
                 width: isSubItem ? 20 : 24,
                 height: isSubItem ? 20 : 24,

@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shonenx/shared/widgets/smart_image.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -942,7 +942,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
     if (source.iconUrl != null && source.iconUrl!.isNotEmpty) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(radius),
-        child: CachedNetworkImage(
+        child: SmartImage(
           imageUrl: source.iconUrl!,
           width: size,
           height: size,
@@ -1430,8 +1430,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
             delegate: SliverChildBuilderDelegate((context, index) {
               final media = items[index];
               return MediaCard(
-              media: media,
-              tag: 'browse-${media.id}',
+                media: media,
+                tag: 'browse-${media.id}',
                 style: style,
                 onTap: () => context.pushDetails(
                   mediaType: media.type,
@@ -1481,14 +1481,14 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
         itemBuilder: (context, index) {
           return MediaCard(
             media: UnifiedMedia(
-              id: 'skeleton-${index}',
+              id: 'skeleton-$index',
               type: MediaType.ANIME,
               title: const MediaTitle(english: 'Placeholder Title'),
               format: 'TV',
               score: 8.5,
               year: 2026,
             ),
-            tag: 'skeleton-${index}',
+            tag: 'skeleton-$index',
             style: style,
             onTap: () {},
           );

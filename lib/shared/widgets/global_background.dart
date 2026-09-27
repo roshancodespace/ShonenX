@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shonenx/shared/widgets/smart_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -201,7 +201,7 @@ class _WallpaperImage extends StatelessWidget {
         imagePath.startsWith('http://') || imagePath.startsWith('https://');
 
     if (isNetwork) {
-      return CachedNetworkImage(
+      return SmartImage(
         key: ValueKey(imagePath),
         imageUrl: imagePath,
         fit: BoxFit.cover,

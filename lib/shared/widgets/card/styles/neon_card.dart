@@ -226,10 +226,12 @@ class NeonCard extends StatelessWidget {
     if (subtitle != null && subtitle!.isNotEmpty) return subtitle;
     final items = <String>[];
     if (showYear && media.year != null) items.add(media.year.toString());
-    if (media.status != null && media.status!.isNotEmpty)
+    if (media.status != null && media.status!.isNotEmpty) {
       items.add(media.status!);
-    if (showGenres && media.genres != null && media.genres!.isNotEmpty)
+    }
+    if (showGenres && media.genres != null && media.genres!.isNotEmpty) {
       items.add(media.genres!.first);
+    }
     if (items.isEmpty) return null;
     return items.join(' • ');
   }

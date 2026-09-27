@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:anymex_extension_runtime_bridge/Services/Aniyomi/Models/Source.dart';
 import 'package:anymex_extension_runtime_bridge/anymex_extension_runtime_bridge.dart'
     as bridge;
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shonenx/shared/widgets/smart_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get/get.dart';
@@ -146,7 +146,7 @@ class _GroupHeaderTile extends ConsumerWidget {
         ListTile(
           contentPadding: const EdgeInsets.symmetric(horizontal: 10),
           tileColor: isNsfw ? Colors.red.withValues(alpha: 0.05) : null,
-          leading: CachedNetworkImage(
+          leading: SmartImage(
             imageUrl: groupSources.first.iconUrl ?? '',
             width: 40,
             height: 40,
@@ -1148,7 +1148,7 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
           : null,
       leading: isSubItem
           ? const SizedBox(width: 40)
-          : CachedNetworkImage(
+          : SmartImage(
               imageUrl: source.iconUrl ?? '',
               width: 40,
               height: 40,

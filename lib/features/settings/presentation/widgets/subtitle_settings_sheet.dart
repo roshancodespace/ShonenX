@@ -1,4 +1,4 @@
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shonenx/shared/widgets/smart_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/utils/responsive.dart';
@@ -182,19 +182,25 @@ class _SubtitleSettingsSheetState extends ConsumerState<SubtitleSettingsSheet> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (_showLivePreview) ...[
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 20),
-              decoration: const BoxDecoration(
-                image: DecorationImage(
-                  image: CachedNetworkImageProvider(
-                    'https://i.pinimg.com/736x/90/64/ee/9064eed5aabcfc7a30e8af33d040b565.jpg',
+            Stack(
+              children: [
+                Positioned.fill(
+                  child: SmartImage(
+                    imageUrl:
+                        'https://i.pinimg.com/736x/90/64/ee/9064eed5aabcfc7a30e8af33d040b565.jpg',
+                    fit: BoxFit.cover,
+                    alignment: const Alignment(0, -0.5),
                   ),
-                  fit: BoxFit.cover,
-                  alignment: Alignment(0, -0.5),
                 ),
-              ),
-              alignment: Alignment.center,
-              child: _buildPreviewText(prefs, responsiveFontSize),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 32,
+                    horizontal: 20,
+                  ),
+                  alignment: Alignment.center,
+                  child: _buildPreviewText(prefs, responsiveFontSize),
+                ),
+              ],
             ),
             Divider(color: cs.outlineVariant.withValues(alpha: 0.3), height: 1),
           ],

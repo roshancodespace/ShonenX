@@ -1,6 +1,6 @@
 import 'dart:ui';
 
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shonenx/shared/widgets/smart_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -232,7 +232,7 @@ class _TvDetailsScreenState extends ConsumerState<TvDetailsScreen> {
                           sigmaY: 8,
                           tileMode: TileMode.decal,
                         ),
-                        child: CachedNetworkImage(
+                        child: SmartImage(
                           imageUrl: backdropImage,
                           fit: BoxFit.cover,
                           alignment: Alignment.topCenter,
@@ -401,7 +401,7 @@ class _TvDetailsScreenState extends ConsumerState<TvDetailsScreen> {
             borderRadius: BorderRadius.circular(radius),
             child: Hero(
               tag: widget.tag,
-              child: CachedNetworkImage(
+              child: SmartImage(
                 imageUrl: posterUrl,
                 width: 170,
                 height: 245,
@@ -988,7 +988,7 @@ class _TvDetailsScreenState extends ConsumerState<TvDetailsScreen> {
                       ),
                     ),
                     child: ClipOval(
-                      child: CachedNetworkImage(
+                      child: SmartImage(
                         imageUrl: character.image ?? '',
                         fit: BoxFit.cover,
                         errorWidget: (_, __, ___) => Container(

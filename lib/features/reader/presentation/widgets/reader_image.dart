@@ -1,4 +1,4 @@
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shonenx/shared/widgets/smart_image.dart';
 import 'package:flutter/material.dart';
 import 'package:shonenx/features/reader/providers/reader_prefs_provider.dart';
 
@@ -27,7 +27,7 @@ class ReaderImage extends StatelessWidget {
       fit = BoxFit.contain;
     }
 
-    return CachedNetworkImage(
+    return SmartImage(
       imageUrl: url,
       httpHeaders: headers,
       fit: fit,

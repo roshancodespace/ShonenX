@@ -107,8 +107,7 @@ class AssParser extends BaseSubtitleParser {
         match.group(1),
         match.group(2),
         match.group(3),
-        match.group(4)! +
-            '0', // convert centiseconds to milliseconds (e.g. 99 -> 990)
+        '${match.group(4)!}0', // convert centiseconds to milliseconds (e.g. 99 -> 990)
       );
     }
     return null;

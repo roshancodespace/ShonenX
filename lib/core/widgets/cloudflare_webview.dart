@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart' as webview;
 import 'package:shonenx/core/network/session_manager.dart';
-import 'package:shonenx/core/network/network_config.dart';
 import 'package:anymex_extension_runtime_bridge/anymex_extension_runtime_bridge.dart'
     as bridge;
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
@@ -137,7 +136,7 @@ class _CloudflareWebViewState extends State<CloudflareWebView> {
                             .host] ??
                         bridge.AnymeXRuntimeBridge.userAgentMap[_parsedUri.host
                             .replaceFirst('www.', '')] ??
-                        NetworkConfig.globalUserAgent,
+                        '',
                     useHybridComposition: false,
                     javaScriptEnabled: true,
                     domStorageEnabled: true,

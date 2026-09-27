@@ -69,4 +69,34 @@ class DownloadUrlHelper {
     }
     return false;
   }
+
+  static int parseSizeToBytes(String? sizeStr) {
+    if (sizeStr == null || sizeStr.isEmpty) return 0;
+
+    final upperStr = sizeStr.toUpperCase().trim();
+    final RegExp regex = RegExp(r'([\d.]+)\s*([KMGT]?B)');
+    final match = regex.firstMatch(upperStr);
+
+    if (match == null) return 0;
+
+    final double? value = double.tryParse(match.group(1)!);
+    if (value == null) return 0;
+
+    final unit = match.group(2);
+
+    switch (unit) {
+      case 'KB':
+        return (value * 1024).round();
+      case 'MB':
+        return (value * 1024 * 1024).round();
+      case 'GB':
+        return (value * 1024 * 1024 * 1024).round();
+      case 'TB':
+        return (value * 1024 * 1024 * 1024 * 1024).round();
+      case 'B':
+        return value.round();
+      default:
+        return 0;
+    }
+  }
 }

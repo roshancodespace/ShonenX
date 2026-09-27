@@ -21,6 +21,7 @@ import 'package:shonenx/features/player/providers/selection_resolver.dart';
 import 'package:shonenx/features/player/providers/subtitle_prefs_provider.dart';
 import 'package:shonenx/features/player/providers/video_engine_provider.dart';
 import 'package:shonenx/features/player/utils/screenshot_helper.dart';
+import 'package:shonenx/core/network/hls_server/hls_server.dart';
 import 'package:shonenx/shared/models/unified_episode.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/models/video_server.dart';
@@ -122,6 +123,8 @@ class PlayerController extends Notifier<PlayerState> {
 
   bool _isDisposed = false;
   bool _isNativeSubtitleDisabled = false;
+
+  String? _currentHlsStreamId;
 
   @override
   PlayerState build() {
@@ -755,28 +758,48 @@ class PlayerController extends Notifier<PlayerState> {
     }
   }
 
-  /// Resolves a video stream for playback (converting torrent URLs to local HTTP stream URLs if needed).
   Future<VideoStream> _resolveStream(
     VideoStream stream, {
     UnifiedEpisode? episode,
   }) async {
-    if (!isTorrentUrl(stream.url)) return stream;
+    VideoStream resolvedStream = stream;
+    if (isTorrentUrl(stream.url)) {
+      final ep = episode ?? state.activeEpisode;
+      final epString = ep != null
+          ? (ep.number % 1 == 0 ? '${ep.number.toInt()}' : '${ep.number}')
+          : null;
 
-    final ep = episode ?? state.activeEpisode;
-    final epString = ep != null
-        ? (ep.number % 1 == 0 ? '${ep.number.toInt()}' : '${ep.number}')
-        : null;
+      final resolved = await TorrentStreamResolver.resolve(
+        stream.url,
+        episode: epString,
+      );
 
-    final resolved = await TorrentStreamResolver.resolve(
-      stream.url,
-      episode: epString,
-    );
+      if (resolved.streamUrl.isEmpty) {
+        throw Exception('Failed to resolve torrent stream URL.');
+      }
 
-    if (resolved.streamUrl.isEmpty) {
-      throw Exception('Failed to resolve torrent stream URL.');
+      resolvedStream = stream.copyWith(url: resolved.streamUrl);
     }
 
-    return stream.copyWith(url: resolved.streamUrl);
+    if (resolvedStream.requiresHlsServer) {
+      final server = ref.read(hlsServerProvider);
+
+      if (_currentHlsStreamId != null) {
+        server.unregister(_currentHlsStreamId!);
+      }
+
+      final id = DateTime.now().millisecondsSinceEpoch.toString();
+      _currentHlsStreamId = id;
+
+      final localUrl = await server.register(
+        id: id,
+        url: resolvedStream.url,
+        headers: resolvedStream.headers,
+      );
+      resolvedStream = resolvedStream.copyWith(url: localUrl);
+    }
+
+    return resolvedStream;
   }
 
   /// Resolves a video stream and initializes the video engine with subtitles and position.

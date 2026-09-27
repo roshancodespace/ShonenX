@@ -8,6 +8,7 @@ import 'package:shonenx/core/caching/cache_manager.dart';
 import 'package:shonenx/core/caching/domain/cache_entry.dart';
 import 'package:shonenx/core/network/session_manager.dart';
 import 'package:shonenx/core/network/network_config.dart';
+import 'package:shonenx/core/utils/app_logger.dart';
 
 class HttpResponse {
   final int statusCode;
@@ -55,6 +56,7 @@ class HTTP {
       _cache = cacheManager;
 
   static HTTP? _instance;
+  static final _log = AppLogger.scope('HTTP');
 
   factory HTTP({CacheManager? cacheManager}) {
     final instance = _instance ??= HTTP._internal(cacheManager: cacheManager);
@@ -131,6 +133,7 @@ class HTTP {
     Object? body,
     Duration? cacheDuration,
     bool suppressLogs = false,
+    bool forceRefresh = false,
     String? Function(String)? cacheInterceptor,
   }) async {
     if (method == 'GET') {
@@ -148,6 +151,7 @@ class HTTP {
             body: body,
             cacheDuration: cacheDuration,
             suppressLogs: suppressLogs,
+            forceRefresh: forceRefresh,
             cacheInterceptor: cacheInterceptor,
           ).whenComplete(() {
             if (identical(_inFlightGetRequests[requestKey], request)) {
@@ -166,6 +170,7 @@ class HTTP {
       body: body,
       cacheDuration: cacheDuration,
       suppressLogs: suppressLogs,
+      forceRefresh: forceRefresh,
       cacheInterceptor: cacheInterceptor,
     );
   }
@@ -201,6 +206,7 @@ class HTTP {
     Object? body,
     Duration? cacheDuration,
     bool suppressLogs = false,
+    bool forceRefresh = false,
     String? Function(String)? cacheInterceptor,
   }) async {
     final key = _buildKey(url, queryParameters, body);
@@ -214,6 +220,7 @@ class HTTP {
     if (_cache != null &&
         _cache!.cacheConfig.enableCaching &&
         !_cache!.cacheConfig.bypassCache &&
+        !forceRefresh &&
         isCacheable) {
       final cached = await _cache!.get(key, suppressLogs: suppressLogs);
       if (cached != null) {
@@ -341,15 +348,36 @@ class HTTP {
       }
 
       if (shouldCache) {
-        await _cache!.put(
-          CacheEntry()
-            ..key = key
-            ..bodyBytes = bytesToCache
-            ..etag = lowerHeaders[HttpHeaders.etagHeader]
-            ..lastModified = lowerHeaders[HttpHeaders.lastModifiedHeader],
-          effectiveTtl,
-          suppressLogs: suppressLogs,
-        );
+        final isCloudflareBlock =
+            (lowerHeaders['server']?.contains('cloudflare') == true) &&
+            (lowerHeaders['content-type']?.contains('text/html') == true) &&
+            (utf8
+                    .decode(bytesToCache, allowMalformed: true)
+                    .contains('Cloudflare') ||
+                utf8
+                    .decode(bytesToCache, allowMalformed: true)
+                    .contains('Attention Required'));
+
+        final isInvalidM3u8 =
+            url.split('?').first.endsWith('.m3u8') &&
+            !utf8
+                .decode(bytesToCache, allowMalformed: true)
+                .trimLeft()
+                .startsWith('#EXTM3U');
+
+        if (!isCloudflareBlock && !isInvalidM3u8) {
+          await _cache!.put(
+            CacheEntry()
+              ..key = key
+              ..bodyBytes = bytesToCache
+              ..etag = lowerHeaders[HttpHeaders.etagHeader]
+              ..lastModified = lowerHeaders[HttpHeaders.lastModifiedHeader],
+            effectiveTtl,
+            suppressLogs: suppressLogs,
+          );
+        } else {
+          _log.w('Prevented caching of invalid/block page for $url');
+        }
       }
     }
     return response;
@@ -361,6 +389,7 @@ class HTTP {
     Map<String, String>? queryParameters,
     Duration? cacheDuration = Duration.zero,
     bool suppressLogs = false,
+    bool forceRefresh = false,
     String? Function(String)? cacheInterceptor,
   }) {
     return _request(
@@ -370,6 +399,7 @@ class HTTP {
       queryParameters: queryParameters,
       cacheDuration: cacheDuration,
       suppressLogs: suppressLogs,
+      forceRefresh: forceRefresh,
       cacheInterceptor: cacheInterceptor,
     );
   }

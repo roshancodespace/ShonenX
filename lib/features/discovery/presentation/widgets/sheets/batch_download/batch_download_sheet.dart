@@ -475,7 +475,11 @@ class BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
             ..headersMap = mergedHeaders
             ..episodeNumber = ep.number
             ..savePath = '$targetDir/$fileName'
-            ..fileName = fileName;
+            ..fileName = fileName
+            ..requiresHlsServer = matchedStream.requiresHlsServer
+            ..totalBytes = DownloadUrlHelper.parseSizeToBytes(
+              matchedStream.size,
+            );
 
           await ref.read(downloadManagerProvider.notifier).startDownload(task);
           queuedTaskIds.add(task.id);

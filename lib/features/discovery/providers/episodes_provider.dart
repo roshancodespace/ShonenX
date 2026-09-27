@@ -25,114 +25,159 @@ typedef SourceEpisodeArgs = ({
   MediaType type,
 });
 
-final episodesListProvider =
-    FutureProvider.family<EpisodesListState, MediaArgs>((ref, args) async {
-      final log = AppLogger.scope('EpisodesListProvider').child('fetch');
-      final title = args.mediaTitle;
+class EpisodesListNotifier extends AsyncNotifier<EpisodesListState> {
+  final MediaArgs arg;
 
-      // Watch synchronous providers before any async gap
-      final contentPrefs = ref.watch(contentPrefsProvider);
-      final metadataService = ref.watch(episodeMetadataServiceProvider);
+  EpisodesListNotifier(this.arg);
+
+  @override
+  Future<EpisodesListState> build() async {
+    final log = AppLogger.scope('EpisodesListProvider').child('fetch');
+    final title = arg.mediaTitle;
+
+    final contentPrefs = ref.watch(contentPrefsProvider);
+    final metadataService = ref.watch(episodeMetadataServiceProvider);
+
+    try {
+      final matchState = await ref.watch(matchedMediaProvider(arg).future);
+
+      if (matchState.matchedMedia == null) {
+        return EpisodesListState(
+          source: matchState.sourceInfo,
+          episodes: const [],
+        );
+      }
+
+      final sourceEpisodesState = await ref.watch(
+        sourceEpisodesProvider((
+          providerId: matchState.matchedMedia!.id,
+          sourceId: matchState.sourceInfo.id,
+          sourceType: matchState.sourceInfo.type,
+          type: arg.type,
+        )).future,
+      );
+
+      if (!arg.type.usesAnimeSources || sourceEpisodesState.episodes.isEmpty) {
+        return sourceEpisodesState;
+      }
 
       try {
-        final matchState = await ref.watch(matchedMediaProvider(args).future);
-
-        if (matchState.matchedMedia == null) {
-          return EpisodesListState(
-            source: matchState.sourceInfo,
-            episodes: const [],
-          );
-        }
-
-        final sourceEpisodesState = await ref.watch(
-          sourceEpisodesProvider((
-            providerId: matchState.matchedMedia!.id,
-            sourceId: matchState.sourceInfo.id,
-            sourceType: matchState.sourceInfo.type,
-            type: args.type,
-          )).future,
+        final enrichedEpisodes = await metadataService.enrichEpisodes(
+          media: arg.toMedia(),
+          sourceEpisodes: sourceEpisodesState.episodes,
+          mode: contentPrefs.episodeMetadataProvider,
+          titlePreference: contentPrefs.titlePreference,
         );
 
-        if (!args.type.usesAnimeSources ||
-            sourceEpisodesState.episodes.isEmpty) {
-          return sourceEpisodesState;
-        }
-
-        try {
-          final enrichedEpisodes = await metadataService.enrichEpisodes(
-            media: args.toMedia(),
-            sourceEpisodes: sourceEpisodesState.episodes,
-            mode: contentPrefs.episodeMetadataProvider,
-            titlePreference: contentPrefs.titlePreference,
-          );
-
-          return EpisodesListState(
-            source: sourceEpisodesState.source,
-            episodes: enrichedEpisodes,
-          );
-        } catch (enrichErr, enrichSt) {
-          log.w('Episode enrichment failed, keeping raw source episodes', [
-            enrichErr,
-            enrichSt,
-          ]);
-          return sourceEpisodesState;
-        }
-      } catch (e, st) {
-        log.e('Failed to fetch episodes for "$title"', [e, st]);
-        rethrow;
+        return EpisodesListState(
+          source: sourceEpisodesState.source,
+          episodes: enrichedEpisodes,
+        );
+      } catch (enrichErr, enrichSt) {
+        log.w('Episode enrichment failed, keeping raw source episodes', [
+          enrichErr,
+          enrichSt,
+        ]);
+        return sourceEpisodesState;
       }
-    }, retry: (retryCount, error) => null);
+    } catch (e, st) {
+      log.e('Failed to fetch episodes for "$title"', [e, st]);
+      rethrow;
+    }
+  }
 
-final sourceEpisodesProvider =
-    FutureProvider.family<EpisodesListState, SourceEpisodeArgs>((
-      ref,
-      args,
-    ) async {
-      final log = AppLogger.scope('SourceEpisodesProvider').child('fetch');
+  Future<void> refreshEpisodes() async {
+    final matchState = await ref.read(matchedMediaProvider(arg).future);
+    if (matchState.matchedMedia != null) {
+      ref
+          .read(
+            sourceEpisodesProvider((
+              providerId: matchState.matchedMedia!.id,
+              sourceId: matchState.sourceInfo.id,
+              sourceType: matchState.sourceInfo.type,
+              type: arg.type,
+            )).notifier,
+          )
+          .forceRefreshFetch();
+    }
+  }
+}
 
-      ref.watch(sourceSettingsProvider(args.sourceId));
+final episodesListProvider = AsyncNotifierProvider.family
+    .autoDispose<EpisodesListNotifier, EpisodesListState, MediaArgs>(
+      EpisodesListNotifier.new,
+    );
 
-      try {
-        final allSources = await ref.watch(
-          args.type.availableSourcesProvider.future,
-        );
+class SourceEpisodesNotifier extends AsyncNotifier<EpisodesListState> {
+  final SourceEpisodeArgs arg;
+  SourceEpisodesNotifier(this.arg);
 
-        final sourceInfo = allSources
-            .where(
-              (s) =>
-                  s.id == args.sourceId &&
-                  (args.sourceType == null || s.type == args.sourceType),
-            )
-            .firstOrNull;
+  bool _forceRefresh = false;
 
-        if (sourceInfo == null) {
-          throw Exception('Source "${args.sourceId}" not found');
-        }
+  @override
+  Future<EpisodesListState> build() async {
+    final log = AppLogger.scope('SourceEpisodesProvider').child('fetch');
+    final force = _forceRefresh;
+    _forceRefresh = false;
 
-        List<UnifiedEpisode> episodes = [];
+    ref.watch(sourceSettingsProvider(arg.sourceId));
 
-        if (args.type.usesAnimeSources) {
-          final animeSource = ref.watch(animeSourceProvider(sourceInfo));
-          log.i('Fetching episodes directly from ${sourceInfo.name}');
-          episodes = await animeSource.getEpisodes(args.providerId);
-        } else {
-          final mangaSource = ref.watch(mangaSourceProvider(sourceInfo));
-          log.i('Fetching chapters directly from ${sourceInfo.name}');
-          final chapters = await mangaSource.getChapters(args.providerId);
-          episodes = chapters
-              .map((c) => UnifiedEpisode.fromChapter(c))
-              .toList();
-        }
+    try {
+      final allSources = await ref.watch(
+        arg.type.availableSourcesProvider.future,
+      );
 
-        episodes.sort((a, b) => a.number.compareTo(b.number));
+      final sourceInfo = allSources
+          .where(
+            (s) =>
+                s.id == arg.sourceId &&
+                (arg.sourceType == null || s.type == arg.sourceType),
+          )
+          .firstOrNull;
 
-        log.s(
-          'Fetched ${episodes.length} episodes/chapters from ${sourceInfo.name}',
-        );
-
-        return EpisodesListState(source: sourceInfo, episodes: episodes);
-      } catch (e, st) {
-        log.e('Failed to fetch episodes for source ${args.sourceId}', [e, st]);
-        rethrow;
+      if (sourceInfo == null) {
+        throw Exception('Source "${arg.sourceId}" not found');
       }
-    }, retry: (retryCount, error) => null);
+
+      List<UnifiedEpisode> episodes = [];
+
+      if (arg.type.usesAnimeSources) {
+        final animeSource = ref.watch(animeSourceProvider(sourceInfo));
+        log.i('Fetching episodes directly from ${sourceInfo.name}');
+        episodes = await animeSource.getEpisodes(
+          arg.providerId,
+          forceRefresh: force,
+        );
+      } else {
+        final mangaSource = ref.watch(mangaSourceProvider(sourceInfo));
+        log.i('Fetching chapters directly from ${sourceInfo.name}');
+        final chapters = await mangaSource.getChapters(
+          arg.providerId,
+          forceRefresh: force,
+        );
+        episodes = chapters.map((c) => UnifiedEpisode.fromChapter(c)).toList();
+      }
+
+      episodes.sort((a, b) => a.number.compareTo(b.number));
+
+      log.s(
+        'Fetched ${episodes.length} episodes/chapters from ${sourceInfo.name}',
+      );
+
+      return EpisodesListState(source: sourceInfo, episodes: episodes);
+    } catch (e, st) {
+      log.e('Failed to fetch episodes for source ${arg.sourceId}', [e, st]);
+      rethrow;
+    }
+  }
+
+  void forceRefreshFetch() {
+    _forceRefresh = true;
+    ref.invalidateSelf();
+  }
+}
+
+final sourceEpisodesProvider = AsyncNotifierProvider.family
+    .autoDispose<SourceEpisodesNotifier, EpisodesListState, SourceEpisodeArgs>(
+      SourceEpisodesNotifier.new,
+    );

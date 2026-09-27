@@ -10,8 +10,6 @@ import 'package:shonenx/features/tracking/providers/tracker_auth_provider.dart';
 import 'package:shonenx/features/comments/presentation/widgets/comments_tab.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/tabs/about_tab.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/tabs/episodes_tab.dart';
-import 'package:shonenx/features/discovery/providers/episodes_provider.dart';
-import 'package:shonenx/features/discovery/providers/matched_media_provider.dart';
 import 'package:shonenx/features/discord/providers/discord_rpc_provider.dart';
 import 'package:shonenx/features/discovery/providers/details_provider.dart';
 import 'package:shonenx/features/downloads/domain/models/download_task.dart';
@@ -60,54 +58,6 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
   late final FocusNode _keyboardFocusNode;
-  double _pullProgress = 0.0;
-  double _accumulatedOverscroll = 0.0;
-
-  bool _onScrollNotification(ScrollNotification notification) {
-    if (notification.metrics.axis != Axis.vertical) return false;
-
-    final pixels = notification.metrics.pixels;
-
-    if (notification is OverscrollNotification &&
-        notification.metrics.extentBefore == 0 &&
-        notification.overscroll < 0) {
-      _accumulatedOverscroll += -notification.overscroll;
-      final progress = (_accumulatedOverscroll / 180.0).clamp(0.0, 1.0);
-      if (progress != _pullProgress) {
-        setState(() => _pullProgress = progress);
-      }
-    } else if (notification is ScrollUpdateNotification) {
-      if (pixels < 0) {
-        final progress = (-pixels / 180.0).clamp(0.0, 1.0);
-        if (progress != _pullProgress) {
-          setState(() => _pullProgress = progress);
-        }
-      } else if (_pullProgress > 0 || _accumulatedOverscroll > 0) {
-        _accumulatedOverscroll = 0.0;
-        if (_pullProgress != 0.0) setState(() => _pullProgress = 0.0);
-      }
-    } else if (notification is ScrollEndNotification) {
-      final shouldTrigger = _pullProgress >= 1.0;
-      _accumulatedOverscroll = 0.0;
-      if (_pullProgress != 0.0) {
-        setState(() => _pullProgress = 0.0);
-      }
-      if (shouldTrigger) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _refreshEpisodes(widget.media);
-        });
-      }
-    }
-    return false;
-  }
-
-  void _refreshEpisodes(UnifiedMedia media) {
-    HapticFeedback.mediumImpact();
-    ref.invalidate(matchedMediaProvider);
-    ref.invalidate(episodesListProvider);
-    ref.invalidate(sourceEpisodesProvider);
-  }
-
   late final DiscordRpcNotifier _rpcNotifier;
   late final ProviderContainer _container;
 
@@ -178,277 +128,164 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen>
         detailsState.value?.merge(widget.media) ?? widget.media;
 
     return AppScaffold(
-      body: NotificationListener<ScrollNotification>(
-        onNotification: _onScrollNotification,
-        child: Stack(
-          children: [
-            NestedScrollView(
-              headerSliverBuilder: (context, innerBoxIsScrolled) => [
-                SliverAppBar(
-                  backgroundColor: Colors.transparent,
-                  automaticallyImplyLeading: false,
-                  expandedHeight: 350.0,
-                  leading: AppIconButton(
-                    icon: const Icon(Icons.arrow_back_ios_new),
-                    onPressed: () => context.pop(),
+      body: Stack(
+        children: [
+          NestedScrollView(
+            headerSliverBuilder: (context, innerBoxIsScrolled) => [
+              SliverAppBar(
+                backgroundColor: Colors.transparent,
+                automaticallyImplyLeading: false,
+                expandedHeight: 350.0,
+                leading: AppIconButton(
+                  icon: const Icon(Icons.arrow_back_ios_new),
+                  onPressed: () => context.pop(),
+                ),
+                actions: [
+                  const _DownloadAppBarButton(),
+                  AppIconButton(
+                    tooltip: 'Share',
+                    backgroundColor: theme.colorScheme.secondaryContainer,
+                    foregroundColor: theme.colorScheme.onSecondaryContainer,
+                    radius: uiRoundness,
+                    icon: const Icon(Icons.share, size: 18),
+                    onPressed: () {
+                      final providerId = displayMedia.providerId ?? 'anilist';
+                      final id = displayMedia.id;
+                      final type = widget.mediaType == MediaType.ANIME
+                          ? 'anime'
+                          : 'manga';
+                      String url;
+                      if (providerId == 'myanimelist' || providerId == 'mal') {
+                        url = 'https://myanimelist.net/$type/$id';
+                      } else if (providerId == 'kitsu') {
+                        url = 'https://kitsu.io/$type/$id';
+                      } else {
+                        url = 'https://anilist.co/$type/$id';
+                      }
+                      SharePlus.instance.share(
+                        ShareParams(uri: Uri.parse(url)),
+                      );
+                    },
                   ),
-                  actions: [
-                    const _DownloadAppBarButton(),
-                    AppIconButton(
-                      tooltip: 'Share',
-                      backgroundColor: theme.colorScheme.secondaryContainer,
-                      foregroundColor: theme.colorScheme.onSecondaryContainer,
-                      radius: uiRoundness,
-                      icon: const Icon(Icons.share, size: 18),
-                      onPressed: () {
-                        final providerId = displayMedia.providerId ?? 'anilist';
-                        final id = displayMedia.id;
-                        final type = widget.mediaType == MediaType.ANIME
-                            ? 'anime'
-                            : 'manga';
-                        String url;
-                        if (providerId == 'myanimelist' ||
-                            providerId == 'mal') {
-                          url = 'https://myanimelist.net/$type/$id';
-                        } else if (providerId == 'kitsu') {
-                          url = 'https://kitsu.io/$type/$id';
-                        } else {
-                          url = 'https://anilist.co/$type/$id';
-                        }
-                        SharePlus.instance.share(
-                          ShareParams(uri: Uri.parse(url)),
-                        );
-                      },
-                    ),
-                    const SizedBox(width: 5),
-                    _CommentsAppBarButton(
-                      media: displayMedia,
-                      uiRoundness: uiRoundness,
-                    ),
-                    const SizedBox(width: 5),
-                    _TrackerAppBarButton(
-                      media: displayMedia,
-                      uiRoundness: uiRoundness,
-                    ),
-                  ],
-                  flexibleSpace: FlexibleSpaceBar(
-                    titlePadding: EdgeInsets.zero,
-                    background: Stack(
-                      children: [
-                        Positioned.fill(
-                          child: ShaderMask(
-                            shaderCallback: (Rect bounds) {
-                              return LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [
-                                  Colors.white,
-                                  Colors.white,
-                                  Colors.transparent,
-                                ],
-                                stops: const [0.0, 0.3, 1.0],
-                              ).createShader(bounds);
-                            },
-                            blendMode: BlendMode.dstIn,
-                            child: SmartImage(
-                              imageUrl:
-                                  displayMedia.banner ??
-                                  displayMedia.cover ??
-                                  '',
-                              fit: BoxFit.cover,
-                              placeholder: (_, __) => const Center(
-                                child: CircularProgressIndicator(),
-                              ),
-                              errorWidget: (_, __, ___) =>
-                                  const Center(child: Icon(Icons.error)),
+                  const SizedBox(width: 5),
+                  _CommentsAppBarButton(
+                    media: displayMedia,
+                    uiRoundness: uiRoundness,
+                  ),
+                  const SizedBox(width: 5),
+                  _TrackerAppBarButton(
+                    media: displayMedia,
+                    uiRoundness: uiRoundness,
+                  ),
+                ],
+                flexibleSpace: FlexibleSpaceBar(
+                  titlePadding: EdgeInsets.zero,
+                  background: Stack(
+                    children: [
+                      Positioned.fill(
+                        child: ShaderMask(
+                          shaderCallback: (Rect bounds) {
+                            return LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Colors.white,
+                                Colors.white,
+                                Colors.transparent,
+                              ],
+                              stops: const [0.0, 0.3, 1.0],
+                            ).createShader(bounds);
+                          },
+                          blendMode: BlendMode.dstIn,
+                          child: SmartImage(
+                            imageUrl:
+                                displayMedia.banner ?? displayMedia.cover ?? '',
+                            fit: BoxFit.cover,
+                            placeholder: (_, __) => const Center(
+                              child: CircularProgressIndicator(),
                             ),
+                            errorWidget: (_, __, ___) =>
+                                const Center(child: Icon(Icons.error)),
                           ),
                         ),
-                        Positioned.fill(
-                          child: Container(
-                            padding: const EdgeInsets.only(bottom: 5),
-                            margin: const EdgeInsets.only(top: 10),
-                            alignment: Alignment.bottomLeft,
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.all(10.0),
-                                  child: SizedBox(
-                                    width: 112,
-                                    child: AspectRatio(
-                                      aspectRatio: 2 / 3,
-                                      child: ClipRRect(
-                                        borderRadius: BorderRadius.circular(
-                                          uiRoundness,
-                                        ),
-                                        child: Hero(
-                                          tag: widget.tag,
-                                          child: SmartImage(
-                                            imageUrl:
-                                                widget.media.cover ??
-                                                displayMedia.cover ??
-                                                '',
+                      ),
+                      Positioned.fill(
+                        child: Container(
+                          padding: const EdgeInsets.only(bottom: 5),
+                          margin: const EdgeInsets.only(top: 10),
+                          alignment: Alignment.bottomLeft,
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.all(10.0),
+                                child: SizedBox(
+                                  width: 112,
+                                  child: AspectRatio(
+                                    aspectRatio: 2 / 3,
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(
+                                        uiRoundness,
+                                      ),
+                                      child: Hero(
+                                        tag: widget.tag,
+                                        child: SmartImage(
+                                          imageUrl:
+                                              widget.media.cover ??
+                                              displayMedia.cover ??
+                                              '',
 
-                                            fit: BoxFit.cover,
-                                            placeholder: (context, url) =>
-                                                Container(
-                                                  color: colorScheme
-                                                      .surfaceContainerHighest,
-                                                ),
-                                            errorWidget: (_, __, ___) =>
-                                                const Icon(Icons.error),
-                                          ),
+                                          fit: BoxFit.cover,
+                                          placeholder: (context, url) =>
+                                              Container(
+                                                color: colorScheme
+                                                    .surfaceContainerHighest,
+                                              ),
+                                          errorWidget: (_, __, ___) =>
+                                              const Icon(Icons.error),
                                         ),
                                       ),
                                     ),
                                   ),
                                 ),
-                                Expanded(
-                                  child: Padding(
-                                    padding: const EdgeInsets.only(
-                                      bottom: 10.0,
-                                      right: 10.0,
-                                    ),
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
+                              ),
+                              Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.only(
+                                    bottom: 10.0,
+                                    right: 10.0,
+                                  ),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        displayMedia.title.getPreferedTitle,
+                                        style: textTheme.titleLarge,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      if (displayMedia.title.native != null ||
+                                          displayMedia.title.romaji != null)
                                         Text(
-                                          displayMedia.title.getPreferedTitle,
-                                          style: textTheme.titleLarge,
-                                          maxLines: 2,
+                                          displayMedia.title.native ??
+                                              displayMedia.title.romaji ??
+                                              '',
+                                          style: textTheme.labelLarge?.copyWith(
+                                            color: colorScheme.onSurfaceVariant,
+                                          ),
+                                          maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                         ),
-                                        if (displayMedia.title.native != null ||
-                                            displayMedia.title.romaji != null)
-                                          Text(
-                                            displayMedia.title.native ??
-                                                displayMedia.title.romaji ??
-                                                '',
-                                            style: textTheme.labelLarge
-                                                ?.copyWith(
-                                                  color: colorScheme
-                                                      .onSurfaceVariant,
-                                                ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        const SizedBox(height: 10),
-                                        Wrap(
-                                          spacing: 4.0,
-                                          runSpacing: 4.0,
-                                          alignment: WrapAlignment.start,
-                                          children: [
-                                            if (displayMedia.score != null &&
-                                                displayMedia.score! > 0)
-                                              Chip(
-                                                materialTapTargetSize:
-                                                    MaterialTapTargetSize
-                                                        .shrinkWrap,
-                                                shape: RoundedRectangleBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(
-                                                        uiRoundness,
-                                                      ),
-                                                ),
-                                                side: BorderSide.none,
-                                                color: WidgetStatePropertyAll(
-                                                  colorScheme
-                                                      .surfaceContainerHighest,
-                                                ),
-                                                avatar: Icon(
-                                                  Icons.star_rounded,
-                                                  size: 14,
-                                                  color: colorScheme.primary,
-                                                ),
-                                                label: Text(
-                                                  displayMedia.score!
-                                                      .toStringAsFixed(1),
-                                                  style: textTheme.bodySmall
-                                                      ?.copyWith(
-                                                        color: colorScheme
-                                                            .onSurfaceVariant,
-                                                        fontWeight:
-                                                            FontWeight.w700,
-                                                      ),
-                                                ),
-                                              ),
-                                            if (displayMedia.format != null &&
-                                                displayMedia.format!.isNotEmpty)
-                                              Chip(
-                                                materialTapTargetSize:
-                                                    MaterialTapTargetSize
-                                                        .shrinkWrap,
-                                                shape: RoundedRectangleBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(
-                                                        uiRoundness,
-                                                      ),
-                                                ),
-                                                side: BorderSide.none,
-                                                color: WidgetStatePropertyAll(
-                                                  colorScheme
-                                                      .surfaceContainerHighest,
-                                                ),
-                                                avatar: Icon(
-                                                  Icons.tv_rounded,
-                                                  size: 14,
-                                                  color: colorScheme.primary,
-                                                ),
-                                                label: Text(
-                                                  displayMedia.format!,
-                                                  style: textTheme.bodySmall
-                                                      ?.copyWith(
-                                                        color: colorScheme
-                                                            .onSurfaceVariant,
-                                                        fontWeight:
-                                                            FontWeight.w700,
-                                                      ),
-                                                ),
-                                              ),
-                                            if (displayMedia.status != null &&
-                                                displayMedia.status!.isNotEmpty)
-                                              Chip(
-                                                materialTapTargetSize:
-                                                    MaterialTapTargetSize
-                                                        .shrinkWrap,
-                                                shape: RoundedRectangleBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(
-                                                        uiRoundness,
-                                                      ),
-                                                ),
-                                                side: BorderSide.none,
-                                                color: WidgetStatePropertyAll(
-                                                  colorScheme
-                                                      .surfaceContainerHighest,
-                                                ),
-                                                avatar: Icon(
-                                                  Icons
-                                                      .fiber_manual_record_rounded,
-                                                  size: 14,
-                                                  color:
-                                                      displayMedia.status!
-                                                              .toLowerCase() ==
-                                                          'releasing'
-                                                      ? Colors.greenAccent
-                                                      : colorScheme.primary,
-                                                ),
-                                                label: Text(
-                                                  displayMedia.status!
-                                                      .toUpperCase()
-                                                      .replaceAll('_', ' '),
-                                                  style: textTheme.bodySmall
-                                                      ?.copyWith(
-                                                        color: colorScheme
-                                                            .onSurfaceVariant,
-                                                        fontWeight:
-                                                            FontWeight.w700,
-                                                      ),
-                                                ),
-                                              ),
+                                      const SizedBox(height: 10),
+                                      Wrap(
+                                        spacing: 4.0,
+                                        runSpacing: 4.0,
+                                        alignment: WrapAlignment.start,
+                                        children: [
+                                          if (displayMedia.score != null &&
+                                              displayMedia.score! > 0)
                                             Chip(
                                               materialTapTargetSize:
                                                   MaterialTapTargetSize
@@ -465,19 +302,13 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen>
                                                     .surfaceContainerHighest,
                                               ),
                                               avatar: Icon(
-                                                displayMedia.type ==
-                                                        MediaType.MANGA
-                                                    ? Icons.menu_book_rounded
-                                                    : Icons
-                                                          .video_library_rounded,
+                                                Icons.star_rounded,
                                                 size: 14,
                                                 color: colorScheme.primary,
                                               ),
                                               label: Text(
-                                                displayMedia.type ==
-                                                        MediaType.MANGA
-                                                    ? '${displayMedia.chapters ?? '?'} chs'
-                                                    : '${displayMedia.episodes ?? '?'} eps',
+                                                displayMedia.score!
+                                                    .toStringAsFixed(1),
                                                 style: textTheme.bodySmall
                                                     ?.copyWith(
                                                       color: colorScheme
@@ -487,129 +318,177 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen>
                                                     ),
                                               ),
                                             ),
-                                            if (displayMedia.season != null &&
-                                                displayMedia.season!.isNotEmpty)
-                                              Chip(
-                                                materialTapTargetSize:
-                                                    MaterialTapTargetSize
-                                                        .shrinkWrap,
-                                                shape: RoundedRectangleBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(
-                                                        uiRoundness,
-                                                      ),
-                                                ),
-                                                side: BorderSide.none,
-                                                color: WidgetStatePropertyAll(
-                                                  colorScheme
-                                                      .surfaceContainerHighest,
-                                                ),
-                                                avatar: Icon(
-                                                  Icons.calendar_today_rounded,
-                                                  size: 14,
-                                                  color: colorScheme.primary,
-                                                ),
-                                                label: Text(
-                                                  displayMedia.season!,
-                                                  style: textTheme.bodySmall
-                                                      ?.copyWith(
-                                                        color: colorScheme
-                                                            .onSurfaceVariant,
-                                                        fontWeight:
-                                                            FontWeight.w700,
-                                                      ),
-                                                ),
+                                          if (displayMedia.format != null &&
+                                              displayMedia.format!.isNotEmpty)
+                                            Chip(
+                                              materialTapTargetSize:
+                                                  MaterialTapTargetSize
+                                                      .shrinkWrap,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(
+                                                      uiRoundness,
+                                                    ),
                                               ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
+                                              side: BorderSide.none,
+                                              color: WidgetStatePropertyAll(
+                                                colorScheme
+                                                    .surfaceContainerHighest,
+                                              ),
+                                              avatar: Icon(
+                                                Icons.tv_rounded,
+                                                size: 14,
+                                                color: colorScheme.primary,
+                                              ),
+                                              label: Text(
+                                                displayMedia.format!,
+                                                style: textTheme.bodySmall
+                                                    ?.copyWith(
+                                                      color: colorScheme
+                                                          .onSurfaceVariant,
+                                                      fontWeight:
+                                                          FontWeight.w700,
+                                                    ),
+                                              ),
+                                            ),
+                                          if (displayMedia.status != null &&
+                                              displayMedia.status!.isNotEmpty)
+                                            Chip(
+                                              materialTapTargetSize:
+                                                  MaterialTapTargetSize
+                                                      .shrinkWrap,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(
+                                                      uiRoundness,
+                                                    ),
+                                              ),
+                                              side: BorderSide.none,
+                                              color: WidgetStatePropertyAll(
+                                                colorScheme
+                                                    .surfaceContainerHighest,
+                                              ),
+                                              avatar: Icon(
+                                                Icons
+                                                    .fiber_manual_record_rounded,
+                                                size: 14,
+                                                color:
+                                                    displayMedia.status!
+                                                            .toLowerCase() ==
+                                                        'releasing'
+                                                    ? Colors.greenAccent
+                                                    : colorScheme.primary,
+                                              ),
+                                              label: Text(
+                                                displayMedia.status!
+                                                    .toUpperCase()
+                                                    .replaceAll('_', ' '),
+                                                style: textTheme.bodySmall
+                                                    ?.copyWith(
+                                                      color: colorScheme
+                                                          .onSurfaceVariant,
+                                                      fontWeight:
+                                                          FontWeight.w700,
+                                                    ),
+                                              ),
+                                            ),
+                                          Chip(
+                                            materialTapTargetSize:
+                                                MaterialTapTargetSize
+                                                    .shrinkWrap,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(
+                                                    uiRoundness,
+                                                  ),
+                                            ),
+                                            side: BorderSide.none,
+                                            color: WidgetStatePropertyAll(
+                                              colorScheme
+                                                  .surfaceContainerHighest,
+                                            ),
+                                            avatar: Icon(
+                                              displayMedia.type ==
+                                                      MediaType.MANGA
+                                                  ? Icons.menu_book_rounded
+                                                  : Icons.video_library_rounded,
+                                              size: 14,
+                                              color: colorScheme.primary,
+                                            ),
+                                            label: Text(
+                                              displayMedia.type ==
+                                                      MediaType.MANGA
+                                                  ? '${displayMedia.chapters ?? '?'} chs'
+                                                  : '${displayMedia.episodes ?? '?'} eps',
+                                              style: textTheme.bodySmall
+                                                  ?.copyWith(
+                                                    color: colorScheme
+                                                        .onSurfaceVariant,
+                                                    fontWeight: FontWeight.w700,
+                                                  ),
+                                            ),
+                                          ),
+                                          if (displayMedia.season != null &&
+                                              displayMedia.season!.isNotEmpty)
+                                            Chip(
+                                              materialTapTargetSize:
+                                                  MaterialTapTargetSize
+                                                      .shrinkWrap,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(
+                                                      uiRoundness,
+                                                    ),
+                                              ),
+                                              side: BorderSide.none,
+                                              color: WidgetStatePropertyAll(
+                                                colorScheme
+                                                    .surfaceContainerHighest,
+                                              ),
+                                              avatar: Icon(
+                                                Icons.calendar_today_rounded,
+                                                size: 14,
+                                                color: colorScheme.primary,
+                                              ),
+                                              label: Text(
+                                                displayMedia.season!,
+                                                style: textTheme.bodySmall
+                                                    ?.copyWith(
+                                                      color: colorScheme
+                                                          .onSurfaceVariant,
+                                                      fontWeight:
+                                                          FontWeight.w700,
+                                                    ),
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    ],
                                   ),
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-              body: TabBarView(
-                controller: _tabController,
-                children: [
-                  AboutTabWidget(
-                    media: displayMedia,
-                    onEpisodesTabRequested: () => _tabController.animateTo(1),
-                    uiRoundness: uiRoundness,
-                  ),
-                  EpisodesTabWidget(media: displayMedia),
-                ],
-              ),
-            ),
-            Positioned(
-              top: MediaQuery.paddingOf(context).top + 12,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: AnimatedSlide(
-                  duration: const Duration(milliseconds: 200),
-                  offset: Offset(0, _pullProgress > 0.05 ? 0.0 : -3.0),
-                  child: AnimatedOpacity(
-                    duration: const Duration(milliseconds: 150),
-                    opacity: _pullProgress > 0.05 ? 1.0 : 0.0,
-                    child: IgnorePointer(
-                      child: Container(
-                        width: 54,
-                        height: 54,
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.surfaceContainerHighest,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.2),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            SizedBox(
-                              width: 40,
-                              height: 40,
-                              child: CircularProgressIndicator(
-                                value: _pullProgress,
-                                strokeWidth: 3.5,
-                                backgroundColor: theme
-                                    .colorScheme
-                                    .onSurfaceVariant
-                                    .withValues(alpha: 0.2),
-                                valueColor: AlwaysStoppedAnimation(
-                                  _pullProgress >= 1.0
-                                      ? theme.colorScheme.primary
-                                      : theme.colorScheme.onSurface,
-                                ),
-                              ),
-                            ),
-                            Icon(
-                              Icons.refresh_rounded,
-                              color: _pullProgress >= 1.0
-                                  ? theme.colorScheme.primary
-                                  : theme.colorScheme.onSurface,
-                              size: 22,
-                            ),
-                          ],
-                        ),
                       ),
-                    ),
+                    ],
                   ),
                 ),
               ),
+            ],
+            body: TabBarView(
+              controller: _tabController,
+              children: [
+                AboutTabWidget(
+                  media: displayMedia,
+                  onEpisodesTabRequested: () => _tabController.animateTo(1),
+                  uiRoundness: uiRoundness,
+                ),
+                EpisodesTabWidget(media: displayMedia),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
       bottomNavigationBar: SafeArea(
         child: KeyboardListener(

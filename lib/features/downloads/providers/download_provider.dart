@@ -11,6 +11,7 @@ import 'package:shonenx/features/downloads/domain/download_repository.dart';
 import 'package:shonenx/features/downloads/domain/models/download_task.dart';
 import 'package:shonenx/features/downloads/providers/download_prefs_provider.dart';
 import 'package:shonenx/features/downloads/utils/download_url_helper.dart';
+import 'package:shonenx/core/network/hls_server/hls_server.dart';
 
 import 'package:byte_me/byte_me.dart' as bm;
 import 'package:byte_me_core/byte_me_core.dart' as bm_core;
@@ -69,6 +70,16 @@ class DownloadManagerNotifier extends AsyncNotifier<DownloadManagerNotifier> {
       task.headersMap,
     );
     task.url = unwrapUrl;
+
+    if (task.requiresHlsServer) {
+      final server = ref.read(hlsServerProvider);
+      final hlsUrl = await server.register(
+        id: task.id.toString(),
+        url: task.url,
+        headers: task.headersMap,
+      );
+      task.url = hlsUrl;
+    }
 
     if (prefs.useOneDM) {
       final success = await OneDMService.instance.download(

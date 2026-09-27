@@ -1,4 +1,4 @@
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shonenx/shared/widgets/smart_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/features/notifications/domain/models/notification_subscription.dart';
@@ -121,7 +121,7 @@ class _SubscriptionTile extends ConsumerWidget {
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: ClipRRect(
           borderRadius: BorderRadius.circular(8),
-          child: CachedNetworkImage(
+          child: SmartImage(
             imageUrl: subscription.image,
             width: 48,
             height: 72,

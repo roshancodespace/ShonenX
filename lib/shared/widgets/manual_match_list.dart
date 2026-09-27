@@ -1,4 +1,4 @@
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shonenx/shared/widgets/smart_image.dart';
 import 'package:flutter/material.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 
@@ -36,7 +36,7 @@ class ManualMatchList extends StatelessWidget {
             leading: result.cover != null
                 ? ClipRRect(
                     borderRadius: BorderRadius.circular(6),
-                    child: CachedNetworkImage(
+                    child: SmartImage(
                       imageUrl: result.cover!,
                       width: 40,
                       height: 60,

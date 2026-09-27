@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shonenx/shared/widgets/smart_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/features/tracking/providers/tracker_auth_provider.dart';
@@ -399,7 +399,7 @@ class _TrackingSettingsScreenState
                       if (localProfile?.bannerUrl != null &&
                           localProfile!.bannerUrl!.isNotEmpty)
                         Positioned.fill(
-                          child: CachedNetworkImage(
+                          child: SmartImage(
                             imageUrl: localProfile.bannerUrl!,
                             fit: BoxFit.cover,
                             color: theme.colorScheme.surface.withValues(
@@ -450,7 +450,7 @@ class _TrackingSettingsScreenState
                                         ),
                                       ),
                                       child: ClipOval(
-                                        child: CachedNetworkImage(
+                                        child: SmartImage(
                                           imageUrl:
                                               localProfile?.avatarUrl ?? '',
                                           fit: BoxFit.cover,

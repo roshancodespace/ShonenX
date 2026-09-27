@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shonenx/shared/widgets/smart_image.dart';
 import 'package:flutter/material.dart';
 
 class TrackerAvatarWidget extends StatelessWidget {
@@ -22,7 +22,7 @@ class TrackerAvatarWidget extends StatelessWidget {
     }
 
     if (url.startsWith('http://') || url.startsWith('https://')) {
-      return CachedNetworkImage(
+      return SmartImage(
         imageUrl: url,
         width: size,
         height: size,

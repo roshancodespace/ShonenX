@@ -8,7 +8,11 @@ part 'watch_history_entry.g.dart';
 class WatchHistoryEntry {
   Id id = Isar.autoIncrement;
 
-  @Index(unique: true, replace: true, composite: [CompositeIndex('episodeNumber')])
+  @Index(
+    unique: true,
+    replace: true,
+    composite: [CompositeIndex('episodeNumber')],
+  )
   late String animeId;
 
   double episodeNumber = 1.0;
@@ -73,22 +77,24 @@ class WatchHistoryEntry {
     'lastUpdated': lastUpdated.toIso8601String(),
   };
 
-  static WatchHistoryEntry fromBackupMap(Map<String, dynamic> m) => WatchHistoryEntry()
-    ..episodeNumber = (m['episodeNumber'] as num).toDouble()
-    ..animeId = m['animeId'] as String
-    ..animeIdMal = m['animeIdMal'] as String?
-    ..animeTitle = m['animeTitle'] as String
-    ..episodeTitle = m['episodeTitle'] as String?
-    ..cover = m['cover'] as String?
-    ..banner = m['banner'] as String?
-    ..thumbnailUrl = m['thumbnailUrl'] as String?
-    ..totalEpisodes = m['totalEpisodes'] as int?
-    ..positionInMilliseconds = m['positionInMilliseconds'] as int
-    ..durationInMilliseconds = m['durationInMilliseconds'] as int
-    ..sourceId = m['sourceId'] as String?
-    ..sourceName = m['sourceName'] as String?
-    ..providerId = m['providerId'] as String?
-    ..externalIdsJson = m['externalIdsJson'] as String?
-    ..lastUpdated = DateTime.tryParse(m['lastUpdated'] as String? ?? '') ?? DateTime.now();
+  static WatchHistoryEntry fromBackupMap(Map<String, dynamic> m) =>
+      WatchHistoryEntry()
+        ..episodeNumber = (m['episodeNumber'] as num).toDouble()
+        ..animeId = m['animeId'] as String
+        ..animeIdMal = m['animeIdMal'] as String?
+        ..animeTitle = m['animeTitle'] as String
+        ..episodeTitle = m['episodeTitle'] as String?
+        ..cover = m['cover'] as String?
+        ..banner = m['banner'] as String?
+        ..thumbnailUrl = m['thumbnailUrl'] as String?
+        ..totalEpisodes = m['totalEpisodes'] as int?
+        ..positionInMilliseconds = m['positionInMilliseconds'] as int
+        ..durationInMilliseconds = m['durationInMilliseconds'] as int
+        ..sourceId = m['sourceId'] as String?
+        ..sourceName = m['sourceName'] as String?
+        ..providerId = m['providerId'] as String?
+        ..externalIdsJson = m['externalIdsJson'] as String?
+        ..lastUpdated =
+            DateTime.tryParse(m['lastUpdated'] as String? ?? '') ??
+            DateTime.now();
 }
-

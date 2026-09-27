@@ -33,7 +33,10 @@ class LibraryRepository {
     });
   }
 
-  Stream<List<LibraryEntry>> watchLibrary({required TrackedStatus status, required MediaType mediaType}) {
+  Stream<List<LibraryEntry>> watchLibrary({
+    required TrackedStatus status,
+    required MediaType mediaType,
+  }) {
     return _isar.libraryEntrys
         .where()
         .filter()

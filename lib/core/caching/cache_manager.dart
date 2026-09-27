@@ -113,10 +113,11 @@ class CacheManager {
       entry.expiry = DateTime.now().add(cacheDuration);
 
       if (entry.bodyBytes.length > _oneMb) {
-        if (!suppressLogs)
+        if (!suppressLogs) {
           log.v(
             'Compressing bodyBytes (${entry.bodyBytes.length} bytes) with gzip: ${entry.key}',
           );
+        }
         entry.bodyBytes = gzip.encode(entry.bodyBytes);
       }
 
@@ -124,8 +125,9 @@ class CacheManager {
         await _isar.cacheEntrys.put(entry);
       });
 
-      if (!suppressLogs)
+      if (!suppressLogs) {
         log.s('STORED: ${entry.key} (ttl: ${cacheDuration.inMinutes}m)');
+      }
     } catch (e, st) {
       if (!suppressLogs) log.e('WRITE FAILED: ${entry.key}', e, st);
     }

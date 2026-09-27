@@ -38,7 +38,8 @@ class CommentumTokenStorage implements CommentumStorage {
     }
   }
 
-  String _providerKey(CommentumProvider p) => 'commentum_provider_token_${p.name}';
+  String _providerKey(CommentumProvider p) =>
+      'commentum_provider_token_${p.name}';
 
   @override
   Future<void> saveProviderToken(CommentumProvider provider, String token) =>

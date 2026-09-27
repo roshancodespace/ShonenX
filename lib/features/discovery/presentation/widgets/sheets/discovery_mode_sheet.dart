@@ -1,4 +1,4 @@
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shonenx/shared/widgets/smart_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -263,7 +263,7 @@ class _SourceConfig extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(
                     GlobalUI.uiRoundness * 0.5,
                   ),
-                  child: CachedNetworkImage(
+                  child: SmartImage(
                     imageUrl: source.iconUrl!,
                     width: 28,
                     height: 28,

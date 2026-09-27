@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shonenx/shared/widgets/smart_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
@@ -342,7 +342,7 @@ class _TvManualMatchContentState extends ConsumerState<_TvManualMatchContent> {
                       (radius * 0.5).clamp(0.0, double.infinity),
                     ),
                     child: item.cover != null && item.cover!.isNotEmpty
-                        ? CachedNetworkImage(
+                        ? SmartImage(
                             imageUrl: item.cover!,
                             width: 38,
                             height: 54,

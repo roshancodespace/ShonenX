@@ -1,4 +1,4 @@
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shonenx/shared/widgets/smart_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -325,7 +325,7 @@ class _CharactersSheetState extends ConsumerState<CharactersSheet> {
                                 borderRadius: BorderRadius.circular(
                                   GlobalUI.uiRoundness * 0.7,
                                 ),
-                                child: CachedNetworkImage(
+                                child: SmartImage(
                                   imageUrl: c.image!,
                                   width: 52,
                                   height: 92,
@@ -523,7 +523,7 @@ class _CharacterDetailsModalState
               if (c.image != null && c.image!.isNotEmpty)
                 ClipRRect(
                   borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
-                  child: CachedNetworkImage(
+                  child: SmartImage(
                     imageUrl: c.image!,
                     width: 100,
                     height: 140,

@@ -6,7 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rhttp/rhttp.dart' as rhttp;
 import 'package:shonenx/core/caching/cache_manager.dart';
 import 'package:shonenx/core/caching/domain/cache_entry.dart';
-import 'package:shonenx/core/network/cookie_manager.dart';
+import 'package:shonenx/core/network/session_manager.dart';
+import 'package:shonenx/core/network/network_config.dart';
 
 class HttpResponse {
   final int statusCode;
@@ -222,8 +223,23 @@ class HTTP {
 
     final requestHeaders = Map<String, String>.from(headers ?? {});
 
-    final userAgent = await CookieManager().getUserAgent(url);
+    final sessionManager = SessionManager();
+    final cookies = await sessionManager.getCookies(url);
+    final userAgent =
+        await sessionManager.getUserAgent(url) ?? NetworkConfig.globalUserAgent;
+
+    requestHeaders.addAll(NetworkConfig.globalHeaders);
     requestHeaders['user-agent'] = userAgent;
+    if (cookies.isNotEmpty) {
+      // Don't overwrite if caller explicitly provided a cookie
+      final hasCookie = requestHeaders.keys.any(
+        (k) => k.toLowerCase() == 'cookie',
+      );
+      if (!hasCookie) {
+        requestHeaders['cookie'] = cookies;
+      }
+    }
+
     rhttp.HttpBody? rBody;
 
     if (body != null) {

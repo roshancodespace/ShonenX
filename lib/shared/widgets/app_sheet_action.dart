@@ -23,36 +23,29 @@ class AppSheetAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    
-    final bg = backgroundColor ?? (isPrimary ? cs.primary : cs.primaryContainer);
-    final fg = foregroundColor ?? (isPrimary ? cs.onPrimary : cs.onPrimaryContainer);
+
+    final bg =
+        backgroundColor ?? (isPrimary ? cs.primary : cs.primaryContainer);
+    final fg =
+        foregroundColor ?? (isPrimary ? cs.onPrimary : cs.onPrimaryContainer);
 
     Widget button;
     if (label != null && icon != null) {
       button = FilledButton.icon(
-        style: FilledButton.styleFrom(
-          backgroundColor: bg,
-          foregroundColor: fg,
-        ),
+        style: FilledButton.styleFrom(backgroundColor: bg, foregroundColor: fg),
         onPressed: onTap,
         icon: Icon(icon, size: 20),
         label: Text(label!),
       );
     } else if (label != null) {
       button = FilledButton(
-        style: FilledButton.styleFrom(
-          backgroundColor: bg,
-          foregroundColor: fg,
-        ),
+        style: FilledButton.styleFrom(backgroundColor: bg, foregroundColor: fg),
         onPressed: onTap,
         child: Text(label!),
       );
     } else {
       button = IconButton(
-        style: IconButton.styleFrom(
-          backgroundColor: bg,
-          foregroundColor: fg,
-        ),
+        style: IconButton.styleFrom(backgroundColor: bg, foregroundColor: fg),
         icon: Icon(icon ?? Icons.circle, size: 20),
         onPressed: onTap,
       );

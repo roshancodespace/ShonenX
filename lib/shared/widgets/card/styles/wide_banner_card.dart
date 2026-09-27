@@ -41,7 +41,7 @@ class WideBannerCard extends StatelessWidget {
     this.topRightBadge,
     this.bottomLeftBadge,
     this.bottomRightBadge,
-    });
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -73,14 +73,37 @@ class WideBannerCard extends StatelessWidget {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  CardThumbnail(media: media, isActive: isActive, progress: progress, heroTag: heroTag, width: width * 0.40, height: height, radiusOverride: 0),
-                  CardBadgeOverlay(media: media, styleName: 'wideBanner', isWideMode: isWideMode, isActive: isActive, showRatings: showRatings, progress: null, progressText: null, topLeftBadge: topLeftBadge, topRightBadge: topRightBadge, bottomLeftBadge: bottomLeftBadge, bottomRightBadge: bottomRightBadge,),
+                  CardThumbnail(
+                    media: media,
+                    isActive: isActive,
+                    progress: progress,
+                    heroTag: heroTag,
+                    width: width * 0.40,
+                    height: height,
+                    radiusOverride: 0,
+                  ),
+                  CardBadgeOverlay(
+                    media: media,
+                    styleName: 'wideBanner',
+                    isWideMode: isWideMode,
+                    isActive: isActive,
+                    showRatings: showRatings,
+                    progress: null,
+                    progressText: null,
+                    topLeftBadge: topLeftBadge,
+                    topRightBadge: topRightBadge,
+                    bottomLeftBadge: bottomLeftBadge,
+                    bottomRightBadge: bottomRightBadge,
+                  ),
                 ],
               ),
             ),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

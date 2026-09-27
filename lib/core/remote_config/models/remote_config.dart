@@ -14,7 +14,8 @@ class RemoteConfig {
   });
 
   factory RemoteConfig.fromJson(Map<String, dynamic> json) {
-    final bool isAppEnabled = json['applicationEnabled'] as bool? ??
+    final bool isAppEnabled =
+        json['applicationEnabled'] as bool? ??
         json['enabled'] as bool? ??
         json['appEnabled'] as bool? ??
         !(json['disabled'] as bool? ?? false);
@@ -26,7 +27,8 @@ class RemoteConfig {
       announcements: json['announcements'] != null
           ? AnnouncementsConfig.fromJson(json['announcements'])
           : AnnouncementsConfig(app: [], website: []),
-      sources: (json['sources'] as Map<String, dynamic>?)?.map(
+      sources:
+          (json['sources'] as Map<String, dynamic>?)?.map(
             (key, value) => MapEntry(key, SourceConfig.fromJson(value)),
           ) ??
           {},
@@ -52,11 +54,13 @@ class AnnouncementsConfig {
 
   factory AnnouncementsConfig.fromJson(Map<String, dynamic> json) {
     return AnnouncementsConfig(
-      app: (json['app'] as List?)
+      app:
+          (json['app'] as List?)
               ?.map((e) => Announcement.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
-      website: (json['website'] as List?)
+      website:
+          (json['website'] as List?)
               ?.map((e) => Announcement.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],

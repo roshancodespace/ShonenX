@@ -42,5 +42,5 @@ class SubtitlePrefsNotifier extends Notifier<SubtitlePrefs> {
 
 final subtitlePrefsProvider =
     NotifierProvider<SubtitlePrefsNotifier, SubtitlePrefs>(
-  SubtitlePrefsNotifier.new,
-);
+      SubtitlePrefsNotifier.new,
+    );

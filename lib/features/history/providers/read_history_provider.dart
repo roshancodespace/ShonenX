@@ -10,9 +10,7 @@ final readHistoryRepositoryProvider = Provider<ReadHistoryRepository>((ref) {
 
 final continueReadingProvider = StreamProvider.autoDispose
     .family<List<ReadHistoryEntry>, int>((ref, limit) {
-      return ref
-          .watch(readHistoryRepositoryProvider)
-          .readHistory(limit: limit);
+      return ref.watch(readHistoryRepositoryProvider).readHistory(limit: limit);
     }, name: 'continueReadingProvider');
 
 final continueReadingPerMangaProvider = StreamProvider.autoDispose

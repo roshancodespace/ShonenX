@@ -7,9 +7,9 @@ class UnifiedChapter {
   final String? uploadDate;
 
   const UnifiedChapter({
-    required this.id, 
-    required this.number, 
-    this.title, 
+    required this.id,
+    required this.number,
+    this.title,
     this.scanlator,
     this.airDate,
     this.uploadDate,

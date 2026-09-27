@@ -1,4 +1,4 @@
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shonenx/shared/widgets/smart_image.dart';
 import 'package:flutter/material.dart';
 import 'package:shonenx/core/utils/focus_hover_detector.dart';
 import 'package:shonenx/core/utils/formatting.dart';
@@ -105,7 +105,7 @@ class TvEpisodeListPanel extends StatelessWidget {
                       fit: StackFit.expand,
                       children: [
                         if (imageUrl.isNotEmpty)
-                          CachedNetworkImage(
+                          SmartImage(
                             imageUrl: imageUrl,
                             fit: BoxFit.cover,
                             errorWidget: (_, __, ___) => Container(

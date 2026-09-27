@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shonenx/shared/widgets/smart_image.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -1177,7 +1177,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         border: Border.all(color: cs.primary, width: 2),
                       ),
                       child: ClipOval(
-                        child: CachedNetworkImage(
+                        child: SmartImage(
                           imageUrl:
                               tracker.type.getProfile(ref)?.avatarUrl ?? '',
                           fit: BoxFit.cover,

@@ -1,4 +1,4 @@
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shonenx/shared/widgets/smart_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/features/discord/models/discord_rpc_custom_settings.dart';
@@ -182,7 +182,7 @@ class DiscordSettingsScreen extends ConsumerWidget {
                                 ),
                                 child: ClipOval(
                                   child: discordState.user?.avatarUrl != null
-                                      ? CachedNetworkImage(
+                                      ? SmartImage(
                                           imageUrl:
                                               discordState.user!.avatarUrl!,
                                           fit: BoxFit.cover,

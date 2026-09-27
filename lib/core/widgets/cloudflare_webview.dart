@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart' as webview;
-import 'package:shonenx/core/network/cookie_manager.dart';
+import 'package:shonenx/core/network/session_manager.dart';
+import 'package:shonenx/core/network/network_config.dart';
+import 'package:anymex_extension_runtime_bridge/anymex_extension_runtime_bridge.dart'
+    as bridge;
+import 'package:shonenx/shared/widgets/app_scaffold.dart';
 
 class CloudflareWebView extends StatefulWidget {
   final String url;
@@ -28,222 +32,188 @@ class _CloudflareWebViewState extends State<CloudflareWebView> {
   bool _isLoading = true;
   double _progress = 0.0;
   bool _synced = false;
-  bool _cookiesCleared = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _clearOldCookies();
-  }
-
-  Future<void> _clearOldCookies() async {
-    final inAppCookieManager = webview.CookieManager.instance();
-    final url = webview.WebUri(widget.url);
-    final cookies = await inAppCookieManager.getCookies(url: url);
-
-    for (var cookie in cookies) {
-      if (cookie.name.toLowerCase() == 'cf_clearance') {
-        try {
-          await inAppCookieManager.deleteCookie(
-            url: url,
-            name: cookie.name,
-            domain: cookie.domain ?? '',
-            path: cookie.path ?? '/',
-          );
-        } catch (e) {
-          // Ignore delete errors
-        }
-      }
-    }
-
-    if (mounted) {
-      setState(() {
-        _cookiesCleared = true;
-      });
-    }
-  }
 
   Uri get _parsedUri => Uri.parse(widget.url);
 
-  Future<void> _extractAndSyncCookies() async {
-    if (_controller == null) return;
-    final currentUrlObj = await _controller!.getUrl();
-    final currentUrl = currentUrlObj?.toString() ?? widget.url;
-
-    final inAppCookieManager = webview.CookieManager.instance();
-    final cookies = await inAppCookieManager.getCookies(
-      url: webview.WebUri(currentUrl),
-    );
-
-    if (cookies.isNotEmpty) {
-      final cookieString = cookies
-          .map((c) => '${c.name}=${c.value}')
-          .join('; ');
-
-      final nativeUserAgent =
-          await _controller!.evaluateJavascript(source: "navigator.userAgent")
-              as String? ??
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
-
-      final genericCookieManager = CookieManager();
-      await genericCookieManager.setCookies(
-        currentUrl,
-        cookieString,
-        nativeUserAgent,
-      );
-    }
-  }
-
-  Future<void> _checkIfChallengePassed() async {
-    if (_controller == null) return;
-
-    final title = await _controller!.getTitle() ?? '';
-    final lowerTitle = title.toLowerCase();
-
-    // If the title indicates a Cloudflare challenge, wait.
-    if (lowerTitle.contains('just a moment') ||
-        lowerTitle.contains('cloudflare') ||
-        lowerTitle.contains('attention required')) {
-      return;
+  void _onSyncAndClose() async {
+    if (_controller != null) {
+      await SessionManager().syncFromWebView(_controller!, widget.url);
     }
 
-    final inAppCookieManager = webview.CookieManager.instance();
-    final currentUrlObj = await _controller!.getUrl();
-    final currentUrl = currentUrlObj?.toString() ?? widget.url;
-
-    final cookies = await inAppCookieManager.getCookies(
-      url: webview.WebUri(currentUrl),
-    );
-
-    // If we receive the cf_clearance cookie, Cloudflare verification is complete.
-    final hasCfClearance = cookies.any(
-      (c) => c.name.toLowerCase() == 'cf_clearance',
-    );
-
-    if (hasCfClearance) {
-      // One more check to ensure we aren't popping on a blank page
-      final isChallengePresent =
-          await _controller!.evaluateJavascript(
-                source:
-                    "document.getElementById('challenge-running') != null || document.querySelector('.cf-browser-verification') != null;",
-              )
-              as bool? ??
-          false;
-
-      if (isChallengePresent) return;
-
-      await _extractAndSyncCookies();
-      if (mounted) {
-        Navigator.of(context).pop(true);
-      }
-    }
-  }
-
-  void _onSyncPressed() async {
-    await _extractAndSyncCookies();
     if (mounted) {
       setState(() => _synced = true);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Cookies synced! You can now close this view.'),
+          content: Text('Session synced! You can now close this view.'),
         ),
       );
+      Navigator.of(context).pop(true);
     }
   }
 
-  void _onResetPressed() async {
-    setState(() {
-      _isLoading = true;
-    });
+  void _reload() {
+    _controller?.reload();
+  }
 
-    final inAppCookieManager = webview.CookieManager.instance();
-    await inAppCookieManager.deleteAllCookies();
-
-    final genericCookieManager = CookieManager();
-    await genericCookieManager.setCookies(
-      widget.url,
-      '',
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    );
+  Future<void> _resetSession() async {
+    final cookieManager = webview.CookieManager.instance();
+    await cookieManager.deleteAllCookies();
 
     try {
-      final webStorageManager = webview.WebStorageManager.instance();
-      await webStorageManager.deleteAllData();
-    } catch (_) {
-      if (_controller != null) {
-        try {
-          await _controller!.evaluateJavascript(
-            source:
-                'window.localStorage.clear(); window.sessionStorage.clear();',
-          );
-        } catch (_) {}
-      }
-    }
-
-    if (_controller != null) {
-      await _controller!.loadUrl(
-        urlRequest: webview.URLRequest(url: webview.WebUri(widget.url)),
+      await _controller?.evaluateJavascript(
+        source: 'localStorage.clear(); sessionStorage.clear();',
       );
-    }
+    } catch (_) {}
+
+    try {
+      await webview.InAppWebViewController.clearAllCache();
+    } catch (_) {}
+
+    _reload();
+  }
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          _parsedUri.host.isNotEmpty ? _parsedUri.host : 'Cloudflare Bypass',
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Reset & Clear Data',
-            onPressed: _onResetPressed,
-          ),
-          IconButton(
-            icon: Icon(_synced ? Icons.check_circle : Icons.sync),
-            tooltip: 'Sync Cookies Manually',
-            onPressed: _onSyncPressed,
-          ),
-        ],
+    final theme = Theme.of(context);
+
+    return AppScaffold(
+      title: _parsedUri.host.isNotEmpty ? _parsedUri.host : 'Cloudflare Bypass',
+      showBackButton: true,
+      barBottom: PreferredSize(
+        preferredSize: const Size.fromHeight(2),
+        child: _isLoading && _progress > 0 && _progress < 1
+            ? LinearProgressIndicator(
+                value: _progress,
+                backgroundColor: Colors.transparent,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  theme.colorScheme.primary,
+                ),
+                minHeight: 2,
+              )
+            : const SizedBox(height: 2),
       ),
-      body: SafeArea(
-        child: !_cookiesCleared
-            ? const Center(child: CircularProgressIndicator())
-            : Column(
-                children: [
-                  if (_isLoading)
-                    LinearProgressIndicator(value: _progress, minHeight: 3),
-                  Expanded(
-                    child: webview.InAppWebView(
-                      initialUrlRequest: webview.URLRequest(
-                        url: webview.WebUri(widget.url),
-                      ),
-                      onWebViewCreated: (controller) {
-                        _controller = controller;
-                      },
-                      onLoadStart: (controller, url) {
-                        setState(() {
-                          _isLoading = true;
-                          _progress = 0.0;
-                          _synced = false;
-                        });
-                      },
-                      onProgressChanged: (controller, progress) {
-                        setState(() {
-                          _progress = progress / 100;
-                        });
-                      },
-                      onLoadStop: (controller, url) async {
-                        setState(() {
-                          _isLoading = false;
-                        });
-                        await _checkIfChallengePassed();
-                      },
+      body: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            color: theme.colorScheme.secondaryContainer.withValues(alpha: 0.7),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.info_outline_rounded,
+                  color: theme.colorScheme.onSecondaryContainer,
+                  size: 18,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Complete any Cloudflare challenge if presented, then tap "Sync & Close" to pass the session to the app.',
+                    style: TextStyle(
+                      color: theme.colorScheme.onSecondaryContainer,
+                      fontSize: 12,
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: Stack(
+              children: [
+                webview.InAppWebView(
+                  initialUrlRequest: webview.URLRequest(
+                    url: webview.WebUri(widget.url),
+                  ),
+                  initialUserScripts: null,
+                  initialSettings: webview.InAppWebViewSettings(
+                    userAgent:
+                        bridge.AnymeXRuntimeBridge.userAgentMap[_parsedUri
+                            .host] ??
+                        bridge.AnymeXRuntimeBridge.userAgentMap[_parsedUri.host
+                            .replaceFirst('www.', '')] ??
+                        NetworkConfig.globalUserAgent,
+                    useHybridComposition: false,
+                    javaScriptEnabled: true,
+                    domStorageEnabled: true,
+                    databaseEnabled: true,
+                    useWideViewPort: true,
+                    loadWithOverviewMode: true,
+                    thirdPartyCookiesEnabled: true,
+                    limitsNavigationsToAppBoundDomains: false,
+                  ),
+                  shouldOverrideUrlLoading: (_, _) async =>
+                      webview.NavigationActionPolicy.ALLOW,
+                  onWebViewCreated: (controller) {
+                    _controller = controller;
+                  },
+                  onLoadStart: (controller, url) {
+                    if (mounted) {
+                      setState(() {
+                        _isLoading = true;
+                        _progress = 0.0;
+                      });
+                    }
+                  },
+                  onLoadStop: (controller, url) async {
+                    if (mounted) {
+                      setState(() {
+                        _isLoading = false;
+                        _progress = 1.0;
+                      });
+                    }
+
+                    if (_controller != null) {
+                      await SessionManager().syncFromWebView(
+                        _controller!,
+                        widget.url,
+                      );
+                    }
+                  },
+                  onProgressChanged: (controller, progress) {
+                    if (mounted) {
+                      setState(() {
+                        _progress = progress / 100;
+                      });
+                    }
+                  },
+                ),
+
+                Positioned(
+                  bottom: 24,
+                  right: 24,
+                  child: Wrap(
+                    spacing: 12,
+                    alignment: WrapAlignment.end,
+                    children: [
+                      FloatingActionButton.extended(
+                        heroTag: 'reset_fab',
+                        onPressed: _resetSession,
+                        icon: const Icon(Icons.cleaning_services_rounded),
+                        label: const Text('Reset'),
+                        backgroundColor: theme.colorScheme.errorContainer,
+                        foregroundColor: theme.colorScheme.onErrorContainer,
+                      ),
+                      FloatingActionButton.extended(
+                        heroTag: 'sync_fab',
+                        onPressed: _onSyncAndClose,
+                        icon: Icon(
+                          _synced ? Icons.check_circle_rounded : Icons.sync,
+                        ),
+                        label: Text(_synced ? 'Synced!' : 'Sync & Close'),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -41,7 +41,7 @@ class ClassicCard extends StatelessWidget {
     this.topRightBadge,
     this.bottomLeftBadge,
     this.bottomRightBadge,
-    });
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -90,9 +90,9 @@ class ClassicCard extends StatelessWidget {
                 progress: progress,
                 progressText: progressText,
                 topLeftBadge: topLeftBadge,
-      topRightBadge: topRightBadge,
-      bottomLeftBadge: bottomLeftBadge,
-      bottomRightBadge: bottomRightBadge,
+                topRightBadge: topRightBadge,
+                bottomLeftBadge: bottomLeftBadge,
+                bottomRightBadge: bottomRightBadge,
               ),
             ],
           ),
@@ -167,9 +167,9 @@ class ClassicCard extends StatelessWidget {
                 progress: progress,
                 progressText: progressText,
                 topLeftBadge: topLeftBadge,
-      topRightBadge: topRightBadge,
-      bottomLeftBadge: bottomLeftBadge,
-      bottomRightBadge: bottomRightBadge,
+                topRightBadge: topRightBadge,
+                bottomLeftBadge: bottomLeftBadge,
+                bottomRightBadge: bottomRightBadge,
               ),
             ],
           ),

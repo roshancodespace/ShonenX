@@ -1,4 +1,4 @@
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shonenx/shared/widgets/smart_image.dart';
 import 'package:flutter/material.dart';
 import 'package:shonenx/features/discord/models/discord_rpc_custom_settings.dart';
 import 'package:shonenx/features/discord/models/discord_user.dart';
@@ -140,7 +140,7 @@ class _DiscordRpcPreviewCardState extends State<DiscordRpcPreviewCard> {
                             color: isPlayingState
                                 ? Colors.black
                                 : Colors.transparent,
-                            child: CachedNetworkImage(
+                            child: SmartImage(
                               imageUrl: coverUrl ?? _appIconNetworkUrl,
                               width: 72,
                               height: 72,
@@ -184,7 +184,7 @@ class _DiscordRpcPreviewCardState extends State<DiscordRpcPreviewCard> {
                               ),
                             ),
                             child: ClipOval(
-                              child: CachedNetworkImage(
+                              child: SmartImage(
                                 imageUrl: _appIconNetworkUrl,
                                 width: 26,
                                 height: 26,

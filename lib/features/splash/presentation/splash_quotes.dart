@@ -471,12 +471,14 @@ class SplashQuotes {
       source: 'Bleach',
     ),
     SplashQuote(
-      quote: 'The difference between the novice and the master is that the master has failed more times.',
+      quote:
+          'The difference between the novice and the master is that the master has failed more times.',
       author: 'Koro-sensei',
       source: 'Assassination Classroom',
     ),
     SplashQuote(
-      quote: 'There is no shame in falling down. The shame is in not getting back up.',
+      quote:
+          'There is no shame in falling down. The shame is in not getting back up.',
       author: 'Shoyo Hinata',
       source: 'Haikyuu!!',
     ),
@@ -506,7 +508,8 @@ class SplashQuotes {
       source: 'Haikyuu!!',
     ),
     SplashQuote(
-      quote: 'A sword is merely a tool. The person holding it gives it meaning.',
+      quote:
+          'A sword is merely a tool. The person holding it gives it meaning.',
       author: 'Kenshin Himura',
       source: 'Rurouni Kenshin',
     ),
@@ -536,7 +539,8 @@ class SplashQuotes {
       source: 'Fate/stay night',
     ),
     SplashQuote(
-      quote: 'People have dreams. People have hopes. That is what makes them human.',
+      quote:
+          'People have dreams. People have hopes. That is what makes them human.',
       author: 'Emiya Shirou',
       source: 'Fate/stay night',
     ),
@@ -561,7 +565,8 @@ class SplashQuotes {
       source: 'Fullmetal Alchemist: Brotherhood',
     ),
     SplashQuote(
-      quote: 'Nothing’s perfect, the world’s not perfect, but it’s there for us.',
+      quote:
+          'Nothing’s perfect, the world’s not perfect, but it’s there for us.',
       author: 'Roy Mustang',
       source: 'Fullmetal Alchemist: Brotherhood',
     ),
@@ -571,7 +576,8 @@ class SplashQuotes {
       source: 'Fullmetal Alchemist: Brotherhood',
     ),
     SplashQuote(
-      quote: 'Humankind cannot gain anything without first giving something in return.',
+      quote:
+          'Humankind cannot gain anything without first giving something in return.',
       author: 'Alphonse Elric',
       source: 'Fullmetal Alchemist: Brotherhood',
     ),
@@ -596,7 +602,8 @@ class SplashQuotes {
       source: 'Code Geass',
     ),
     SplashQuote(
-      quote: 'Humans are weak creatures. But that is why they can become strong.',
+      quote:
+          'Humans are weak creatures. But that is why they can become strong.',
       author: 'Reigen Arataka',
       source: 'Mob Psycho 100',
     ),
@@ -606,7 +613,8 @@ class SplashQuotes {
       source: 'Mob Psycho 100',
     ),
     SplashQuote(
-      quote: 'You can’t control your emotions, but you can control your actions.',
+      quote:
+          'You can’t control your emotions, but you can control your actions.',
       author: 'Reigen Arataka',
       source: 'Mob Psycho 100',
     ),
@@ -666,7 +674,8 @@ class SplashQuotes {
       source: 'Fairy Tail',
     ),
     SplashQuote(
-      quote: 'You should never give up on something you can’t go a day without thinking about.',
+      quote:
+          'You should never give up on something you can’t go a day without thinking about.',
       author: 'Natsu Dragneel',
       source: 'Fairy Tail',
     ),

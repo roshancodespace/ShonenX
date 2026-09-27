@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shonenx/shared/widgets/smart_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:anymex_extension_runtime_bridge/anymex_extension_runtime_bridge.dart'
@@ -1272,7 +1272,7 @@ class _ExtensionTesterScreenState extends ConsumerState<ExtensionTesterScreen> {
                                     },
                             ),
                             const SizedBox(width: 8),
-                            CachedNetworkImage(
+                            SmartImage(
                               imageUrl: source.iconUrl ?? '',
                               width: 36,
                               height: 36,

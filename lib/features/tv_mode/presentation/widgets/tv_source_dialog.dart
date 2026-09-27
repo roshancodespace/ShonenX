@@ -1,4 +1,4 @@
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shonenx/shared/widgets/smart_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/utils/focus_hover_detector.dart';
@@ -208,7 +208,7 @@ class _SourceCard extends StatelessWidget {
                   ),
                 ),
                 child: source.iconUrl != null && source.iconUrl!.isNotEmpty
-                    ? CachedNetworkImage(
+                    ? SmartImage(
                         imageUrl: source.iconUrl!,
                         fit: BoxFit.contain,
                         errorWidget: (_, __, ___) => Icon(
@@ -388,7 +388,7 @@ class _TvSourceGroupCardState extends State<_TvSourceGroupCard> {
                           child:
                               activeVariant.iconUrl != null &&
                                   activeVariant.iconUrl!.isNotEmpty
-                              ? CachedNetworkImage(
+                              ? SmartImage(
                                   imageUrl: activeVariant.iconUrl!,
                                   fit: BoxFit.contain,
                                   errorWidget: (_, __, ___) => Icon(

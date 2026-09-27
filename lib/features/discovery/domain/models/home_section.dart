@@ -5,11 +5,7 @@ import 'package:shonenx/features/tracking/domain/models/tracker_category.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 
-enum HomeSectionType {
-  discovery,
-  continueMedia,
-  libraryStatus,
-}
+enum HomeSectionType { discovery, continueMedia, libraryStatus }
 
 class HomeSection {
   final String id;

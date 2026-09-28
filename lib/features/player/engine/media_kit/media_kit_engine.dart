@@ -211,9 +211,15 @@ class MediaKitEngine implements VideoEngine {
       _player.stream.tracks.listen((tracks) {
         if (!_disposed) {
           final audioList = tracks.audio.map((t) => _mapAudioTrack(t)).toList();
+          final subtitleList = tracks.subtitle
+              .map((t) => _mapSubtitleTrack(t))
+              .toList();
           ref
               .read(videoEngineStateProvider.notifier)
-              .updateState(audioTracks: audioList);
+              .updateState(
+                audioTracks: audioList,
+                subtitleTracks: subtitleList,
+              );
         }
       }),
       _player.stream.track.listen((track) {
@@ -242,11 +248,15 @@ class MediaKitEngine implements VideoEngine {
         final initialAudioList = _player.state.tracks.audio
             .map((t) => _mapAudioTrack(t))
             .toList();
+        final initialSubtitleList = _player.state.tracks.subtitle
+            .map((t) => _mapSubtitleTrack(t))
+            .toList();
         ref
             .read(videoEngineStateProvider.notifier)
             .updateState(
               audioTracks: initialAudioList,
               activeAudioTrack: _mapAudioTrack(_player.state.track.audio),
+              subtitleTracks: initialSubtitleList,
             );
       }
     });
@@ -375,7 +385,9 @@ class MediaKitEngine implements VideoEngine {
   Future<void> setSubtitle(stream.SubtitleTrack? subtitle) async {
     _currentSubtitle = subtitle;
 
-    if (subtitle == null || subtitle.url.isEmpty) {
+    if (subtitle == null ||
+        subtitle == stream.SubtitleTrack.none ||
+        subtitle.url.isEmpty) {
       _log.d('Disabling subtitle');
       await _player.setSubtitleTrack(SubtitleTrack.no());
     } else if (subtitle.url.startsWith('internal:')) {
@@ -383,15 +395,48 @@ class MediaKitEngine implements VideoEngine {
       _log.d(
         'Setting internal subtitle: $trackId (lang: ${subtitle.language})',
       );
-      await _player.setSubtitleTrack(
-        SubtitleTrack(trackId, null, subtitle.language),
+
+      final target = _player.state.tracks.subtitle.firstWhere(
+        (t) => t.id == trackId,
+        orElse: () => SubtitleTrack(trackId, null, subtitle.language),
       );
+      await _player.setSubtitleTrack(target);
     } else {
       _log.d('Setting subtitle: ${subtitle.url} (lang: ${subtitle.language})');
       await _player.setSubtitleTrack(
         SubtitleTrack.uri(subtitle.url, language: subtitle.language),
       );
     }
+  }
+
+  stream.SubtitleTrack _mapSubtitleTrack(SubtitleTrack track) {
+    if (track.id == 'no' || track.id == 'auto') {
+      return stream.SubtitleTrack.none;
+    }
+
+    final title = track.title?.trim();
+    final lang = track.language?.trim();
+
+    String label;
+    if (title != null && title.isNotEmpty) {
+      if (lang != null &&
+          lang.isNotEmpty &&
+          !title.toLowerCase().contains(lang.toLowerCase())) {
+        label = '$title ($lang)';
+      } else {
+        label = title;
+      }
+    } else if (lang != null && lang.isNotEmpty) {
+      label = lang.toUpperCase();
+    } else {
+      label = 'Track ${track.id}';
+    }
+
+    return stream.SubtitleTrack(
+      url: 'internal:${track.id}',
+      language: lang ?? 'Unknown',
+      label: label,
+    );
   }
 
   stream.AudioTrack _mapAudioTrack(AudioTrack track) {

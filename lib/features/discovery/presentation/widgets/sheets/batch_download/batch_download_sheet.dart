@@ -476,7 +476,7 @@ class BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
             ..episodeNumber = ep.number
             ..savePath = '$targetDir/$fileName'
             ..fileName = fileName
-            ..requiresHlsServer = matchedStream.requiresHlsServer
+            ..requiresProxy = matchedStream.requiresProxy
             ..totalBytes = DownloadUrlHelper.parseSizeToBytes(
               matchedStream.size,
             );

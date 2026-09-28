@@ -51,9 +51,9 @@ const DownloadTaskSchema = CollectionSchema(
       name: r'progress',
       type: IsarType.double,
     ),
-    r'requiresHlsServer': PropertySchema(
+    r'requiresProxy': PropertySchema(
       id: 8,
-      name: r'requiresHlsServer',
+      name: r'requiresProxy',
       type: IsarType.bool,
     ),
     r'savePath': PropertySchema(
@@ -153,7 +153,7 @@ void _downloadTaskSerialize(
   writer.writeBool(offsets[5], object.isM3u8);
   writer.writeString(offsets[6], object.mediaId);
   writer.writeDouble(offsets[7], object.progress);
-  writer.writeBool(offsets[8], object.requiresHlsServer);
+  writer.writeBool(offsets[8], object.requiresProxy);
   writer.writeString(offsets[9], object.savePath);
   writer.writeByte(offsets[10], object.status.index);
   writer.writeLong(offsets[11], object.totalBytes);
@@ -184,7 +184,7 @@ DownloadTask _downloadTaskDeserialize(
   object.isM3u8 = reader.readBool(offsets[5]);
   object.mediaId = reader.readString(offsets[6]);
   object.progress = reader.readDouble(offsets[7]);
-  object.requiresHlsServer = reader.readBool(offsets[8]);
+  object.requiresProxy = reader.readBool(offsets[8]);
   object.savePath = reader.readString(offsets[9]);
   object.status =
       _DownloadTaskstatusValueEnumMap[reader.readByteOrNull(offsets[10])] ??
@@ -1137,10 +1137,10 @@ extension DownloadTaskQueryFilter
   }
 
   QueryBuilder<DownloadTask, DownloadTask, QAfterFilterCondition>
-  requiresHlsServerEqualTo(bool value) {
+  requiresProxyEqualTo(bool value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
-        FilterCondition.equalTo(property: r'requiresHlsServer', value: value),
+        FilterCondition.equalTo(property: r'requiresProxy', value: value),
       );
     });
   }
@@ -1702,17 +1702,16 @@ extension DownloadTaskQuerySortBy
     });
   }
 
-  QueryBuilder<DownloadTask, DownloadTask, QAfterSortBy>
-  sortByRequiresHlsServer() {
+  QueryBuilder<DownloadTask, DownloadTask, QAfterSortBy> sortByRequiresProxy() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'requiresHlsServer', Sort.asc);
+      return query.addSortBy(r'requiresProxy', Sort.asc);
     });
   }
 
   QueryBuilder<DownloadTask, DownloadTask, QAfterSortBy>
-  sortByRequiresHlsServerDesc() {
+  sortByRequiresProxyDesc() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'requiresHlsServer', Sort.desc);
+      return query.addSortBy(r'requiresProxy', Sort.desc);
     });
   }
 
@@ -1879,17 +1878,16 @@ extension DownloadTaskQuerySortThenBy
     });
   }
 
-  QueryBuilder<DownloadTask, DownloadTask, QAfterSortBy>
-  thenByRequiresHlsServer() {
+  QueryBuilder<DownloadTask, DownloadTask, QAfterSortBy> thenByRequiresProxy() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'requiresHlsServer', Sort.asc);
+      return query.addSortBy(r'requiresProxy', Sort.asc);
     });
   }
 
   QueryBuilder<DownloadTask, DownloadTask, QAfterSortBy>
-  thenByRequiresHlsServerDesc() {
+  thenByRequiresProxyDesc() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'requiresHlsServer', Sort.desc);
+      return query.addSortBy(r'requiresProxy', Sort.desc);
     });
   }
 
@@ -2006,9 +2004,9 @@ extension DownloadTaskQueryWhereDistinct
   }
 
   QueryBuilder<DownloadTask, DownloadTask, QDistinct>
-  distinctByRequiresHlsServer() {
+  distinctByRequiresProxy() {
     return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'requiresHlsServer');
+      return query.addDistinctBy(r'requiresProxy');
     });
   }
 
@@ -2104,10 +2102,9 @@ extension DownloadTaskQueryProperty
     });
   }
 
-  QueryBuilder<DownloadTask, bool, QQueryOperations>
-  requiresHlsServerProperty() {
+  QueryBuilder<DownloadTask, bool, QQueryOperations> requiresProxyProperty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'requiresHlsServer');
+      return query.addPropertyName(r'requiresProxy');
     });
   }
 

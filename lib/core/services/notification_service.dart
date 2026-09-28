@@ -244,7 +244,7 @@ class NotificationService {
         ? 'Preparing download…'
         : '$currentProgress% complete';
 
-    _log.d('Download notification [$id] progress: $currentProgress%');
+    _log.d('Download #$id progress: $currentProgress% - $title');
     try {
       await _plugin.show(
         id: id,
@@ -279,7 +279,7 @@ class NotificationService {
     required int id,
     required String title,
   }) async {
-    _log.d('Download complete notification [$id]');
+    _log.d('Download #$id complete - $title');
     try {
       await _plugin.cancel(id: id);
       await _plugin.show(
@@ -308,7 +308,7 @@ class NotificationService {
     required int id,
     required String title,
   }) async {
-    _log.d('Download failed notification [$id]');
+    _log.d('Download #$id failed - $title');
     try {
       await _plugin.cancel(id: id);
       await _plugin.show(

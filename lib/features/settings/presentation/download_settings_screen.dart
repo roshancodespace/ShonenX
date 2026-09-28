@@ -28,35 +28,6 @@ class DownloadSettingsScreen extends ConsumerWidget {
             SettingsSection(
               title: 'Storage',
               children: [
-                if (!prefs.useOneDM)
-                  Padding(
-                    padding: const EdgeInsets.only(
-                      left: 16,
-                      right: 16,
-                      bottom: 8,
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Icon(
-                          Icons.info_outline_rounded,
-                          size: 16,
-                          color: colors.primary,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Note: It is highly recommended to download only DUB streams or Hard Subbed streams. Soft sub implementation is not yet fully supported for downloads.',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: colors.onSurfaceVariant,
-                              height: 1.3,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                 AbsorbPointer(
                   absorbing: prefs.useOneDM,
                   child: Opacity(
@@ -99,16 +70,6 @@ class DownloadSettingsScreen extends ConsumerWidget {
                               }
                             },
                           ),
-                        ),
-                        SettingsSwitchTile(
-                          icon: Icons.delete_sweep_outlined,
-                          title: 'Auto-Delete Watched Episodes',
-                          subtitle:
-                              'Frees up space automatically when an episode is marked as completed',
-                          value: prefs.autoDeleteWatched,
-                          onChanged: (val) {
-                            prefsNotifier.setAutoDeleteWatched(val);
-                          },
                         ),
                       ],
                     ),
@@ -167,24 +128,6 @@ class DownloadSettingsScreen extends ConsumerWidget {
                               fontSize: 13,
                             ),
                           ),
-                        ),
-                        SettingsDropdownTile<DuplicateAction>(
-                          icon: Icons.file_copy_outlined,
-                          title: 'If File Already Exists',
-                          value: prefs.duplicateAction,
-                          items: DuplicateAction.values
-                              .map(
-                                (f) => DropdownMenuItem(
-                                  value: f,
-                                  child: Text(f.displayName),
-                                ),
-                              )
-                              .toList(),
-                          onChanged: (value) {
-                            if (value != null) {
-                              prefsNotifier.setDuplicateAction(value);
-                            }
-                          },
                         ),
                       ],
                     ),

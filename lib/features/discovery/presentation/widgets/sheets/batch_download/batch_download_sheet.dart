@@ -100,6 +100,8 @@ class BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
   String? streamsError;
   VideoStream? selectedStream;
 
+  Set<String> selectedSubtitleLabels = {};
+
   int currentIndex = 0;
   int successCount = 0;
   String currentQueueStatus = '';
@@ -298,6 +300,12 @@ class BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
     if (selectedServer == null || selectedStream == null) return;
 
     if (fromIndexZero) {
+      final subLabels = await _promptSubtitlesForBatch();
+      if (subLabels == null) {
+        return; // User cancelled
+      }
+      selectedSubtitleLabels = subLabels;
+
       if (Platform.isAndroid) {
         final permission = await DeviceInfo.isAndroid10OrBelow()
             ? Permission.storage
@@ -469,6 +477,21 @@ class BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
             continue;
           }
 
+          final matchedSubs = matchedStream.subtitles
+              .where((sub) {
+                final label = sub.label ?? sub.language;
+                return selectedSubtitleLabels.contains(label) &&
+                    sub.url.isNotEmpty;
+              })
+              .map(
+                (s) => DownloadSubtitle.create(
+                  url: s.url,
+                  language: s.language,
+                  label: s.label ?? s.language,
+                ),
+              )
+              .toList();
+
           final task = DownloadTask()
             ..url = downloadUrl
             ..mediaId = widget.media.id
@@ -479,7 +502,8 @@ class BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
             ..requiresProxy = matchedStream.requiresProxy
             ..totalBytes = DownloadUrlHelper.parseSizeToBytes(
               matchedStream.size,
-            );
+            )
+            ..subtitles = matchedSubs;
 
           await ref.read(downloadManagerProvider.notifier).startDownload(task);
           queuedTaskIds.add(task.id);
@@ -591,3 +615,4 @@ class BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
     }
   }
 }
+

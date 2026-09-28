@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,8 +14,6 @@ import 'package:shonenx/core/network/stream_server/stream_server.dart';
 import 'package:shonenx/core/network/stream_server/hls/hls_stream.dart';
 
 import 'package:byte_me/byte_me.dart' as bm;
-import 'package:byte_me_core/byte_me_core.dart' as bm_core;
-import 'package:byte_me_hls/byte_me_hls.dart';
 
 final downloadRepositoryProvider = Provider<DownloadRepository>((ref) {
   return DownloadRepository(ref.watch(databaseProvider));
@@ -32,7 +29,7 @@ final downloadManagerProvider =
     );
 
 class DownloadManagerNotifier extends AsyncNotifier<DownloadManagerNotifier> {
-  late bm.DownloadManager _manager;
+  late bm.ByteMe _manager;
   final Set<String> _trackedJobs = {};
   final Map<int, int> _lastNotifiedPct = {};
   final Map<int, DateTime> _lastDbWriteTime = {};
@@ -42,9 +39,7 @@ class DownloadManagerNotifier extends AsyncNotifier<DownloadManagerNotifier> {
   @override
   Future<DownloadManagerNotifier> build() async {
     final prefs = await ref.read(downloadPrefsProvider.future);
-    _manager = bm.DownloadManager.isolated(
-      maxConcurrentJobs: prefs.concurrentDownloads,
-    );
+    _manager = bm.ByteMe(maxConcurrentDownloads: prefs.concurrentDownloads);
 
     final unfinished = await repo.getUnfinishedTasks();
     for (final t in unfinished) {
@@ -101,16 +96,6 @@ class DownloadManagerNotifier extends AsyncNotifier<DownloadManagerNotifier> {
       );
     }
 
-    // Deduplicate logic
-    final file = File(task.savePath);
-    if (await file.exists() && task.status == DownloadStatus.pending) {
-      if (prefs.duplicateAction == DuplicateAction.skip) {
-        return;
-      } else if (prefs.duplicateAction == DuplicateAction.overwrite) {
-        await file.delete();
-      }
-    }
-
     final isHLS =
         task.isM3u8 ||
         await ref
@@ -133,34 +118,45 @@ class DownloadManagerNotifier extends AsyncNotifier<DownloadManagerNotifier> {
     }
     _trackedJobs.add(jobId);
 
-    bm.DownloadJob job;
+    bm.DownloadTask job;
     if (isHLS) {
-      job = _manager.addHlsVideo(
+      final isBuiltin = prefs.remuxerPreference == RemuxerPreference.builtin;
+
+      final subTracks = task.subtitles
+          .map(
+            (s) => bm.SubtitleTrack(
+              url: s.url,
+              language: s.language,
+              title: s.label,
+              headers: task.headersMap,
+            ),
+          )
+          .toList();
+
+      job = _manager.downloadHls(
         id: jobId,
-        m3u8Url: task.url,
+        url: Uri.parse(task.url),
         savePath: task.savePath,
         maxConcurrentSegments: prefs.concurrentSegments,
         headers: task.headersMap,
-        stitch:
-            prefs.remuxerPreference == RemuxerPreference.builtin ||
-            prefs.remuxerPreference == RemuxerPreference.auto,
+        remuxer: isBuiltin
+            ? bm.MkvRemuxer(subtitles: subTracks)
+            : bm.FfmpegRemuxer(subtitles: subTracks),
         totalSize: task.totalBytes > 0 ? task.totalBytes : null,
       );
     } else {
-      job = _manager.addFile(
-        bm_core.DownloadRequest(
-          id: jobId,
-          url: Uri.parse(task.url),
-          destination: File(task.savePath),
-          headers: task.headersMap,
-        ),
+      job = _manager.download(
+        id: jobId,
+        url: Uri.parse(task.url),
+        savePath: task.savePath,
+        headers: task.headersMap,
       );
     }
 
     _listenToJob(task.id, job);
   }
 
-  void _listenToJob(int dbTaskId, bm.DownloadJob job) {
+  void _listenToJob(int dbTaskId, bm.DownloadTask job) {
     final notif = NotificationService.instance;
 
     job.progressStream.listen((progress) async {
@@ -169,7 +165,7 @@ class DownloadManagerNotifier extends AsyncNotifier<DownloadManagerNotifier> {
 
       // Throttle updates (DB read/write & notifications) to once per second,
       // but always process the final 100% completion event.
-      if (progress.percentage < 1.0 &&
+      if (progress.percent < 1.0 &&
           lastWrite != null &&
           now.difference(lastWrite).inMilliseconds < 1000) {
         return;
@@ -181,12 +177,12 @@ class DownloadManagerNotifier extends AsyncNotifier<DownloadManagerNotifier> {
 
       task.downloadedBytes = progress.receivedBytes;
       task.totalBytes = progress.totalBytes ?? 0;
-      task.progress = progress.percentage;
+      task.progress = progress.percent;
       task.speed = progress.formattedSpeed;
       task.updatedAt = now;
       await repo.putTask(task);
 
-      final pct = (progress.percentage * 100).toInt();
+      final pct = (progress.percent * 100).toInt();
       final lastNotified = _lastNotifiedPct[dbTaskId] ?? -1;
 
       // Update notification if the percentage changed
@@ -198,7 +194,7 @@ class DownloadManagerNotifier extends AsyncNotifier<DownloadManagerNotifier> {
         await notif.showDownloadProgress(
           id: dbTaskId,
           title: title,
-          progress: progress.percentage,
+          progress: progress.percent,
         );
       }
     });
@@ -212,17 +208,17 @@ class DownloadManagerNotifier extends AsyncNotifier<DownloadManagerNotifier> {
           : 'Episode ${task.episodeNumber}';
 
       switch (status) {
-        case bm_core.DownloadStatus.queued:
+        case bm.DownloadStatus.queued:
           task.status = DownloadStatus.pending;
           break;
-        case bm_core.DownloadStatus.downloading:
+        case bm.DownloadStatus.downloading:
           task.status = DownloadStatus.downloading;
           break;
-        case bm_core.DownloadStatus.paused:
+        case bm.DownloadStatus.paused:
           task.status = DownloadStatus.paused;
           await notif.cancelDownloadNotification(dbTaskId);
           break;
-        case bm_core.DownloadStatus.completed:
+        case bm.DownloadStatus.completed:
           task.status = DownloadStatus.completed;
           await notif.showDownloadComplete(id: dbTaskId, title: title);
           await repo.deleteTask(dbTaskId);
@@ -230,11 +226,11 @@ class DownloadManagerNotifier extends AsyncNotifier<DownloadManagerNotifier> {
           _lastNotifiedPct.remove(dbTaskId);
           _lastDbWriteTime.remove(dbTaskId);
           return;
-        case bm_core.DownloadStatus.failed:
+        case bm.DownloadStatus.failed:
           task.status = DownloadStatus.failed;
           await notif.showDownloadFailed(id: dbTaskId, title: title);
           break;
-        case bm_core.DownloadStatus.cancelled:
+        case bm.DownloadStatus.cancelled:
           task.status = DownloadStatus.canceled;
           await notif.cancelDownloadNotification(dbTaskId);
           break;
@@ -243,9 +239,9 @@ class DownloadManagerNotifier extends AsyncNotifier<DownloadManagerNotifier> {
       task.updatedAt = DateTime.now();
       await repo.putTask(task);
 
-      if (status == bm_core.DownloadStatus.completed ||
-          status == bm_core.DownloadStatus.failed ||
-          status == bm_core.DownloadStatus.cancelled) {
+      if (status == bm.DownloadStatus.completed ||
+          status == bm.DownloadStatus.failed ||
+          status == bm.DownloadStatus.cancelled) {
         _trackedJobs.remove(job.id);
         _lastNotifiedPct.remove(dbTaskId);
         _lastDbWriteTime.remove(dbTaskId);

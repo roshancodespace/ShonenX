@@ -239,6 +239,75 @@ class ChoosePreferenceStep extends StatelessWidget {
                       );
                     }).toList(),
                   ),
+                if (state.availableStreams != null &&
+                    state.availableStreams!.isNotEmpty) ...[
+                  Builder(
+                    builder: (context) {
+                      final availableSubs = <String>{};
+                      for (final stream in state.availableStreams!) {
+                        for (final sub in stream.subtitles) {
+                          if (sub.url.isNotEmpty && sub.label != null) {
+                            availableSubs.add(sub.label ?? sub.language);
+                          }
+                        }
+                      }
+                      if (availableSubs.isEmpty) return const SizedBox();
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const SizedBox(height: 20),
+                          Text(
+                            'SELECT SUBTITLES',
+                            style: textTheme.labelSmall?.copyWith(
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 1.1,
+                              color: cs.primary,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: availableSubs.map((subLabel) {
+                              final isSelected = state.selectedSubtitleLabels
+                                  .contains(subLabel);
+                              return FilterChip(
+                                label: Text(subLabel),
+                                selected: isSelected,
+                                onSelected: (selected) {
+                                  state.updateState(() {
+                                    if (selected) {
+                                      state.selectedSubtitleLabels.add(
+                                        subLabel,
+                                      );
+                                    } else {
+                                      state.selectedSubtitleLabels.remove(
+                                        subLabel,
+                                      );
+                                    }
+                                  });
+                                },
+                                selectedColor: cs.primaryContainer,
+                                backgroundColor: cs.surfaceContainerHighest
+                                    .withValues(alpha: 0.4),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  side: BorderSide(
+                                    color: isSelected
+                                        ? cs.primary
+                                        : Colors.transparent,
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ],
               ],
             ),
           ),

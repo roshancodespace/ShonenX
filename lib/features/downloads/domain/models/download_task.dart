@@ -33,6 +33,21 @@ class DownloadHeader {
   }
 }
 
+@embedded
+class DownloadSubtitle {
+  late String url;
+  late String language;
+  late String label;
+
+  DownloadSubtitle();
+
+  DownloadSubtitle.create({
+    required this.url,
+    required this.language,
+    required this.label,
+  });
+}
+
 @collection
 class DownloadTask {
   Id id = Isar.autoIncrement;
@@ -52,6 +67,8 @@ class DownloadTask {
 
   bool isM3u8 = false;
   bool requiresProxy = false;
+
+  List<DownloadSubtitle> subtitles = [];
 
   double progress = 0.0;
   int totalBytes = 0;

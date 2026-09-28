@@ -26,44 +26,23 @@ enum FileNameFormat {
   }
 }
 
-enum DuplicateAction {
-  skip,
-  overwrite;
-
-  String get displayName {
-    switch (this) {
-      case DuplicateAction.skip:
-        return 'Skip Download';
-      case DuplicateAction.overwrite:
-        return 'Overwrite Existing';
-    }
-  }
-
-  factory DuplicateAction.fromString(String? value) {
-    return DuplicateAction.values.firstWhere(
-      (e) => e.name == value,
-      orElse: () => DuplicateAction.skip,
-    );
-  }
-}
-
 enum RemuxerPreference {
-  auto,
-  builtin;
+  builtin,
+  ffmpeg;
 
   String get displayName {
     switch (this) {
-      case RemuxerPreference.auto:
-        return 'Auto (FFmpeg if available)';
       case RemuxerPreference.builtin:
-        return 'Built-in (TS Concatenation)';
+        return 'Built-in (Recommended)';
+      case RemuxerPreference.ffmpeg:
+        return 'FFmpeg (External)';
     }
   }
 
   factory RemuxerPreference.fromString(String? value) {
     return RemuxerPreference.values.firstWhere(
       (e) => e.name == value,
-      orElse: () => RemuxerPreference.auto,
+      orElse: () => RemuxerPreference.builtin,
     );
   }
 }
@@ -76,8 +55,6 @@ class DownloadPrefs {
   final bool wifiOnly;
   final int concurrentDownloads;
   final int concurrentSegments;
-  final DuplicateAction duplicateAction;
-  final bool autoDeleteWatched;
   final RemuxerPreference remuxerPreference;
 
   const DownloadPrefs({
@@ -88,9 +65,7 @@ class DownloadPrefs {
     this.wifiOnly = true,
     this.concurrentDownloads = 2,
     this.concurrentSegments = 4,
-    this.duplicateAction = DuplicateAction.skip,
-    this.autoDeleteWatched = false,
-    this.remuxerPreference = RemuxerPreference.auto,
+    this.remuxerPreference = RemuxerPreference.builtin,
   });
 
   DownloadPrefs copyWith({
@@ -101,8 +76,6 @@ class DownloadPrefs {
     bool? wifiOnly,
     int? concurrentDownloads,
     int? concurrentSegments,
-    DuplicateAction? duplicateAction,
-    bool? autoDeleteWatched,
     RemuxerPreference? remuxerPreference,
   }) {
     return DownloadPrefs(
@@ -113,8 +86,6 @@ class DownloadPrefs {
       wifiOnly: wifiOnly ?? this.wifiOnly,
       concurrentDownloads: concurrentDownloads ?? this.concurrentDownloads,
       concurrentSegments: concurrentSegments ?? this.concurrentSegments,
-      duplicateAction: duplicateAction ?? this.duplicateAction,
-      autoDeleteWatched: autoDeleteWatched ?? this.autoDeleteWatched,
       remuxerPreference: remuxerPreference ?? this.remuxerPreference,
     );
   }
@@ -128,8 +99,6 @@ class DownloadPrefs {
       wifiOnly: map['wifiOnly'] ?? true,
       concurrentDownloads: map['concurrentDownloads'] ?? 2,
       concurrentSegments: map['concurrentSegments'] ?? 4,
-      duplicateAction: DuplicateAction.fromString(map['duplicateAction']),
-      autoDeleteWatched: map['autoDeleteWatched'] ?? false,
       remuxerPreference: RemuxerPreference.fromString(map['remuxerPreference']),
     );
   }
@@ -143,8 +112,6 @@ class DownloadPrefs {
       'wifiOnly': wifiOnly,
       'concurrentDownloads': concurrentDownloads,
       'concurrentSegments': concurrentSegments,
-      'duplicateAction': duplicateAction.name,
-      'autoDeleteWatched': autoDeleteWatched,
       'remuxerPreference': remuxerPreference.name,
     };
   }
@@ -175,15 +142,13 @@ class DownloadPrefsNotifier extends AsyncNotifier<DownloadPrefs> {
 
     return DownloadPrefs(
       downloadPath: defaultPath,
-      fileNameFormat: FileNameFormat.titleAndEpisode,
+      fileNameFormat: FileNameFormat.episodeOnly,
       createSubfolders: true,
       useOneDM: false,
       wifiOnly: true,
       concurrentDownloads: 2,
       concurrentSegments: 4,
-      duplicateAction: DuplicateAction.skip,
-      autoDeleteWatched: false,
-      remuxerPreference: RemuxerPreference.auto,
+      remuxerPreference: RemuxerPreference.builtin,
     );
   }
 
@@ -226,18 +191,6 @@ class DownloadPrefsNotifier extends AsyncNotifier<DownloadPrefs> {
   Future<void> setConcurrentSegments(int value) async {
     final prefs = ref.read(sharedPreferencesProvider);
     state = AsyncData(state.value!.copyWith(concurrentSegments: value));
-    await prefs.setString(_key, jsonEncode(state.value!.toMap()));
-  }
-
-  Future<void> setDuplicateAction(DuplicateAction value) async {
-    final prefs = ref.read(sharedPreferencesProvider);
-    state = AsyncData(state.value!.copyWith(duplicateAction: value));
-    await prefs.setString(_key, jsonEncode(state.value!.toMap()));
-  }
-
-  Future<void> setAutoDeleteWatched(bool value) async {
-    final prefs = ref.read(sharedPreferencesProvider);
-    state = AsyncData(state.value!.copyWith(autoDeleteWatched: value));
     await prefs.setString(_key, jsonEncode(state.value!.toMap()));
   }
 

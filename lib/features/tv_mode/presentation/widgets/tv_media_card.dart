@@ -15,7 +15,10 @@ class TvMediaCard extends StatelessWidget {
   final String? description;
   final int? year;
   final List<String>? genres;
+  final double? playbackProgress;
+  final String? customBadgeText;
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
   final VoidCallback? onFocused;
   final ValueChanged<bool>? onFocusChange;
   final bool autofocus;
@@ -34,7 +37,10 @@ class TvMediaCard extends StatelessWidget {
     this.description,
     this.year,
     this.genres,
+    this.playbackProgress,
+    this.customBadgeText,
     this.onTap,
+    this.onLongPress,
     this.onFocused,
     this.onFocusChange,
     this.autofocus = false,
@@ -47,16 +53,21 @@ class TvMediaCard extends StatelessWidget {
     final cs = theme.colorScheme;
     final radius = GlobalUI.uiRoundness;
 
-    final hasProgress = progress != null && progress! > 0;
+    final hasEpisodesWatched = progress != null && progress! > 0;
+    final hasProgress =
+        hasEpisodesWatched ||
+        (playbackProgress != null && playbackProgress! > 0);
     final progressFraction =
-        (hasProgress && totalEpisodes != null && totalEpisodes! > 0)
-        ? (progress! / totalEpisodes!).clamp(0.0, 1.0)
-        : null;
+        playbackProgress ??
+        ((hasEpisodesWatched && totalEpisodes != null && totalEpisodes! > 0)
+            ? (progress! / totalEpisodes!).clamp(0.0, 1.0)
+            : null);
 
     return AppFocusHover(
       focusNode: focusNode,
       autofocus: autofocus,
       onTap: onTap,
+      onLongPress: onLongPress,
       onFocusChange: (focused) {
         if (focused) onFocused?.call();
         onFocusChange?.call(focused);
@@ -225,7 +236,16 @@ class TvMediaCard extends StatelessWidget {
               ),
 
               // Top-Left Badges (Progress / Format)
-              if (hasProgress)
+              if (customBadgeText != null && customBadgeText!.isNotEmpty)
+                Positioned(
+                  top: 8,
+                  left: 8,
+                  child: _CustomProgressBadge(
+                    text: customBadgeText!,
+                    radius: radius,
+                  ),
+                )
+              else if (hasEpisodesWatched)
                 Positioned(
                   top: 8,
                   left: 8,
@@ -337,37 +357,50 @@ class _ProgressBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final badgeRadius = (radius * 0.4).clamp(0.0, 10.0);
     final text = total != null ? 'EP $progress / $total' : 'EP $progress';
+    return _CustomProgressBadge(text: text, radius: radius);
+  }
+}
+
+class _CustomProgressBadge extends StatelessWidget {
+  final String text;
+  final double radius;
+
+  const _CustomProgressBadge({required this.text, required this.radius});
+
+  @override
+  Widget build(BuildContext context) {
+    final badgeRadius = (radius * 0.4).clamp(0.0, 8.0);
+    final primary = Theme.of(context).colorScheme.primary;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.75),
+        color: primary,
         borderRadius: BorderRadius.circular(badgeRadius),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.6),
-          width: 1,
-        ),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.4), blurRadius: 4),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.3),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
         ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            Icons.play_circle_filled_rounded,
-            size: 11,
-            color: Theme.of(context).colorScheme.primary,
+            Icons.play_arrow_rounded,
+            size: 12,
+            color: Theme.of(context).colorScheme.onPrimary,
           ),
           const SizedBox(width: 4),
           Text(
             text,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onPrimary,
               fontSize: 10,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],
@@ -384,22 +417,21 @@ class _FormatBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final badgeRadius = (radius * 0.4).clamp(0.0, 10.0);
+    final badgeRadius = (radius * 0.4).clamp(0.0, 8.0);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.6),
+        color: Colors.black.withValues(alpha: 0.65),
         borderRadius: BorderRadius.circular(badgeRadius),
-        border: Border.all(color: Colors.white24, width: 0.8),
       ),
       child: Text(
         format.toUpperCase(),
         style: const TextStyle(
-          color: Colors.white70,
+          color: Colors.white,
           fontSize: 9.5,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.3,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 0.5,
         ),
       ),
     );
@@ -420,29 +452,25 @@ class _ScoreBadge extends StatelessWidget {
         ? Colors.amberAccent
         : Colors.redAccent;
 
-    final badgeRadius = (radius * 0.4).clamp(0.0, 10.0);
+    final badgeRadius = (radius * 0.4).clamp(0.0, 8.0);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.7),
+        color: Colors.black.withValues(alpha: 0.65),
         borderRadius: BorderRadius.circular(badgeRadius),
-        border: Border.all(color: color.withValues(alpha: 0.5), width: 1.1),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.4), blurRadius: 4),
-        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.star_rounded, size: 12, color: color),
-          const SizedBox(width: 3),
+          Icon(Icons.star_rounded, size: 13, color: color),
+          const SizedBox(width: 4),
           Text(
             score.toStringAsFixed(1),
             style: TextStyle(
               color: color,
               fontSize: 11,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],

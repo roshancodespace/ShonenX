@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:anymex_extension_runtime_bridge/anymex_extension_runtime_bridge.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:screenshot/screenshot.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 import 'package:collection/collection.dart';
 import 'package:shonenx/core/network/http_client.dart';
@@ -153,6 +154,7 @@ class PlayerController extends Notifier<PlayerState> {
 
     ref.onDispose(() {
       _isDisposed = true;
+      WakelockPlus.disable();
       _endingSkipCooldownTimer?.cancel();
       _progressTracker.cancel();
       unawaited(TorrentStreamResolver.dispose());
@@ -178,12 +180,19 @@ class PlayerController extends Notifier<PlayerState> {
       }
     });
 
-    // Update Discord RPC when play/pause changes
+    // Update Discord RPC and Wakelock when play/pause changes
     ref.listen(videoEngineStateProvider.select((s) => s.isPlaying), (
       prev,
       current,
     ) {
-      if (!_isDisposed && prev != current) _updateDiscordRpc();
+      if (!_isDisposed && prev != current) {
+        _updateDiscordRpc();
+        if (current) {
+          WakelockPlus.enable();
+        } else {
+          WakelockPlus.disable();
+        }
+      }
     });
 
     // Handles auto-skip & auto-next episode

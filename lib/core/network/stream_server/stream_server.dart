@@ -5,20 +5,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/network/http_client.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 
-import 'hls_stream.dart';
-import 'hls_playlist.dart';
+import 'proxy_stream.dart';
 
-class HlsServer {
+class StreamServer {
   final HTTP _httpClient;
   HttpServer? _server;
-  final Map<String, HlsStream> _streams = {};
+  final Map<String, ProxyStream> _streams = {};
   int _port = 0;
 
-  static final _log = AppLogger.scope(HlsServer);
+  static final _log = AppLogger.scope(StreamServer);
 
   Timer? _inactivityTimer;
 
-  HlsServer(this._httpClient);
+  StreamServer(this._httpClient);
 
   int get port => _port;
   bool get isRunning => _server != null;
@@ -26,7 +25,7 @@ class HlsServer {
   void _resetInactivityTimer() {
     _inactivityTimer?.cancel();
     _inactivityTimer = Timer(const Duration(minutes: 5), () {
-      _log.i('HLS Server inactive for 5 minutes, shutting down');
+      _log.i('Stream Server inactive for 5 minutes, shutting down');
       stop();
     });
   }
@@ -36,11 +35,11 @@ class HlsServer {
     try {
       _server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
       _port = _server!.port;
-      _log.i('HLS Server started on port $_port');
+      _log.i('Stream Server started on port $_port');
       _server!.listen(_handleRequest);
       _resetInactivityTimer();
     } catch (e) {
-      _log.e('Failed to start HLS Server', e);
+      _log.e('Failed to start Stream Server', e);
       rethrow;
     }
   }
@@ -51,25 +50,20 @@ class HlsServer {
     _server = null;
     _port = 0;
     _streams.clear();
-    _log.i('HLS Server stopped');
+    _log.i('Stream Server stopped');
   }
 
   /// Registers a stream and returns the localhost URL to play it.
-  Future<String> register({
-    required String id,
-    required String url,
-    Map<String, String>? headers,
-  }) async {
+  Future<String> register(ProxyStream stream) async {
     if (!isRunning) {
       await start();
     }
 
-    final stream = HlsStream(id: id, upstreamUrl: url, headers: headers ?? {});
-    _streams[id] = stream;
+    _streams[stream.id] = stream;
 
     _resetInactivityTimer();
 
-    return 'http://127.0.0.1:$_port/stream/$id/playlist.m3u8';
+    return stream.getLocalUrl(_port);
   }
 
   void unregister(String id) {
@@ -97,16 +91,7 @@ class HlsServer {
         return;
       }
 
-      final action = pathSegments[2];
-
-      if (action == 'playlist.m3u8') {
-        await HlsPlaylist.processPlaylist(request, stream, _httpClient, _port);
-      } else if (action == 'segment') {
-        await stream.processSegment(request, _httpClient);
-      } else {
-        request.response.statusCode = HttpStatus.notFound;
-        await request.response.close();
-      }
+      await stream.handleRequest(request, _httpClient, _port);
     } catch (e, st) {
       _log.e('Error handling request', e, st);
       try {
@@ -117,9 +102,9 @@ class HlsServer {
   }
 }
 
-final hlsServerProvider = Provider<HlsServer>((ref) {
+final streamServerProvider = Provider<StreamServer>((ref) {
   final httpClient = ref.watch(httpClientProvider);
-  final server = HlsServer(httpClient);
+  final server = StreamServer(httpClient);
   ref.onDispose(() {
     server.stop();
   });

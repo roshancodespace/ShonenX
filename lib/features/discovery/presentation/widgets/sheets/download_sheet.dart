@@ -436,7 +436,7 @@ class _DownloadSheetState extends ConsumerState<DownloadSheet> {
       ..episodeNumber = widget.episode.number
       ..savePath = '$targetDir/$fileName'
       ..fileName = fileName
-      ..requiresHlsServer = stream.requiresHlsServer
+      ..requiresProxy = stream.requiresProxy
       ..totalBytes = DownloadUrlHelper.parseSizeToBytes(sizeStr);
 
     await ref.read(downloadManagerProvider.notifier).startDownload(task);

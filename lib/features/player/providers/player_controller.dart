@@ -21,7 +21,8 @@ import 'package:shonenx/features/player/providers/selection_resolver.dart';
 import 'package:shonenx/features/player/providers/subtitle_prefs_provider.dart';
 import 'package:shonenx/features/player/providers/video_engine_provider.dart';
 import 'package:shonenx/features/player/utils/screenshot_helper.dart';
-import 'package:shonenx/core/network/hls_server/hls_server.dart';
+import 'package:shonenx/core/network/stream_server/stream_server.dart';
+import 'package:shonenx/core/network/stream_server/hls/hls_stream.dart';
 import 'package:shonenx/shared/models/unified_episode.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/models/video_server.dart';
@@ -781,8 +782,8 @@ class PlayerController extends Notifier<PlayerState> {
       resolvedStream = stream.copyWith(url: resolved.streamUrl);
     }
 
-    if (resolvedStream.requiresHlsServer) {
-      final server = ref.read(hlsServerProvider);
+    if (resolvedStream.requiresProxy) {
+      final server = ref.read(streamServerProvider);
 
       if (_currentHlsStreamId != null) {
         server.unregister(_currentHlsStreamId!);
@@ -792,9 +793,11 @@ class PlayerController extends Notifier<PlayerState> {
       _currentHlsStreamId = id;
 
       final localUrl = await server.register(
-        id: id,
-        url: resolvedStream.url,
-        headers: resolvedStream.headers,
+        HlsStream(
+          id: id,
+          upstreamUrl: resolvedStream.url,
+          headers: resolvedStream.headers ?? {},
+        ),
       );
       resolvedStream = resolvedStream.copyWith(url: localUrl);
     }

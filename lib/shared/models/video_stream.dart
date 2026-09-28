@@ -4,7 +4,7 @@ class VideoStream {
   final String quality;
   final List<SubtitleTrack> subtitles;
   final String? size;
-  final bool requiresHlsServer;
+  final bool requiresProxy;
 
   const VideoStream({
     required this.url,
@@ -12,7 +12,7 @@ class VideoStream {
     this.quality = 'Auto',
     this.subtitles = const [],
     this.size,
-    this.requiresHlsServer = false,
+    this.requiresProxy = false,
   });
 
   VideoStream copyWith({
@@ -21,7 +21,7 @@ class VideoStream {
     String? quality,
     List<SubtitleTrack>? subtitles,
     String? size,
-    bool? requiresHlsServer,
+    bool? requiresProxy,
   }) {
     return VideoStream(
       url: url ?? this.url,
@@ -29,7 +29,7 @@ class VideoStream {
       quality: quality ?? this.quality,
       subtitles: subtitles ?? this.subtitles,
       size: size ?? this.size,
-      requiresHlsServer: requiresHlsServer ?? this.requiresHlsServer,
+      requiresProxy: requiresProxy ?? this.requiresProxy,
     );
   }
 }

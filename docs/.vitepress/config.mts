@@ -1,7 +1,6 @@
 import { defineConfig } from 'vitepress'
-import { withMermaid } from 'vitepress-plugin-mermaid'
 
-export default withMermaid(defineConfig({
+export default defineConfig({
   title: "ShonenX",
   description: "Official documentation and guides for ShonenX.",
   base: '/ShonenX/',
@@ -69,7 +68,8 @@ export default withMermaid(defineConfig({
           { text: 'Source Engine', link: '/systems/source_engine' },
           { text: 'Tracking', link: '/systems/tracking' },
           { text: 'Player & Downloads', link: '/systems/player_and_downloads' },
-          { text: 'Local HLS Proxy', link: '/systems/hls_proxy' }
+          { text: 'Local Stream Proxy', link: '/systems/stream_proxy' },
+          { text: 'HLS Implementation', link: '/systems/hls_implementation' }
         ]
       },
       {
@@ -90,4 +90,4 @@ export default withMermaid(defineConfig({
       provider: 'local'
     }
   }
-}))
+})

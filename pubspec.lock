@@ -179,21 +179,7 @@ packages:
   byte_me:
     dependency: "direct main"
     description:
-      path: "packages/byte_me_ecosystem/packages/byte_me"
-      relative: true
-    source: path
-    version: "0.0.1"
-  byte_me_core:
-    dependency: "direct main"
-    description:
-      path: "packages/byte_me_ecosystem/packages/byte_me_core"
-      relative: true
-    source: path
-    version: "0.0.1"
-  byte_me_hls:
-    dependency: "direct main"
-    description:
-      path: "packages/byte_me_ecosystem/packages/byte_me_hls"
+      path: "packages/byte_me"
       relative: true
     source: path
     version: "1.0.0"

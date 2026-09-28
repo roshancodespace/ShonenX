@@ -128,7 +128,7 @@ jobs:
         run: |
           git submodule update --init packages/anymex_extension_bridge
           git submodule update --init packages/commentum_client
-          git submodule update --init packages/byte_me_ecosystem
+          git submodule update --init packages/byte_me
 
       - name: Override pubspec.yaml version
         if: github.event_name == 'workflow_dispatch'
@@ -226,7 +226,7 @@ jobs:
         run: |
           git submodule update --init packages/anymex_extension_bridge
           git submodule update --init packages/commentum_client
-          git submodule update --init packages/byte_me_ecosystem
+          git submodule update --init packages/byte_me
 
       - name: Override pubspec.yaml version
         if: github.event_name == 'workflow_dispatch'
@@ -343,7 +343,7 @@ jobs:
         run: |
           git submodule update --init packages/anymex_extension_bridge
           git submodule update --init packages/commentum_client
-          git submodule update --init packages/byte_me_ecosystem
+          git submodule update --init packages/byte_me
 
       - name: Override pubspec.yaml version
         if: github.event_name == 'workflow_dispatch'
@@ -427,7 +427,7 @@ jobs:
         run: |
           git submodule update --init packages/anymex_extension_bridge
           git submodule update --init packages/commentum_client
-          git submodule update --init packages/byte_me_ecosystem
+          git submodule update --init packages/byte_me
 
       - name: Override pubspec.yaml version
         if: github.event_name == 'workflow_dispatch'
@@ -502,7 +502,7 @@ jobs:
         run: |
           git submodule update --init packages/anymex_extension_bridge
           git submodule update --init packages/commentum_client
-          git submodule update --init packages/byte_me_ecosystem
+          git submodule update --init packages/byte_me
 
       - name: Override pubspec.yaml version
         if: github.event_name == 'workflow_dispatch'

@@ -324,17 +324,20 @@ class PlayerController extends Notifier<PlayerState> {
     if (url.toLowerCase().contains('.m3u8')) return [];
     try {
       final tracks = await extractMkvTracksJson(url);
+      final subtitleTracks = tracks
+          .where((t) => t['type'] == 'Subtitle')
+          .toList();
       return [
-        for (final track in tracks)
-          if (track['type'] == 'Subtitle' &&
-              (track['trackNumber']?.toString() ?? '').isNotEmpty)
+        for (int i = 0; i < subtitleTracks.length; i++)
+          if ((subtitleTracks[i]['trackNumber']?.toString() ?? '').isNotEmpty)
             SubtitleTrack(
-              url: 'internal:${track['trackNumber']}',
-              language: track['language']?.toString() ?? 'Unknown',
+              url: 'internal:\${i + 1}',
+              language: subtitleTracks[i]['language']?.toString() ?? 'Unknown',
               label: () {
-                final lang = track['language']?.toString() ?? 'Unknown';
-                final name = track['name']?.toString() ?? '';
-                return name.isNotEmpty ? '$lang - $name' : lang;
+                final lang =
+                    subtitleTracks[i]['language']?.toString() ?? 'Unknown';
+                final name = subtitleTracks[i]['name']?.toString() ?? '';
+                return name.isNotEmpty ? '\$lang - \$name' : lang;
               }(),
             ),
       ];

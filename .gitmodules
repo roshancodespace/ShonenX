@@ -10,3 +10,6 @@
 [submodule "packages/byte_me_ecosystem"]
 	path = packages/byte_me_ecosystem
 	url = https://github.com/roshancodespace/byte_me.git
+[submodule "packages/byte_me"]
+	path = packages/byte_me
+	url = https://github.com/roshancodespace/byte_me

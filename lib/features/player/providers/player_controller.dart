@@ -7,7 +7,6 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 
 import 'package:collection/collection.dart';
 import 'package:shonenx/core/network/http_client.dart';
-import 'package:shonenx/core/utils/video.dart';
 import 'package:shonenx/features/discovery/domain/media_args.dart';
 import 'package:shonenx/features/discovery/providers/episodes_provider.dart';
 import 'package:shonenx/features/discord/providers/discord_rpc_provider.dart';
@@ -215,6 +214,37 @@ class PlayerController extends Notifier<PlayerState> {
       }
     });
 
+    // Listen to native subtitle tracks and merge them into the player state
+    ref.listen(videoEngineStateProvider.select((s) => s.subtitleTracks), (
+      prev,
+      nativeTracks,
+    ) {
+      if (_isDisposed || nativeTracks.isEmpty) return;
+
+      final currentSubs = List<SubtitleTrack>.from(state.subtitles);
+      bool changed = false;
+
+      for (final nt in nativeTracks) {
+        if (!currentSubs.any((s) => s.url == nt.url)) {
+          currentSubs.add(nt);
+          changed = true;
+        }
+      }
+
+      if (changed) {
+        state = state.copyWith(subtitles: currentSubs);
+
+        // If we didn't have an active subtitle, and one is preferred by resolver
+        if (state.activeSubtitle == SubtitleTrack.none ||
+            state.activeSubtitle == null) {
+          final newActive = _resolver.resolveSubtitle(currentSubs);
+          if (newActive != SubtitleTrack.none) {
+            changeSubtitle(newActive);
+          }
+        }
+      }
+    });
+
     return const PlayerState();
   }
 
@@ -328,33 +358,6 @@ class PlayerController extends Notifier<PlayerState> {
     }
   }
 
-  // Extracts embedded subtitle tracks from MKV/non-HLS files
-  Future<List<SubtitleTrack>> _extractInternalSubtitles(String url) async {
-    if (url.toLowerCase().contains('.m3u8')) return [];
-    try {
-      final tracks = await extractMkvTracksJson(url);
-      final subtitleTracks = tracks
-          .where((t) => t['type'] == 'Subtitle')
-          .toList();
-      return [
-        for (int i = 0; i < subtitleTracks.length; i++)
-          if ((subtitleTracks[i]['trackNumber']?.toString() ?? '').isNotEmpty)
-            SubtitleTrack(
-              url: 'internal:\${i + 1}',
-              language: subtitleTracks[i]['language']?.toString() ?? 'Unknown',
-              label: () {
-                final lang =
-                    subtitleTracks[i]['language']?.toString() ?? 'Unknown';
-                final name = subtitleTracks[i]['name']?.toString() ?? '';
-                return name.isNotEmpty ? '\$lang - \$name' : lang;
-              }(),
-            ),
-      ];
-    } catch (_) {
-      return [];
-    }
-  }
-
   /// Loads a local file for offline playback (no servers, no quality picker).
   Future<void> _loadOfflineData(PlayerModeOffline mode) async {
     ref.read(videoEngineProvider).pause();
@@ -379,9 +382,7 @@ class PlayerController extends Notifier<PlayerState> {
         subtitles: [],
       );
 
-      final internalSubtitles = await _extractInternalSubtitles(mode.filePath);
-
-      final subtitles = [SubtitleTrack.none, ...internalSubtitles];
+      final subtitles = [SubtitleTrack.none];
       final activeSubtitle = _resolver.resolveSubtitle(subtitles);
 
       state = state.copyWith(
@@ -496,13 +497,6 @@ class PlayerController extends Notifier<PlayerState> {
             );
           }
         }
-      }
-
-      // If no external subtitles were found, try extracting internal tracks
-      if (labelledSubtitles.isEmpty) {
-        labelledSubtitles.addAll(
-          await _extractInternalSubtitles(activeStream.url),
-        );
       }
 
       final subtitles = [SubtitleTrack.none, ...labelledSubtitles];
@@ -895,7 +889,7 @@ class PlayerController extends Notifier<PlayerState> {
   Future<void> _applyNativeSubtitle(SubtitleTrack? subtitle) async {
     final useCustom = ref.read(subtitlePrefsProvider).useCustomSubtitle;
     try {
-      if (useCustom || subtitle?.url.isEmpty == true) {
+      if (useCustom || subtitle == null || subtitle.url.isEmpty) {
         if (!_isNativeSubtitleDisabled) {
           await ref.read(videoEngineProvider).setSubtitle(null);
           _isNativeSubtitleDisabled = true;

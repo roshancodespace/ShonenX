@@ -18,6 +18,7 @@ class EngineState {
   final BoxFit fit;
   final List<AudioTrack> audioTracks;
   final AudioTrack? activeAudioTrack;
+  final List<SubtitleTrack> subtitleTracks;
 
   const EngineState({
     this.position = Duration.zero,
@@ -28,6 +29,7 @@ class EngineState {
     this.fit = BoxFit.contain,
     this.audioTracks = const [AudioTrack.auto],
     this.activeAudioTrack = AudioTrack.auto,
+    this.subtitleTracks = const [],
   });
 
   EngineState copyWith({
@@ -39,6 +41,7 @@ class EngineState {
     BoxFit? fit,
     List<AudioTrack>? audioTracks,
     AudioTrack? activeAudioTrack,
+    List<SubtitleTrack>? subtitleTracks,
   }) {
     return EngineState(
       position: position ?? this.position,
@@ -49,6 +52,7 @@ class EngineState {
       fit: fit ?? this.fit,
       audioTracks: audioTracks ?? this.audioTracks,
       activeAudioTrack: activeAudioTrack ?? this.activeAudioTrack,
+      subtitleTracks: subtitleTracks ?? this.subtitleTracks,
     );
   }
 }
@@ -66,6 +70,7 @@ class EngineStateNotifier extends Notifier<EngineState> {
     BoxFit? fit,
     List<AudioTrack>? audioTracks,
     AudioTrack? activeAudioTrack,
+    List<SubtitleTrack>? subtitleTracks,
   }) {
     final next = state.copyWith(
       position: position,
@@ -76,6 +81,7 @@ class EngineStateNotifier extends Notifier<EngineState> {
       fit: fit,
       audioTracks: audioTracks,
       activeAudioTrack: activeAudioTrack,
+      subtitleTracks: subtitleTracks,
     );
     if (_sameState(state, next)) return;
     state = next;
@@ -89,12 +95,18 @@ class EngineStateNotifier extends Notifier<EngineState> {
         current.isBuffering != next.isBuffering ||
         current.fit != next.fit ||
         current.activeAudioTrack != next.activeAudioTrack ||
-        current.audioTracks.length != next.audioTracks.length) {
+        current.audioTracks.length != next.audioTracks.length ||
+        current.subtitleTracks.length != next.subtitleTracks.length) {
       return false;
     }
 
     for (var index = 0; index < current.audioTracks.length; index++) {
       if (current.audioTracks[index] != next.audioTracks[index]) return false;
+    }
+    for (var index = 0; index < current.subtitleTracks.length; index++) {
+      if (current.subtitleTracks[index] != next.subtitleTracks[index]) {
+        return false;
+      }
     }
     return true;
   }

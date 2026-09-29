@@ -99,4 +99,60 @@ class DownloadUrlHelper {
         return 0;
     }
   }
+
+  /// Extracts the file extension for a subtitle URL (e.g. 'vtt', 'srt', 'ass').
+  static String getSubtitleExtension(String url) {
+    try {
+      final uri = Uri.tryParse(url);
+      final path = uri?.path ?? url;
+      final lastDot = path.lastIndexOf('.');
+      if (lastDot != -1) {
+        final ext = path.substring(lastDot + 1).toLowerCase();
+        if (['srt', 'vtt', 'ass', 'ssa', 'sub', 'txt'].contains(ext)) {
+          return ext;
+        }
+      }
+    } catch (_) {}
+    final lower = url.toLowerCase();
+    if (lower.contains('.vtt')) return 'vtt';
+    if (lower.contains('.ass')) return 'ass';
+    if (lower.contains('.ssa')) return 'ssa';
+    return 'srt';
+  }
+
+  /// Builds an optimal subtitle filename following standard media player conventions:
+  /// `<video_basename>.<language>.<extension>`
+  ///
+  /// Examples:
+  /// - `One Piece - Episode 1.English.vtt`
+  /// - `Naruto - Episode 5.ja.srt`
+  static String formatSubtitleFileName({
+    required String videoFileName,
+    required String language,
+    String? label,
+    required String subtitleUrl,
+  }) {
+    final videoBaseName = videoFileName.contains('.')
+        ? videoFileName.substring(0, videoFileName.lastIndexOf('.'))
+        : videoFileName;
+
+    var cleanLang = '';
+    if (language.isNotEmpty && language.toLowerCase() != 'off') {
+      cleanLang = language;
+    } else if (label != null && label.isNotEmpty) {
+      final parts = label.split(' - ');
+      cleanLang = parts.last.trim();
+    }
+
+    if (cleanLang.isEmpty) {
+      cleanLang = 'sub';
+    }
+
+    // Clean any invalid filename characters
+    cleanLang = cleanLang.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_').trim();
+    if (cleanLang.isEmpty) cleanLang = 'sub';
+
+    final ext = getSubtitleExtension(subtitleUrl);
+    return '$videoBaseName.$cleanLang.$ext';
+  }
 }

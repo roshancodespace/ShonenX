@@ -80,12 +80,46 @@ class DownloadManagerNotifier extends AsyncNotifier<DownloadManagerNotifier> {
     }
 
     if (prefs.useOneDM) {
+      final subtitleUrls = <String>[];
+      final subtitleFileNames = <String>[];
+      final usedSubNames = <String>{};
+
+      for (final sub in task.subtitles) {
+        if (sub.url.isEmpty) continue;
+        final subUrl = DownloadUrlHelper.extractUrl(sub.url);
+        var subFileName = DownloadUrlHelper.formatSubtitleFileName(
+          videoFileName: task.fileName,
+          language: sub.language,
+          label: sub.label,
+          subtitleUrl: sub.url,
+        );
+
+        if (usedSubNames.contains(subFileName)) {
+          final lastDot = subFileName.lastIndexOf('.');
+          if (lastDot != -1) {
+            final namePart = subFileName.substring(0, lastDot);
+            final extPart = subFileName.substring(lastDot);
+            var counter = 2;
+            while (usedSubNames.contains('$namePart-$counter$extPart')) {
+              counter++;
+            }
+            subFileName = '$namePart-$counter$extPart';
+          }
+        }
+
+        usedSubNames.add(subFileName);
+        subtitleUrls.add(subUrl);
+        subtitleFileNames.add(subFileName);
+      }
+
       final success = await OneDMService.instance.download(
         url: task.url,
         fileName: task.fileName,
         headers: Map.fromEntries(
           task.headers.map((header) => header.toMapEntry()),
         ),
+        subtitleUrls: subtitleUrls,
+        subtitleFileNames: subtitleFileNames,
       );
       if (success) return;
     }

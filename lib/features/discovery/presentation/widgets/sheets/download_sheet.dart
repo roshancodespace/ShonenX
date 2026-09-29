@@ -282,7 +282,7 @@ class _DownloadSheetState extends ConsumerState<DownloadSheet> {
             onExpand: () => _loadStreams(server),
             onRetry: () => _loadStreams(server),
             onDownload: (stream) => _startDownload(stream, server),
-            on1DMDownload: (stream) => _start1DMDownload(stream),
+            on1DMDownload: (stream) => _start1DMDownload(stream, server),
             onExternalPlayer: (stream) => _launchExternalPlayer(stream),
             onCopyUrl: (stream) => _copyStreamUrl(stream),
           );
@@ -341,16 +341,25 @@ class _DownloadSheetState extends ConsumerState<DownloadSheet> {
           isOneDMInstalled: isOneDMInstalled,
           onCopyUrl: () => _copyStreamUrl(stream),
           onExternalPlayer: () => _launchExternalPlayer(stream),
-          on1DMDownload: () => _start1DMDownload(stream),
+          on1DMDownload: () => _start1DMDownload(stream, server),
           onDownload: () => _startDownload(stream, server),
         );
       }).toList(),
     );
   }
 
-  Future<List<SubtitleTrack>?> _promptSubtitles() async {
+  Future<List<SubtitleTrack>?> _promptSubtitles({
+    VideoStream? stream,
+    VideoServer? server,
+  }) async {
     final allSubtitles = <SubtitleTrack>[];
-    if (_servers != null) {
+    if (stream != null && stream.subtitles.isNotEmpty) {
+      for (final sub in stream.subtitles) {
+        if (sub.url.isNotEmpty && sub != SubtitleTrack.none) {
+          allSubtitles.add(sub);
+        }
+      }
+    } else if (_servers != null) {
       for (final srv in _servers!) {
         final streams = _streamsCache[_serverKey(srv)] ?? [];
         for (final s in streams) {
@@ -467,7 +476,7 @@ class _DownloadSheetState extends ConsumerState<DownloadSheet> {
     final sizeStr = _streamSizes[stream.url] ?? stream.size;
 
     // Check if user wants to download subtitles
-    final selectedSubs = await _promptSubtitles();
+    final selectedSubs = await _promptSubtitles(stream: stream, server: server);
     if (selectedSubs == null) {
       // User cancelled
       return;
@@ -502,24 +511,72 @@ class _DownloadSheetState extends ConsumerState<DownloadSheet> {
     }
   }
 
-  Future<void> _start1DMDownload(VideoStream stream) async {
+  Future<void> _start1DMDownload(
+    VideoStream stream, [
+    VideoServer? server,
+  ]) async {
     final downloadUrl = DownloadUrlHelper.extractUrl(stream.url);
+    if (downloadUrl.isEmpty) return;
 
+    final selectedSubs = await _promptSubtitles(stream: stream, server: server);
+    if (selectedSubs == null) {
+      // User cancelled
+      return;
+    }
+
+    final prefs = await ref.read(downloadPrefsProvider.future);
     final epNum = widget.episode.number.toString().contains('.0')
         ? widget.episode.number.toInt().toString()
         : widget.episode.number.toString();
-    final fileName =
-        '${widget.media.title.getPreferedTitle} - Episode $epNum.mp4';
+
+    var fileName = prefs.fileNameFormat == FileNameFormat.titleAndEpisode
+        ? '${widget.media.title.getPreferedTitle} - Episode $epNum.mp4'
+        : 'Episode $epNum.mp4';
+    fileName = fileName.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
 
     final mergedHeaders = DownloadUrlHelper.extractHeadersFromUrl(
       stream.url,
       stream.headers,
     );
 
+    final subtitleUrls = <String>[];
+    final subtitleFileNames = <String>[];
+    final usedSubNames = <String>{};
+
+    for (final sub in selectedSubs) {
+      if (sub.url.isEmpty || sub == SubtitleTrack.none) continue;
+      final subUrl = DownloadUrlHelper.extractUrl(sub.url);
+      var subFileName = DownloadUrlHelper.formatSubtitleFileName(
+        videoFileName: fileName,
+        language: sub.language,
+        label: sub.label,
+        subtitleUrl: sub.url,
+      );
+
+      if (usedSubNames.contains(subFileName)) {
+        final lastDot = subFileName.lastIndexOf('.');
+        if (lastDot != -1) {
+          final namePart = subFileName.substring(0, lastDot);
+          final extPart = subFileName.substring(lastDot);
+          var counter = 2;
+          while (usedSubNames.contains('$namePart-$counter$extPart')) {
+            counter++;
+          }
+          subFileName = '$namePart-$counter$extPart';
+        }
+      }
+
+      usedSubNames.add(subFileName);
+      subtitleUrls.add(subUrl);
+      subtitleFileNames.add(subFileName);
+    }
+
     final success = await OneDMService.instance.download(
       url: downloadUrl,
       fileName: fileName,
       headers: mergedHeaders,
+      subtitleUrls: subtitleUrls,
+      subtitleFileNames: subtitleFileNames,
     );
 
     if (mounted) {
@@ -973,40 +1030,77 @@ class _SubtitleSelectionSheetState extends State<_SubtitleSelectionSheet> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final allSelected =
+        widget.subtitles.isNotEmpty &&
+        _selected.length == widget.subtitles.length;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: widget.subtitles.length,
-          itemBuilder: (context, index) {
-            final sub = widget.subtitles[index];
-            final isSelected = _selected.contains(sub);
-            return CheckboxListTile(
-              title: Text(
-                sub.label ?? sub.language,
-                style: TextStyle(
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+        if (widget.subtitles.length > 1)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '${_selected.length} of ${widget.subtitles.length} selected',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: cs.onSurfaceVariant,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
-              ),
-              value: isSelected,
-              activeColor: cs.primary,
-              onChanged: (checked) {
-                setState(() {
-                  if (checked == true) {
-                    _selected.add(sub);
-                  } else {
-                    _selected.remove(sub);
-                  }
-                });
-              },
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            );
-          },
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      if (allSelected) {
+                        _selected.clear();
+                      } else {
+                        _selected.addAll(widget.subtitles);
+                      }
+                    });
+                  },
+                  child: Text(allSelected ? 'Deselect All' : 'Select All'),
+                ),
+              ],
+            ),
+          ),
+        Flexible(
+          child: ListView.builder(
+            shrinkWrap: true,
+            physics: const BouncingScrollPhysics(),
+            itemCount: widget.subtitles.length,
+            itemBuilder: (context, index) {
+              final sub = widget.subtitles[index];
+              final isSelected = _selected.contains(sub);
+              return CheckboxListTile(
+                title: Text(
+                  sub.label ?? sub.language,
+                  style: TextStyle(
+                    fontWeight: isSelected
+                        ? FontWeight.w600
+                        : FontWeight.normal,
+                  ),
+                ),
+                value: isSelected,
+                activeColor: cs.primary,
+                onChanged: (checked) {
+                  setState(() {
+                    if (checked == true) {
+                      _selected.add(sub);
+                    } else {
+                      _selected.remove(sub);
+                    }
+                  });
+                },
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              );
+            },
+          ),
         ),
         const SizedBox(height: 16),
         Row(

@@ -6,7 +6,6 @@ import 'package:shonenx/features/player/engine/video_engine.dart';
 import 'package:shonenx/features/player/providers/aniskip_prefs_provider.dart';
 import 'package:shonenx/features/player/providers/player_controller.dart';
 import 'package:shonenx/features/player/providers/player_prefs_provider.dart';
-import 'package:shonenx/features/player/providers/video_engine_provider.dart';
 import 'package:shonenx/shared/models/video_server.dart';
 import 'package:shonenx/shared/models/video_stream.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
@@ -410,56 +409,61 @@ class PlayerSkipActionArea extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final skips = aniSkips.value ?? [];
-    final position = ref.watch(
-      videoEngineStateProvider.select((s) => s.position),
-    );
-    final prefs = ref.watch(aniskipPrefsProvider);
+    return ListenableBuilder(
+      listenable: Listenable.merge([
+        engine.positionNotifier,
+        engine.durationNotifier,
+      ]),
+      builder: (context, _) {
+        final skips = aniSkips.value ?? [];
+        final position = engine.positionNotifier.value;
+        final prefs = ref.watch(aniskipPrefsProvider);
 
-    // ── Priority 1: AniSkip segment button ──────────────────────────
-    final currentSkip = _findActiveSkip(skips, position);
+        // ── Priority 1: AniSkip segment button ──────────────────────────
+        final currentSkip = _findActiveSkip(skips, position);
 
-    if (currentSkip != null && prefs.mode(currentSkip.type) != SkipMode.off) {
-      return PlayerSkipSegmentButton(
-        skip: currentSkip,
-        engine: engine,
-        controller: controller,
-      );
-    }
-
-    final playerPrefs = ref.watch(playerPrefsProvider);
-    final duration = ref.watch(
-      videoEngineStateProvider.select((s) => s.duration),
-    );
-
-    final autoNextResult = _checkAutoNext(
-      position: position,
-      duration: duration,
-      playerPrefs: playerPrefs,
-    );
-
-    if (autoNextResult != null) {
-      return PlayerNextEpisodeButton(
-        progress: autoNextResult,
-        autoNext: playerPrefs.autoNext,
-        onTap: () async {
-          await controller.skipEpisode();
-        },
-      );
-    }
-
-    if (playerPrefs.showSkipButton && playerPrefs.skipDuration > 0) {
-      return PlayerQuickSkipButton(
-        skipDuration: playerPrefs.skipDuration,
-        onTap: () async {
-          await engine.seekRelative(
-            Duration(seconds: playerPrefs.skipDuration),
+        if (currentSkip != null &&
+            prefs.mode(currentSkip.type) != SkipMode.off) {
+          return PlayerSkipSegmentButton(
+            skip: currentSkip,
+            engine: engine,
+            controller: controller,
           );
-        },
-      );
-    }
+        }
 
-    return const SizedBox.shrink();
+        final playerPrefs = ref.watch(playerPrefsProvider);
+        final duration = engine.durationNotifier.value;
+
+        final autoNextResult = _checkAutoNext(
+          position: position,
+          duration: duration,
+          playerPrefs: playerPrefs,
+        );
+
+        if (autoNextResult != null) {
+          return PlayerNextEpisodeButton(
+            progress: autoNextResult,
+            autoNext: playerPrefs.autoNext,
+            onTap: () async {
+              await controller.skipEpisode();
+            },
+          );
+        }
+
+        if (playerPrefs.showSkipButton && playerPrefs.skipDuration > 0) {
+          return PlayerQuickSkipButton(
+            skipDuration: playerPrefs.skipDuration,
+            onTap: () async {
+              await engine.seekRelative(
+                Duration(seconds: playerPrefs.skipDuration),
+              );
+            },
+          );
+        }
+
+        return const SizedBox.shrink();
+      },
+    );
   }
 }
 
@@ -654,41 +658,47 @@ class PlayerSubDubToggle extends StatelessWidget {
 // ============================================================================
 
 /// Position and duration playback time indicator.
-class PlayerTimeDisplay extends ConsumerWidget {
-  const PlayerTimeDisplay({super.key});
+class PlayerTimeDisplay extends StatelessWidget {
+  final VideoEngine engine;
+  const PlayerTimeDisplay({super.key, required this.engine});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final position = ref.watch(
-      videoEngineStateProvider.select((s) => s.position),
-    );
-    final duration = ref.watch(
-      videoEngineStateProvider.select((s) => s.duration),
-    );
 
-    return RichText(
-      text: TextSpan(
-        children: [
-          TextSpan(
-            text: formatDuration(position),
-            style: theme.textTheme.labelLarge?.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.w700,
-              fontSize: 14,
-              letterSpacing: 0.5,
-            ),
+    return ListenableBuilder(
+      listenable: Listenable.merge([
+        engine.positionNotifier,
+        engine.durationNotifier,
+      ]),
+      builder: (context, _) {
+        final position = engine.positionNotifier.value;
+        final duration = engine.durationNotifier.value;
+
+        return RichText(
+          text: TextSpan(
+            children: [
+              TextSpan(
+                text: formatDuration(position),
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              TextSpan(
+                text: ' / ${formatDuration(duration)}',
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: Colors.white70,
+                  fontWeight: FontWeight.w500,
+                  fontSize: 12,
+                ),
+              ),
+            ],
           ),
-          TextSpan(
-            text: ' / ${formatDuration(duration)}',
-            style: theme.textTheme.labelMedium?.copyWith(
-              color: Colors.white70,
-              fontWeight: FontWeight.w500,
-              fontSize: 12,
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

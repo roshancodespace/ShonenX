@@ -8,10 +8,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:shonenx/core/network/http_client.dart';
+import 'package:shonenx/features/player/engine/video_engine.dart';
 
 import 'package:shonenx/features/player/presentation/widgets/custom_subtitle_overlay.dart';
 import 'package:shonenx/features/player/providers/custom_subtitle_provider.dart';
-import 'package:shonenx/features/player/providers/video_engine_provider.dart';
+import 'package:shonenx/shared/models/video_stream.dart';
 import 'package:shonenx/features/player/utils/subtitle_parser.dart';
 import 'package:shonenx/shared/models/ui_style_enums.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
@@ -176,9 +177,6 @@ class _SubtitleDebugScreenState extends ConsumerState<SubtitleDebugScreen> {
             final cues = await compute(SubtitleParser.parseString, content);
             return cues;
           }),
-          videoEngineStateProvider.overrideWith(() {
-            return _MockEngineStateNotifier();
-          }),
         ],
         child: _SubtitleDebugView(
           urlController: _urlController,
@@ -189,17 +187,86 @@ class _SubtitleDebugScreenState extends ConsumerState<SubtitleDebugScreen> {
   }
 }
 
-class _MockEngineStateNotifier extends EngineStateNotifier {
+class _MockVideoEngine implements VideoEngine {
+  final ValueNotifier<Duration> posNotifier;
+  final ValueNotifier<Duration> durNotifier;
+
+  _MockVideoEngine({required this.posNotifier, required this.durNotifier});
+
   @override
-  EngineState build() {
-    // Listen to the manual position provider and update EngineState
-    ref.listen(_debugPlaybackPositionProvider, (prev, next) {
-      updateState(position: next);
-    });
-    return EngineState(
-      position: ref.read(_debugPlaybackPositionProvider),
-      duration: ref.watch(_debugMaxDurationProvider),
-    );
+  ValueListenable<Duration> get positionNotifier => posNotifier;
+
+  @override
+  ValueListenable<Duration> get durationNotifier => durNotifier;
+
+  @override
+  ValueListenable<Duration> get bufferNotifier => ValueNotifier(Duration.zero);
+
+  @override
+  ValueListenable<PlayerStatus> get statusNotifier =>
+      ValueNotifier(PlayerStatus.idle);
+
+  @override
+  ValueListenable<List<SubtitleTrack>> get subtitleTracksNotifier =>
+      ValueNotifier([]);
+
+  @override
+  ValueListenable<List<AudioTrack>> get audioTracksNotifier =>
+      ValueNotifier([]);
+
+  @override
+  ValueListenable<SubtitleTrack?> get activeSubtitleNotifier =>
+      ValueNotifier(null);
+
+  @override
+  ValueListenable<AudioTrack?> get activeAudioNotifier => ValueNotifier(null);
+
+  @override
+  Duration get currentPosition => posNotifier.value;
+
+  @override
+  Duration get currentDuration => durNotifier.value;
+
+  @override
+  Future<void> changeQuality(VideoStream newStream) async {}
+
+  @override
+  Future<void> dispose() async {}
+
+  @override
+  Future<void> initialize(
+    VideoStream stream, {
+    SubtitleTrack? subtitle,
+    Duration? startAt,
+  }) async {}
+
+  @override
+  Future<void> pause() async {}
+
+  @override
+  Future<void> play() async {}
+
+  @override
+  Future<void> refresh() async {}
+
+  @override
+  Future<void> seekRelative(Duration offset) async {}
+
+  @override
+  Future<void> seekTo(Duration position) async {}
+
+  @override
+  Future<void> setAudioTrack(AudioTrack track) async {}
+
+  @override
+  Future<void> setSpeed(double speed) async {}
+
+  @override
+  Future<void> setSubtitle(SubtitleTrack? subtitle) async {}
+
+  @override
+  Widget buildVideoView({BoxFit fit = BoxFit.contain}) {
+    return const SizedBox.shrink();
   }
 }
 
@@ -289,7 +356,17 @@ class _SubtitleDebugView extends ConsumerWidget {
               style: TextStyle(color: Colors.white.withValues(alpha: 0.2)),
             ),
           ),
-          const CustomSubtitleOverlay(),
+          Consumer(
+            builder: (context, ref, child) {
+              final pos = ref.watch(_debugPlaybackPositionProvider);
+              final maxDur = ref.watch(_debugMaxDurationProvider);
+              final engine = _MockVideoEngine(
+                posNotifier: ValueNotifier(pos),
+                durNotifier: ValueNotifier(maxDur),
+              );
+              return CustomSubtitleOverlay(engine: engine);
+            },
+          ),
           Positioned(
             top: 16,
             left: 16,

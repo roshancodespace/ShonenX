@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/features/player/domain/aniskip_prefs.dart';
 import 'package:shonenx/features/player/engine/video_engine.dart';
-import 'package:shonenx/features/player/providers/video_engine_provider.dart';
 
 class ProgressBar extends ConsumerWidget {
   final List<AniSkipStamp> aniSkips;
@@ -25,70 +24,75 @@ class ProgressBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final position = ref.watch(
-      videoEngineStateProvider.select((s) => s.position),
-    );
-    final duration = ref.watch(
-      videoEngineStateProvider.select((s) => s.duration),
-    );
-    final buffer = ref.watch(videoEngineStateProvider.select((s) => s.buffer));
+    return ListenableBuilder(
+      listenable: Listenable.merge([
+        engine.positionNotifier,
+        engine.durationNotifier,
+        engine.bufferNotifier,
+      ]),
+      builder: (context, _) {
+        final position = engine.positionNotifier.value;
+        final duration = engine.durationNotifier.value;
+        final buffer = engine.bufferNotifier.value;
 
-    return SizedBox(
-      height: 36,
-      child: Builder(
-        builder: (context) {
-          final pos = position.inMilliseconds / 1000.0;
-          final dur = duration.inMilliseconds / 1000.0;
-          final bfr = buffer.inMilliseconds / 1000.0;
+        return SizedBox(
+          height: 36,
+          child: Builder(
+            builder: (context) {
+              final pos = position.inMilliseconds / 1000.0;
+              final dur = duration.inMilliseconds / 1000.0;
+              final bfr = buffer.inMilliseconds / 1000.0;
 
-          final current = draggingValue ?? pos;
+              final current = draggingValue ?? pos;
 
-          return GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onHorizontalDragStart: (details) {
-              final dx = details.localPosition.dx;
-              final value = (dx / context.size!.width) * dur;
-              onDragStart(value.clamp(0, dur));
+              return GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onHorizontalDragStart: (details) {
+                  final dx = details.localPosition.dx;
+                  final value = (dx / context.size!.width) * dur;
+                  onDragStart(value.clamp(0, dur));
+                },
+                onHorizontalDragUpdate: (details) {
+                  final dx = details.localPosition.dx;
+                  final value = (dx / context.size!.width) * dur;
+                  onChanged(value.clamp(0, dur));
+                },
+                onHorizontalDragEnd: (_) {
+                  final value = draggingValue ?? pos;
+                  engine
+                      .seekTo(Duration(milliseconds: (value * 1000).toInt()))
+                      .then((_) => onDragEnd(value));
+                },
+                child: Consumer(
+                  builder: (context, ref, child) {
+                    return CustomPaint(
+                      size: const Size(double.infinity, 40),
+                      painter: ProgressBarPainter(
+                        skipStamps: aniSkips,
+                        totalDuration: dur,
+                        progress: current,
+                        buffer: bfr,
+                        thumbColor: Theme.of(
+                          context,
+                        ).colorScheme.onPrimaryContainer,
+                        progressColor: Theme.of(
+                          context,
+                        ).colorScheme.primaryContainer,
+                        bufferColor: Theme.of(
+                          context,
+                        ).colorScheme.primaryContainer.withValues(alpha: 0.5),
+                        baseColor: Theme.of(
+                          context,
+                        ).colorScheme.primaryContainer.withValues(alpha: 0.2),
+                      ),
+                    );
+                  },
+                ),
+              );
             },
-            onHorizontalDragUpdate: (details) {
-              final dx = details.localPosition.dx;
-              final value = (dx / context.size!.width) * dur;
-              onChanged(value.clamp(0, dur));
-            },
-            onHorizontalDragEnd: (_) {
-              final value = draggingValue ?? pos;
-              engine
-                  .seekTo(Duration(milliseconds: (value * 1000).toInt()))
-                  .then((_) => onDragEnd(value));
-            },
-            child: Consumer(
-              builder: (context, ref, child) {
-                return CustomPaint(
-                  size: const Size(double.infinity, 40),
-                  painter: ProgressBarPainter(
-                    skipStamps: aniSkips,
-                    totalDuration: dur,
-                    progress: current,
-                    buffer: bfr,
-                    thumbColor: Theme.of(
-                      context,
-                    ).colorScheme.onPrimaryContainer,
-                    progressColor: Theme.of(
-                      context,
-                    ).colorScheme.primaryContainer,
-                    bufferColor: Theme.of(
-                      context,
-                    ).colorScheme.primaryContainer.withValues(alpha: 0.5),
-                    baseColor: Theme.of(
-                      context,
-                    ).colorScheme.primaryContainer.withValues(alpha: 0.2),
-                  ),
-                );
-              },
-            ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 }

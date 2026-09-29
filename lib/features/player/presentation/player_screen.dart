@@ -20,7 +20,6 @@ import 'package:shonenx/features/player/presentation/widgets/player_controls.dar
 import 'package:shonenx/features/player/presentation/widgets/player_keyboard_listener.dart';
 import 'package:shonenx/features/player/providers/player_controller.dart';
 import 'package:shonenx/features/player/providers/player_prefs_provider.dart';
-import 'package:shonenx/features/player/providers/video_engine_provider.dart';
 import 'package:shonenx/features/comments/presentation/widgets/comments_tab.dart';
 import 'package:shonenx/features/discord/providers/discord_rpc_provider.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
@@ -103,10 +102,6 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     _controlsTimer?.cancel();
     _lockedIconTimer?.cancel();
     _disposeSystemUI();
-
-    try {
-      ref.read(videoEngineProvider).dispose();
-    } catch (_) {}
 
     try {
       if (widget.mode is PlayerModeOnline) {
@@ -383,7 +378,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
   Widget build(BuildContext context) {
     final playerState = ref.watch(playerControllerProvider);
     final controller = ref.read(playerControllerProvider.notifier);
-    final engine = ref.watch(videoEngineProvider);
+    final engine = controller.engine;
 
     ref.listen(playerControllerProvider.select((s) => s.error), (prev, next) {
       if (next != null && next != prev && mounted) {
@@ -514,7 +509,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
               children: [
                 _buildVideoLayer(engine, playerState),
                 if (playerState.activeSubtitle != null)
-                  const CustomSubtitleOverlay(),
+                  CustomSubtitleOverlay(engine: engine),
                 Positioned.fill(
                   child: PlayerGestureOverlay(
                     onToggleControls: _toggleControls,

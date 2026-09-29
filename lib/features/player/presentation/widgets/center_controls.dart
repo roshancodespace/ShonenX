@@ -5,7 +5,6 @@ import 'package:shonenx/features/discovery/providers/episodes_provider.dart';
 import 'package:shonenx/features/player/engine/video_engine.dart';
 import 'package:shonenx/features/player/presentation/widgets/player_controls.dart';
 import 'package:shonenx/features/player/providers/player_controller.dart';
-import 'package:shonenx/features/player/providers/video_engine_provider.dart';
 
 class CenterControls extends ConsumerStatefulWidget {
   final bool showControls;
@@ -51,56 +50,64 @@ class _CenterControlsState extends ConsumerState<CenterControls> {
         ? !widget.controller.hasNextEpisode
         : widget.playerState.activeEpisode?.number == episodes.last.number;
 
-    final isBuffering =
-        ref.watch(videoEngineStateProvider.select((s) => s.isBuffering)) ||
-        widget.playerState.isLoading;
-    final isPlaying = ref.watch(
-      videoEngineStateProvider.select((s) => s.isPlaying),
-    );
+    return ListenableBuilder(
+      listenable: widget.engine.statusNotifier,
+      builder: (context, _) {
+        final status = widget.engine.statusNotifier.value;
+        final isBuffering =
+            status == PlayerStatus.buffering || widget.playerState.isLoading;
+        final isPlaying = status == PlayerStatus.playing;
 
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        if (isBuffering)
-          Center(
-            child: CircularProgressIndicator(
-              constraints: const BoxConstraints(minHeight: 80, minWidth: 80),
-              strokeWidth: 5,
-              color: theme.colorScheme.primary,
-            ),
-          ),
-        IgnorePointer(
-          ignoring: !widget.showControls || isBuffering,
-          child: AnimatedOpacity(
-            curve: Curves.easeInOut,
-            opacity: (widget.showControls && !isBuffering) ? 1 : 0,
-            duration: Durations.medium2,
-            child: Center(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  PlayerEpisodeNavButton(
-                    isNext: false,
-                    isEnabled: !isFirst,
-                    onTap: () => widget.controller.skipEpisode(forward: false),
+        return Stack(
+          alignment: Alignment.center,
+          children: [
+            if (isBuffering)
+              Center(
+                child: CircularProgressIndicator(
+                  constraints: const BoxConstraints(
+                    minHeight: 80,
+                    minWidth: 80,
                   ),
-                  PlayerPlayPauseButton(
-                    isPlaying: isPlaying,
-                    onToggle: isPlaying
-                        ? widget.engine.pause
-                        : widget.engine.play,
+                  strokeWidth: 5,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+            IgnorePointer(
+              ignoring: !widget.showControls || isBuffering,
+              child: AnimatedOpacity(
+                curve: Curves.easeInOut,
+                opacity: (widget.showControls && !isBuffering) ? 1 : 0,
+                duration: Durations.medium2,
+                child: Center(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      PlayerEpisodeNavButton(
+                        isNext: false,
+                        isEnabled: !isFirst,
+                        onTap: () =>
+                            widget.controller.skipEpisode(forward: false),
+                      ),
+                      PlayerPlayPauseButton(
+                        isPlaying: isPlaying,
+                        onToggle: isPlaying
+                            ? widget.engine.pause
+                            : widget.engine.play,
+                      ),
+                      PlayerEpisodeNavButton(
+                        isNext: true,
+                        isEnabled: !isLast,
+                        onTap: () =>
+                            widget.controller.skipEpisode(forward: true),
+                      ),
+                    ],
                   ),
-                  PlayerEpisodeNavButton(
-                    isNext: true,
-                    isEnabled: !isLast,
-                    onTap: () => widget.controller.skipEpisode(forward: true),
-                  ),
-                ],
+                ),
               ),
             ),
-          ),
-        ),
-      ],
+          ],
+        );
+      },
     );
   }
 }

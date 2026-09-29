@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/shared/providers/storage_provider.dart';
 import 'package:shonenx/features/player/domain/aniskip_prefs.dart';
@@ -34,6 +35,7 @@ class PlayerPrefsState {
   final int nextEpisodeThreshold;
   final bool showSkipButton;
   final int skipDuration;
+  final BoxFit fit;
 
   const PlayerPrefsState({
     this.playerType = PlayerType.mediakit,
@@ -47,6 +49,7 @@ class PlayerPrefsState {
     this.nextEpisodeThreshold = 85,
     this.showSkipButton = true,
     this.skipDuration = 85,
+    this.fit = BoxFit.contain,
   });
 
   PlayerPrefsState copyWith({
@@ -62,6 +65,7 @@ class PlayerPrefsState {
     int? nextEpisodeThreshold,
     bool? showSkipButton,
     int? skipDuration,
+    BoxFit? fit,
   }) {
     return PlayerPrefsState(
       playerType: playerType ?? this.playerType,
@@ -76,6 +80,7 @@ class PlayerPrefsState {
       nextEpisodeThreshold: nextEpisodeThreshold ?? this.nextEpisodeThreshold,
       showSkipButton: showSkipButton ?? this.showSkipButton,
       skipDuration: skipDuration ?? this.skipDuration,
+      fit: fit ?? this.fit,
     );
   }
 
@@ -99,6 +104,12 @@ class PlayerPrefsState {
       nextEpisodeThreshold: map['nextEpisodeThreshold'] ?? 85,
       showSkipButton: map['showSkipButton'] ?? true,
       skipDuration: map['skipDuration'] ?? 85,
+      fit: map['fit'] != null
+          ? BoxFit.values.firstWhere(
+              (e) => e.name == map['fit'],
+              orElse: () => BoxFit.contain,
+            )
+          : BoxFit.contain,
     );
   }
 
@@ -115,6 +126,7 @@ class PlayerPrefsState {
       'nextEpisodeThreshold': nextEpisodeThreshold,
       'showSkipButton': showSkipButton,
       'skipDuration': skipDuration,
+      'fit': fit.name,
     };
   }
 
@@ -195,6 +207,16 @@ class PlayerPrefsNotifier extends Notifier<PlayerPrefsState> {
 
   void setSkipDuration(int duration) {
     state = state.copyWith(skipDuration: duration);
+    _saveDb();
+  }
+
+  void cycleFit() {
+    final nextFit = switch (state.fit) {
+      BoxFit.contain => BoxFit.cover,
+      BoxFit.cover => BoxFit.fill,
+      _ => BoxFit.contain,
+    };
+    state = state.copyWith(fit: nextFit);
     _saveDb();
   }
 

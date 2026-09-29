@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit/media_kit.dart';
@@ -9,9 +8,7 @@ import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/player/domain/media_kit_prefs.dart';
 import 'package:shonenx/features/player/domain/subtitle_prefs.dart';
 import 'package:shonenx/features/player/engine/video_engine.dart';
-import 'package:shonenx/features/player/presentation/widgets/media_kit/media_kit_settings.dart';
 import 'package:shonenx/features/player/providers/subtitle_prefs_provider.dart';
-import 'package:shonenx/features/player/providers/video_engine_provider.dart';
 import 'package:shonenx/shared/models/video_stream.dart' as stream;
 
 class MediaKitEngine implements VideoEngine {
@@ -25,11 +22,34 @@ class MediaKitEngine implements VideoEngine {
   stream.SubtitleTrack? _currentSubtitle;
 
   MediaKitPrefs prefs;
-  final Ref ref;
 
   bool _disposed = false;
 
   StreamSubscription<Duration>? _positionSubscription;
+
+  @override
+  final ValueNotifier<Duration> positionNotifier = ValueNotifier(Duration.zero);
+  @override
+  final ValueNotifier<Duration> durationNotifier = ValueNotifier(Duration.zero);
+  @override
+  final ValueNotifier<Duration> bufferNotifier = ValueNotifier(Duration.zero);
+  @override
+  final ValueNotifier<PlayerStatus> statusNotifier = ValueNotifier(
+    PlayerStatus.idle,
+  );
+  @override
+  final ValueNotifier<List<stream.SubtitleTrack>> subtitleTracksNotifier =
+      ValueNotifier([]);
+  @override
+  final ValueNotifier<List<stream.AudioTrack>> audioTracksNotifier =
+      ValueNotifier([]);
+  @override
+  final ValueNotifier<stream.SubtitleTrack?> activeSubtitleNotifier =
+      ValueNotifier(null);
+  @override
+  final ValueNotifier<stream.AudioTrack?> activeAudioNotifier = ValueNotifier(
+    null,
+  );
 
   Future<void> updatePrefs(MediaKitPrefs newPrefs) async {
     final changes = prefs.diff(newPrefs);
@@ -154,7 +174,7 @@ class MediaKitEngine implements VideoEngine {
     }
   }
 
-  MediaKitEngine(this.prefs, this.ref) {
+  MediaKitEngine(this.prefs) {
     _player = Player(
       configuration: PlayerConfiguration(
         libass: prefs.libassEnabled,
@@ -177,61 +197,56 @@ class MediaKitEngine implements VideoEngine {
     _subscriptions.addAll([
       _player.stream.position.listen((pos) {
         if (!_disposed) {
-          ref
-              .read(videoEngineStateProvider.notifier)
-              .updateState(position: pos);
+          positionNotifier.value = pos;
         }
       }),
       _player.stream.duration.listen((dur) {
         if (!_disposed) {
-          ref
-              .read(videoEngineStateProvider.notifier)
-              .updateState(duration: dur);
+          durationNotifier.value = dur;
         }
       }),
       _player.stream.buffer.listen((buf) {
         if (!_disposed) {
-          ref.read(videoEngineStateProvider.notifier).updateState(buffer: buf);
+          bufferNotifier.value = buf;
         }
       }),
       _player.stream.playing.listen((playing) {
         if (!_disposed) {
-          ref
-              .read(videoEngineStateProvider.notifier)
-              .updateState(isPlaying: playing);
+          statusNotifier.value = playing
+              ? PlayerStatus.playing
+              : PlayerStatus.paused;
         }
       }),
       _player.stream.buffering.listen((buffering) {
         if (!_disposed) {
-          ref
-              .read(videoEngineStateProvider.notifier)
-              .updateState(isBuffering: buffering);
+          if (buffering) {
+            statusNotifier.value = PlayerStatus.buffering;
+          } else {
+            statusNotifier.value = _player.state.playing
+                ? PlayerStatus.playing
+                : PlayerStatus.paused;
+          }
         }
       }),
       _player.stream.tracks.listen((tracks) {
         if (!_disposed) {
-          final audioList = tracks.audio.map((t) => _mapAudioTrack(t)).toList();
-          final subtitleList = tracks.subtitle
+          audioTracksNotifier.value = tracks.audio
+              .map((t) => _mapAudioTrack(t))
+              .toList();
+          subtitleTracksNotifier.value = tracks.subtitle
               .map((t) => _mapSubtitleTrack(t))
               .toList();
-          ref
-              .read(videoEngineStateProvider.notifier)
-              .updateState(
-                audioTracks: audioList,
-                subtitleTracks: subtitleList,
-              );
         }
       }),
       _player.stream.track.listen((track) {
         if (!_disposed) {
-          ref
-              .read(videoEngineStateProvider.notifier)
-              .updateState(activeAudioTrack: _mapAudioTrack(track.audio));
+          activeAudioNotifier.value = _mapAudioTrack(track.audio);
         }
       }),
       _player.stream.error.listen((error) {
         if (!_disposed) {
           _log.e('Player stream error: $error');
+          statusNotifier.value = PlayerStatus.error;
         }
       }),
       _player.stream.log.listen((event) {
@@ -245,19 +260,13 @@ class MediaKitEngine implements VideoEngine {
 
     Future.microtask(() {
       if (!_disposed) {
-        final initialAudioList = _player.state.tracks.audio
+        audioTracksNotifier.value = _player.state.tracks.audio
             .map((t) => _mapAudioTrack(t))
             .toList();
-        final initialSubtitleList = _player.state.tracks.subtitle
+        activeAudioNotifier.value = _mapAudioTrack(_player.state.track.audio);
+        subtitleTracksNotifier.value = _player.state.tracks.subtitle
             .map((t) => _mapSubtitleTrack(t))
             .toList();
-        ref
-            .read(videoEngineStateProvider.notifier)
-            .updateState(
-              audioTracks: initialAudioList,
-              activeAudioTrack: _mapAudioTrack(_player.state.track.audio),
-              subtitleTracks: initialSubtitleList,
-            );
       }
     });
   }
@@ -311,10 +320,9 @@ class MediaKitEngine implements VideoEngine {
   }
 
   @override
-  Widget buildVideoView() {
+  Widget buildVideoView({BoxFit fit = BoxFit.contain}) {
     return Consumer(
       builder: (context, ref, _) {
-        final fit = ref.watch(videoEngineStateProvider.select((s) => s.fit));
         final subtitlePrefs = ref.watch(subtitlePrefsProvider);
         final screenWidth = MediaQuery.sizeOf(context).width;
         final responsiveFontSize = getResponsiveSubtitleSize(
@@ -350,9 +358,6 @@ class MediaKitEngine implements VideoEngine {
       },
     );
   }
-
-  @override
-  Widget? buildSettingsView(BuildContext context) => MediaKitAdvancedSettings();
 
   @override
   Future<void> play() => _player.play();
@@ -501,6 +506,15 @@ class MediaKitEngine implements VideoEngine {
       await sub.cancel();
     }
     await _player.dispose();
+
+    positionNotifier.dispose();
+    durationNotifier.dispose();
+    bufferNotifier.dispose();
+    statusNotifier.dispose();
+    subtitleTracksNotifier.dispose();
+    audioTracksNotifier.dispose();
+    activeSubtitleNotifier.dispose();
+    activeAudioNotifier.dispose();
   }
 
   @override

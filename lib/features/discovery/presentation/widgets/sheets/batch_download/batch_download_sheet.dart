@@ -456,10 +456,46 @@ class BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
           matchedStream.headers,
         );
 
+        final matchedSubs = matchedStream.subtitles
+            .where(
+              (sub) =>
+                  _matchesSubtitle(sub, selectedSubtitleLabels) &&
+                  sub.url.isNotEmpty,
+            )
+            .toList();
+
         if (use1DM) {
           oneDmUrls.add(extractedUrl);
           oneDmFileNames.add(fileName);
           oneDmHeaders ??= mergedHeaders;
+
+          final usedSubNames = <String>{};
+          for (final sub in matchedSubs) {
+            final subUrl = DownloadUrlHelper.extractUrl(sub.url);
+            var subFileName = DownloadUrlHelper.formatSubtitleFileName(
+              videoFileName: fileName,
+              language: sub.language,
+              label: sub.label,
+              subtitleUrl: sub.url,
+            );
+
+            if (usedSubNames.contains(subFileName)) {
+              final lastDot = subFileName.lastIndexOf('.');
+              if (lastDot != -1) {
+                final namePart = subFileName.substring(0, lastDot);
+                final extPart = subFileName.substring(lastDot);
+                var counter = 2;
+                while (usedSubNames.contains('$namePart-$counter$extPart')) {
+                  counter++;
+                }
+                subFileName = '$namePart-$counter$extPart';
+              }
+            }
+
+            usedSubNames.add(subFileName);
+            oneDmUrls.add(subUrl);
+            oneDmFileNames.add(subFileName);
+          }
         } else {
           final downloadUrl = DownloadUrlHelper.extractDownloadUrl(
             matchedStream.url,
@@ -472,21 +508,6 @@ class BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
             continue;
           }
 
-          final matchedSubs = matchedStream.subtitles
-              .where((sub) {
-                final label = sub.label ?? sub.language;
-                return selectedSubtitleLabels.contains(label) &&
-                    sub.url.isNotEmpty;
-              })
-              .map(
-                (s) => DownloadSubtitle.create(
-                  url: s.url,
-                  language: s.language,
-                  label: s.label ?? s.language,
-                ),
-              )
-              .toList();
-
           final task = DownloadTask()
             ..url = downloadUrl
             ..mediaId = widget.media.id
@@ -498,7 +519,15 @@ class BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
             ..totalBytes = DownloadUrlHelper.parseSizeToBytes(
               matchedStream.size,
             )
-            ..subtitles = matchedSubs;
+            ..subtitles = matchedSubs
+                .map(
+                  (s) => DownloadSubtitle.create(
+                    url: s.url,
+                    language: s.language,
+                    label: s.label ?? s.language,
+                  ),
+                )
+                .toList();
 
           await ref.read(downloadManagerProvider.notifier).startDownload(task);
           queuedTaskIds.add(task.id);
@@ -596,14 +625,28 @@ class BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
     );
   }
 
+  bool _matchesSubtitle(SubtitleTrack sub, Set<String> selected) {
+    if (selected.isEmpty) return false;
+    final sLabel = sub.label ?? sub.language;
+    final lang = sub.language;
+    return selected.contains(sLabel) ||
+        selected.contains(lang) ||
+        selected.any(
+          (l) =>
+              l == sLabel ||
+              l == lang ||
+              l.endsWith(' - $sLabel') ||
+              l.endsWith(' - $lang'),
+        );
+  }
+
   Future<Set<String>?> _promptSubtitlesForBatch() async {
     final allSubtitles = <SubtitleTrack>[];
     if (selectedStream != null) {
       for (final sub in selectedStream!.subtitles) {
         if (sub.url.isNotEmpty && sub != SubtitleTrack.none) {
           final sLabel = sub.label ?? sub.language;
-          final label = '${selectedServer?.name ?? "Unknown"} - $sLabel';
-          allSubtitles.add(sub.copyWith(label: label));
+          allSubtitles.add(sub.copyWith(label: sLabel));
         }
       }
     }
@@ -664,40 +707,77 @@ class _SubtitleSelectionSheetState extends State<_SubtitleSelectionSheet> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final allSelected =
+        widget.subtitles.isNotEmpty &&
+        _selected.length == widget.subtitles.length;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: widget.subtitles.length,
-          itemBuilder: (context, index) {
-            final sub = widget.subtitles[index];
-            final isSelected = _selected.contains(sub);
-            return CheckboxListTile(
-              title: Text(
-                sub.label ?? sub.language,
-                style: TextStyle(
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+        if (widget.subtitles.length > 1)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '${_selected.length} of ${widget.subtitles.length} selected',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: cs.onSurfaceVariant,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
-              ),
-              value: isSelected,
-              activeColor: cs.primary,
-              onChanged: (checked) {
-                setState(() {
-                  if (checked == true) {
-                    _selected.add(sub);
-                  } else {
-                    _selected.remove(sub);
-                  }
-                });
-              },
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            );
-          },
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      if (allSelected) {
+                        _selected.clear();
+                      } else {
+                        _selected.addAll(widget.subtitles);
+                      }
+                    });
+                  },
+                  child: Text(allSelected ? 'Deselect All' : 'Select All'),
+                ),
+              ],
+            ),
+          ),
+        Flexible(
+          child: ListView.builder(
+            shrinkWrap: true,
+            physics: const BouncingScrollPhysics(),
+            itemCount: widget.subtitles.length,
+            itemBuilder: (context, index) {
+              final sub = widget.subtitles[index];
+              final isSelected = _selected.contains(sub);
+              return CheckboxListTile(
+                title: Text(
+                  sub.label ?? sub.language,
+                  style: TextStyle(
+                    fontWeight: isSelected
+                        ? FontWeight.w600
+                        : FontWeight.normal,
+                  ),
+                ),
+                value: isSelected,
+                activeColor: cs.primary,
+                onChanged: (checked) {
+                  setState(() {
+                    if (checked == true) {
+                      _selected.add(sub);
+                    } else {
+                      _selected.remove(sub);
+                    }
+                  });
+                },
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              );
+            },
+          ),
         ),
         const SizedBox(height: 16),
         Row(

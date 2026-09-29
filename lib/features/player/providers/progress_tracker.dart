@@ -206,7 +206,7 @@ class ProgressTracker {
   Future<String?> _captureThumbnail() async {
     if (_screenshotController == null) return _cachedThumbnail;
     try {
-      final image = await _screenshotController!.capture(pixelRatio: 0.5);
+      final image = await _screenshotController!.capture(pixelRatio: 0.25);
       if (image != null) {
         _cachedThumbnail = base64Encode(image);
         _lastThumbnailTime = DateTime.now();

@@ -7,10 +7,8 @@ import 'package:shonenx/core/router/app_navigator.dart';
 import 'package:shonenx/core/utils/formatting.dart';
 import 'package:shonenx/features/discovery/domain/media_args.dart';
 import 'package:shonenx/features/discovery/providers/episodes_provider.dart';
-import 'package:shonenx/features/history/domain/models/read_history_entry.dart';
-import 'package:shonenx/features/history/domain/models/watch_history_entry.dart';
-import 'package:shonenx/features/history/providers/read_history_provider.dart';
-import 'package:shonenx/features/history/providers/watch_history_provider.dart';
+import 'package:shonenx/features/history/domain/models/history_entry.dart';
+import 'package:shonenx/features/history/providers/history_provider.dart';
 import 'package:shonenx/features/player/domain/player_mode.dart';
 import 'package:shonenx/features/reader/domain/reader_mode.dart';
 import 'package:shonenx/features/reader/providers/preferred_scanlator_provider.dart';
@@ -67,10 +65,8 @@ class _TvEpisodeShelfState extends ConsumerState<TvEpisodeShelf> {
     final mediaArgs = MediaArgs.fromMedia(widget.media);
     final episodesState = ref.watch(episodesListProvider(mediaArgs));
 
-    final watchHistory =
-        ref.watch(historyEpisodesProvider(widget.media.id)).value ?? [];
-    final readHistory =
-        ref.watch(historyChaptersProvider(widget.media.id)).value ?? [];
+    final history =
+        ref.watch(historyForMediaProvider(widget.media.id)).value ?? [];
 
     final primaryTracker = ref.watch(primaryTrackerProvider);
     final trackingState = ref.watch(
@@ -172,20 +168,11 @@ class _TvEpisodeShelfState extends ConsumerState<TvEpisodeShelf> {
                 widget.media.type == MediaType.NOVEL;
 
             int activeIndex = -1;
-            if (isManga) {
-              final latestRead = readHistory.firstOrNull;
-              if (latestRead != null) {
-                activeIndex = finalEpisodes.indexWhere(
-                  (e) => (e.number - latestRead.chapterNumber).abs() < 0.01,
-                );
-              }
-            } else {
-              final latestWatch = watchHistory.firstOrNull;
-              if (latestWatch != null) {
-                activeIndex = finalEpisodes.indexWhere(
-                  (e) => (e.number - latestWatch.episodeNumber).abs() < 0.01,
-                );
-              }
+            final latestHistory = history.firstOrNull;
+            if (latestHistory != null) {
+              activeIndex = finalEpisodes.indexWhere(
+                (e) => (e.number - latestHistory.itemNumber).abs() < 0.01,
+              );
             }
             if (activeIndex == -1 && trackedProgress > 0) {
               activeIndex = finalEpisodes.indexWhere(
@@ -564,51 +551,32 @@ class _TvEpisodeShelfState extends ConsumerState<TvEpisodeShelf> {
                         double progressPercent = 0.0;
                         bool isCompleted = false;
 
-                        if (isManga) {
-                          final historyEntry = readHistory
-                              .where(
-                                (e) =>
-                                    (e.chapterNumber - episode.number).abs() <
-                                    0.01,
-                              )
-                              .firstOrNull;
-                          if (historyEntry != null &&
-                              historyEntry.totalPages > 0) {
-                            progressPercent =
-                                (historyEntry.positionPage /
-                                        historyEntry.totalPages)
-                                    .clamp(0.0, 1.0);
+                        final historyEntry = history
+                            .where(
+                              (e) =>
+                                  (e.itemNumber - episode.number).abs() < 0.01,
+                            )
+                            .firstOrNull;
+
+                        if (historyEntry != null && historyEntry.total > 0) {
+                          progressPercent =
+                              (historyEntry.progress / historyEntry.total)
+                                  .clamp(0.0, 1.0);
+
+                          if (isManga) {
                             isCompleted =
-                                historyEntry.positionPage >=
-                                historyEntry.totalPages;
-                          } else if (trackedProgress >= episode.number) {
-                            progressPercent = 1.0;
-                            isCompleted = true;
-                          }
-                        } else {
-                          final historyEntry = watchHistory
-                              .where(
-                                (e) =>
-                                    (e.episodeNumber - episode.number).abs() <
-                                    0.01,
-                              )
-                              .firstOrNull;
-                          if (historyEntry != null &&
-                              historyEntry.durationInMilliseconds > 0) {
-                            progressPercent =
-                                (historyEntry.positionInMilliseconds /
-                                        historyEntry.durationInMilliseconds)
-                                    .clamp(0.0, 1.0);
+                                historyEntry.progress >= historyEntry.total;
+                          } else {
                             isCompleted =
-                                historyEntry.positionInMilliseconds >=
-                                historyEntry.durationInMilliseconds *
+                                historyEntry.progress >=
+                                historyEntry.total *
                                     ref
                                         .read(trackingPrefsProvider)
                                         .syncThreshold;
-                          } else if (trackedProgress >= episode.number) {
-                            progressPercent = 1.0;
-                            isCompleted = true;
                           }
+                        } else if (trackedProgress >= episode.number) {
+                          progressPercent = 1.0;
+                          isCompleted = true;
                         }
 
                         return _TvEpisodeCard(
@@ -622,8 +590,7 @@ class _TvEpisodeShelfState extends ConsumerState<TvEpisodeShelf> {
                             context,
                             episode,
                             state.source,
-                            watchHistory,
-                            readHistory,
+                            history,
                           ),
                         );
                       },
@@ -642,20 +609,19 @@ class _TvEpisodeShelfState extends ConsumerState<TvEpisodeShelf> {
     BuildContext context,
     UnifiedEpisode episode,
     SourceInfo sourceInfo,
-    List<WatchHistoryEntry> watchHistory,
-    List<ReadHistoryEntry> readHistory,
+    List<HistoryEntry> history,
   ) {
+    final historyEntry = history
+        .where((e) => (e.itemNumber - episode.number).abs() < 0.01)
+        .firstOrNull;
+
     if (widget.media.type == MediaType.MANGA ||
         widget.media.type == MediaType.NOVEL) {
-      final historyEntry = readHistory
-          .where((e) => (e.chapterNumber - episode.number).abs() < 0.01)
-          .firstOrNull;
-
       final int startPosition;
       if (historyEntry != null &&
-          historyEntry.positionPage > 0 &&
-          historyEntry.positionPage <= historyEntry.totalPages) {
-        startPosition = historyEntry.positionPage;
+          historyEntry.progress > 0 &&
+          historyEntry.progress <= historyEntry.total) {
+        startPosition = historyEntry.progress.toInt();
       } else {
         startPosition = 1;
       }
@@ -669,23 +635,15 @@ class _TvEpisodeShelfState extends ConsumerState<TvEpisodeShelf> {
         ),
       );
     } else {
-      final historyEntry = watchHistory
-          .where((e) => (e.episodeNumber - episode.number).abs() < 0.01)
-          .firstOrNull;
-
       final Duration? startPosition;
       final isFinished =
           historyEntry != null &&
-          historyEntry.durationInMilliseconds > 0 &&
-          historyEntry.positionInMilliseconds >=
-              historyEntry.durationInMilliseconds *
+          historyEntry.total > 0 &&
+          historyEntry.progress >=
+              historyEntry.total *
                   ref.read(trackingPrefsProvider).syncThreshold;
-      if (historyEntry != null &&
-          historyEntry.positionInMilliseconds > 0 &&
-          !isFinished) {
-        startPosition = Duration(
-          milliseconds: historyEntry.positionInMilliseconds,
-        );
+      if (historyEntry != null && historyEntry.progress > 0 && !isFinished) {
+        startPosition = Duration(milliseconds: historyEntry.progress.toInt());
       } else {
         startPosition = null;
       }

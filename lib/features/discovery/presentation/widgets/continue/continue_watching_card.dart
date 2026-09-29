@@ -4,9 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/router/app_navigator.dart';
 import 'package:shonenx/core/utils/formatting.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/continue/continue_media_mixin.dart';
-import 'package:shonenx/features/history/domain/models/watch_history_entry.dart';
-import 'package:shonenx/features/history/providers/continue_watching_resolver.dart';
-import 'package:shonenx/features/history/providers/watch_history_provider.dart';
+import 'package:shonenx/features/history/domain/models/history_entry.dart';
+import 'package:shonenx/features/history/providers/continue_history_resolver.dart';
+import 'package:shonenx/features/history/providers/history_provider.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/shared/widgets/app_focus_hover.dart';
@@ -15,7 +15,7 @@ import 'package:shonenx/source_engine/source_registry.dart';
 import 'continue_card_layout.dart';
 
 class ContinueWatchingItem extends ConsumerStatefulWidget {
-  final WatchHistoryEntry entry;
+  final HistoryEntry entry;
   final double progress;
   final ContinueWatchingStyle style;
 
@@ -37,7 +37,7 @@ class _ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem>
     await handleResumeMedia(
       resolveAndPlay: () async {
         final mode = await ref
-            .read(continueWatchingResolverProvider)
+            .read(continueHistoryResolverProvider)
             .resolve(widget.entry);
         if (!mounted) return;
         context.pushDetails(
@@ -48,7 +48,7 @@ class _ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem>
         );
       },
       mediaType: MediaType.ANIME,
-      mediaTitle: widget.entry.animeTitle,
+      mediaTitle: widget.entry.mediaTitle,
       availableSourcesProvider: availableAnimeSourcesProvider,
     );
   }
@@ -57,13 +57,13 @@ class _ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem>
     showItemContextMenu(
       position: position,
       mediaType: MediaType.ANIME,
-      mediaTitle: widget.entry.animeTitle,
+      mediaTitle: widget.entry.mediaTitle,
       onViewDetails: () {
         context.pushDetails(
           mediaType: MediaType.ANIME,
           media: UnifiedMedia(
-            id: widget.entry.animeId,
-            title: MediaTitle(english: widget.entry.animeTitle),
+            id: widget.entry.mediaId,
+            title: MediaTitle(english: widget.entry.mediaTitle),
             type: MediaType.ANIME,
             cover: widget.entry.cover,
             banner: widget.entry.banner,
@@ -71,7 +71,7 @@ class _ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem>
         );
       },
       onRemoveHistory: () =>
-          ref.read(watchHistoryRepositoryProvider).deleteEntry(widget.entry.id),
+          ref.read(historyRepositoryProvider).deleteEntry(widget.entry.id),
     );
   }
 
@@ -97,9 +97,9 @@ class _ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem>
     ThemeData theme,
     bool isActive,
   ) {
-    final epNum = widget.entry.episodeNumber;
+    final epNum = widget.entry.itemNumber;
     final cleanNum = epNum.toString().contains('.0') ? epNum.toInt() : epNum;
-    final epTitle = widget.entry.episodeTitle;
+    final epTitle = widget.entry.itemTitle;
     final subtitleText = 'EP $cleanNum${epTitle != null ? ' • $epTitle' : ''}';
 
     final isWideMode = ref.watch(
@@ -121,16 +121,15 @@ class _ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem>
       isActive: isActive,
       isLoading: isLoading,
       isWideMode: isWideMode,
-      title: widget.entry.animeTitle,
+      title: widget.entry.mediaTitle,
       subtitle: style == ContinueWatchingStyle.wideBanner
-          ? (widget.entry.episodeTitle ?? 'Continue watching')
+          ? (widget.entry.itemTitle ?? 'Continue watching')
           : subtitleText,
       progress: widget.progress,
       progressText: formatTimeRemaining(
-        widget.entry.durationInMilliseconds -
-            widget.entry.positionInMilliseconds,
+        widget.entry.total.toInt() - widget.entry.progress.toInt(),
       ),
-      badgeText: 'EP ${widget.entry.episodeNumber.toInt()}',
+      badgeText: 'EP ${widget.entry.itemNumber.toInt()}',
       imageUrl: widget.entry.thumbnailUrl,
       fallbackIcon: Icons.play_circle_outline_rounded,
       badgeType: 'WATCHING',

@@ -13,8 +13,7 @@ import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/shared/widgets/staggered_fade_in.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
 
-import 'package:shonenx/features/history/providers/read_history_provider.dart';
-import 'package:shonenx/features/history/providers/watch_history_provider.dart';
+import 'package:shonenx/features/history/providers/history_provider.dart';
 import 'package:shonenx/features/tracking/providers/media_tracking_provider.dart';
 import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
 import 'package:shonenx/features/tracking/providers/tracking_prefs_provider.dart';
@@ -132,30 +131,25 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
     );
     final trackedProgress = trackingState.value?.progress.toDouble() ?? 0;
 
-    final watchHistoryEntries =
-        ref.watch(historyEpisodesProvider(widget.media.id)).value ?? [];
-    final readHistoryEntries =
-        ref.watch(historyChaptersProvider(widget.media.id)).value ?? [];
+    final historyEntries =
+        ref.watch(historyForMediaProvider(widget.media.id)).value ?? [];
 
     final syncThreshold = ref.watch(trackingPrefsProvider).syncThreshold;
 
     final historyWatchedSet = widget.media.type == MediaType.ANIME
-        ? watchHistoryEntries
+        ? historyEntries
               .where(
-                (e) =>
-                    e.durationInMilliseconds > 0 &&
-                    e.positionInMilliseconds >=
-                        e.durationInMilliseconds * syncThreshold,
+                (e) => e.total > 0 && e.progress >= e.total * syncThreshold,
               )
-              .map((e) => e.episodeNumber)
+              .map((e) => e.itemNumber)
               .toSet()
-        : readHistoryEntries
+        : historyEntries
               .where(
                 (e) =>
-                    e.totalPages > 0 &&
-                    e.positionPage >= (e.totalPages * syncThreshold).ceil(),
+                    e.total > 0 &&
+                    e.progress >= (e.total * syncThreshold).ceil(),
               )
-              .map((e) => e.chapterNumber)
+              .map((e) => e.itemNumber)
               .toSet();
 
     final maxHistoryEp = historyWatchedSet.fold<double>(
@@ -170,10 +164,7 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
     ].reduce((a, b) => a > b ? a : b);
 
     final effectiveCurrentEpisodeNumber =
-        widget.currentEpisodeNumber ??
-        (widget.media.type == MediaType.ANIME
-            ? watchHistoryEntries.firstOrNull?.episodeNumber
-            : readHistoryEntries.firstOrNull?.chapterNumber);
+        widget.currentEpisodeNumber ?? historyEntries.firstOrNull?.itemNumber;
 
     return episodesAsync.when(
       loading: () {

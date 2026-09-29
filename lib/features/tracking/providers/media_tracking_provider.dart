@@ -1,8 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar_community/isar.dart';
 import 'package:shonenx/features/downloads/domain/models/download_task.dart';
-import 'package:shonenx/features/history/domain/models/read_history_entry.dart';
-import 'package:shonenx/features/history/domain/models/watch_history_entry.dart';
+import 'package:shonenx/features/history/domain/models/history_entry.dart';
 import 'package:shonenx/features/library/domain/models/library_entry.dart';
 import 'package:shonenx/features/tracking/domain/isar_tracker_link.dart';
 import 'package:shonenx/features/tracking/domain/models/tracked_list_item.dart';
@@ -174,18 +173,12 @@ void cleanupUnusedTrackerLinks({
   Future(() {
     final isar = container.read(databaseProvider);
 
-    // 1: Retain if user has watch or read history
-    final hasWatchHistory = isar.watchHistoryEntrys
+    // 1: Retain if user has history
+    final hasHistory = isar.historyEntrys
         .filter()
-        .animeIdEqualTo(media.id)
+        .mediaIdEqualTo(media.id)
         .isNotEmptySync();
-    if (hasWatchHistory) return;
-
-    final hasReadHistory = isar.readHistoryEntrys
-        .filter()
-        .mangaIdEqualTo(media.id)
-        .isNotEmptySync();
-    if (hasReadHistory) return;
+    if (hasHistory) return;
 
     // 2: Retain if saved to local library
     final inLocalLibrary = isar.libraryEntrys

@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shonenx/core/utils/focus_hover_detector.dart';
 import 'package:shonenx/core/utils/formatting.dart';
-import 'package:shonenx/features/history/domain/models/read_history_entry.dart';
-import 'package:shonenx/features/history/domain/models/watch_history_entry.dart';
+import 'package:shonenx/features/history/domain/models/history_entry.dart';
 import 'package:shonenx/features/tv_mode/presentation/widgets/tv_smart_image.dart';
 import 'package:shonenx/shared/models/ui_style_enums.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
@@ -47,9 +46,9 @@ class TvContinueCard extends StatelessWidget {
     this.height,
   });
 
-  factory TvContinueCard.fromWatchEntry({
+  factory TvContinueCard.fromHistoryEntry({
     Key? key,
-    required WatchHistoryEntry entry,
+    required HistoryEntry entry,
     VoidCallback? onTap,
     VoidCallback? onFocused,
     VoidCallback? onLongPress,
@@ -59,85 +58,43 @@ class TvContinueCard extends StatelessWidget {
     double? width,
     double? height,
   }) {
-    final progress = entry.durationInMilliseconds == 0
+    final progress = entry.total == 0
         ? 0.0
-        : (entry.positionInMilliseconds / entry.durationInMilliseconds).clamp(
-            0.0,
-            1.0,
-          );
+        : (entry.progress / entry.total).clamp(0.0, 1.0);
 
-    final epNum = entry.episodeNumber;
-    final cleanEpNum = epNum % 1 == 0 ? epNum.toInt() : epNum;
-    final epTitle = entry.episodeTitle;
-    final subtitle = epTitle != null && epTitle.isNotEmpty
-        ? 'EP $cleanEpNum • $epTitle'
-        : 'Episode $cleanEpNum';
+    final itemNum = entry.itemNumber;
+    final cleanItemNum = itemNum % 1 == 0 ? itemNum.toInt() : itemNum;
+    final itemTitle = entry.itemTitle;
+    final isAnime = entry.mediaType == MediaType.ANIME.id;
+    final itemPrefix = isAnime ? 'EP' : 'CH';
 
-    final remainingMs =
-        entry.durationInMilliseconds - entry.positionInMilliseconds;
-    final progressText = remainingMs > 0
-        ? formatTimeRemaining(remainingMs)
-        : '${(progress * 100).toInt()}%';
+    final subtitle = itemTitle != null && itemTitle.isNotEmpty
+        ? '$itemPrefix $cleanItemNum • $itemTitle'
+        : '${isAnime ? 'Episode' : 'Chapter'} $cleanItemNum';
+
+    String progressText;
+    if (isAnime) {
+      final remainingMs = (entry.total - entry.progress).toInt();
+      progressText = remainingMs > 0
+          ? formatTimeRemaining(remainingMs)
+          : '${(progress * 100).toInt()}%';
+    } else {
+      progressText = entry.total > 0
+          ? 'Page ${entry.progress.toInt()}/${entry.total.toInt()}'
+          : '${(progress * 100).toInt()}% read';
+    }
 
     return TvContinueCard(
       key: key,
-      title: entry.animeTitle,
+      title: entry.mediaTitle,
       subtitle: subtitle,
-      badgeText: 'EP $cleanEpNum',
+      badgeText: '$itemPrefix $cleanItemNum',
       progress: progress,
       progressText: progressText,
       thumbnailUrl: entry.thumbnailUrl,
       bannerUrl: entry.banner,
       coverUrl: entry.cover,
-      mediaType: MediaType.ANIME,
-      onTap: onTap,
-      onFocused: onFocused,
-      onLongPress: onLongPress,
-      onFocusChange: onFocusChange,
-      autofocus: autofocus,
-      focusNode: focusNode,
-      width: width,
-      height: height,
-    );
-  }
-
-  factory TvContinueCard.fromReadEntry({
-    Key? key,
-    required ReadHistoryEntry entry,
-    VoidCallback? onTap,
-    VoidCallback? onFocused,
-    VoidCallback? onLongPress,
-    ValueChanged<bool>? onFocusChange,
-    bool autofocus = false,
-    FocusNode? focusNode,
-    double? width,
-    double? height,
-  }) {
-    final progress = entry.totalPages == 0
-        ? 0.0
-        : (entry.positionPage / entry.totalPages).clamp(0.0, 1.0);
-
-    final chNum = entry.chapterNumber;
-    final cleanChNum = chNum % 1 == 0 ? chNum.toInt() : chNum;
-    final chTitle = entry.chapterTitle;
-    final subtitle = chTitle != null && chTitle.isNotEmpty
-        ? 'CH $cleanChNum • $chTitle'
-        : 'Chapter $cleanChNum';
-
-    final progressText = entry.totalPages > 0
-        ? 'Page ${entry.positionPage}/${entry.totalPages}'
-        : '${(progress * 100).toInt()}% read';
-
-    return TvContinueCard(
-      key: key,
-      title: entry.mangaTitle,
-      subtitle: subtitle,
-      badgeText: 'CH $cleanChNum',
-      progress: progress,
-      progressText: progressText,
-      bannerUrl: entry.banner,
-      coverUrl: entry.cover,
-      mediaType: MediaType.MANGA,
+      mediaType: isAnime ? MediaType.ANIME : MediaType.MANGA,
       onTap: onTap,
       onFocused: onFocused,
       onLongPress: onLongPress,

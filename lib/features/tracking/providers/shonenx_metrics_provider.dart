@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar_community/isar.dart';
 import 'package:shonenx/shared/providers/database_provider.dart';
-import 'package:shonenx/features/history/domain/models/read_history_entry.dart';
-import 'package:shonenx/features/history/domain/models/watch_history_entry.dart';
+import 'package:shonenx/features/history/domain/models/history_entry.dart';
+import 'package:shonenx/shared/models/unified_media.dart';
 
 class ShonenxLocalMetrics {
   final int streamedSessions;
@@ -21,14 +21,19 @@ class ShonenxLocalMetrics {
 final shonenxLocalMetricsProvider =
     FutureProvider.autoDispose<ShonenxLocalMetrics>((ref) async {
       final isar = ref.watch(databaseProvider);
-      final watchEntries = await isar.watchHistoryEntrys.where().findAll();
-      final readCount = await isar.readHistoryEntrys.count();
+      final entries = await isar.historyEntrys.where().findAll();
+      final watchEntries = entries
+          .where((e) => e.mediaType == MediaType.ANIME)
+          .toList();
+      final readCount = entries
+          .where((e) => e.mediaType != MediaType.ANIME)
+          .length;
 
-      final totalMillis = watchEntries.fold<int>(
-        0,
-        (prev, e) => prev + e.positionInMilliseconds,
+      final totalMillis = watchEntries.fold<double>(
+        0.0,
+        (prev, e) => prev + e.progress,
       );
-      final uniqueSeries = watchEntries.map((e) => e.animeId).toSet().length;
+      final uniqueSeries = watchEntries.map((e) => e.mediaId).toSet().length;
 
       return ShonenxLocalMetrics(
         streamedSessions: watchEntries.length,

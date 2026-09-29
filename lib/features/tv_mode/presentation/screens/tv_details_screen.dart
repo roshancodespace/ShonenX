@@ -19,10 +19,8 @@ import 'package:shonenx/features/discovery/presentation/widgets/sheets/character
 import 'package:shonenx/features/discovery/providers/details_provider.dart';
 import 'package:shonenx/features/discovery/providers/episodes_provider.dart';
 import 'package:shonenx/features/discovery/providers/media_preference_provider.dart';
-import 'package:shonenx/features/history/domain/models/read_history_entry.dart';
-import 'package:shonenx/features/history/domain/models/watch_history_entry.dart';
-import 'package:shonenx/features/history/providers/read_history_provider.dart';
-import 'package:shonenx/features/history/providers/watch_history_provider.dart';
+import 'package:shonenx/features/history/domain/models/history_entry.dart';
+import 'package:shonenx/features/history/providers/history_provider.dart';
 import 'package:shonenx/features/player/domain/player_mode.dart';
 import 'package:shonenx/features/reader/domain/reader_mode.dart';
 import 'package:shonenx/features/tracking/domain/models/tracked_list_item.dart';
@@ -161,10 +159,8 @@ class _TvDetailsScreenState extends ConsumerState<TvDetailsScreen> {
     final currentSource = preferenceState?.sourceInfo;
 
     final episodesState = ref.watch(episodesListProvider(mediaArgs)).value;
-    final watchHistory =
-        ref.watch(historyEpisodesProvider(displayMedia.id)).value ?? [];
-    final readHistory =
-        ref.watch(historyChaptersProvider(displayMedia.id)).value ?? [];
+    final history =
+        ref.watch(historyForMediaProvider(displayMedia.id)).value ?? [];
 
     final tracker = ref.watch(primaryTrackerProvider);
     final trackingState = ref.watch(
@@ -184,8 +180,7 @@ class _TvDetailsScreenState extends ConsumerState<TvDetailsScreen> {
     final nextTarget = _resolveNextTarget(
       isManga: isManga,
       episodes: episodesState?.episodes ?? [],
-      watchHistory: watchHistory,
-      readHistory: readHistory,
+      history: history,
       trackedProgress: trackingState.value?.progress.toDouble() ?? 0,
     );
 
@@ -1285,8 +1280,7 @@ class _TvDetailsScreenState extends ConsumerState<TvDetailsScreen> {
   _PlaybackTarget? _resolveNextTarget({
     required bool isManga,
     required List<UnifiedEpisode> episodes,
-    required List<WatchHistoryEntry> watchHistory,
-    required List<ReadHistoryEntry> readHistory,
+    required List<HistoryEntry> history,
     required double trackedProgress,
   }) {
     if (episodes.isEmpty) return null;
@@ -1296,20 +1290,21 @@ class _TvDetailsScreenState extends ConsumerState<TvDetailsScreen> {
 
     String fmtNum(num n) => n % 1 == 0 ? n.toInt().toString() : n.toString();
 
+    final latestHistory = history.firstOrNull;
+
     if (isManga) {
-      final latestRead = readHistory.firstOrNull;
-      if (latestRead != null) {
+      if (latestHistory != null) {
         final currentEp = sortedEps
-            .where((e) => (e.number - latestRead.chapterNumber).abs() < 0.01)
+            .where((e) => (e.number - latestHistory.itemNumber).abs() < 0.01)
             .firstOrNull;
         if (currentEp != null) {
-          final isFinished = latestRead.positionPage >= latestRead.totalPages;
-          if (!isFinished && latestRead.positionPage > 0) {
+          final isFinished = latestHistory.progress >= latestHistory.total;
+          if (!isFinished && latestHistory.progress > 0) {
             return _PlaybackTarget(
               episode: currentEp,
               buttonLabel:
-                  'Resume Ch ${fmtNum(currentEp.number)} (p. ${latestRead.positionPage})',
-              startPositionPage: latestRead.positionPage,
+                  'Resume Ch ${fmtNum(currentEp.number)} (p. ${latestHistory.progress.toInt()})',
+              startPositionPage: latestHistory.progress.toInt(),
             );
           } else {
             final nextEp = sortedEps
@@ -1364,25 +1359,20 @@ class _TvDetailsScreenState extends ConsumerState<TvDetailsScreen> {
         }
       }
     } else {
-      final latestWatch = watchHistory.firstOrNull;
-      if (latestWatch != null) {
+      if (latestHistory != null) {
         final currentEp = sortedEps
-            .where((e) => (e.number - latestWatch.episodeNumber).abs() < 0.01)
+            .where((e) => (e.number - latestHistory.itemNumber).abs() < 0.01)
             .firstOrNull;
         if (currentEp != null) {
           final isFinished =
-              latestWatch.durationInMilliseconds > 0 &&
-              latestWatch.positionInMilliseconds >=
-                  latestWatch.durationInMilliseconds *
+              latestHistory.total > 0 &&
+              latestHistory.progress >=
+                  latestHistory.total *
                       ref.read(trackingPrefsProvider).syncThreshold;
 
-          if (!isFinished && latestWatch.positionInMilliseconds > 0) {
-            final remainingMins =
-                latestWatch.durationInMilliseconds >
-                    latestWatch.positionInMilliseconds
-                ? ((latestWatch.durationInMilliseconds -
-                              latestWatch.positionInMilliseconds) /
-                          60000)
+          if (!isFinished && latestHistory.progress > 0) {
+            final remainingMins = latestHistory.total > latestHistory.progress
+                ? ((latestHistory.total - latestHistory.progress) / 60000)
                       .ceil()
                 : 0;
             return _PlaybackTarget(
@@ -1391,7 +1381,7 @@ class _TvDetailsScreenState extends ConsumerState<TvDetailsScreen> {
                   ? 'Resume Ep ${fmtNum(currentEp.number)} (${remainingMins}m left)'
                   : 'Resume Ep ${fmtNum(currentEp.number)}',
               startPositionDuration: Duration(
-                milliseconds: latestWatch.positionInMilliseconds,
+                milliseconds: latestHistory.progress.toInt(),
               ),
             );
           } else {

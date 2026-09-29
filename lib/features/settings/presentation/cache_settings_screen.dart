@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/caching/cache_config.dart';
 import 'package:shonenx/core/caching/cache_manager.dart';
-import 'package:shonenx/core/caching/domain/cache_entry.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
 
@@ -16,8 +15,6 @@ class CacheSettingsScreen extends ConsumerStatefulWidget {
 
 class _CacheSettingsScreenState extends ConsumerState<CacheSettingsScreen> {
   int _totalCacheSize = 0;
-  List<CacheEntry> _cacheEntries = [];
-  bool _isLoadingBreakdown = true;
 
   @override
   void initState() {
@@ -26,48 +23,12 @@ class _CacheSettingsScreenState extends ConsumerState<CacheSettingsScreen> {
   }
 
   Future<void> _loadCacheData() async {
-    setState(() => _isLoadingBreakdown = true);
     final cacheManager = ref.read(cacheManagerProvider);
     final size = await cacheManager.getCacheSize();
-    final entries = await cacheManager.getAllEntries();
     if (mounted) {
       setState(() {
         _totalCacheSize = size;
-        _cacheEntries = entries;
-        _isLoadingBreakdown = false;
       });
-    }
-  }
-
-  Map<String, List<CacheEntry>> _groupEntries() {
-    final cacheManager = ref.read(cacheManagerProvider);
-    final groups = <String, List<CacheEntry>>{
-      'Search Queries': [],
-      'Episode Metadata': [],
-      'Server Lists': [],
-      'Stream Sources': [],
-      'General / Others': [],
-    };
-
-    for (final entry in _cacheEntries) {
-      final category = cacheManager.getCategoryName(entry.key);
-      groups.putIfAbsent(category, () => []).add(entry);
-    }
-    return groups;
-  }
-
-  IconData _getCategoryIcon(String category) {
-    switch (category) {
-      case 'Search Queries':
-        return Icons.search_rounded;
-      case 'Episode Metadata':
-        return Icons.format_list_bulleted_rounded;
-      case 'Server Lists':
-        return Icons.dns_rounded;
-      case 'Stream Sources':
-        return Icons.play_circle_outline_rounded;
-      default:
-        return Icons.insert_drive_file_outlined;
     }
   }
 
@@ -108,8 +69,6 @@ class _CacheSettingsScreenState extends ConsumerState<CacheSettingsScreen> {
     final visualFraction = _totalCacheSize > 0
         ? usedFraction.clamp(0.02, 1.0)
         : 0.0;
-
-    final grouped = _groupEntries();
 
     return AppScaffold(
       title: 'Cache Manager',
@@ -178,7 +137,7 @@ class _CacheSettingsScreenState extends ConsumerState<CacheSettingsScreen> {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        'Isar Database cache contains ${_cacheEntries.length} items',
+                        'Isar Database storage active',
                         style: theme.textTheme.labelMedium?.copyWith(
                           color: cs.primary,
                           fontWeight: FontWeight.w600,
@@ -244,65 +203,6 @@ class _CacheSettingsScreenState extends ConsumerState<CacheSettingsScreen> {
                       }
                     : null,
               ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          SettingsSection(
-            title: 'Cache Breakdown',
-            children: [
-              if (_isLoadingBreakdown)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 24.0),
-                  child: Center(child: CircularProgressIndicator()),
-                )
-              else ...[
-                ...grouped.entries.map((group) {
-                  final categoryName = group.key;
-                  final entries = group.value;
-                  final count = entries.length;
-                  final size = entries.fold<int>(
-                    0,
-                    (prev, element) => prev + element.bodyBytes.length,
-                  );
-
-                  if (count == 0) return const SizedBox.shrink();
-
-                  return AnimatedOpacity(
-                    opacity: 1.0,
-                    duration: const Duration(milliseconds: 300),
-                    child: SettingsActionTile(
-                      icon: _getCategoryIcon(categoryName),
-                      title: categoryName,
-                      subtitle:
-                          '$count items (${(size / 1024).toStringAsFixed(1)} KB)',
-                      trailing: IconButton(
-                        icon: const Icon(Icons.delete_outline_rounded),
-                        onPressed: () async {
-                          await ref
-                              .read(cacheManagerProvider)
-                              .deleteEntriesByCategory(categoryName);
-                          await _loadCacheData();
-                        },
-                      ),
-                    ),
-                  );
-                }),
-                if (_cacheEntries.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 24.0,
-                      horizontal: 16.0,
-                    ),
-                    child: Center(
-                      child: Text(
-                        'No cached data available.',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: cs.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
             ],
           ),
           const SizedBox(height: 20),

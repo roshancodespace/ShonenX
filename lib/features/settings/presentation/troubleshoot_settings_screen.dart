@@ -13,8 +13,7 @@ import 'package:shonenx/features/downloads/domain/models/download_task.dart';
 import 'package:shonenx/features/downloads/providers/download_prefs_provider.dart';
 import 'package:shonenx/features/downloads/providers/download_provider.dart';
 import 'package:shonenx/features/extensions/providers/extension_service_provider.dart';
-import 'package:shonenx/features/history/domain/models/read_history_entry.dart';
-import 'package:shonenx/features/history/domain/models/watch_history_entry.dart';
+import 'package:shonenx/features/history/domain/models/history_entry.dart';
 import 'package:shonenx/features/library/domain/models/library_entry.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
 import 'package:shonenx/features/tracking/domain/isar_tracker_link.dart';
@@ -77,8 +76,7 @@ class _TroubleshootSettingsScreenState
   int _mappingsCount = 0;
   int _trackerLinksCount = 0;
   int _unfinishedDownloadsCount = 0;
-  int _watchHistoryCount = 0;
-  int _readHistoryCount = 0;
+  int _historyCount = 0;
   int _libraryCount = 0;
   int _cacheCount = 0;
   int _authTokensCount = 0;
@@ -96,8 +94,7 @@ class _TroubleshootSettingsScreenState
       final isar = ref.read(databaseProvider);
       final mappings = await isar.mediaPreferences.count();
       final trackerLinks = await isar.isarTrackerLinks.count();
-      final watchHistory = await isar.watchHistoryEntrys.count();
-      final readHistory = await isar.readHistoryEntrys.count();
+      final historyCount = await isar.historyEntrys.count();
       final library = await isar.libraryEntrys.count();
       final cache = await isar.cacheEntrys.count();
 
@@ -115,8 +112,7 @@ class _TroubleshootSettingsScreenState
           _mappingsCount = mappings;
           _trackerLinksCount = trackerLinks;
           _unfinishedDownloadsCount = unfinishedTasks.length;
-          _watchHistoryCount = watchHistory;
-          _readHistoryCount = readHistory;
+          _historyCount = historyCount;
           _libraryCount = library;
           _cacheCount = cache;
           _authTokensCount = authTokens;
@@ -773,10 +769,9 @@ class _TroubleshootSettingsScreenState
       _SelectiveDataCategory(
         key: 'history',
         title: 'Watch & Read History',
-        subtitle:
-            '$_watchHistoryCount anime entries • $_readHistoryCount manga entries',
+        subtitle: '$_historyCount history entries',
         icon: Icons.history_rounded,
-        count: _watchHistoryCount + _readHistoryCount,
+        count: _historyCount,
         isSelected: true,
       ),
       _SelectiveDataCategory(
@@ -1005,8 +1000,7 @@ class _TroubleshootSettingsScreenState
 
                                   await isar.writeTxn(() async {
                                     if (selectedKeys.contains('history')) {
-                                      await isar.watchHistoryEntrys.clear();
-                                      await isar.readHistoryEntrys.clear();
+                                      await isar.historyEntrys.clear();
                                     }
                                     if (selectedKeys.contains('library')) {
                                       await isar.libraryEntrys.clear();

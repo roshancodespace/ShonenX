@@ -21,6 +21,8 @@ import 'package:shonenx/features/downloads/domain/models/download_task.dart';
 import 'package:shonenx/features/extensions/providers/extension_service_provider.dart';
 import 'package:shonenx/features/history/domain/models/watch_history_entry.dart';
 import 'package:shonenx/features/history/domain/models/read_history_entry.dart';
+import 'package:shonenx/features/history/domain/models/history_entry.dart';
+import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/features/library/domain/models/library_entry.dart';
 import 'package:shonenx/features/notifications/domain/models/notification_subscription.dart';
 import 'package:shonenx/features/tracking/domain/isar_tracker_link.dart';
@@ -137,17 +139,16 @@ class AppInit {
           IsarTrackerLinkSchema,
           WatchHistoryEntrySchema,
           ReadHistoryEntrySchema,
+          HistoryEntrySchema,
           DownloadTaskSchema,
           NotificationSubscriptionSchema,
 
-          // MSourceSchema,
-          // SourcePreferenceSchema,
-          // SourcePreferenceStringValueSchema,
-          // BridgeSettingsSchema,
+          // Bridge
           KvEntrySchema,
         ],
         directory: dir.path,
         name: 'shonenx_db',
+        maxSizeMiB: 4096,
       );
 
       // Perform migration from MediaSourcePreference to MediaPreference
@@ -175,6 +176,79 @@ class AppInit {
           await isar.mediaSourcePreferences.clear();
         });
         log.s('Migration complete');
+      }
+
+      // Perform migration from WatchHistoryEntry and ReadHistoryEntry to HistoryEntry
+      final watchHistoryCount = await isar.watchHistoryEntrys.count();
+      final readHistoryCount = await isar.readHistoryEntrys.count();
+      if (watchHistoryCount > 0 || readHistoryCount > 0) {
+        log.i(
+          'Migrating $watchHistoryCount WatchHistory and $readHistoryCount ReadHistory to HistoryEntry...',
+        );
+
+        final watchEntries = await isar.watchHistoryEntrys.where().findAll();
+        final readEntries = await isar.readHistoryEntrys.where().findAll();
+
+        final newHistoryEntries = <HistoryEntry>[];
+        for (final entry in watchEntries) {
+          newHistoryEntries.add(
+            HistoryEntry()
+              ..mediaType = MediaType.ANIME.id
+              ..mediaId = entry.animeId
+              ..mediaIdMal = entry.animeIdMal
+              ..mediaTitle = entry.animeTitle
+              ..cover = entry.cover
+              ..banner = entry.banner
+              ..thumbnailUrl = entry.thumbnailUrl
+              ..itemNumber = entry.episodeNumber
+              ..itemTitle = entry.episodeTitle
+              ..totalItems = entry.totalEpisodes
+              ..progress = entry.positionInMilliseconds.toInt()
+              ..total = entry.durationInMilliseconds.toInt()
+              ..sourceId = entry.sourceId
+              ..sourceName = entry.sourceName
+              ..providerId = entry.providerId
+              ..externalIdsJson = entry.externalIdsJson
+              ..lastUpdated = entry.lastUpdated,
+          );
+        }
+        for (final entry in readEntries) {
+          newHistoryEntries.add(
+            HistoryEntry()
+              ..mediaType = MediaType.MANGA.id
+              ..mediaId = entry.mangaId
+              ..mediaIdMal = entry.mangaIdMal
+              ..mediaTitle = entry.mangaTitle
+              ..cover = entry.cover
+              ..banner = entry.banner
+              ..thumbnailUrl = null
+              ..itemNumber = entry.chapterNumber
+              ..itemTitle = entry.chapterTitle
+              ..totalItems = null
+              ..progress = entry.positionPage.toInt()
+              ..total = entry.totalPages.toInt()
+              ..sourceId = entry.sourceId
+              ..sourceName = entry.sourceName
+              ..providerId = entry.providerId
+              ..externalIdsJson = entry.externalIdsJson
+              ..lastUpdated = entry.lastUpdated,
+          );
+        }
+
+        for (var i = 0; i < newHistoryEntries.length; i += 100) {
+          final end = (i + 100 < newHistoryEntries.length)
+              ? i + 100
+              : newHistoryEntries.length;
+          await isar.writeTxn(() async {
+            await isar.historyEntrys.putAll(newHistoryEntries.sublist(i, end));
+          });
+        }
+
+        await isar.writeTxn(() async {
+          await isar.watchHistoryEntrys.clear();
+          await isar.readHistoryEntrys.clear();
+        });
+        log.s('History Migration complete');
       }
 
       log.s('Isar opened');

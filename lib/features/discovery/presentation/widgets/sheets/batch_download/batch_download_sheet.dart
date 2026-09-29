@@ -12,7 +12,7 @@ import 'package:shonenx/features/downloads/domain/models/download_task.dart';
 import 'package:shonenx/features/downloads/providers/download_prefs_provider.dart';
 import 'package:shonenx/features/downloads/providers/download_provider.dart';
 import 'package:shonenx/features/downloads/utils/download_url_helper.dart';
-import 'package:shonenx/features/history/providers/watch_history_provider.dart';
+import 'package:shonenx/features/history/providers/history_provider.dart';
 import 'package:shonenx/features/tracking/providers/media_tracking_provider.dart';
 import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
 import 'package:shonenx/features/tracking/providers/tracking_prefs_provider.dart';
@@ -122,16 +122,11 @@ class BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
 
   void _initWatchedInfo() {
     final watchHistoryEntries =
-        ref.read(historyEpisodesProvider(widget.media.id)).value ?? [];
+        ref.read(historyForMediaProvider(widget.media.id)).value ?? [];
     final syncThreshold = ref.read(trackingPrefsProvider).syncThreshold;
     final historyWatched = watchHistoryEntries
-        .where(
-          (e) =>
-              e.durationInMilliseconds > 0 &&
-              e.positionInMilliseconds >=
-                  e.durationInMilliseconds * syncThreshold,
-        )
-        .map((e) => e.episodeNumber)
+        .where((e) => e.total > 0 && e.progress >= e.total * syncThreshold)
+        .map((e) => e.itemNumber)
         .toSet();
 
     watchedEpisodeNumbers = {

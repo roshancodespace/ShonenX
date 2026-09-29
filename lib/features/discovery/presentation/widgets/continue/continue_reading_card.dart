@@ -3,9 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/router/app_navigator.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/continue/continue_media_mixin.dart';
-import 'package:shonenx/features/history/domain/models/read_history_entry.dart';
-import 'package:shonenx/features/history/providers/continue_reading_resolver.dart';
-import 'package:shonenx/features/history/providers/read_history_provider.dart';
+import 'package:shonenx/features/history/domain/models/history_entry.dart';
+import 'package:shonenx/features/history/providers/continue_history_resolver.dart';
+import 'package:shonenx/features/history/providers/history_provider.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/widgets/app_focus_hover.dart';
 import 'package:shonenx/source_engine/source_registry.dart';
@@ -13,7 +13,7 @@ import 'continue_card_layout.dart';
 import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
 
 class ContinueReadingItem extends ConsumerStatefulWidget {
-  final ReadHistoryEntry entry;
+  final HistoryEntry entry;
   final double progress;
   final ContinueReadingStyle style;
 
@@ -35,7 +35,7 @@ class _ContinueReadingItemState extends ConsumerState<ContinueReadingItem>
     await handleResumeMedia(
       resolveAndPlay: () async {
         final mode = await ref
-            .read(continueReadingResolverProvider)
+            .read(continueHistoryResolverProvider)
             .resolve(widget.entry);
         if (!mounted) return;
         context.pushDetails(
@@ -46,7 +46,7 @@ class _ContinueReadingItemState extends ConsumerState<ContinueReadingItem>
         );
       },
       mediaType: MediaType.MANGA,
-      mediaTitle: widget.entry.mangaTitle,
+      mediaTitle: widget.entry.mediaTitle,
       availableSourcesProvider: availableMangaSourcesProvider,
     );
   }
@@ -55,13 +55,13 @@ class _ContinueReadingItemState extends ConsumerState<ContinueReadingItem>
     showItemContextMenu(
       position: position,
       mediaType: MediaType.MANGA,
-      mediaTitle: widget.entry.mangaTitle,
+      mediaTitle: widget.entry.mediaTitle,
       onViewDetails: () {
         context.pushDetails(
           mediaType: MediaType.MANGA,
           media: UnifiedMedia(
-            id: widget.entry.mangaId,
-            title: MediaTitle(english: widget.entry.mangaTitle),
+            id: widget.entry.mediaId,
+            title: MediaTitle(english: widget.entry.mediaTitle),
             type: MediaType.MANGA,
             cover: widget.entry.cover,
             banner: widget.entry.banner,
@@ -69,7 +69,7 @@ class _ContinueReadingItemState extends ConsumerState<ContinueReadingItem>
         );
       },
       onRemoveHistory: () =>
-          ref.read(readHistoryRepositoryProvider).deleteEntry(widget.entry.id),
+          ref.read(historyRepositoryProvider).deleteEntry(widget.entry.id),
     );
   }
 
@@ -95,9 +95,9 @@ class _ContinueReadingItemState extends ConsumerState<ContinueReadingItem>
     ThemeData theme,
     bool isActive,
   ) {
-    final epNum = widget.entry.chapterNumber;
+    final epNum = widget.entry.itemNumber;
     final cleanNum = epNum.toString().contains('.0') ? epNum.toInt() : epNum;
-    final epTitle = widget.entry.chapterTitle;
+    final epTitle = widget.entry.itemTitle;
     final subtitleText = 'CH $cleanNum${epTitle != null ? ' • $epTitle' : ''}';
 
     final isWideMode = ref.watch(
@@ -121,13 +121,13 @@ class _ContinueReadingItemState extends ConsumerState<ContinueReadingItem>
       isActive: isActive,
       isLoading: isLoading,
       isWideMode: isWideMode,
-      title: widget.entry.mangaTitle,
+      title: widget.entry.mediaTitle,
       subtitle: style == ContinueReadingStyle.wideBanner
-          ? (widget.entry.chapterTitle ?? 'Continue reading')
+          ? (widget.entry.itemTitle ?? 'Continue reading')
           : subtitleText,
       progress: widget.progress,
       progressText: '${(widget.progress * 100).toInt()}% read',
-      badgeText: 'CH ${widget.entry.chapterNumber.toInt()}',
+      badgeText: 'CH ${widget.entry.itemNumber.toInt()}',
       imageUrl: widget.entry.banner ?? widget.entry.cover,
       fallbackIcon: Icons.menu_book_rounded,
       badgeType: 'READING',

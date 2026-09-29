@@ -13,7 +13,8 @@ class CacheManager {
 
   late final ScopedLogger _log = AppLogger.scope(CacheManager);
 
-  static const int _oneMb = 1024 * 1024; // 1 MB threshold for gzip compression
+  static const int _compressionThreshold =
+      256 * 1024; // 256 KB threshold for gzip compression
 
   CacheManager({required Isar isar, required this.cacheConfig}) : _isar = isar {
     _initCleanup();
@@ -70,6 +71,13 @@ class CacheManager {
           'Pruned $deletedEntries entries, cleared approx $bytesCleared bytes',
         );
       }
+    } on FormatException catch (e, st) {
+      log.e(
+        'CORRUPTION DETECTED during pruning, wiping cache completely',
+        e,
+        st,
+      );
+      await clearCache();
     } catch (e, st) {
       log.e('PRUNING FAILED', e, st);
     }
@@ -112,7 +120,7 @@ class CacheManager {
     try {
       entry.expiry = DateTime.now().add(cacheDuration);
 
-      if (entry.bodyBytes.length > _oneMb) {
+      if (entry.bodyBytes.length > _compressionThreshold) {
         if (!suppressLogs) {
           log.v(
             'Compressing bodyBytes (${entry.bodyBytes.length} bytes) with gzip: ${entry.key}',
@@ -182,6 +190,13 @@ class CacheManager {
 
         log.s('Cleanup done → removed $count');
       });
+    } on FormatException catch (e, st) {
+      log.e(
+        'CORRUPTION DETECTED during cleanup, wiping cache completely',
+        e,
+        st,
+      );
+      await clearCache();
     } catch (e, st) {
       log.e('CLEANUP FAILED', e, st);
     }
@@ -212,46 +227,6 @@ class CacheManager {
     } catch (e, st) {
       log.e('CLEAR FAILED', e, st);
     }
-  }
-
-  Future<List<CacheEntry>> getAllEntries() async {
-    final log = _log.child('getAllEntries');
-    try {
-      return await _isar.cacheEntrys.where().findAll();
-    } catch (e, st) {
-      log.e('GET ALL ENTRIES FAILED', e, st);
-      return [];
-    }
-  }
-
-  Future<void> deleteEntriesByCategory(String category) async {
-    final log = _log.child('deleteEntriesByCategory');
-    try {
-      final entries = await getAllEntries();
-      final keysToDelete = entries
-          .where((e) => getCategoryName(e.key) == category)
-          .map((e) => e.key)
-          .toList();
-
-      if (keysToDelete.isNotEmpty) {
-        await _isar.writeTxn(() async {
-          for (final key in keysToDelete) {
-            await _isar.cacheEntrys.deleteByKey(key);
-          }
-        });
-        log.s('Deleted ${keysToDelete.length} entries for category: $category');
-      }
-    } catch (e, st) {
-      log.e('DELETE BY CATEGORY FAILED: $category', e, st);
-    }
-  }
-
-  String getCategoryName(String key) {
-    if (key.contains('search')) return 'Search Queries';
-    if (key.contains('episode')) return 'Episode Metadata';
-    if (key.contains('server')) return 'Server Lists';
-    if (key.contains('source')) return 'Stream Sources';
-    return 'General / Others';
   }
 }
 

@@ -8,30 +8,31 @@ import 'package:shonenx/features/discovery/presentation/widgets/continue/continu
 import 'package:shonenx/features/discovery/presentation/widgets/continue/continue_watching_card.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/episodes_panel/episode_tiles.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/header/home_header.dart';
-import 'package:shonenx/features/history/domain/models/read_history_entry.dart';
-import 'package:shonenx/features/history/domain/models/watch_history_entry.dart';
+import 'package:shonenx/features/history/domain/models/history_entry.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
 import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 
-final _previewHistoryEntry = WatchHistoryEntry()
-  ..animeId = '1'
-  ..animeTitle = 'One Piece'
-  ..episodeNumber = 7
-  ..episodeTitle = 'Orewa Kaizoku Ou Ni Naru!'
-  ..positionInMilliseconds = 720000
-  ..durationInMilliseconds = 1200000
+final _previewHistoryEntry = HistoryEntry()
+  ..mediaId = '1'
+  ..mediaTitle = 'One Piece'
+  ..mediaType = MediaType.ANIME.id
+  ..itemNumber = 7
+  ..itemTitle = 'Orewa Kaizoku Ou Ni Naru!'
+  ..progress = 720000
+  ..total = 1200000
   ..thumbnailUrl =
       'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT8--VpUm_3ewaKmioaFpTjAUA4z46Qbb-4GQ&s';
 
-final _previewReadHistoryEntry = ReadHistoryEntry()
-  ..mangaId = '2'
-  ..mangaTitle = 'One Piece'
-  ..chapterNumber = 236
-  ..chapterTitle = 'Orewa Kaizoku Ou Ni Naru!'
-  ..positionPage = 14
-  ..totalPages = 20
+final _previewReadHistoryEntry = HistoryEntry()
+  ..mediaId = '2'
+  ..mediaTitle = 'One Piece'
+  ..mediaType = MediaType.MANGA.id
+  ..itemNumber = 236
+  ..itemTitle = 'Orewa Kaizoku Ou Ni Naru!'
+  ..progress = 14
+  ..total = 20
   ..cover =
       'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT8--VpUm_3ewaKmioaFpTjAUA4z46Qbb-4GQ&s';
 

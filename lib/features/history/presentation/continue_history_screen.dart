@@ -7,8 +7,7 @@ import 'package:shonenx/features/discovery/presentation/widgets/continue/continu
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/cards/media_card.dart';
-import 'package:shonenx/features/history/providers/watch_history_provider.dart';
-import 'package:shonenx/features/history/providers/read_history_provider.dart';
+import 'package:shonenx/features/history/providers/history_provider.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
@@ -56,11 +55,7 @@ class _ContinueHistoryScreenState extends ConsumerState<ContinueHistoryScreen> {
       _isSelectionMode = false;
     });
 
-    if (isAnime) {
-      await ref.read(watchHistoryRepositoryProvider).deleteByAnimeIds(toDelete);
-    } else {
-      await ref.read(readHistoryRepositoryProvider).deleteByMangaIds(toDelete);
-    }
+    await ref.read(historyRepositoryProvider).deleteByMediaIds(toDelete);
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -128,15 +123,7 @@ class _ContinueHistoryScreenState extends ConsumerState<ContinueHistoryScreen> {
             onTap: () async {
               final messenger = ScaffoldMessenger.of(this.context);
               Navigator.pop(context);
-              if (isAnime) {
-                await ref
-                    .read(watchHistoryRepositoryProvider)
-                    .deleteByAnimeId(id);
-              } else {
-                await ref
-                    .read(readHistoryRepositoryProvider)
-                    .deleteByMangaId(id);
-              }
+              await ref.read(historyRepositoryProvider).deleteByMediaId(id);
               if (mounted) {
                 messenger.showSnackBar(
                   const SnackBar(content: Text('Removed from history')),
@@ -192,7 +179,7 @@ class _ContinueHistoryScreenState extends ConsumerState<ContinueHistoryScreen> {
                     _selectedIds.clear();
                   } else {
                     for (final e in filtered) {
-                      _selectedIds.add(isAnime ? e.animeId : e.mangaId);
+                      _selectedIds.add(e.mediaId);
                     }
                   }
                 });
@@ -219,16 +206,9 @@ class _ContinueHistoryScreenState extends ConsumerState<ContinueHistoryScreen> {
     final layout = style.getScaledLayout(scale, isWideMode: isWideMode);
     final theme = Theme.of(context);
 
-    final AsyncValue<List<dynamic>> historyAsync;
-    if (isAnime) {
-      historyAsync = ref
-          .watch(continueWatchingPerAnimeProvider(100))
-          .whenData((data) => data.toList());
-    } else {
-      historyAsync = ref
-          .watch(continueReadingPerMangaProvider(100))
-          .whenData((data) => data.toList());
-    }
+    final historyAsync = ref
+        .watch(historyPerMediaProvider((mediaType: widget.type.id, limit: 100)))
+        .whenData((data) => data.toList());
 
     return AppScaffold(
       title: _isSelectionMode
@@ -269,8 +249,7 @@ class _ContinueHistoryScreenState extends ConsumerState<ContinueHistoryScreen> {
           final filtered = _searchQuery.isEmpty
               ? entries
               : entries.where((e) {
-                  final title =
-                      (isAnime ? e.animeTitle : e.mangaTitle) as String;
+                  final title = e.mediaTitle;
                   return title.toLowerCase().contains(_searchQuery);
                 }).toList();
 
@@ -295,12 +274,8 @@ class _ContinueHistoryScreenState extends ConsumerState<ContinueHistoryScreen> {
                         itemCount: filtered.length,
                         itemBuilder: (context, index) {
                           final entry = filtered[index];
-                          final String id = isAnime
-                              ? entry.animeId
-                              : entry.mangaId;
-                          final String title = isAnime
-                              ? entry.animeTitle
-                              : entry.mangaTitle;
+                          final String id = entry.mediaId;
+                          final String title = entry.mediaTitle;
                           final String imageUrl =
                               entry.cover ??
                               (isAnime ? entry.thumbnailUrl : null) ??
@@ -429,16 +404,9 @@ class _ContinueHistoryItemsScreenState
   Widget build(BuildContext context) {
     final isAnime = widget.type == MediaType.ANIME;
 
-    final AsyncValue<List<dynamic>> historyAsync;
-    if (isAnime) {
-      historyAsync = ref
-          .watch(historyEpisodesProvider(widget.mediaId))
-          .whenData((data) => data.toList());
-    } else {
-      historyAsync = ref
-          .watch(historyChaptersProvider(widget.mediaId))
-          .whenData((data) => data.toList());
-    }
+    final historyAsync = ref
+        .watch(historyForMediaProvider(widget.mediaId))
+        .whenData((data) => data.toList());
 
     return AppScaffold(
       body: historyAsync.when(
@@ -465,11 +433,9 @@ class _ContinueHistoryItemsScreenState
           );
 
           final firstEntry = entries.first;
-          final title = isAnime ? firstEntry.animeTitle : firstEntry.mangaTitle;
+          final title = firstEntry.mediaTitle;
           final bannerUrl =
-              firstEntry.banner ??
-              firstEntry.cover ??
-              (isAnime ? firstEntry.thumbnailUrl : null);
+              firstEntry.banner ?? firstEntry.cover ?? firstEntry.thumbnailUrl;
           final coverUrl = firstEntry.cover ?? bannerUrl;
           final imageUrl = bannerUrl ?? coverUrl ?? '';
 
@@ -478,7 +444,7 @@ class _ContinueHistoryItemsScreenState
           if (isAnime) {
             final totalMillis = entries.fold<int>(
               0,
-              (sum, e) => sum + ((e.durationInMilliseconds as int?) ?? 0),
+              (sum, e) => sum + (e.total.toInt()),
             );
             final duration = Duration(milliseconds: totalMillis);
             final hours = duration.inHours;
@@ -487,7 +453,7 @@ class _ContinueHistoryItemsScreenState
           } else {
             final totalPages = entries.fold<int>(
               0,
-              (sum, e) => sum + ((e.totalPages as int?) ?? 0),
+              (sum, e) => sum + (e.total.toInt()),
             );
             totalTimeStr = '$totalPages Pages';
           }
@@ -591,8 +557,8 @@ class _ContinueHistoryItemsScreenState
                     final entry = entries[index];
 
                     if (isAnime) {
-                      final duration = entry.durationInMilliseconds ?? 1;
-                      final pos = entry.positionInMilliseconds ?? 0;
+                      final duration = entry.total;
+                      final pos = entry.progress;
                       final progress = (duration > 0) ? (pos / duration) : 0.0;
 
                       return ContinueWatchingItem(
@@ -601,8 +567,8 @@ class _ContinueHistoryItemsScreenState
                         style: style,
                       );
                     } else {
-                      final total = entry.totalPages ?? 1;
-                      final current = entry.currentPage ?? 0;
+                      final total = entry.total;
+                      final current = entry.progress;
                       final progress = (total > 0) ? (current / total) : 0.0;
 
                       return ContinueReadingItem(

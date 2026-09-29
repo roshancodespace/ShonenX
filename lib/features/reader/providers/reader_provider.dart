@@ -1,7 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shonenx/features/history/domain/models/read_history_entry.dart';
-import 'package:shonenx/features/history/providers/read_history_provider.dart';
+import 'package:shonenx/features/history/domain/models/history_entry.dart';
+import 'package:shonenx/features/history/providers/history_provider.dart';
 import 'package:shonenx/features/reader/domain/reader_mode.dart';
+import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/features/tracking/engine/sync_engine.dart';
 import 'package:shonenx/shared/providers/security_prefs_provider.dart';
 import 'package:shonenx/source_engine/models/chapter_page.dart';
@@ -120,16 +121,17 @@ class ReaderNotifier extends Notifier<ReaderState> {
     if (ref.read(securityPrefsProvider).incognitoMode) return;
     final savedPageNumber = pageIndex + 1;
 
-    final entry = ReadHistoryEntry()
-      ..chapterNumber = arg.episode.number
-      ..mangaId = arg.media.id
-      ..mangaIdMal = arg.media.idMal
+    final entry = HistoryEntry()
+      ..mediaType = MediaType.MANGA.id
+      ..itemNumber = arg.episode.number
+      ..mediaId = arg.media.id
+      ..mediaIdMal = arg.media.idMal
       ..externalIds = arg.media.externalIds
-      ..mangaTitle = arg.media.title.getPreferedTitle
+      ..mediaTitle = arg.media.title.getPreferedTitle
       ..cover = arg.media.cover
       ..banner = arg.media.banner
-      ..positionPage = savedPageNumber
-      ..totalPages = total
+      ..progress = savedPageNumber
+      ..total = total
       ..sourceId = arg.sourceInfo.id
       ..sourceName = arg.sourceInfo.name
       ..providerId = arg.media.providerId != arg.media.id
@@ -137,7 +139,7 @@ class ReaderNotifier extends Notifier<ReaderState> {
           : null
       ..lastUpdated = DateTime.now();
 
-    ref.read(readHistoryRepositoryProvider).saveProgress(entry);
+    ref.read(historyRepositoryProvider).saveProgress(entry);
     ref
         .read(syncEngineProvider)
         .processReading(

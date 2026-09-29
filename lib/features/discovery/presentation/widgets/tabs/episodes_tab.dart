@@ -10,7 +10,7 @@ import 'package:shonenx/features/discovery/presentation/widgets/episodes_panel/e
 import 'package:shonenx/features/discovery/presentation/widgets/sheets/manual_match_sheet.dart';
 import 'package:shonenx/features/discovery/providers/matched_media_provider.dart';
 import 'package:shonenx/features/discovery/providers/media_preference_provider.dart';
-import 'package:shonenx/features/history/providers/read_history_provider.dart';
+import 'package:shonenx/features/history/providers/history_provider.dart';
 import 'package:shonenx/features/player/domain/player_mode.dart';
 import 'package:shonenx/features/reader/domain/reader_mode.dart';
 import 'package:shonenx/shared/models/unified_episode.dart';
@@ -24,7 +24,6 @@ import 'package:shonenx/shared/widgets/staggered_fade_in.dart';
 import 'package:shonenx/core/widgets/cloudflare_webview.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
 import 'package:shonenx/source_engine/utils/media_type_extensions.dart';
-import 'package:shonenx/features/history/providers/watch_history_provider.dart';
 import 'package:shonenx/features/comments/presentation/widgets/comments_tab.dart';
 import 'package:shonenx/features/tracking/providers/tracking_prefs_provider.dart';
 import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
@@ -70,17 +69,17 @@ class EpisodesTabWidget extends ConsumerWidget {
             onEpisodeTap: (UnifiedEpisode episode, SourceInfo sourceInfo) {
               if (media.type == MediaType.MANGA ||
                   media.type == MediaType.NOVEL) {
-                final readHistoryEntries =
-                    ref.read(historyChaptersProvider(media.id)).value ?? [];
-                final historyEntry = readHistoryEntries
-                    .where((e) => e.chapterNumber == episode.number)
+                final historyEntries =
+                    ref.read(historyForMediaProvider(media.id)).value ?? [];
+                final historyEntry = historyEntries
+                    .where((e) => e.itemNumber == episode.number)
                     .firstOrNull;
 
                 final int startPosition;
                 if (historyEntry != null &&
-                    historyEntry.positionPage > 0 &&
-                    historyEntry.positionPage <= historyEntry.totalPages) {
-                  startPosition = historyEntry.positionPage;
+                    historyEntry.progress > 0 &&
+                    historyEntry.progress <= historyEntry.total) {
+                  startPosition = historyEntry.progress.toInt();
                 } else {
                   startPosition = 1;
                 }
@@ -94,25 +93,24 @@ class EpisodesTabWidget extends ConsumerWidget {
                   ),
                 );
               } else {
-                final watchHistoryEntries =
-                    ref.read(historyEpisodesProvider(media.id)).value ?? [];
-                final historyEntry = watchHistoryEntries
-                    .where((e) => e.episodeNumber == episode.number)
+                final historyEntries =
+                    ref.read(historyForMediaProvider(media.id)).value ?? [];
+                final historyEntry = historyEntries
+                    .where((e) => e.itemNumber == episode.number)
                     .firstOrNull;
 
                 final threshold = ref.read(trackingPrefsProvider).syncThreshold;
                 final isFinished =
                     historyEntry != null &&
-                    historyEntry.durationInMilliseconds > 0 &&
-                    historyEntry.positionInMilliseconds >=
-                        historyEntry.durationInMilliseconds * threshold;
+                    historyEntry.total > 0 &&
+                    historyEntry.progress >= historyEntry.total * threshold;
 
                 final Duration? startPosition;
                 if (historyEntry != null &&
-                    historyEntry.positionInMilliseconds > 0 &&
+                    historyEntry.progress > 0 &&
                     !isFinished) {
                   startPosition = Duration(
-                    milliseconds: historyEntry.positionInMilliseconds,
+                    milliseconds: historyEntry.progress.toInt(),
                   );
                 } else {
                   startPosition = null;

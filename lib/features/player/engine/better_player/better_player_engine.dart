@@ -5,22 +5,40 @@ import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/player/engine/video_engine.dart';
 import 'package:shonenx/shared/models/video_stream.dart';
 import 'package:better_player_plus/better_player_plus.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shonenx/features/player/providers/video_engine_provider.dart';
 import 'package:shonenx/features/player/providers/better_player_prefs_provider.dart';
-import 'package:shonenx/features/player/presentation/widgets/better_player/better_player_settings.dart';
 
 class BetterPlayerEngine implements VideoEngine {
   static final _log = AppLogger.scope('BetterPlayerEngine');
 
   BetterPlayerController? _controller;
-  final Ref ref;
   BetterPlayerPrefsState _prefs;
 
   VideoStream? _currentStream;
   SubtitleTrack? _currentSubtitle;
 
-  BetterPlayerEngine(this._prefs, this.ref);
+  @override
+  final ValueNotifier<Duration> positionNotifier = ValueNotifier(Duration.zero);
+  @override
+  final ValueNotifier<Duration> durationNotifier = ValueNotifier(Duration.zero);
+  @override
+  final ValueNotifier<Duration> bufferNotifier = ValueNotifier(Duration.zero);
+  @override
+  final ValueNotifier<PlayerStatus> statusNotifier = ValueNotifier(
+    PlayerStatus.idle,
+  );
+  @override
+  final ValueNotifier<List<SubtitleTrack>> subtitleTracksNotifier =
+      ValueNotifier([]);
+  @override
+  final ValueNotifier<List<AudioTrack>> audioTracksNotifier = ValueNotifier([]);
+  @override
+  final ValueNotifier<SubtitleTrack?> activeSubtitleNotifier = ValueNotifier(
+    null,
+  );
+  @override
+  final ValueNotifier<AudioTrack?> activeAudioNotifier = ValueNotifier(null);
+
+  BetterPlayerEngine(this._prefs);
 
   Future<void> updatePrefs(BetterPlayerPrefsState prefs) async {
     final needsRefresh =
@@ -95,9 +113,7 @@ class BetterPlayerEngine implements VideoEngine {
   }) async {
     _currentStream = stream;
     _currentSubtitle = subtitle;
-    ref
-        .read(videoEngineStateProvider.notifier)
-        .updateState(isBuffering: true, isPlaying: false);
+    statusNotifier.value = PlayerStatus.loading;
 
     _log.i('Initializing player with URL: ${stream.url}');
     _controller?.removeEventsListener(_listener);
@@ -192,17 +208,24 @@ class BetterPlayerEngine implements VideoEngine {
       );
     }
 
-    ref
-        .read(videoEngineStateProvider.notifier)
-        .updateState(
-          position: value.position,
-          duration: value.duration,
-          buffer: bufferDuration,
-          isPlaying: value.isPlaying,
-          isBuffering: value.isBuffering || !value.initialized,
-          audioTracks: parsedAudioTracks,
-          activeAudioTrack: parsedActiveAudioTrack,
-        );
+    positionNotifier.value = value.position;
+    durationNotifier.value = value.duration ?? Duration.zero;
+    bufferNotifier.value = bufferDuration;
+
+    if (value.hasError) {
+      statusNotifier.value = PlayerStatus.error;
+    } else if (value.isBuffering || !value.initialized) {
+      statusNotifier.value = PlayerStatus.buffering;
+    } else if (value.isPlaying) {
+      statusNotifier.value = PlayerStatus.playing;
+    } else {
+      statusNotifier.value = PlayerStatus.paused;
+    }
+
+    if (parsedAudioTracks != null) {
+      audioTracksNotifier.value = parsedAudioTracks;
+    }
+    activeAudioNotifier.value = parsedActiveAudioTrack;
   }
 
   @override
@@ -219,31 +242,21 @@ class BetterPlayerEngine implements VideoEngine {
   }
 
   @override
-  Widget buildVideoView() {
-    return Consumer(
-      builder: (context, ref, _) {
-        final fit = ref.watch(videoEngineStateProvider.select((s) => s.fit));
+  Widget buildVideoView({BoxFit fit = BoxFit.contain}) {
+    if (_controller == null ||
+        _controller!.videoPlayerController == null ||
+        !_controller!.videoPlayerController!.value.initialized) {
+      return const ColoredBox(color: Colors.black);
+    }
 
-        if (_controller == null ||
-            _controller!.videoPlayerController == null ||
-            !_controller!.videoPlayerController!.value.initialized) {
-          return const ColoredBox(color: Colors.black);
-        }
+    // Apply fit
+    _controller!.setOverriddenFit(fit);
 
-        // Apply fit
-        _controller!.setOverriddenFit(fit);
-
-        return ColoredBox(
-          color: Colors.black,
-          child: BetterPlayer(controller: _controller!),
-        );
-      },
+    return ColoredBox(
+      color: Colors.black,
+      child: BetterPlayer(controller: _controller!),
     );
   }
-
-  @override
-  Widget? buildSettingsView(BuildContext context) =>
-      const BetterPlayerSettings();
 
   @override
   Future<void> play() async {
@@ -334,6 +347,15 @@ class BetterPlayerEngine implements VideoEngine {
     _controller?.removeEventsListener(_listener);
     _controller?.dispose();
     _controller = null;
+
+    positionNotifier.dispose();
+    durationNotifier.dispose();
+    bufferNotifier.dispose();
+    statusNotifier.dispose();
+    subtitleTracksNotifier.dispose();
+    audioTracksNotifier.dispose();
+    activeSubtitleNotifier.dispose();
+    activeAudioNotifier.dispose();
   }
 
   @override

@@ -6,7 +6,7 @@ import 'package:screenshot/screenshot.dart';
 
 import 'package:shonenx/features/history/domain/models/watch_history_entry.dart';
 import 'package:shonenx/features/history/providers/watch_history_provider.dart';
-import 'package:shonenx/features/player/providers/video_engine_provider.dart';
+import 'package:shonenx/features/player/engine/video_engine.dart';
 import 'package:shonenx/features/tracking/engine/sync_engine.dart';
 import 'package:shonenx/shared/models/unified_episode.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
@@ -20,12 +20,14 @@ class ProgressContext {
   final UnifiedEpisode? activeEpisode;
   final VideoServer? activeServer;
   final SourceInfo? sourceInfo;
+  final VideoEngine engine;
 
   const ProgressContext({
     this.media,
     this.activeEpisode,
     this.activeServer,
     this.sourceInfo,
+    required this.engine,
   });
 }
 
@@ -88,6 +90,7 @@ class ProgressTracker {
     required UnifiedEpisode? activeEpisode,
     required VideoServer? activeServer,
     required SourceInfo? sourceInfo,
+    required VideoEngine engine,
   }) async {
     await _saveCurrentProgress(
       skipCapture: true,
@@ -96,6 +99,7 @@ class ProgressTracker {
         activeEpisode: activeEpisode,
         activeServer: activeServer,
         sourceInfo: sourceInfo,
+        engine: engine,
       ),
     );
   }
@@ -106,6 +110,7 @@ class ProgressTracker {
     required UnifiedEpisode? activeEpisode,
     required VideoServer? activeServer,
     required SourceInfo? sourceInfo,
+    required VideoEngine engine,
   }) async {
     await _captureThumbnail();
     await _saveCurrentProgress(
@@ -115,6 +120,7 @@ class ProgressTracker {
         activeEpisode: activeEpisode,
         activeServer: activeServer,
         sourceInfo: sourceInfo,
+        engine: engine,
       ),
     );
   }
@@ -140,7 +146,7 @@ class ProgressTracker {
     if (activeServer == null || media == null) return;
     if (_ref.read(securityPrefsProvider).incognitoMode) return;
 
-    final engine = _ref.read(videoEngineProvider);
+    final engine = context.engine;
     final position = engine.currentPosition;
     final duration = engine.currentDuration;
 

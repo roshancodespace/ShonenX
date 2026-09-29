@@ -3,11 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/features/player/providers/custom_subtitle_provider.dart';
 import 'package:shonenx/features/player/domain/subtitle_prefs.dart';
 import 'package:shonenx/features/player/providers/subtitle_prefs_provider.dart';
-import 'package:shonenx/features/player/providers/video_engine_provider.dart';
+import 'package:shonenx/features/player/engine/video_engine.dart';
 import 'package:shonenx/features/player/utils/subtitle_parser.dart';
 
 class CustomSubtitleOverlay extends ConsumerWidget {
-  const CustomSubtitleOverlay({super.key});
+  final VideoEngine engine;
+  const CustomSubtitleOverlay({super.key, required this.engine});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -20,109 +21,114 @@ class CustomSubtitleOverlay extends ConsumerWidget {
       data: (cues) {
         if (cues.isEmpty) return const SizedBox.shrink();
 
-        // Listen to engine position changes
-        final position = ref.watch(
-          videoEngineStateProvider.select((s) => s.position),
-        );
+        return ValueListenableBuilder<Duration>(
+          valueListenable: engine.positionNotifier,
+          builder: (context, position, child) {
+            // Find all active overlapping cues
+            final activeCues = _findActiveCues(cues, position);
 
-        // Find all active overlapping cues
-        final activeCues = _findActiveCues(cues, position);
+            if (activeCues.isEmpty) return const SizedBox.shrink();
 
-        if (activeCues.isEmpty) return const SizedBox.shrink();
+            final screenWidth = MediaQuery.sizeOf(context).width;
+            final responsiveFontSize = getResponsiveSubtitleSize(
+              screenWidth,
+              prefs.fontSize,
+            );
 
-        final screenWidth = MediaQuery.sizeOf(context).width;
-        final responsiveFontSize = getResponsiveSubtitleSize(
-          screenWidth,
-          prefs.fontSize,
-        );
+            final Map<Alignment, List<SubtitleCue>> groupedCues = {};
+            for (final cue in activeCues) {
+              groupedCues.putIfAbsent(cue.alignment, () => []).add(cue);
+            }
 
-        final Map<Alignment, List<SubtitleCue>> groupedCues = {};
-        for (final cue in activeCues) {
-          groupedCues.putIfAbsent(cue.alignment, () => []).add(cue);
-        }
+            return Positioned.fill(
+              child: IgnorePointer(
+                child: SafeArea(
+                  child: Stack(
+                    children: groupedCues.entries.map((entry) {
+                      final alignment = entry.key;
+                      final cuesForAlignment = entry.value;
 
-        return Positioned.fill(
-          child: IgnorePointer(
-            child: SafeArea(
-              child: Stack(
-                children: groupedCues.entries.map((entry) {
-                  final alignment = entry.key;
-                  final cuesForAlignment = entry.value;
-
-                  return Align(
-                    alignment: alignment,
-                    child: Padding(
-                      padding: EdgeInsets.only(
-                        bottom: alignment.y == 1.0 ? prefs.bottomPadding : 0,
-                        top: alignment.y == -1.0 ? prefs.bottomPadding : 0,
-                        left: 24,
-                        right: 24,
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: cuesForAlignment
-                            .expand(
-                              (
-                                cue,
-                              ) => SubtitleParser.cleanSubtitleText(cue.text)
-                                  .split('\n')
-                                  .map((l) => l.replaceAll('\r', ''))
-                                  .where((l) => l.trim().isNotEmpty)
-                                  .map(
-                                    (line) => Container(
-                                      margin: const EdgeInsets.only(
-                                        bottom: 4.0,
-                                      ),
-                                      padding: EdgeInsets.symmetric(
-                                        horizontal: prefs.padding * 1.5,
-                                        vertical: prefs.padding * 0.5,
-                                      ),
-                                      decoration:
-                                          prefs.backgroundColor != 0x00000000
-                                          ? BoxDecoration(
-                                              color: prefs.bg,
-                                              borderRadius:
-                                                  BorderRadius.circular(4.0),
-                                            )
-                                          : null,
-                                      child: Stack(
-                                        alignment: Alignment.center,
-                                        children: [
-                                          if (getSubtitleStrokeStyle(
-                                                prefs,
-                                                responsiveFontSize,
-                                              ) !=
-                                              null)
-                                            Text(
-                                              line,
-                                              textAlign: TextAlign.center,
-                                              style: getSubtitleStrokeStyle(
-                                                prefs,
-                                                responsiveFontSize,
-                                              ),
-                                            ),
-                                          Text(
-                                            line,
-                                            textAlign: TextAlign.center,
-                                            style: getSubtitleTextStyle(
-                                              prefs,
-                                              responsiveFontSize,
-                                            ),
+                      return Align(
+                        alignment: alignment,
+                        child: Padding(
+                          padding: EdgeInsets.only(
+                            bottom: alignment.y == 1.0
+                                ? prefs.bottomPadding
+                                : 0,
+                            top: alignment.y == -1.0 ? prefs.bottomPadding : 0,
+                            left: 24,
+                            right: 24,
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: cuesForAlignment
+                                .expand(
+                                  (
+                                    cue,
+                                  ) => SubtitleParser.cleanSubtitleText(cue.text)
+                                      .split('\n')
+                                      .map((l) => l.replaceAll('\r', ''))
+                                      .where((l) => l.trim().isNotEmpty)
+                                      .map(
+                                        (line) => Container(
+                                          margin: const EdgeInsets.only(
+                                            bottom: 4.0,
                                           ),
-                                        ],
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: prefs.padding * 1.5,
+                                            vertical: prefs.padding * 0.5,
+                                          ),
+                                          decoration:
+                                              prefs.backgroundColor !=
+                                                  0x00000000
+                                              ? BoxDecoration(
+                                                  color: prefs.bg,
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                        4.0,
+                                                      ),
+                                                )
+                                              : null,
+                                          child: Stack(
+                                            alignment: Alignment.center,
+                                            children: [
+                                              if (getSubtitleStrokeStyle(
+                                                    prefs,
+                                                    responsiveFontSize,
+                                                  ) !=
+                                                  null)
+                                                Text(
+                                                  line,
+                                                  textAlign: TextAlign.center,
+                                                  style: getSubtitleStrokeStyle(
+                                                    prefs,
+                                                    responsiveFontSize,
+                                                  ),
+                                                ),
+                                              Text(
+                                                line,
+                                                textAlign: TextAlign.center,
+                                                style: getSubtitleTextStyle(
+                                                  prefs,
+                                                  responsiveFontSize,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
                                       ),
-                                    ),
-                                  ),
-                            )
-                            .toList(),
-                      ),
-                    ),
-                  );
-                }).toList(),
+                                )
+                                .toList(),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
               ),
-            ),
-          ),
+            );
+          },
         );
       },
       loading: () => const SizedBox.shrink(),

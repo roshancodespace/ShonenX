@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:volume_controller/volume_controller.dart';
 import 'package:shonenx/features/player/engine/video_engine.dart';
 import 'package:shonenx/features/player/providers/player_controller.dart';
-import 'package:shonenx/features/player/providers/video_engine_provider.dart';
+import 'package:shonenx/features/player/providers/player_prefs_provider.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 
 class PlayerKeyboardListener extends ConsumerStatefulWidget {
@@ -51,7 +51,8 @@ class _PlayerKeyboardListenerState
       return KeyEventResult.ignored;
     }
 
-    final isPlaying = ref.read(videoEngineStateProvider).isPlaying;
+    final isPlaying =
+        widget.engine.statusNotifier.value == PlayerStatus.playing;
     final isTvMode = ref.read(uiPrefsProvider.select((p) => p.useNewUi));
     final key = event.logicalKey;
 
@@ -131,7 +132,7 @@ class _PlayerKeyboardListenerState
       return KeyEventResult.handled;
     } else if (key == LogicalKeyboardKey.keyS) {
       if (event is KeyDownEvent) {
-        ref.read(videoEngineStateProvider.notifier).cycleFit();
+        ref.read(playerPrefsProvider.notifier).cycleFit();
         widget.onUserInteraction();
       }
       return KeyEventResult.handled;

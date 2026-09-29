@@ -3,12 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/utils/formatting.dart';
 import 'package:shonenx/features/player/domain/player_mode.dart';
 import 'package:shonenx/features/player/engine/video_engine.dart';
+import 'package:shonenx/features/player/presentation/widgets/engine_settings_x.dart';
 import 'package:shonenx/features/player/presentation/widgets/keyboard_shortcuts_sheet.dart';
-import 'package:shonenx/features/player/presentation/widgets/media_kit/media_kit_settings.dart';
 import 'package:shonenx/features/player/presentation/widgets/media_kit/video_adjustments.dart';
 import 'package:shonenx/features/player/presentation/widgets/player_controls.dart';
 import 'package:shonenx/features/player/providers/player_controller.dart';
-import 'package:shonenx/features/player/providers/video_engine_provider.dart';
+import 'package:shonenx/features/player/providers/player_prefs_provider.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
 import 'package:shonenx/features/settings/presentation/widgets/subtitle_settings_sheet.dart';
 import 'package:shonenx/shared/models/video_stream.dart';
@@ -136,9 +136,7 @@ class TopControls extends ConsumerWidget {
       ],
       if (!isCompact) ...[
         PlayerIconButton(
-          icon: switch (ref.watch(
-            videoEngineStateProvider.select((s) => s.fit),
-          )) {
+          icon: switch (ref.watch(playerPrefsProvider.select((s) => s.fit))) {
             BoxFit.contain => Icons.fit_screen_rounded,
             BoxFit.cover => Icons.aspect_ratio_rounded,
             _ => Icons.fullscreen_exit_rounded,
@@ -147,8 +145,8 @@ class TopControls extends ConsumerWidget {
           padding: const EdgeInsets.all(8.0),
           tooltip: 'Aspect Ratio',
           onTap: () {
-            ref.read(videoEngineStateProvider.notifier).cycleFit();
-            final newFit = ref.read(videoEngineStateProvider).fit;
+            ref.read(playerPrefsProvider.notifier).cycleFit();
+            final newFit = ref.read(playerPrefsProvider).fit;
             final label = switch (newFit) {
               BoxFit.contain => 'Fit Screen (Contain)',
               BoxFit.cover => 'Fill Screen (Cover)',
@@ -261,7 +259,7 @@ class TopControls extends ConsumerWidget {
     bool isCompact,
   ) {
     final theme = Theme.of(context);
-    final currentFit = ref.read(videoEngineStateProvider).fit;
+    final currentFit = ref.read(playerPrefsProvider).fit;
     final fitLabel = switch (currentFit) {
       BoxFit.contain => 'Fit Screen (Contain)',
       BoxFit.cover => 'Fill Screen (Cover)',
@@ -277,7 +275,8 @@ class TopControls extends ConsumerWidget {
     final hasMultipleQualities =
         mode is PlayerModeOnline && playerState.qualities.length > 1;
 
-    final hasEngineSettings = engine.buildSettingsView(context) != null;
+    final engineSettingsView = engine.buildSettingsView(context);
+    final hasEngineSettings = engineSettingsView != null;
 
     AppBottomSheet.show(
       context: context,
@@ -379,8 +378,8 @@ class TopControls extends ConsumerWidget {
                   ),
                   onTap: () {
                     Navigator.of(context).pop();
-                    ref.read(videoEngineStateProvider.notifier).cycleFit();
-                    final newFit = ref.read(videoEngineStateProvider).fit;
+                    ref.read(playerPrefsProvider.notifier).cycleFit();
+                    final newFit = ref.read(playerPrefsProvider).fit;
                     final label = switch (newFit) {
                       BoxFit.contain => 'Fit Screen (Contain)',
                       BoxFit.cover => 'Fill Screen (Cover)',
@@ -453,7 +452,7 @@ class TopControls extends ConsumerWidget {
                       color: theme.colorScheme.primary,
                     ),
                   ),
-                  children: const [MediaKitAdvancedSettings()],
+                  children: [engineSettingsView],
                 ),
               ),
             if (isCompact &&

@@ -10,7 +10,6 @@ list(APPEND FLUTTER_PLUGIN_LIST
   flutter_timezone
   gtk
   isar_community_flutter_libs
-  media_kit_libs_linux
   media_kit_video
   open_file_linux
   screen_retriever_linux

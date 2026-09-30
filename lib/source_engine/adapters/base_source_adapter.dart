@@ -99,16 +99,25 @@ abstract class BaseSourceAdapter implements MediaSource {
               ),
             );
           } else {
-            methodLog.w('Unsupported setting type: ${pref.type}');
+            methodLog.w(
+              '[${sourceInfo.name}] Unsupported setting type: ${pref.type}',
+            );
           }
         } catch (e) {
-          methodLog.e('Failed to parse setting ${pref.key}', e);
+          methodLog.e(
+            '[${sourceInfo.name}] Failed to parse setting ${pref.key}',
+            e,
+          );
         }
       }
 
       return settings;
     } catch (e, st) {
-      methodLog.e('Failed to fetch settings schema', e, st);
+      methodLog.e(
+        '[${sourceInfo.name}] Failed to fetch settings schema',
+        e,
+        st,
+      );
       return [];
     }
   }
@@ -158,11 +167,17 @@ abstract class BaseSourceAdapter implements MediaSource {
         targetPref.editTextPreference?.value = value?.toString();
       }
 
-      methodLog.i('Saving setting $settingId to source ${sourceInfo.id}');
+      methodLog.i(
+        '[${sourceInfo.name}] Saving setting $settingId to source ${sourceInfo.id}',
+      );
       final success = await source.methods.setPreference(targetPref, value);
       return success;
     } catch (e, st) {
-      methodLog.e('Failed to save setting $settingId', e, st);
+      methodLog.e(
+        '[${sourceInfo.name}] Failed to save setting $settingId',
+        e,
+        st,
+      );
       return false;
     }
   }
@@ -187,12 +202,12 @@ abstract class BaseSourceAdapter implements MediaSource {
       final extraStr = extraDetails.isNotEmpty
           ? ' (${extraDetails.join(', ')})'
           : '';
-      methodLog.i('query="$query" page=$page$extraStr');
+      methodLog.i('[${sourceInfo.name}] query="$query" page=$page$extraStr');
       final results = await source.methods.search(query, page, [
         ...genres,
         ...tags,
       ]);
-      methodLog.d('Found ${results.list.length} results');
+      methodLog.d('[${sourceInfo.name}] results=${results.list.length}');
 
       final parsed = results.list
           .map(
@@ -212,7 +227,7 @@ abstract class BaseSourceAdapter implements MediaSource {
 
       return parsed;
     } catch (e, st) {
-      methodLog.e('search failed', e, st);
+      methodLog.e('[${sourceInfo.name}] search failed', e, st);
       return [];
     }
   }
@@ -221,12 +236,12 @@ abstract class BaseSourceAdapter implements MediaSource {
   Future<List<UnifiedMedia>> getTrending({int page = 1}) async {
     final methodLog = log.child('getTrending');
     try {
-      methodLog.i('page=$page');
+      methodLog.i('[${sourceInfo.name}] page=$page');
       bridge.Pages results = await source.methods.getPopular(page);
       if (results.list.isEmpty) {
         results = await source.methods.getLatestUpdates(page);
       }
-      methodLog.d('results=${results.list.length}');
+      methodLog.d('[${sourceInfo.name}] results=${results.list.length}');
 
       final list = results.list
           .map(
@@ -247,10 +262,16 @@ abstract class BaseSourceAdapter implements MediaSource {
       if (list.isNotEmpty) {
         return list;
       }
-      methodLog.i('getTrending returned empty, falling back to search("")');
+      methodLog.i(
+        '[${sourceInfo.name}] getTrending returned empty, falling back to search("")',
+      );
       return await search('', mediaType, page: page);
     } catch (e, st) {
-      methodLog.e('getTrending failed, falling back to search("")', e, st);
+      methodLog.e(
+        '[${sourceInfo.name}] getTrending failed, falling back to search("")',
+        e,
+        st,
+      );
       try {
         return await search('', mediaType, page: page);
       } catch (_) {
@@ -291,8 +312,8 @@ abstract class BaseSourceAdapter implements MediaSource {
       );
       return parsed;
     } catch (e, st) {
-      methodLog.e('getDetails failed', e, st);
-      throw Exception('Failed to get details');
+      methodLog.e('[${sourceInfo.name}] getDetails failed', e, st);
+      throw Exception('[${sourceInfo.name}] Failed to get details');
     }
   }
 }

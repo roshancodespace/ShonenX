@@ -34,9 +34,14 @@ dependencies:
         path: ./media_kit
   media_kit_video:
     git:
-        url: https://github.com/Predidit/media-kit.git
-        ref: 78d4cce7b49d5b6b918f78b18ec1fbb7c400b9da
-        path: ./media_kit_video
+      url: https://github.com/Predidit/media-kit.git
+      ref: 78d4cce7b49d5b6b918f78b18ec1fbb7c400b9da
+      path: ./media_kit_video
+  media_kit_libs_video:
+    git:
+      url: https://github.com/Predidit/media-kit.git
+      ref: 78d4cce7b49d5b6b918f78b18ec1fbb7c400b9da
+      path: ./libs/universal/media_kit_libs_video
   get: ^4.7.3
   google_fonts: ^8.0.2
   shared_preferences: ^2.5.5
@@ -98,21 +103,6 @@ dependency_overrides:
     git:
       url: https://github.com/roshancodespace/flutter_inappwebview.git
       path: flutter_inappwebview_linux
-  media_kit:
-    git:
-      url: https://github.com/Predidit/media-kit.git
-      ref: 78d4cce7b49d5b6b918f78b18ec1fbb7c400b9da
-      path: ./media_kit
-  media_kit_video:
-    git:
-      url: https://github.com/Predidit/media-kit.git
-      ref: 78d4cce7b49d5b6b918f78b18ec1fbb7c400b9da
-      path: ./media_kit_video
-  media_kit_libs_video:
-    git:
-      url: https://github.com/Predidit/media-kit.git
-      ref: 78d4cce7b49d5b6b918f78b18ec1fbb7c400b9da
-      path: ./libs/universal/media_kit_libs_video
   media_kit_libs_linux:
     git:
       url: https://github.com/Predidit/media-kit.git

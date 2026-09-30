@@ -1,42 +1,71 @@
 # Networking, Caching & Persistence
 
-## Networking (`rhttp`)
+If you are writing features in ShonenX, **never use `dart:io` or the generic `http` package directly.**
 
-ShonenX abstracts HTTP calls to decouple features from the raw network client. We use [`rhttp`](https://pub.dev/packages/rhttp) because it leverages Rust for high-performance networking and better TLS fingerprinting evasion, which is critical when interacting with certain external trackers and sources.
+If you fire raw HTTP calls inside random UI widgets, you bypass our DoH resolver, risk getting blocked by Cloudflare bot protection, and miss out on disk-level response caching.
 
-**Usage:**
-Features inject the `httpClientProvider` rather than using `http.get` directly:
+Here is how our data layer actually works and why it is structured this way.
+
+---
+
+## 1. Networking (`rhttp`) & DNS Over HTTPS
+
+Most Flutter apps use standard Dart HTTP clients. That works fine for typical APIs, but it struggles when scraping anime websites or pulling metadata from hosts protected by modern CDNs.
+
+Cloudflare and similar services inspect the **TLS Client Hello fingerprint** (JA3/JA4). Standard Dart networking looks like an automated script, which often triggers a `403 Forbidden` challenge.
+
+To solve this, we use [`rhttp`](https://pub.dev/packages/rhttp). It delegates networking to native **Rust** (`reqwest` and `hyper`), using standard browser TLS handshakes so requests pass through cleanly.
+
+On top of that, all network calls automatically route through our custom **DNS over HTTPS (DoH)** resolver (defaulting to Cloudflare `1.1.1.1` and Google `8.8.8.8`), protecting lookups from ISP-level filtering.
+
+👉 Read the full breakdown: **[DNS over HTTPS (DoH) & Client Injection](/systems/dns_over_https)**
+
+### How to Make Network Calls
+
+Always inject `httpClientProvider` via Riverpod:
+
 ```dart
 class JikanMetadataClient implements EpisodeMetadataProvider {
   final HTTP _http;
 
-  // Injection
   JikanMetadataClient({HTTP? http}) : _http = http ?? HTTP();
   
   Future<void> fetch() async {
-    // Under the hood, this uses rhttp and automatically checks the CacheManager
-    final res = await _http.get('https://api.jikan.moe/...', cacheDuration: Duration(days: 30));
+    // Under the hood, this uses Rust rhttp + DoH + automatic disk caching:
+    final res = await _http.get(
+      'https://api.jikan.moe/v4/anime/21/episodes', 
+      cacheDuration: const Duration(days: 7),
+    );
   }
 }
 ```
 
-## Caching (`CacheManager`)
+---
 
-The `CacheManager` intercepts network calls made via `HTTP`.
+## 2. Caching (`CacheManager`): Respecting Community APIs
 
-1. When `_http.get(url, cacheDuration: X)` is called, `CacheManager` hashes the URL.
-2. It queries Isar for a valid `CacheEntry`.
-3. If an entry exists and is not expired, it returns the cached response immediately.
-4. If expired or missing, it executes the network call, saves the response to Isar, and returns the data.
+Community APIs like Jikan (Unofficial MyAnimeList API) and Kitsu are hosted on limited volunteer infrastructure. If the app hammered them on every screen navigation, users would quickly get rate-limited.
 
-This greatly reduces API strain on third-party services like Jikan and Kitsu.
+`HTTP` has an integrated `CacheManager` backed by our local database:
 
-## Persistence (`Isar`)
+1. When you call `_http.get(url, cacheDuration: Duration(days: 7))`, the manager hashes the URL.
+2. It checks our local Isar database for an existing cached entry.
+3. If the cache exists and has not expired, it returns the cached data **instantly in 0ms without touching the network.**
+4. If it has expired or does not exist, it makes the network request, saves the response to disk, and returns the fresh data.
 
-[Isar](https://isar.dev/) is our local database for caching, library entries, and user history.
+If you are fetching data that rarely changes (like episode titles, synopsis, or cover images), **always pass a `cacheDuration`**.
 
-### Creating a Model
-If you need to persist a new object, annotate it with `@collection` and `@Id()`:
+---
+
+## 3. Persistence (`Isar Database`)
+
+We use [Isar](https://isar.dev/) for local database storage (cache entries, watch history, manga library, and download tasks).
+
+Isar is a fast, zero-copy NoSQL database that works directly with native Dart objects, avoiding the boilerplate of manual SQLite queries.
+
+### Creating an Isar Model
+
+To persist an entity to disk, annotate it with `@collection` and define an `@Id()`:
 
 ```dart
 import 'package:isar/isar.dart';
@@ -45,7 +74,7 @@ part 'download_task.g.dart';
 
 @collection
 class DownloadTask {
-  Id id = Isar.autoIncrement; // Auto-incrementing ID
+  Id id = Isar.autoIncrement; // Auto-incrementing primary key
 
   @Index(unique: true, replace: true)
   late String url;
@@ -54,23 +83,26 @@ class DownloadTask {
 }
 ```
 
-### Generating Schemas
-After modifying *any* Isar model, you must regenerate the code. If you forget, the app will fail to compile.
+### The Rule: Regenerate Code on Model Changes
+
+Whenever you modify an Isar model (add a field, rename a property, change an index), you **must regenerate the code**:
+
 ```bash
 dart run build_runner build -d
 ```
 
 ### Accessing the Database
-The `Isar` instance is provided via Riverpod (`databaseProvider`).
+
+Never instantiate `Isar` directly in widgets. Always read it through Riverpod's `databaseProvider`:
 
 ```dart
 final db = ref.read(databaseProvider);
 
-// Writing data
+// Writing data (always inside a transaction!):
 await db.writeTxn(() async {
   await db.downloadTasks.put(myTask);
 });
 
-// Reading data
+// Reading data:
 final tasks = await db.downloadTasks.where().findAll();
 ```

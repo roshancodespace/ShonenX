@@ -1,77 +1,130 @@
-# Local Setup & Installation
+# Local Setup & Build Guide
 
-This guide walks you through setting up ShonenX for local development. Whether you are a beginner looking to compile the app yourself or a seasoned contributor, this page covers the prerequisites.
+Building ShonenX requires a few extra native dependencies beyond a standard Flutter app. 
+
+Because we link **Rust FFI bindings** (`rhttp` and `libtorrent`), compile native **C++ platform runners**, use an embedded **`mpv` video core**, and run **WebKit** for desktop OAuth logins, you need the proper system toolchains installed before building. 
+
+This guide walks you through setting up your environment so you can compile smoothly without running into cryptic CMake or linker errors.
+
+---
 
 ## Prerequisites
 
-ShonenX relies on a native C++ runner and specific Rust networking bindings. You must have the following installed to start building:
+### 1. Flutter SDK (Channel: Stable)
+*   **Version:** `3.41.x` (or newer stable).
+*   Run `flutter doctor` to ensure your Flutter environment and Android/desktop toolchains are recognized.
 
-1.  **Flutter SDK**
-    *   **Channel:** Stable
-    *   **Version:** `3.41.x` (Highly recommended to use the latest stable release, such as `3.41.9`).
-2.  **Rust**
-    *   Install via `rustup`. This is strictly required for the `rhttp` and `libtorrent` dependencies to compile their FFI bindings locally.
-3.  **CMake & Ninja** 
-    *   Required for native C++ desktop builds on Windows and Linux.
-4.  **Android Studio / NDK** 
-    *   Required for Android builds. Make sure you have the NDK installed via the SDK Manager.
-5.  **Linux System Dependencies (for Linux desktop builds)**
-    *   Building the Linux desktop client requires development libraries for GTK, media playback (`libmpv`), and in-app webview (`WPE WebKit`):
-        *   **Ubuntu / Debian:**
-            ```bash
-            sudo apt install libgtk-3-dev libmpv-dev libwpewebkit-1.0-dev
-            ```
-        *   **Arch Linux:**
-            ```bash
-            sudo pacman -S gtk3 mpv wpewebkit
-            ```
-        *   **Fedora:**
-            ```bash
-            sudo dnf install gtk3-devel mpv-libs-devel wpewebkit-devel
-            ```
+### 2. Rust Toolchain (Strictly Required)
+We use `rhttp` (Rust-powered HTTP client) and `libtorrent_flutter` to avoid TLS fingerprint blocks and handle torrent streaming. These packages compile native Rust code during the build process.
+*   Install via official `rustup`:
+    ```bash
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+    ```
+*   Ensure `cargo` and `rustc` are available in your `$PATH`.
 
-## Building the Repository
+### 3. CMake & Ninja
+Desktop builds compile native C++ runners. 
+*   **Windows:** Install the "Desktop development with C++" workload via the Visual Studio Installer.
+*   **Linux:** Install `cmake` and `ninja-build` via your package manager.
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/roshancodespace/shonenx.git
-   cd shonenx
-   ```
+### 4. Linux Native Dependencies (For Linux Desktop Builds)
+Building on Linux requires development headers for GTK, media playback (`mpv`), and an in-app webview (`WPE WebKit`):
 
-2. **Fetch dependencies:**
-   ShonenX uses a script to fetch dependencies for the main app and all local packages (like the bridge).
-   ```bash
-   flutter pub get
-   ```
+> [!NOTE] Why is WPE WebKit required on Linux?
+> Android and Windows have built-in system webviews for OAuth authentication flows (like logging into AniList or MyAnimeList). Linux desktop environments do not provide a standard built-in webview widget. We use `flutter_inappwebview_linux`, which relies on `libwpewebkit`. Without it, CMake will fail with `WPE WebKit not found`.
 
-3. **Generate Isar models and Riverpod code:**
-   Because ShonenX uses code generation for its local database (Isar) and state management (Riverpod), you **must** run the build runner before your first build, and anytime you change a model.
-   ```bash
-   dart run build_runner build -d
-   ```
+Install the packages for your distro:
 
-4. **Run the application:**
-   Launch the app on your preferred platform:
-   ```bash
-   flutter run -d linux # or windows, or an android emulator
-   ```
+::: code-group
 
-## Common Build Issues
+```bash [Ubuntu / Debian]
+sudo apt update
+sudo apt install -y \
+  build-essential \
+  cmake \
+  ninja-build \
+  libgtk-3-dev \
+  libmpv-dev \
+  libwpewebkit-1.0-dev
+```
 
-- **Rust compilation errors:** Ensure your Rust toolchain is up to date (`rustup update`). The `rhttp` package compiles Rust bindings natively during the build phase. If it fails, check that your system's C compiler is accessible.
-- **Linux missing WPE WebKit or build errors:** If CMake fails when building `flutter_inappwebview_linux` with:
-  ```
-  CMake Error at flutter/ephemeral/.plugin_symlinks/flutter_inappwebview_linux/linux/CMakeLists.txt:63 (message):
-    WPE WebKit not found.  Please install libwpewebkit-1.0-dev (Ubuntu/Debian)
-    or wpe-webkit package.
+```bash [Arch Linux]
+sudo pacman -Syu --needed \
+  base-devel \
+  cmake \
+  ninja \
+  gtk3 \
+  mpv \
+  wpewebkit
+```
 
-    See WPE_BACKEND.md or https://wpewebkit.org/about/get-wpe.html
+```bash [Fedora]
+sudo dnf install -y \
+  cmake \
+  ninja-build \
+  gtk3-devel \
+  mpv-libs-devel \
+  wpewebkit-devel
+```
 
-  Error: Unable to generate build files
-  ```
-  Install the WPE WebKit development package for your distribution:
-  - **Ubuntu / Debian:** `sudo apt install libwpewebkit-1.0-dev`
-  - **Arch Linux:** `sudo pacman -S wpewebkit`
-  - **Fedora:** `sudo dnf install wpewebkit-devel`
-- **Linux GTK and libmpv errors:** If you encounter missing GTK or mpv headers/libraries, install `libgtk-3-dev` and `libmpv-dev` (Ubuntu/Debian: `sudo apt install libgtk-3-dev libmpv-dev`) or `gtk3` and `mpv` (Arch Linux: `sudo pacman -S gtk3 mpv`).
-- **Isar schema mismatches:** If the app crashes on startup regarding database schemas, wipe the local application data directory (usually `~/.local/share/shonenx` on Linux) and re-run.
+:::
+
+---
+
+## Step-by-Step Build Instructions
+
+### Step 1: Clone the Repository
+```bash
+git clone https://github.com/roshancodespace/shonenx.git
+cd shonenx
+```
+
+### Step 2: Fetch Dependencies
+ShonenX includes local packages (like `anymex_extension_bridge`). Fetch all dependencies:
+```bash
+flutter pub get
+```
+
+### Step 3: Run the Build Runner (Crucial)
+Because we use **Isar** (local database) and **Riverpod** (code-generated providers), the generated `.g.dart` files must be present before the app can compile:
+
+```bash
+dart run build_runner build -d
+```
+*(The `-d` flag deletes conflicting generated outputs so it doesn't fail on preexisting files).*
+
+### Step 4: Run the Application
+Launch on your target device or desktop platform:
+
+```bash
+# Run on Linux desktop
+flutter run -d linux
+
+# Run on Windows desktop
+flutter run -d windows
+
+# Run on Android (emulator or connected device)
+flutter run -d android
+```
+
+---
+
+## Troubleshooting Common Build Issues
+
+### 1. `CMake Error: WPE WebKit not found`
+*   **Cause:** Missing `libwpewebkit-1.0-dev` (Ubuntu) or `wpewebkit` (Arch).
+*   **Fix:** Install the package using the commands above and wipe the build cache (`rm -rf build`) before rebuilding.
+
+### 2. Rust Linker or `librhttp.so` Missing During Tests
+*   **Cause:** Running headless unit tests with `flutter test` runs in a pure Dart VM environment that may not know where the compiled Rust dynamic library is located.
+*   **Fix:** Build the desktop app once (`flutter build linux --debug`), then provide the library path to the dynamic linker:
+    ```bash
+    LD_LIBRARY_PATH=build/linux/x64/debug/bundle/lib flutter test
+    ```
+
+### 3. `IsarSchemaError: Type model mismatch`
+*   **Cause:** An Isar model was changed or pulled from upstream, and the local database schema on disk is outdated.
+*   **Fix:** Clear the local app data so Isar can recreate fresh tables:
+    *   **Linux:** `rm -rf ~/.local/share/shonenx`
+    *   **Windows:** `%APPDATA%\shonenx`
+    *   **Android:** Clear app storage in Android App Settings.

@@ -1,50 +1,86 @@
 # Media Playback & Downloads
 
-ShonenX provides advanced media playback capabilities, natively handling HTTP streams, HLS, and peer-to-peer torrent streaming. Both playback and downloads are intertwined due to their shared network requirements.
+Media playback in ShonenX requires handling diverse formats: direct HTTP streams, adaptive HLS playlists, and peer-to-peer torrents. 
 
-## The Video Engine (`media_kit`)
+To provide a smooth viewing experience across mobile and desktop, ShonenX uses **`media_kit`** for playback and a background isolate architecture for downloads.
 
-The application standardizes on `media_kit` for native cross-platform playback.
+---
 
-- **Initialization:** Executed eagerly during `AppInit._initVideoEngines()`.
-- **Abstraction:** The underlying `media_kit` API is wrapped within `lib/features/player/engine/video_engine.dart`. The UI layer should never instantiate `media_kit` classes directly.
+## The Video Engine: Powered by `media_kit` (mpv)
 
-### Interacting with the Player
+Rather than relying on default platform players that lack advanced subtitle features, ShonenX uses **`media_kit`**, which binds directly to native **`libmpv`** via FFI.
 
-The Video Player state (volume, playback speed, subtitles) is managed by `videoEngineProvider` and `playerStateProvider`.
-
-```dart
-// Pause the video from anywhere in the app
-ref.read(videoEngineProvider).pause();
-
-// Seek
-ref.read(videoEngineProvider).seekTo(Duration(minutes: 5));
+```mermaid
+graph LR
+    UI[Player Screen UI] --> Engine[VideoEngine Wrapper]
+    Engine --> MK[media_kit FFI]
+    MK --> MPV[libmpv Native Core]
+    MPV --> HW[Hardware Decoders<br/>VAAPI / NVDEC / MediaCodec / VideoToolbox]
+    MPV --> Sub[libass Subtitle Engine<br/>Full ASS styling & fonts]
 ```
 
-## Torrent Streaming
+### Why `libmpv` is Ideal for Anime:
+- **Comprehensive Subtitle Support:** Through `libass`, styled Advanced SubStation Alpha (`.ass`) subtitles—including custom fonts, positioning, and typesetting—render accurately.
+- **Hardware-Accelerated Decoding:** Leverages zero-copy GPU decoders across Android (MediaCodec), Windows (D3D11VA), Linux (VAAPI/NVDEC), and macOS (VideoToolbox).
+- **Format Flexibility:** Easily handles MKV containers, HLS playlists, multiple audio tracks, and embedded fonts.
 
-A standout feature is the ability to stream peer-to-peer torrents natively. However, it is important to note that **the torrent logic is not custom to ShonenX.**
+Playback controls are wrapped inside `lib/features/player/engine/video_engine.dart`. The UI layer interacts with providers rather than raw player handles:
 
-The heavy lifting is done entirely by the **`anymex_extension_bridge`**. While ShonenX bundles the `libtorrent_flutter` FFI bindings required to talk to the OS, the actual logic of parsing the magnet, spinning up the local HTTP server, prioritizing chunks, and feeding the stream URL is managed by the Bridge's player controller.
+```dart
+// Control playback state through Riverpod
+ref.read(videoEngineProvider).pause();
+ref.read(videoEngineProvider).seekTo(const Duration(minutes: 14, seconds: 30));
+```
 
-1.  A torrent magnet or `.torrent` file URL is resolved by an extension.
-2.  The `anymex_extension_bridge` (via `libtorrent_flutter`) establishes a local HTTP server.
-3.  The bridge prioritizes the video file chunks from the swarm.
-4.  The `video_engine` is provided the local localhost HTTP URL (e.g., `http://127.0.0.1:8080/stream`).
-5.  `media_kit` buffers and plays the stream natively.
+---
 
-If you are debugging torrent streaming issues, look at the player controller inside `packages/anymex_extension_bridge/`, not the ShonenX UI layer.
+## Sequential Torrent Streaming
 
-## Downloads
+ShonenX supports streaming video directly from peer-to-peer torrents without waiting for the entire file to download.
 
-Offline downloads use different engines depending on the payload type (Direct HTTP vs M3U8/HLS). This logic lives in `lib/features/downloads/engine/`.
+Because video players expect standard HTTP or file stream inputs, the `anymex_extension_bridge` uses an embedded **`libtorrent`** node with a local HTTP loopback server:
 
-### The Isar Lifecycle
+```mermaid
+sequenceDiagram
+    autonumber
+    participant UI as Video Player
+    participant Bridge as Bridge Player Controller
+    participant Torrent as libtorrent Node
+    participant Swarm as P2P Torrent Swarm
 
-1. When a user clicks "Download", the UI creates a `DownloadTask` Isar object and saves it via `downloadProvider`.
-2. The `DownloadEngine` picks up the pending task.
-3. If it's an HLS stream, the `M3U8DownloadEngine` spawns background isolates (using `flutter_isolate`) to concurrently download `.ts` segments.
-4. As segments complete, the `DownloadTask.progress` is updated in Isar.
-5. `downloadProvider` watches this Isar collection and automatically rebuilds the Downloads screen UI.
+    UI->>Bridge: playTorrent(magnetURI)
+    Bridge->>Torrent: Add magnet, parse torrent metadata
+    Torrent->>Swarm: Connect to DHT & peers
+    Note over Bridge,Torrent: Starts local HTTP server<br/>at http://127.0.0.1:8080/stream
+    Bridge-->>UI: Returns http://127.0.0.1:8080/stream
+    UI->>Bridge: HTTP GET /stream (Range: bytes=0-...)
+    Torrent->>Swarm: Prioritize video header & sequential chunks
+    Swarm-->>Torrent: Delivers video chunks
+    Bridge-->>UI: Pipes raw bytes directly into mpv socket
+```
 
-Because downloading is long-running, the `downloadProvider` is intentionally kept persistent (no `autoDispose`), ensuring the background isolates survive screen navigation.
+1. The extension resolves a magnet link or `.torrent` file.
+2. The bridge initiates a local HTTP server bound to `127.0.0.1`.
+3. The torrent engine sets **sequential piece priority**, fetching the container header and opening minutes first.
+4. `media_kit` connects to the local URL (`http://127.0.0.1:8080/stream`), buffering and playing seamlessly as new chunks arrive from the swarm.
+
+---
+
+## Offline Downloads: Background Isolates
+
+Downloading anime episodes often involves HLS playlists containing hundreds of 4-second `.ts` segments, frequently encrypted with AES-128.
+
+### Keeping the UI Responsive
+Fetching, decrypting, and assembling hundreds of segments on the main UI thread would cause frame drops. 
+
+ShonenX moves download workloads off the main thread:
+1. When a download begins, the UI records a `DownloadTask` in the local **Isar database**.
+2. The `M3U8DownloadEngine` spawns a dedicated background Dart isolate using `flutter_isolate`.
+3. The background isolate:
+   - Fetches segments concurrently using multiple connections.
+   - Caches the AES-128 key and decrypts segments in memory.
+   - Appends data into a consolidated video file.
+   - Periodically updates task progress in Isar.
+4. The `downloadProvider` observes the Isar collection and updates the Downloads screen reactively.
+
+Because `downloadProvider` is persistent, downloads continue uninterrupted when users navigate between screens or browse other media.

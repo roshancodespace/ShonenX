@@ -1,30 +1,51 @@
 # Extensions Guide
 
-To stream anime or read manga in ShonenX, you must add extension repositories. These repositories act as bridges to third-party content sources.
+ShonenX does not ship with pre-loaded media sources. Instead, it provides an extensible runtime bridge that allows users to add repositories from popular community formats.
 
-> [!WARNING] Disclaimer
-> ShonenX is an aggregator tool. We do not host any content. Users are solely responsible for the extensions they choose to install and the content they view.
+Once a repository is installed, ShonenX can execute scrapers from **Mangayomi**, **Cloudstream**, and **Aniyomi** within the app.
 
-## Supported Extension Formats
+---
 
-ShonenX utilizes a powerful runtime bridge to execute extensions from other popular communities natively:
-*   **Mangayomi** (Anime, Manga)
-*   **Cloudstream** (Anime)
-*   **Aniyomi** / **Tachiyomi** (Anime & Manga)
-*   **Sora** (Anime, Manga)
-*   **Kotatsu** (Manga)
+## Supported Ecosystems
 
-## How to Install Extensions
+ShonenX currently supports extensions from:
+- **Mangayomi:** Anime and Manga sources (Dart and JavaScript based).
+- **Cloudstream:** Anime and multi-source video extractors.
+- **Aniyomi / Tachiyomi:** Manga extensions with comprehensive catalog coverage.
+- **Kotatsu & Sora:** Dedicated manga and anime formats.
 
-1. Navigate to **Settings → Extensions** inside the ShonenX app.
-2. Tap the **Manage Repos** floating action button in the bottom right.
-3. In the "Manage Repositories" sheet, select your **Target Engine** (e.g., Mangayomi, Tachiyomi, CloudStream).
-4. Paste the repository URL into the **Repository URL** field (if you have a URL copied, you can tap the quick-paste suggestion).
-5. Select the correct **Repository Type** (Anime or Manga). *Note: Some engines like Kotatsu or CloudStream lock this to their specific type automatically.*
-6. Tap **Add to [Engine]**.
+---
 
-## Troubleshooting Matches
+## How to Add an Extension Repository
 
-If you cannot find a specific Anime or Manga, keep in mind:
-*   **Title Variations:** The matchmaking algorithm relies on text matching. Some sources use Japanese romanized titles (e.g., *Boku no Hero Academia*) while others use localized English titles (e.g., *My Hero Academia*). Try searching with the alternate title.
-*   **Alternative Spellings:** Variations like *Bungou Stray Dogs* vs *Bungo Stray Dogs* can occasionally confuse the matcher. Double-check your spelling and explore alternative phrasing.
+Adding a repository takes a few simple steps:
+
+```
+[Settings] ➔ [Extensions] ➔ [Manage Repos (+)] ➔ [Paste Repo URL] ➔ [Save]
+```
+
+1. In ShonenX, navigate to **Settings → Extensions**.
+2. Tap the **Manage Repos** button (floating action button in the lower right).
+3. Select your **Target Engine** (e.g., `Mangayomi`, `CloudStream`, or `Tachiyomi`).
+4. Paste the repository URL into the text field.
+5. Select the **Repository Type** (Anime or Manga).
+6. Tap **Add Repository**.
+7. Once loaded, browse and enable the individual extensions you wish to use.
+
+---
+
+## Troubleshooting Search & Match Results
+
+If an enabled extension does not immediately return results for a specific title:
+
+### 1. Title Variations (English vs. Romaji)
+Tracker services (like AniList or MAL) may index a title in English (e.g. *Attack on Titan*), while a particular source lists it primarily in Japanese Romaji (e.g. *Shingeki no Kyojin*).
+*   **Recommendation:** Try searching using both the Romanized Japanese title and the localized English title.
+
+### 2. Punctuation and Season Formats
+Certain sources index sequels as separate entries (e.g. *Season 2* vs *2nd Season* vs subtitle names).
+*   **Recommendation:** Search using the root title if a specific season query does not yield immediate results.
+
+### 3. Extension Repository Updates
+Online sources periodically change web layouts or domain names.
+*   **Recommendation:** Go to **Settings → Extensions**, tap your repository, and select **Check for Updates** to pull the latest source definitions.

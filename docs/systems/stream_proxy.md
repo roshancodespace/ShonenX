@@ -1,62 +1,71 @@
-# Local Stream Proxy Server
+# Local Stream Proxy: Handling CDN Headers & Stream Processing
 
-ShonenX implements a lightweight, ephemeral **Local Stream Proxy Server** (HTTP) to intercept and stream media. 
+An ongoing challenge in media application development is handling upstream video hosts that enforce strict anti-hotlinking protections.
 
-::: info Why do we need this?
-Native media players (like `media_kit`/mpv) and standard HTTP downloaders fail to handle strict upstream CDN blocking natively—such as **Cloudflare challenges**, **referrer checks**, and **proprietary AES-128 encryption**. The proxy intercepts requests from the player, fetches the data using our Cloudflare-bypassing `rhttp` wrapper, decrypts if necessary, and serves it safely to the local player.
-:::
+Native media players (like `media_kit` / `mpv`) excel at hardware-accelerated video decoding. However, their built-in network stacks are not designed to handle complex header injection, cookie sessions, or on-the-fly decryption across dynamic playlist segments.
 
-## Architecture: The Plug-and-Play Abstraction
+When a video host demands specific `Referer`, `Origin`, and `Cookie` headers—or encrypts video chunks with proprietary keys—standard video players often fail with HTTP 403 Forbidden errors.
 
-The server is built on a highly extensible, protocol-agnostic architecture. The core server doesn't know anything about HLS, DASH, or any other protocol. It simply acts as a router for abstract `ProxyStream` objects. It sits between the upstream CDN (fetching data via our Cloudflare-bypassing `rhttp` wrapper) and the local consumer (routing data directly to `media_kit` or the Downloader).
-
-![Stream Proxy Architecture](/stream_proxy_architecture.jpg)
-
-### The `ProxyStream` Contract
-To support any streaming protocol, you simply extend the `ProxyStream` abstract class. The server only requires two things from a stream implementation:
-1. `getLocalUrl(port)`: Returns the initial URL the video player should load.
-2. `handleRequest(request, httpClient, port)`: Takes full control of any HTTP request routed to this stream's ID.
-
-This means the proxy is entirely **plug-and-play**. Want to add DASH support tomorrow? Just create a `DashStream extends ProxyStream`, implement those two methods, and register it with the server!
+To solve this cleanly, ShonenX includes a **Local Stream Proxy Server**.
 
 ---
 
-## Registering a Stream
+## How the Local Stream Proxy Works
 
-Before playback, the consumer (e.g., `PlayerController`) registers a specific stream implementation with the `StreamServer`.
+Instead of feeding the media player a remote CDN URL that it cannot authenticate, ShonenX starts an ephemeral, lightweight HTTP server on the device at `http://127.0.0.1:PORT`.
 
-```dart
-final server = ref.read(streamServerProvider);
+The media player connects to this local loopback server as if it were streaming a standard local video file:
 
-// Plug-and-play: We instantiate and pass a specific ProxyStream implementation. 
-// The server gives us back a local URL to feed to the video player.
-final localhostUrl = await server.register(
-  MyCustomStream(
-    id: uniqueStreamId,
-    upstreamUrl: upstreamUrl,
-  )
-);
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Player as media_kit (mpv Player)
+    participant Proxy as Stream Proxy (127.0.0.1)
+    participant CDN as Upstream Video CDN
 
-player.open(Media(localhostUrl));
+    Player->>Proxy: GET /stream/chunk_01.ts
+    Note over Proxy: 1. Injects User-Agent, Referer & Cookies<br/>2. Resolves IP via DoH
+    Proxy->>CDN: Authenticated HTTP GET (via Rust rhttp)
+    CDN-->>Proxy: Returns video segment bytes
+    Note over Proxy: Decrypts AES-128 (if encrypted)
+    Proxy-->>Player: Delivers clean video bytes (200 OK)
 ```
 
----
-
-## Server Lifecycle & Auto-Shutdown
-
-To prevent memory leaks and dangling ports, `StreamServer` manages its own lifecycle using a **5-minute inactivity timer**.
-
-::: tip Seamless Resumption
-This ephemeral design allows background downloads to resume upon app restart! The downloader simply re-registers the upstream URL as a `ProxyStream` and spins up a new proxy effortlessly.
-:::
-
-1. Every time a stream is **registered**, the timer resets.
-2. Every time **any request** hits `handleRequest`, the timer resets.
-3. If no requests hit the server for **5 minutes** (e.g., the video is paused for a long time), the server automatically shuts down, releasing the port and destroying all streams and their caches.
+The proxy acts as an intermediary: it intercepts player requests, attaches all necessary headers and session tokens, fetches the data using our Rust `rhttp` client, decrypts encrypted chunks, and feeds clean video bytes back into the player.
 
 ---
 
-## Existing Implementations
+## The `ProxyStream` Contract
 
-See the dedicated documentation for our existing protocol implementations:
-- [HLS Implementation](/systems/hls_implementation)
+The proxy server itself is protocol-agnostic. It does not need to know the specific details of whether a stream is HLS (`.m3u8`), DASH (`.mpd`), or a direct video file.
+
+Requests are routed through the abstract `ProxyStream` interface:
+
+```dart
+abstract class ProxyStream {
+  final String id;
+  final String upstreamUrl;
+
+  ProxyStream({required this.id, required this.upstreamUrl});
+
+  // 1. Returns the local loopback URL the player should connect to:
+  String getLocalUrl(int port);
+
+  // 2. Handles incoming HTTP requests from the player:
+  Future<void> handleRequest(HttpRequest request, HTTP httpClient, int port);
+}
+```
+
+When a new streaming session begins:
+1. The stream engine registers an implementation (like `HlsStream`) with the `StreamServer`.
+2. The server assigns an ephemeral port and unique stream ID.
+3. The player is handed the local loopback URL (e.g. `http://127.0.0.1:4050/stream/123/playlist.m3u8`).
+4. When playback ends, the proxy unregisters the stream and releases the connection pool.
+
+---
+
+## Implementation Files
+
+- **Proxy server lifecycle:** [`lib/core/services/stream_proxy/stream_server.dart`](https://github.com/roshancodespace/shonenx/blob/main/lib/core/services/stream_proxy/stream_server.dart)
+- **Stream interface:** [`lib/core/services/stream_proxy/proxy_stream.dart`](https://github.com/roshancodespace/shonenx/blob/main/lib/core/services/stream_proxy/proxy_stream.dart)
+- **HLS implementation:** [Handling Protected HLS Streams](./hls_implementation.md)

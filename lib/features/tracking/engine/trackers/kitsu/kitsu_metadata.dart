@@ -164,7 +164,7 @@ mixin KitsuMetadata on BaseTracker implements RemoteTracker {
   }) {
     final requestId = DateTime.now().microsecondsSinceEpoch;
 
-    return executeApi('TRENDING', () async {
+    return executeApi('TRENDING | ${type.displayName}', () async {
       final limit = 20;
       final offset = (page - 1) * limit;
       final endpoint = type == MediaType.ANIME ? 'anime' : 'manga';

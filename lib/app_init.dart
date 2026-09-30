@@ -203,8 +203,12 @@ class AppInit {
               ..itemNumber = entry.episodeNumber
               ..itemTitle = entry.episodeTitle
               ..totalItems = entry.totalEpisodes
-              ..progress = entry.positionInMilliseconds.toInt()
-              ..total = entry.durationInMilliseconds.toInt()
+              ..progress = Duration(
+                milliseconds: entry.positionInMilliseconds,
+              ).inSeconds
+              ..total = Duration(
+                milliseconds: entry.durationInMilliseconds,
+              ).inSeconds
               ..sourceId = entry.sourceId
               ..sourceName = entry.sourceName
               ..providerId = entry.providerId

@@ -123,7 +123,7 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
   }) {
     final requestId = DateTime.now().microsecondsSinceEpoch;
 
-    return executeApi('TRENDING', () async {
+    return executeApi('TRENDING | ${type.displayName}', () async {
       final response = await http.post(
         _endpoint,
         body: {

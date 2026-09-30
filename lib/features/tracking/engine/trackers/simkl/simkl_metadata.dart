@@ -97,7 +97,7 @@ mixin SimklMetadata on BaseTracker implements RemoteTracker {
   }) {
     final requestId = DateTime.now().microsecondsSinceEpoch;
 
-    return executeApi('TRENDING', () async {
+    return executeApi('TRENDING | ${type.displayName}', () async {
       final endpoint = _getEndpoint(type);
       final limit = 50;
 

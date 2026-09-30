@@ -1,11 +1,14 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/core/network/doh/doh_provider.dart';
+import 'package:shonenx/core/network/doh/doh_resolver.dart';
 import 'package:shonenx/core/services/security_service.dart';
 import 'package:shonenx/features/security/presentation/widgets/pin_input_sheet.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
 import 'package:shonenx/shared/models/ui_style_enums.dart';
 import 'package:shonenx/shared/providers/app_lock_provider.dart';
+import 'package:shonenx/shared/providers/doh_prefs_provider.dart';
 import 'package:shonenx/shared/providers/security_prefs_provider.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
@@ -19,6 +22,7 @@ class SecuritySettingsScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final prefs = ref.watch(securityPrefsProvider);
+    final dohPrefs = ref.watch(dohPrefsProvider);
     final isMobile = Platform.isAndroid || Platform.isIOS;
     final bioCapabilityAsync = ref.watch(biometricCapabilityProvider);
 
@@ -352,6 +356,30 @@ class SecuritySettingsScreen extends ConsumerWidget {
             ],
           ),
 
+          // Network & DNS (DoH) Section
+          SettingsSection(
+            title: 'Network & DNS',
+            children: [
+              SettingsDropdownTile<DohProvider>(
+                icon: Icons.dns_outlined,
+                title: 'DNS over HTTPS (DoH)',
+                subtitle: dohPrefs.provider.description,
+                value: dohPrefs.provider,
+                items: DohProvider.values
+                    .map(
+                      (e) => DropdownMenuItem(value: e, child: Text(e.title)),
+                    )
+                    .toList(),
+                onChanged: (val) {
+                  if (val != null) {
+                    ref.read(dohPrefsProvider.notifier).setProvider(val);
+                  }
+                },
+                onInfoCallback: () => _showDohInfoSheet(context, ref),
+              ),
+            ],
+          ),
+
           // Quick Actions Section
           if (prefs.isAppLockEnabled) ...[
             SettingsSection(
@@ -404,6 +432,219 @@ class SecuritySettingsScreen extends ConsumerWidget {
           ],
         ],
       ),
+    );
+  }
+
+  void _showDohInfoSheet(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final textTheme = theme.textTheme;
+
+    AppBottomSheet.show(
+      context: context,
+      title: 'DNS over HTTPS (DoH)',
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: cs.surfaceContainer,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.dns_rounded, color: cs.primary, size: 26),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Encrypted DNS Lookups',
+                    style: textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Text(
+              'DNS over HTTPS (DoH) encrypts all domain name queries via HTTPS to prevent ISP snooping, ISP domain hijacking, and censorship. By default, ShonenX uses Cloudflare DNS (1.1.1.1) for maximum speed and privacy.',
+              style: textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 14),
+            Container(
+              width: double.maxFinite,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: cs.secondaryContainer.withValues(alpha: 0.6),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '• Cloudflare: Fast, zero-logging DNS (1.1.1.1 & 1.0.0.1)',
+                    style: textTheme.bodySmall?.copyWith(
+                      color: cs.onSecondaryContainer,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    '• Google: Highly reliable global resolver (8.8.8.8 & 8.8.4.4)',
+                    style: textTheme.bodySmall?.copyWith(
+                      color: cs.onSecondaryContainer,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    '• System: Bypasses DoH and uses standard device DNS',
+                    style: textTheme.bodySmall?.copyWith(
+                      color: cs.onSecondaryContainer,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            const _DohTestWidget(),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DohTestWidget extends ConsumerStatefulWidget {
+  const _DohTestWidget();
+
+  @override
+  ConsumerState<_DohTestWidget> createState() => _DohTestWidgetState();
+}
+
+class _DohTestWidgetState extends ConsumerState<_DohTestWidget> {
+  bool _isTesting = false;
+  DohTestResult? _result;
+
+  Future<void> _runTest() async {
+    setState(() {
+      _isTesting = true;
+      _result = null;
+    });
+
+    final currentProvider = ref.read(dohPrefsProvider).provider;
+    final res = await DohResolver.instance.testLookup(
+      provider: currentProvider,
+    );
+
+    if (mounted) {
+      setState(() {
+        _isTesting = false;
+        _result = res;
+      });
+    }
+  }
+
+  void _clearDnsCache() {
+    DohResolver.instance.clearCache();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('DNS cache flushed successfully'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final textTheme = theme.textTheme;
+    final dohPrefs = ref.watch(dohPrefsProvider);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: FilledButton.tonalIcon(
+                onPressed: _isTesting ? null : _runTest,
+                icon: _isTesting
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.speed_rounded, size: 18),
+                label: Text(_isTesting ? 'Testing...' : 'Test DNS Resolution'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            IconButton.filledTonal(
+              tooltip: 'Flush DNS Cache',
+              onPressed: _clearDnsCache,
+              icon: const Icon(Icons.cleaning_services_outlined, size: 18),
+            ),
+          ],
+        ),
+        if (_result != null) ...[
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: _result!.success
+                  ? Colors.green.withValues(alpha: 0.12)
+                  : Colors.red.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: _result!.success
+                    ? Colors.green.withValues(alpha: 0.3)
+                    : Colors.red.withValues(alpha: 0.3),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  _result!.success
+                      ? Icons.check_circle_rounded
+                      : Icons.error_outline_rounded,
+                  color: _result!.success ? Colors.green : Colors.red,
+                  size: 20,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _result!.success
+                            ? '${dohPrefs.provider.title} (${_result!.latencyMs} ms)'
+                            : 'Test Failed',
+                        style: textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: _result!.success ? Colors.green : Colors.red,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        _result!.success
+                            ? 'Resolved to: ${_result!.addresses.take(3).join(', ')}'
+                            : (_result!.errorMessage ?? 'Unknown error'),
+                        style: textTheme.bodySmall?.copyWith(
+                          color: cs.onSurfaceVariant,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

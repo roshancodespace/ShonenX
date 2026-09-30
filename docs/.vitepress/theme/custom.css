@@ -1,3 +1,18 @@
 :root {
   --vp-font-family-base: 'Montserrat', "Inter", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 }
+
+/* Enforce Montserrat on all Mermaid diagram text, labels, and nodes */
+.mermaid,
+.mermaid *,
+.mermaid svg,
+.mermaid svg *,
+.mermaid svg text,
+.mermaid svg tspan,
+.mermaid svg .label,
+.mermaid svg .actor,
+.mermaid svg .messageText,
+.mermaid svg .noteText,
+.mermaid svg .loopText {
+  font-family: var(--vp-font-family-base) !important;
+}

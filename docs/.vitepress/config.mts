@@ -1,10 +1,17 @@
-import { defineConfig } from 'vitepress'
+import { withMermaid } from 'vitepress-plugin-mermaid'
 
-export default defineConfig({
+export default withMermaid({
   title: "ShonenX",
   description: "Official documentation and guides for ShonenX.",
   base: '/ShonenX/',
   cleanUrls: true,
+  mermaid: {
+    fontFamily: 'Montserrat, "Inter", sans-serif',
+    themeVariables: {
+      fontFamily: 'Montserrat, "Inter", sans-serif',
+      fontSize: '14px'
+    }
+  },
   head: [
     ['link', { rel: 'preconnect', href: 'https://fonts.googleapis.com' }],
     ['link', { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' }],
@@ -69,7 +76,8 @@ export default defineConfig({
           { text: 'Tracking', link: '/systems/tracking' },
           { text: 'Player & Downloads', link: '/systems/player_and_downloads' },
           { text: 'Local Stream Proxy', link: '/systems/stream_proxy' },
-          { text: 'HLS Implementation', link: '/systems/hls_implementation' }
+          { text: 'HLS Implementation', link: '/systems/hls_implementation' },
+          { text: 'DNS over HTTPS (DoH)', link: '/systems/dns_over_https' }
         ]
       },
       {

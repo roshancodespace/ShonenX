@@ -1,41 +1,54 @@
 # Installation Guide
 
-ShonenX is available across multiple platforms. Follow the instructions below for your specific device to get started.
+ShonenX is available across multiple desktop and mobile platforms. Choose the guide for your system below.
 
-> [!WARNING] Disclaimer
-> ShonenX is a tool that aggregates content from third-party sources. We do not host, store, or distribute any copyrighted content. The developers are not responsible for the content provided by third-party extensions. Users are solely responsible for the extensions they install and the content they access.
+> [!WARNING] Legal Disclaimer
+> ShonenX is an open-source media player and aggregator tool. We do not host, store, or distribute copyrighted video or manga content. Users are responsible for the third-party extension repositories they choose to install and the media they view.
 
-## Android
+---
 
-We provide multiple APK architectures:
-*   **ARM64:** For most modern devices.
-*   **ARM7:** For older devices (Android 9 or below).
+## Android (Phones & Tablets)
 
-Download the appropriate `.apk` from our release page and follow the standard Android installation process.
+Download the latest `.apk` from the [GitHub Releases](https://github.com/roshancodespace/shonenx/releases) page:
 
-## Windows
+*   **`arm64-v8a` (Recommended):** For modern 64-bit devices.
+*   **`armeabi-v7a`:** For older 32-bit devices (Android 9 and earlier).
+*   **`universal`:** Compatible with all supported architectures.
 
-> [!CAUTION] WebView2 Required
-> You **must** have the [WebView2 Runtime](https://developer.microsoft.com/en-us/microsoft-edge/webview2/) installed on your system before running ShonenX. Without it, the application will crash during login flows.
+---
 
-*   **Installer:** Download the `.exe` installer, run it, and follow the on-screen wizard.
-*   **Portable:** Download the `.zip` archive, extract it to your preferred location, and run `ShonenX.exe` directly.
+## Windows Desktop (10 & 11)
 
-## Linux
+Windows builds are available as an installer or portable archive:
+*   **Installer (`.exe`):** Recommended for automatic shortcuts and desktop integration.
+*   **Portable (`.zip`):** Extract and run `ShonenX.exe` directly from any folder.
 
-For Linux users, we provide an automated bash installation script. 
+> [!IMPORTANT] WebView2 Runtime Requirement
+> ShonenX requires the **[Microsoft Edge WebView2 Runtime](https://developer.microsoft.com/en-us/microsoft-edge/webview2/)** to handle OAuth login flows (AniList, MyAnimeList). While pre-installed on most modern Windows 11 systems, if login dialogs fail to open, ensure WebView2 is installed.
 
-Open your terminal and run:
+---
+
+## Linux Desktop
+
+For Linux users, we provide an automated shell installer that configures the executable and desktop launcher:
+
 ```bash
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/roshancodespace/ShonenX/main/install.sh)"
 ```
-> [!NOTE] Dependency Check
-> Ensure you have `libmpv` installed on your system via your package manager, as it is required for the native video player.
 
-## macOS & iOS
+### Video Playback Dependency (`libmpv`)
+Because ShonenX uses native `mpv` for hardware-accelerated video decoding and styled subtitles, ensure `libmpv` is installed:
 
-> [!WARNING] Highly Experimental
-> The iOS and macOS builds are currently **highly experimental** and may be unstable.
+*   **Ubuntu / Debian / Mint:** `sudo apt install libmpv-dev libmpv2`
+*   **Arch / Manjaro / EndeavourOS:** `sudo pacman -S mpv`
+*   **Fedora:** `sudo dnf install mpv-libs`
 
-*   **iOS:** Download the `.ipa` file. You must sideload it using tools like AltStore, Sideloadly, or LiveContainer.
-*   **macOS:** Download the `.dmg` file, open it, and drag ShonenX into your Applications folder.
+---
+
+## Apple Platforms (macOS & iOS)
+
+> [!NOTE] Sideloading Notice
+> macOS and iOS builds are in active development.
+
+*   **macOS:** Download the `.dmg`, open it, and move `ShonenX.app` to your Applications folder. If blocked by Gatekeeper ("unidentified developer"), allow the app in **System Settings → Privacy & Security**.
+*   **iOS:** Download the `.ipa` file from GitHub Releases. Sideload using tools such as **AltStore**, **SideStore**, or **LiveContainer**.

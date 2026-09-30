@@ -1,39 +1,90 @@
 # Architecture Walkthrough
 
-ShonenX enforces strict layer boundaries to prevent tightly coupled code. Understanding where files belong is the first step to contributing.
+When an application grows into a multi-platform client with video playback, extension bridges, and tracker synchronization, architectural discipline becomes essential. 
 
-## The `lib/` Directory
+Mixing network calls inside widget build methods or scattering mutable global state across files creates code that is fragile, hard to test, and painful to maintain.
 
-### 1. `lib/core/`
-This folder contains cross-cutting infrastructure. It does **not** contain product features.
-- `caching/`: The `CacheManager` intercepts HTTP requests and saves them to Isar.
-- `network/`: Abstractions over the raw HTTP client (using `rhttp`).
-- `router/`: GoRouter setup (`app_router.dart`).
-- `theme/`: Global styling logic.
+In ShonenX, we follow a **Layered Feature-First Architecture**. Here is how the project is organized, the layer rules we enforce, and how the app bootstraps its core systems.
 
-### 2. `lib/features/`
-This is where the actual business logic and UI reside. Each folder represents a vertical slice (e.g., `downloads/`, `tracking/`, `player/`).
+---
 
-Inside a typical feature folder, you will find:
-- `domain/`: Abstract data models and interface definitions (e.g., `DownloadTask`).
-- `engine/` or `data/` or `api/`: The internal logic, fetchers, and repositories.
-- `providers/`: Riverpod providers. This is the **only** layer that should expose state to the presentation layer.
-- `presentation/`: UI screens and widgets. These consume state exclusively via Riverpod. Providers should never be inside the `presentation/` directory.
+## Directory Organization
 
-### 3. `lib/shared/`
-Reusable data models (`UnifiedMedia`) and generalized UI components (like standard Manga Cards). If a widget is required by both the `library` and the `discovery` features, it belongs here.
+```
+lib/
+├── core/            # Infrastructure & plumbing (Zero UI features)
+├── features/        # Feature slices (player, library, tracking, downloads)
+│   └── <feature>/
+│       ├── domain/        # Pure Dart models & interfaces
+│       ├── engine/        # Repositories, fetchers, and heavy logic
+│       ├── providers/     # Riverpod state managers (Bridge to UI)
+│       └── presentation/  # Flutter widgets & screens
+├── shared/          # Reusable cross-feature models & UI components
+└── source_engine/   # Bridge orchestrator and data normalization
+```
 
-### 4. `lib/source_engine/`
-A unified facade that resolves and normalizes media payloads from internal sources and dynamic Javascript extensions (via the `anymex_extension_bridge`). This operates almost like an independent package.
+---
 
-## Initialization Flow
+## Layer Responsibilities & Rules
 
-When the app starts, the entry point is `lib/main.dart`, but the heavy lifting happens in [`lib/app_init.dart`](https://github.com/roshancodespace/shonenx/blob/main/lib/app_init.dart).
+Data and control flow in a single direction through strict boundaries:
 
-`AppInit.init()` runs sequentially:
-1. Initializes `Rhttp`.
-2. Configures `window_manager` (handling Linux/Windows desktop APIs).
-3. Initializes `media_kit` for native video decoding.
-4. Opens the Isar database.
-5. Fires asynchronous setups (like loading cached trackers).
-6. Post-launch: `setupBridge` is called lazily to spin up the JS runtime for extensions.
+```
+[ Presentation (Widgets) ]
+            │ (ref.watch / ref.read)
+            ▼
+[ State (Riverpod Providers) ]
+            │ (invokes methods)
+            ▼
+[ Logic (Feature Engines / Repositories) ]
+            │ (reads & writes)
+            ▼
+[ Infrastructure (Isar DB / Rust rhttp + DoH) ]
+```
+
+### 1. Presentation Layer (Widgets)
+Flutter widgets in `presentation/` focus purely on rendering UI and handling user interaction:
+- Widgets consume state by watching Riverpod providers (`ref.watch()`).
+- Widgets trigger user actions by calling methods on provider notifiers (`ref.read().myAction()`).
+- Widgets **never** instantiate database connections, API clients, or player engines directly.
+
+### 2. Providers Layer (State Management)
+Providers in `providers/` are the dedicated bridge between business logic and the screen:
+- Expose state using `FutureProvider`, `AsyncNotifierProvider`, or `NotifierProvider`.
+- Orchestrate background tasks and update local state reactively.
+- Handle dependency injection for repositories and services.
+
+### 3. Features Are Isolated
+Code in `lib/features/library/` should not directly import internal widgets or private helpers from `lib/features/discovery/`. 
+
+If a widget (like `MediaCard` or `AnimeCarousel`) or data model (`UnifiedMedia`) is needed across multiple features, it belongs in **`lib/shared/`**. Keeping features decoupled prevents circular dependencies and makes refactoring much simpler.
+
+---
+
+## Application Initialization: The Startup Chain
+
+When ShonenX launches, the entry point is `lib/main.dart`, but the initialization sequence is managed by [`lib/app_init.dart`](https://github.com/roshancodespace/shonenx/blob/main/lib/app_init.dart). 
+
+Native subsystems must be initialized in a specific sequence:
+
+1. **`SharedPreferences.getInstance()`** — Loads persistent local settings into memory.
+2. **`DohResolver.instance.init(prefs)`** — Reads the user's saved DoH provider (`cloudflare`, `google`, or `system`) so the dynamic DNS resolver is warmed up before any network socket is opened.
+3. **`Rhttp.init()`** — Loads the native Rust dynamic library (`librhttp.so` / `.dll` / `.dylib`) via FFI.
+4. **`WindowManager` configuration** — On desktop platforms (Linux/Windows/macOS), sets initial window dimensions, minimum sizes, and titlebar styling.
+5. **`MediaKit.ensureInitialized()`** — Prepares native `libmpv` video and audio engine hooks.
+6. **`Isar.open(...)`** — Opens the offline database collections (watch history, cache entries, download tasks).
+7. **`setupBridge()`** — Lazily spins up the embedded QuickJS runtime for third-party extensions.
+8. **`runApp(...)`** — Mounts the root `ProviderScope` and launches the Flutter widget tree.
+
+### Why DoH Initializes Before Rhttp
+`Rhttp` accepts dynamic DNS resolution callbacks (`rhttp.DnsSettings.dynamic(...)`). When ShonenX starts, `DohResolver` loads the user's saved DNS provider from `SharedPreferences` *before* the network client pool is created. This ensures the very first request made by the app uses encrypted DNS-over-HTTPS.
+
+---
+
+## The Extension Bridge (`packages/anymex_extension_bridge`)
+
+Notice that `anymex_extension_bridge` lives under `packages/` rather than `lib/`. 
+
+It operates as an independent local Dart package that runs an embedded Javascript engine (QuickJS) and native bindings to execute scrapers from Mangayomi, Cloudstream, and Aniyomi. 
+
+Keeping it decoupled in `packages/` keeps the core application clean: ShonenX doesn't need to know the internal details of third-party scraper formats—it simply receives normalized `UnifiedMedia` and `UnifiedChapter` objects in return.

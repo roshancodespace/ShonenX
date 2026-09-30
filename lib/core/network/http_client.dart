@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rhttp/rhttp.dart' as rhttp;
 import 'package:shonenx/core/caching/cache_manager.dart';
 import 'package:shonenx/core/caching/domain/cache_entry.dart';
+import 'package:shonenx/core/network/doh/doh_resolver.dart';
 import 'package:shonenx/core/network/session_manager.dart';
 import 'package:shonenx/core/network/network_config.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
@@ -40,8 +41,9 @@ class HttpResponse {
 }
 
 class HTTP {
-  HTTP._internal({CacheManager? cacheManager})
-    : _client = rhttp.RhttpClient.createSync(
+  HTTP._internal({CacheManager? cacheManager, DohResolver? dohResolver})
+    : _dohResolver = dohResolver ?? DohResolver.instance,
+      _client = rhttp.RhttpClient.createSync(
         settings: rhttp.ClientSettings(
           throwOnStatusCode: false,
           userAgent:
@@ -51,6 +53,10 @@ class HTTP {
             timeout: Duration(seconds: 30),
             connectTimeout: Duration(seconds: 15),
           ),
+          dnsSettings: rhttp.DnsSettings.dynamic(
+            resolver: (host) =>
+                (dohResolver ?? DohResolver.instance).resolve(host),
+          ),
         ),
       ),
       _cache = cacheManager;
@@ -58,11 +64,17 @@ class HTTP {
   static HTTP? _instance;
   static final _log = AppLogger.scope('HTTP');
 
-  factory HTTP({CacheManager? cacheManager}) {
-    final instance = _instance ??= HTTP._internal(cacheManager: cacheManager);
+  factory HTTP({CacheManager? cacheManager, DohResolver? dohResolver}) {
+    final instance = _instance ??= HTTP._internal(
+      cacheManager: cacheManager,
+      dohResolver: dohResolver,
+    );
     if (cacheManager != null) instance._cache = cacheManager;
     return instance;
   }
+
+  final DohResolver _dohResolver;
+  DohResolver get dohResolver => _dohResolver;
 
   final rhttp.RhttpClient _client;
   CacheManager? _cache;

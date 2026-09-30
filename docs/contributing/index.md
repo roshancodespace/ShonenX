@@ -1,27 +1,59 @@
-# Contributing Guide
+# Contributing to ShonenX
 
-Contributions are welcome! However, to maintain stability, maintainability, and a unified vision, please adhere to the following rules:
+Contributions from the community are warmly welcomed! Many of ShonenX's features and refinements have been built collaboratively.
 
-- **Architectural Authority:** The architecture, design system, state management patterns, and project direction remain strictly at the discretion of [@roshancodespace](https://github.com/roshancodespace).
-- **No Unsolicited Architectural Changes:** Do not submit PRs that alter the core architecture, restructure directory conventions, replace major dependencies, or rewrite foundational patterns. Unsolicited refactors will be closed.
-- **Discuss Major Changes First:** If you want to propose a significant feature or structural adjustment, open an Issue to discuss and obtain approval before starting work.
-- **What is Welcome:** Bug fixes, provider and extension bridge improvements, performance optimizations, localized UI polish matching existing design tokens, and features that adhere cleanly to the established architecture.
+To keep development smooth, stable, and consistent across platforms, please review these guidelines before submitting a pull request.
+
+---
+
+## Contribution Guidelines
+
+### 1. Discuss Major Changes First
+If you plan to introduce a major architectural adjustment, replace a foundational dependency, or restructure core systems, please **open an issue first** to discuss your proposed approach with [@roshancodespace](https://github.com/roshancodespace). This ensures everyone is aligned before significant effort is spent.
+
+### 2. Keep Pull Requests Focused
+Keep PRs concise and scoped to a specific fix or feature. Avoid combining unrelated code formatting changes across dozens of files with targeted bug fixes, as large diffs make review and regression tracking much more difficult.
+
+### 3. Respect Layer Boundaries
+- The presentation layer (widgets) interacts with engines exclusively through Riverpod providers.
+- Features should not import private implementation details from other features. Reusable logic belongs in `lib/shared/`.
+- Use the shared `HTTP` client (`rhttp`) for remote calls to ensure proper TLS handshake handling and DoH resolution.
+
+---
+
+## Great Areas to Contribute
+
+- 🐛 **Bug Fixes:** Resolving edge-case crashes, memory leaks, or platform-specific UI quirks.
+- ⚡ **Performance:** Optimizing Isar database queries, stream buffering, or widget rebuild efficiency.
+- 📺 **New Tracker Integrations:** Adding support for additional tracking services (e.g. Shikimori, Anime-Planet) via `RemoteTracker`.
+- 🎨 **Desktop & Accessibility Polish:** Enhancing keyboard navigation, window management, or layout responsiveness across diverse screen sizes.
+
+---
+
 ## Development Workflow
 
-1. **Check the Issue Tracker**: Before starting work on a major feature, check if an issue exists. If not, open one to discuss the architectural approach.
-2. **Branching**: Branch off `main`.
-3. **Running the App**: Ensure you can build the app locally (see [Local Setup](/setup/)).
-4. **Code Generation**: If you modify any Riverpod providers (`@riverpod`) or Isar models (`@collection`), run the build runner:
-   ```bash
-   dart run build_runner build -d
-   ```
-5. **Testing**: Run `flutter analyze` and `flutter test` before submitting a PR.
-6. **Pull Requests**: Keep PRs focused. Do not mix unrelated architectural refactors with feature additions. 
+### 1. Fork and Branch
+Create a descriptive branch off `main`:
+```bash
+git checkout -b feature/new-tracker-integration
+```
 
-## Architectural Boundaries
+### 2. Run Code Generation
+If your changes affect `@riverpod` providers or `@collection` Isar entities:
+```bash
+dart run build_runner build -d
+```
 
-Please respect the boundaries outlined in the [Architecture Walkthrough](/setup/architecture).
+### 3. Run Analysis and Tests
+Verify that there are no analyzer errors and all test suites pass:
+```bash
+flutter analyze
+flutter test
+```
+*(On Linux, if running tests that touch native `rhttp` bindings, ensure the dynamic library path is set: `LD_LIBRARY_PATH=build/linux/x64/debug/bundle/lib flutter test`)*
 
-- **No Cross-Feature Bleeding**: A screen in `features/library/` should not directly import a private widget from `features/discovery/`. If a widget is needed by both, move it to `lib/shared/`.
-- **No Direct Engine Access**: The UI (`presentation/`) must never instantiate an API client, Engine, or Service directly. It must read it through a Riverpod provider from `providers/`.
-- **Use `Rhttp`**: For network calls, always inject the `HTTP` client rather than using `dart:io` or the generic `http` package directly, to ensure caching and Cloudflare bypass logic applies.
+### 4. Submit Your PR
+Provide a clear description of:
+1. The problem or enhancement being addressed.
+2. The implementation approach taken.
+3. Screenshots or screen captures for UI-related adjustments.

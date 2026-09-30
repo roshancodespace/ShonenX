@@ -1247,7 +1247,7 @@ packages:
     source: git
     version: "1.0.0"
   media_kit_libs_video:
-    dependency: "direct overridden"
+    dependency: "direct main"
     description:
       path: "libs/universal/media_kit_libs_video"
       ref: "78d4cce7b49d5b6b918f78b18ec1fbb7c400b9da"

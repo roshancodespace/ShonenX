@@ -29,19 +29,14 @@ dependencies:
     path: packages/commentum_client
   media_kit:
     git:
-        url: https://github.com/RyanYuuki/media-kit.git
-        ref: main
+        url: https://github.com/Predidit/media-kit.git
+        ref: 78d4cce7b49d5b6b918f78b18ec1fbb7c400b9da
         path: ./media_kit
   media_kit_video:
     git:
-        url: https://github.com/RyanYuuki/media-kit.git
-        ref: main
+        url: https://github.com/Predidit/media-kit.git
+        ref: 78d4cce7b49d5b6b918f78b18ec1fbb7c400b9da
         path: ./media_kit_video
-  media_kit_libs_video:
-    git:
-        url: https://github.com/RyanYuuki/media-kit.git
-        ref: main
-        path: ./libs/universal/media_kit_libs_video
   get: ^4.7.3
   google_fonts: ^8.0.2
   shared_preferences: ^2.5.5
@@ -87,7 +82,6 @@ dependencies:
   local_auth: ^3.0.1
   crypto: ^3.0.3
   flutter_device_apps: ^0.8.1
-  cupertino_ui: any
   better_player_plus: ^1.0.8
 
 dependency_overrides:
@@ -106,28 +100,28 @@ dependency_overrides:
       path: flutter_inappwebview_linux
   media_kit:
     git:
-      url: https://github.com/RyanYuuki/media-kit.git
-      ref: main
+      url: https://github.com/Predidit/media-kit.git
+      ref: 78d4cce7b49d5b6b918f78b18ec1fbb7c400b9da
       path: ./media_kit
   media_kit_video:
     git:
-      url: https://github.com/RyanYuuki/media-kit.git
-      ref: main
+      url: https://github.com/Predidit/media-kit.git
+      ref: 78d4cce7b49d5b6b918f78b18ec1fbb7c400b9da
       path: ./media_kit_video
   media_kit_libs_video:
     git:
-      url: https://github.com/RyanYuuki/media-kit.git
-      ref: main
+      url: https://github.com/Predidit/media-kit.git
+      ref: 78d4cce7b49d5b6b918f78b18ec1fbb7c400b9da
       path: ./libs/universal/media_kit_libs_video
   media_kit_libs_linux:
     git:
-      url: https://github.com/RyanYuuki/media-kit.git
-      ref: main
+      url: https://github.com/Predidit/media-kit.git
+      ref: 78d4cce7b49d5b6b918f78b18ec1fbb7c400b9da
       path: ./libs/linux/media_kit_libs_linux
   media_kit_libs_ios_video:
     git:
-      url: https://github.com/RyanYuuki/media-kit.git
-      ref: main
+      url: https://github.com/Predidit/media-kit.git
+      ref: 78d4cce7b49d5b6b918f78b18ec1fbb7c400b9da
       path: ./libs/ios/media_kit_libs_ios_video
   media_kit_libs_android_video:
     git:
@@ -136,19 +130,14 @@ dependency_overrides:
       path: ./libs/android/media_kit_libs_android_video
   media_kit_libs_windows_video:
     git:
-      url: https://github.com/RyanYuuki/media-kit.git
-      ref: main
+      url: https://github.com/Predidit/media-kit.git
+      ref: 78d4cce7b49d5b6b918f78b18ec1fbb7c400b9da
       path: ./libs/windows/media_kit_libs_windows_video
   media_kit_libs_macos_video:
     git:
-      url: https://github.com/RyanYuuki/media-kit.git
-      ref: main
+      url: https://github.com/Predidit/media-kit.git
+      ref: 78d4cce7b49d5b6b918f78b18ec1fbb7c400b9da
       path: ./libs/macos/media_kit_libs_macos_video
-  media_kit_libs_ohos:
-    git:
-      url: https://github.com/RyanYuuki/media-kit.git
-      ref: main
-      path: ./libs/ohos/media_kit_libs_ohos
 
   libtorrent_flutter:
     path: packages/anymex_extension_bridge/packages/libtorrent_flutter

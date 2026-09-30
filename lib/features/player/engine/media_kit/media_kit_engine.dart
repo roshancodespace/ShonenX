@@ -91,8 +91,15 @@ class MediaKitEngine implements VideoEngine {
 
     await setPropSafe('cache', 'yes');
     await setPropSafe('cache-secs', prefs.maxBuffer.inSeconds.toString());
+    await setPropSafe('cache-on-disk', 'no');
     await setPropSafe('demuxer-max-bytes', '134217728'); // 128MB
-    await setPropSafe('demuxer-max-back-bytes', '67108864'); // 64MB
+    await setPropSafe('demuxer-max-back-bytes', '33554432'); // 32MB
+    
+    await setPropSafe('autosync', '30');
+    await setPropSafe('framedrop', 'no');
+    await setPropSafe('seg_max_retry', '5');
+    await setPropSafe('network-timeout', '30');
+
 
     try {
       await _player.setVolume(prefs.boostVolume ? 140 : 100);
@@ -178,7 +185,7 @@ class MediaKitEngine implements VideoEngine {
     _player = Player(
       configuration: PlayerConfiguration(
         libass: prefs.libassEnabled,
-        bufferSize: 64 * 1024 * 1024, // 64MB
+        bufferSize: 64 * 1024 * 1024, // 64MB,
       ),
     );
     _controller = VideoController(

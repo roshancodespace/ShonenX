@@ -35,8 +35,8 @@ class ReaderWebtoonViewState extends State<ReaderWebtoonView> {
       ItemPositionsListener.create();
 
   final TransformationController _zoomController = TransformationController();
+  final Set<int> _activePointers = {};
   bool _isZoomed = false;
-  int _pointerCount = 0;
   bool _isCtrlPressed = false;
   int _lastReportedPage = -1;
   late bool _isInitialScrollDone;
@@ -54,9 +54,8 @@ class ReaderWebtoonViewState extends State<ReaderWebtoonView> {
   @override
   void didUpdateWidget(covariant ReaderWebtoonView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.initialPage != widget.initialPage) {
-      _lastReportedPage = widget.initialPage;
-      _isInitialScrollDone = widget.initialPage == 0;
+    if (oldWidget.pages != widget.pages) {
+      _zoomController.value = Matrix4.identity();
     }
   }
 
@@ -66,12 +65,16 @@ class ReaderWebtoonViewState extends State<ReaderWebtoonView> {
     HardwareKeyboard.instance.removeHandler(_onKeyEvent);
     _zoomController.removeListener(_onZoomChanged);
     _zoomController.dispose();
+    _activePointers.clear();
     super.dispose();
   }
 
   /// Jump to a page index.
   void jumpToPage(int page) {
     if (page < 0 || page >= widget.pages.length) return;
+    if (_isZoomed) {
+      _zoomController.value = Matrix4.identity();
+    }
     _lastReportedPage = page; // Prevent scroll listener from overriding
     _isInitialScrollDone = true;
     if (_scrollController.isAttached) {
@@ -94,9 +97,14 @@ class ReaderWebtoonViewState extends State<ReaderWebtoonView> {
       }
     }
 
-    final visible = positions.where(
+    Iterable<ItemPosition> visible = positions.where(
       (p) => p.itemLeadingEdge <= 0.5 && p.itemTrailingEdge > 0.0,
     );
+    if (visible.isEmpty) {
+      visible = positions.where(
+        (p) => p.itemLeadingEdge < 1.0 && p.itemTrailingEdge > 0.0,
+      );
+    }
     if (visible.isEmpty) return;
 
     final currentIndex = visible.fold<int>(
@@ -127,26 +135,46 @@ class ReaderWebtoonViewState extends State<ReaderWebtoonView> {
     }
   }
 
+  void _onPointerDown(PointerDownEvent event) {
+    final hadMultiple = _activePointers.length > 1;
+    _activePointers.add(event.pointer);
+    final hasMultiple = _activePointers.length > 1;
+    if (hadMultiple != hasMultiple && mounted) {
+      setState(() {});
+    }
+  }
+
+  void _onPointerUp(PointerUpEvent event) {
+    final hadMultiple = _activePointers.length > 1;
+    _activePointers.remove(event.pointer);
+    final hasMultiple = _activePointers.length > 1;
+    if (hadMultiple != hasMultiple && mounted) {
+      setState(() {});
+    }
+  }
+
+  void _onPointerCancel(PointerCancelEvent event) {
+    final hadMultiple = _activePointers.length > 1;
+    _activePointers.remove(event.pointer);
+    final hasMultiple = _activePointers.length > 1;
+    if (hadMultiple != hasMultiple && mounted) {
+      setState(() {});
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isConstrained =
         ResponsiveData.from(context).isDesktop ||
         ResponsiveData.from(context).isTablet;
-    final scaleEnabled = _pointerCount >= 2 || _isCtrlPressed;
+    final hasMultiplePointers = _activePointers.length > 1;
+    final canScroll = !hasMultiplePointers && !_isZoomed && !_isCtrlPressed;
+    final scaleEnabled = hasMultiplePointers || _isCtrlPressed;
 
     return Listener(
-      onPointerDown: (_) {
-        _pointerCount++;
-        if (_pointerCount == 2 && mounted) setState(() {});
-      },
-      onPointerUp: (_) {
-        _pointerCount = (_pointerCount - 1).clamp(0, 10);
-        if (_pointerCount < 2 && mounted) setState(() {});
-      },
-      onPointerCancel: (_) {
-        _pointerCount = (_pointerCount - 1).clamp(0, 10);
-        if (_pointerCount < 2 && mounted) setState(() {});
-      },
+      onPointerDown: _onPointerDown,
+      onPointerUp: _onPointerUp,
+      onPointerCancel: _onPointerCancel,
       child: InteractiveViewer(
         transformationController: _zoomController,
         minScale: 1.0,
@@ -154,7 +182,9 @@ class ReaderWebtoonViewState extends State<ReaderWebtoonView> {
         panEnabled: _isZoomed,
         scaleEnabled: scaleEnabled,
         child: ScrollablePositionedList.builder(
-          physics: const BouncingScrollPhysics(),
+          physics: canScroll
+              ? const BouncingScrollPhysics()
+              : const NeverScrollableScrollPhysics(),
           itemScrollController: _scrollController,
           itemPositionsListener: _positionsListener,
           initialScrollIndex: widget.initialPage,

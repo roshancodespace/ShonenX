@@ -31,8 +31,8 @@ class ReaderPageView extends StatefulWidget {
 
 class _ReaderPageViewState extends State<ReaderPageView> {
   final TransformationController _zoomController = TransformationController();
+  final Set<int> _activePointers = {};
   bool _isZoomed = false;
-  int _pointerCount = 0;
   bool _isCtrlPressed = false;
 
   @override
@@ -43,10 +43,20 @@ class _ReaderPageViewState extends State<ReaderPageView> {
   }
 
   @override
+  void didUpdateWidget(covariant ReaderPageView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.pages != widget.pages ||
+        oldWidget.direction != widget.direction) {
+      _zoomController.value = Matrix4.identity();
+    }
+  }
+
+  @override
   void dispose() {
     HardwareKeyboard.instance.removeHandler(_onKeyEvent);
     _zoomController.removeListener(_onZoomChanged);
     _zoomController.dispose();
+    _activePointers.clear();
     super.dispose();
   }
 
@@ -67,23 +77,43 @@ class _ReaderPageViewState extends State<ReaderPageView> {
     }
   }
 
+  void _onPointerDown(PointerDownEvent event) {
+    final hadMultiple = _activePointers.length > 1;
+    _activePointers.add(event.pointer);
+    final hasMultiple = _activePointers.length > 1;
+    if (hadMultiple != hasMultiple && mounted) {
+      setState(() {});
+    }
+  }
+
+  void _onPointerUp(PointerUpEvent event) {
+    final hadMultiple = _activePointers.length > 1;
+    _activePointers.remove(event.pointer);
+    final hasMultiple = _activePointers.length > 1;
+    if (hadMultiple != hasMultiple && mounted) {
+      setState(() {});
+    }
+  }
+
+  void _onPointerCancel(PointerCancelEvent event) {
+    final hadMultiple = _activePointers.length > 1;
+    _activePointers.remove(event.pointer);
+    final hasMultiple = _activePointers.length > 1;
+    if (hadMultiple != hasMultiple && mounted) {
+      setState(() {});
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final scaleEnabled = _pointerCount >= 2 || _isCtrlPressed;
+    final hasMultiplePointers = _activePointers.length > 1;
+    final canScroll = !hasMultiplePointers && !_isZoomed && !_isCtrlPressed;
+    final scaleEnabled = hasMultiplePointers || _isCtrlPressed;
 
     return Listener(
-      onPointerDown: (_) {
-        _pointerCount++;
-        if (_pointerCount == 2 && mounted) setState(() {});
-      },
-      onPointerUp: (_) {
-        _pointerCount = (_pointerCount - 1).clamp(0, 10);
-        if (_pointerCount < 2 && mounted) setState(() {});
-      },
-      onPointerCancel: (_) {
-        _pointerCount = (_pointerCount - 1).clamp(0, 10);
-        if (_pointerCount < 2 && mounted) setState(() {});
-      },
+      onPointerDown: _onPointerDown,
+      onPointerUp: _onPointerUp,
+      onPointerCancel: _onPointerCancel,
       child: InteractiveViewer(
         transformationController: _zoomController,
         minScale: 1.0,
@@ -91,12 +121,19 @@ class _ReaderPageViewState extends State<ReaderPageView> {
         panEnabled: _isZoomed,
         scaleEnabled: scaleEnabled,
         child: PageView.builder(
-          physics: const BouncingScrollPhysics(),
+          physics: canScroll
+              ? const BouncingScrollPhysics()
+              : const NeverScrollableScrollPhysics(),
           controller: widget.controller,
           reverse: widget.direction == ReaderDirection.rtl,
           allowImplicitScrolling: true,
           itemCount: widget.pages.length,
-          onPageChanged: widget.onPageChanged,
+          onPageChanged: (page) {
+            if (_isZoomed) {
+              _zoomController.value = Matrix4.identity();
+            }
+            widget.onPageChanged(page);
+          },
           itemBuilder: (context, index) {
             final page = widget.pages[index];
             return ReaderImage(

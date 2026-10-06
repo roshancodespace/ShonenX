@@ -8,7 +8,7 @@ import 'package:shonenx/source_engine/models/chapter_page.dart';
 
 import 'reader_image.dart';
 
-/// Simple vertical scrolling view for webtoon-style reading.
+/// Continuous scrolling view for webtoon-style reading.
 class ReaderWebtoonView extends StatefulWidget {
   final List<ChapterPage> pages;
   final int initialPage;
@@ -34,9 +34,7 @@ class ReaderWebtoonView extends StatefulWidget {
 class ReaderWebtoonViewState extends State<ReaderWebtoonView>
     with SingleTickerProviderStateMixin {
   final ItemScrollController _scrollController = ItemScrollController();
-  final ItemPositionsListener _positionsListener =
-      ItemPositionsListener.create();
-
+  final ItemPositionsListener _positionsListener = ItemPositionsListener.create();
   final TransformationController _zoomController = TransformationController();
   final Set<int> _activePointers = {};
   bool _isZoomed = false;
@@ -129,7 +127,7 @@ class ReaderWebtoonViewState extends State<ReaderWebtoonView>
     if (_isZoomed) {
       _zoomController.value = Matrix4.identity();
     }
-    _lastReportedPage = page; // Prevent scroll listener from overriding
+    _lastReportedPage = page;
     _isInitialScrollDone = true;
     if (_scrollController.isAttached) {
       _scrollController.jumpTo(index: page);
@@ -225,7 +223,7 @@ class ReaderWebtoonViewState extends State<ReaderWebtoonView>
         ResponsiveData.from(context).isDesktop ||
         ResponsiveData.from(context).isTablet;
     final hasMultiplePointers = _activePointers.length > 1;
-    final canScroll = !hasMultiplePointers && !_isZoomed && !_isCtrlPressed;
+    final canScroll = !hasMultiplePointers;
     final scaleEnabled = hasMultiplePointers || _isCtrlPressed;
 
     return Listener(
@@ -236,7 +234,7 @@ class ReaderWebtoonViewState extends State<ReaderWebtoonView>
         transformationController: _zoomController,
         minScale: 1.0,
         maxScale: 4.0,
-        panEnabled: _isZoomed,
+        panEnabled: false,
         scaleEnabled: scaleEnabled,
         child: ScrollablePositionedList.builder(
           physics: canScroll

@@ -411,7 +411,23 @@ class ReaderWebtoonViewState extends State<ReaderWebtoonView>
     if (!_pointerPositions.containsKey(event.pointer)) return;
     _pointerPositions[event.pointer] = event.position;
 
-    if (_pointerPositions.length == 2 && _initialPinchDistance > 10) {
+    if (_pointerPositions.length == 1 && _scale > 1.01) {
+      final size = context.size ?? MediaQuery.of(context).size;
+      final isConstrained = ResponsiveData.from(context).isDesktop ||
+          ResponsiveData.from(context).isTablet;
+      final baseWidth = isConstrained
+          ? (size.width > 800 ? 800.0 : size.width)
+          : size.width;
+      final newColumnWidth = baseWidth * _scale;
+      final maxPanX =
+          (newColumnWidth - size.width).clamp(0.0, double.infinity);
+
+      if (maxPanX > 0 && event.delta.dx != 0) {
+        setState(() {
+          _panX = (_panX + event.delta.dx).clamp(-maxPanX, 0.0);
+        });
+      }
+    } else if (_pointerPositions.length == 2 && _initialPinchDistance > 10) {
       final p1 = _pointerPositions.values.first;
       final p2 = _pointerPositions.values.last;
       final currentDistance = (p1 - p2).distance;
@@ -480,24 +496,35 @@ class ReaderWebtoonViewState extends State<ReaderWebtoonView>
   }
 
   void _onPointerSignal(PointerSignalEvent event) {
-    if (event is PointerScrollEvent && _isCtrlPressed) {
+    if (event is PointerScrollEvent) {
       final size = context.size ?? MediaQuery.of(context).size;
-      final zoomDelta = event.scrollDelta.dy > 0 ? -0.2 : 0.2;
-      final newScale = (_scale + zoomDelta).clamp(1.0, 4.0);
-      if (newScale != _scale) {
-        final isConstrained =
-            ResponsiveData.from(context).isDesktop ||
-            ResponsiveData.from(context).isTablet;
-        final baseWidth = isConstrained
-            ? (size.width > 800 ? 800.0 : size.width)
-            : size.width;
-        final newColumnWidth = baseWidth * newScale;
+      final isConstrained = ResponsiveData.from(context).isDesktop ||
+          ResponsiveData.from(context).isTablet;
+      final baseWidth = isConstrained
+          ? (size.width > 800 ? 800.0 : size.width)
+          : size.width;
+
+      if (_isCtrlPressed) {
+        final zoomDelta = event.scrollDelta.dy > 0 ? -0.2 : 0.2;
+        final newScale = (_scale + zoomDelta).clamp(1.0, 4.0);
+        if (newScale != _scale) {
+          final newColumnWidth = baseWidth * newScale;
+          final maxPanX =
+              (newColumnWidth - size.width).clamp(0.0, double.infinity);
+          setState(() {
+            _scale = newScale;
+            _panX = _panX.clamp(-maxPanX, 0.0);
+          });
+        }
+      } else if (_scale > 1.01 && event.scrollDelta.dx != 0) {
+        final currentColumnWidth = baseWidth * _scale;
         final maxPanX =
-            (newColumnWidth - size.width).clamp(0.0, double.infinity);
-        setState(() {
-          _scale = newScale;
-          _panX = _panX.clamp(-maxPanX, 0.0);
-        });
+            (currentColumnWidth - size.width).clamp(0.0, double.infinity);
+        if (maxPanX > 0) {
+          setState(() {
+            _panX = (_panX - event.scrollDelta.dx).clamp(-maxPanX, 0.0);
+          });
+        }
       }
     }
   }
@@ -550,47 +577,38 @@ class ReaderWebtoonViewState extends State<ReaderWebtoonView>
       onPointerUp: _onPointerUp,
       onPointerCancel: _onPointerCancel,
       onPointerSignal: _onPointerSignal,
-      child: GestureDetector(
-        onHorizontalDragUpdate: _scale > 1.01 && maxPanX > 0
-            ? (details) {
-                setState(() {
-                  _panX = (_panX + details.delta.dx).clamp(-maxPanX, 0.0);
-                });
-              }
-            : null,
-        child: ClipRect(
-          child: SizedBox.expand(
-            child: OverflowBox(
-              minWidth: columnWidth,
-              maxWidth: columnWidth,
-              minHeight: size.height,
-              maxHeight: size.height,
-              alignment: Alignment.topLeft,
-              child: Transform.translate(
-                offset: Offset(effectivePanX, 0),
-                child: SizedBox(
-                  width: columnWidth,
-                  height: size.height,
-                  child: ScrollablePositionedList.builder(
-                    physics: canScroll
-                        ? const BouncingScrollPhysics()
-                        : const NeverScrollableScrollPhysics(),
-                    itemScrollController: _scrollController,
-                    itemPositionsListener: _positionsListener,
-                    initialScrollIndex: widget.initialPage,
-                    itemCount: widget.pages.length,
-                    itemBuilder: (context, index) {
-                      final page = widget.pages[index];
-                      return ReaderImage(
-                        key: ValueKey(page.url),
-                        url: page.url,
-                        headers: page.headers ?? const {},
-                        index: index,
-                        scaleType: widget.scaleType,
-                        textColor: widget.textColor,
-                      );
-                    },
-                  ),
+      child: ClipRect(
+        child: SizedBox.expand(
+          child: OverflowBox(
+            minWidth: columnWidth,
+            maxWidth: columnWidth,
+            minHeight: size.height,
+            maxHeight: size.height,
+            alignment: Alignment.topLeft,
+            child: Transform.translate(
+              offset: Offset(effectivePanX, 0),
+              child: SizedBox(
+                width: columnWidth,
+                height: size.height,
+                child: ScrollablePositionedList.builder(
+                  physics: canScroll
+                      ? const BouncingScrollPhysics()
+                      : const NeverScrollableScrollPhysics(),
+                  itemScrollController: _scrollController,
+                  itemPositionsListener: _positionsListener,
+                  initialScrollIndex: widget.initialPage,
+                  itemCount: widget.pages.length,
+                  itemBuilder: (context, index) {
+                    final page = widget.pages[index];
+                    return ReaderImage(
+                      key: ValueKey(page.url),
+                      url: page.url,
+                      headers: page.headers ?? const {},
+                      index: index,
+                      scaleType: widget.scaleType,
+                      textColor: widget.textColor,
+                    );
+                  },
                 ),
               ),
             ),

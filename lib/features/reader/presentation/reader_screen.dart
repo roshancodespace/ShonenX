@@ -498,7 +498,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       _lastTapTime = now;
       _lastTapPos = tapPos;
       _singleTapTimer?.cancel();
-      _singleTapTimer = Timer(const Duration(milliseconds: 220), () {
+      _singleTapTimer = Timer(const Duration(milliseconds: 300), () {
         if (!mounted) return;
         _lastTapTime = null;
         _lastTapPos = null;

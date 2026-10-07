@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-DEFAULT_REPO="${SHONENX_REPO:-${REPO:-roshancodespace/ShonenX}}"
+DEFAULT_REPO="${SHONENX_REPO:-roshancodespace/ShonenX}"
 EXE_NAME="shonenx"
 DEFAULT_ICON_URL="https://raw.githubusercontent.com/roshancodespace/shonenx/main/assets/images/app_icon.png"
 
@@ -24,8 +24,8 @@ if [ -n "${TERMUX_VERSION:-}" ]; then
     BIN_DIR="$PREFIX/bin"
     DESKTOP_DIR=""
     ICON_DIR=""
-    DEFAULT_INSTALL_DIR="$HOME/.local/share/shonenx"
-    CACHE_DIR="$HOME/.config/shonenx"
+    DEFAULT_INSTALL_DIR="$HOME/.local/share/ShonenX"
+    CACHE_DIR="$HOME/.config/ShonenX"
     DOCS_DIR="$HOME/storage/shared/Documents"
     [ ! -d "$DOCS_DIR" ] && DOCS_DIR="$HOME/Documents"
 else
@@ -33,21 +33,75 @@ else
     BIN_DIR="${XDG_BIN_HOME:-$HOME/.local/bin}"
     DESKTOP_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/applications"
     ICON_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/icons/hicolor/512x512/apps"
-    DEFAULT_INSTALL_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/shonenx"
-    CACHE_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/shonenx"
+
+    # Prioritize existing directories to maintain case compatibility (ShonenX vs shonenx)
+    if [ -d "${XDG_DATA_HOME:-$HOME/.local/share}/ShonenX" ]; then
+        DEFAULT_INSTALL_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/ShonenX"
+    elif [ -d "${XDG_DATA_HOME:-$HOME/.local/share}/shonenx" ]; then
+        DEFAULT_INSTALL_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/shonenx"
+    else
+        DEFAULT_INSTALL_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/ShonenX"
+    fi
+
+    if [ -d "${XDG_CONFIG_HOME:-$HOME/.config}/ShonenX" ]; then
+        CACHE_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/ShonenX"
+    elif [ -d "${XDG_CONFIG_HOME:-$HOME/.config}/shonenx" ]; then
+        CACHE_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/shonenx"
+    else
+        CACHE_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/ShonenX"
+    fi
+
     DOCS_DIR="$(command -v xdg-user-dir >/dev/null 2>&1 && xdg-user-dir DOCUMENTS 2>/dev/null || echo "$HOME/Documents")"
 fi
 
-# Detect immutable / atomic OS (Bazzite, Fedora Silverblue/Kinoite/Atomic, SteamOS, vanilla OS, etc.)
-if [ -f /run/ostree-booted ] || [ -d /sysroot/ostree ] || [ ! -w /usr ]; then
+detect_immutable_os() {
+    # 1. OSTree-based systems (Fedora Silverblue, Kinoite, Bazzite, Bluefin, Aurora, CoreOS)
+    if [ -f /run/ostree-booted ] || [ -d /sysroot/ostree ] || command -v rpm-ostree >/dev/null 2>&1; then
+        return 0
+    fi
+
+    # 2. SteamOS (Steam Deck)
+    if [ -f /etc/steamos-release ] || command -v steamos-readonly >/dev/null 2>&1; then
+        return 0
+    fi
+
+    # 3. Known immutable/atomic OS identifiers in /etc/os-release
+    if [ -f /etc/os-release ]; then
+        if grep -qiE "^(ID|ID_LIKE|VARIANT_ID)=.*(bazzite|silverblue|kinoite|sericea|onyx|steamos|microos|vanilla|blendos|chimeraos|carbon)" /etc/os-release 2>/dev/null; then
+            return 0
+        fi
+    fi
+
+    # 4. Kernel mount options check: is /usr or / truly mounted read-only (ro)?
+    # (Do NOT check '[ ! -w /usr ]' because non-root users never have write access to /usr)
+    if [ -f /proc/mounts ]; then
+        local usr_opts
+        usr_opts="$(awk '$2 == "/usr" {print $4}' /proc/mounts 2>/dev/null | tail -n 1)"
+        if [ -z "$usr_opts" ]; then
+            usr_opts="$(awk '$2 == "/" {print $4}' /proc/mounts 2>/dev/null | tail -n 1)"
+        fi
+        if [[ ",$usr_opts," == *",ro,"* ]]; then
+            return 0
+        fi
+    fi
+
+    return 1
+}
+
+if detect_immutable_os; then
     IS_IMMUTABLE=true
-elif [ -f /etc/os-release ]; then
-    if grep -qiE "bazzite|silverblue|kinoite|sericea|onyx|atomic|steamos" /etc/os-release 2>/dev/null; then
-        IS_IMMUTABLE=true
+fi
+
+# Locate existing cache file across potential case variations
+CACHE_FILE="$CACHE_DIR/installer.cache"
+if [ ! -f "$CACHE_FILE" ]; then
+    if [ -f "${XDG_CONFIG_HOME:-$HOME/.config}/ShonenX/installer.cache" ]; then
+        CACHE_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/ShonenX/installer.cache"
+    elif [ -f "${XDG_CONFIG_HOME:-$HOME/.config}/shonenx/installer.cache" ]; then
+        CACHE_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/shonenx/installer.cache"
     fi
 fi
 
-CACHE_FILE="$CACHE_DIR/installer.cache"
 REPO="$DEFAULT_REPO"
 ICON_INPUT="$DEFAULT_ICON_URL"
 INSTALL_DIR="$DEFAULT_INSTALL_DIR"
@@ -60,10 +114,14 @@ SKIP_DEPS=false
 PREFER_ZIP=false
 PREFER_APPIMAGE=false
 
+# Source cached values if available
 if [ -f "$CACHE_FILE" ]; then
     # shellcheck disable=SC1090
     source "$CACHE_FILE" 2>/dev/null || true
 fi
+
+# Explicit environment override takes precedence over cache
+[ -n "${SHONENX_REPO:-}" ] && REPO="$SHONENX_REPO"
 
 log()  { echo -e "\033[36m[*]\033[0m $1"; }
 ok()   { echo -e "\033[32m[+]\033[0m $1"; }
@@ -101,7 +159,60 @@ save_cache() {
         echo "INSTALL_DIR=\"$INSTALL_DIR\""
         echo "PREFER_ZIP=\"$PREFER_ZIP\""
     } > "$CACHE_FILE" 2>/dev/null || true
+    # Sync with both casing directories if they exist
+    if [ -d "${XDG_CONFIG_HOME:-$HOME/.config}/ShonenX" ] && [ "$CACHE_FILE" != "${XDG_CONFIG_HOME:-$HOME/.config}/ShonenX/installer.cache" ]; then
+        cp "$CACHE_FILE" "${XDG_CONFIG_HOME:-$HOME/.config}/ShonenX/installer.cache" 2>/dev/null || true
+    fi
+    if [ -d "${XDG_CONFIG_HOME:-$HOME/.config}/shonenx" ] && [ "$CACHE_FILE" != "${XDG_CONFIG_HOME:-$HOME/.config}/shonenx/installer.cache" ]; then
+        cp "$CACHE_FILE" "${XDG_CONFIG_HOME:-$HOME/.config}/shonenx/installer.cache" 2>/dev/null || true
+    fi
     return 0
+}
+
+has_library() {
+    local lib_pattern="$1"
+    
+    # 1. Check ldconfig using standard and sbin paths
+    local ldc=""
+    for bin in "ldconfig" "/sbin/ldconfig" "/usr/sbin/ldconfig" "/usr/bin/ldconfig"; do
+        if command -v "$bin" >/dev/null 2>&1; then
+            ldc="$bin"
+            break
+        elif [ -x "$bin" ]; then
+            ldc="$bin"
+            break
+        fi
+    done
+    if [ -n "$ldc" ]; then
+        # Do NOT use grep -q here: under set -o pipefail, grep -q closing its pipe early
+        # causes ldconfig to receive SIGPIPE (code 141), failing the pipeline.
+        if "$ldc" -p 2>/dev/null | grep -iE "$lib_pattern" >/dev/null 2>&1; then
+            return 0
+        fi
+    fi
+
+    # 2. Check standard dynamic library paths
+    for dir in /usr/lib /usr/lib64 /usr/local/lib /lib /lib64 /usr/lib/*-linux-gnu /usr/lib64/*-linux-gnu; do
+        [ -d "$dir" ] || continue
+        IFS='|' read -ra patterns <<< "$lib_pattern"
+        for pat in "${patterns[@]}"; do
+            if compgen -G "$dir/*$pat*" >/dev/null 2>&1; then
+                return 0
+            fi
+        done
+    done
+
+    # 3. Check pkg-config
+    if command -v pkg-config >/dev/null 2>&1; then
+        IFS='|' read -ra patterns <<< "$lib_pattern"
+        for pat in "${patterns[@]}"; do
+            if pkg-config --exists "$pat" 2>/dev/null; then
+                return 0
+            fi
+        done
+    fi
+
+    return 1
 }
 
 declare -A PROCESSED_PATHS=()
@@ -197,9 +308,15 @@ check_dependencies() {
     local missing_ffmpeg=0
 
     if ! $IS_TERMUX; then
-        ldconfig -p 2>/dev/null | grep -q "libmpv" || missing_mpv=1
-        ldconfig -p 2>/dev/null | grep -q "libsecret" || missing_secret=1
-        ldconfig -p 2>/dev/null | grep -q -i "webkit2gtk\|webkitgtk" || missing_webkit=1
+        if ! has_library "libmpv" && ! command -v mpv >/dev/null 2>&1; then
+            missing_mpv=1
+        fi
+        if ! has_library "libsecret"; then
+            missing_secret=1
+        fi
+        if ! has_library "webkit2gtk|webkitgtk"; then
+            missing_webkit=1
+        fi
     else
         command -v mpv >/dev/null 2>&1 || missing_mpv=1
     fi
@@ -379,6 +496,7 @@ core_install() {
 
     check_dependencies
 
+    save_cache
     log "fetching release info for $REPO ($SYSTEM_ARCH)..."
     local release_json=""
     if [ "$SELECTED_TAG" != "latest" ]; then
@@ -734,7 +852,8 @@ draw_menu() {
     clear
     echo -e "\033[35m\033[1m  +---------------------------------------+"
     echo -e "  |        ShonenX Installer GUI          |"
-    echo -e "  +---------------------------------------+\033[0m\n"
+    echo -e "  +---------------------------------------+\033[0m"
+    echo -e "  \033[90mRepo: \033[36m$REPO\033[0m \033[90m| Path: \033[36m$INSTALL_DIR\033[0m\n"
 
     local opts=("Quick Install (Latest)" "Rollback / Select Version" "Custom Setup (Repo/Path)" "System Status" "Uninstall" "Exit")
     
@@ -788,6 +907,7 @@ run_tui() {
                    read -rp "Repo [$REPO]: " r; [ -n "$r" ] && REPO="$r"
                    read -rp "Install Path [$INSTALL_DIR]: " d; [ -n "$d" ] && INSTALL_DIR="$d"
                    read -rp "Icon URL/Path [$ICON_INPUT]: " i; [ -n "$i" ] && ICON_INPUT="$i"
+                   save_cache
                    fetch_and_select_tag
                    core_install 
                    ;;
@@ -867,7 +987,7 @@ while [[ $# -gt 0 ]]; do
         -i|--icon)          ICON_INPUT="$2"; shift ;;
         --icon=*)           ICON_INPUT="${1#*=}" ;;
         --clear-cache) 
-            rm -rf "$CACHE_DIR"
+            rm -f "${XDG_CONFIG_HOME:-$HOME/.config}/ShonenX/installer.cache" "${XDG_CONFIG_HOME:-$HOME/.config}/shonenx/installer.cache" "$CACHE_FILE" 2>/dev/null || true
             ok "installer cache cleared."
             exit 0
             ;;
@@ -902,7 +1022,8 @@ while [[ $# -gt 0 ]]; do
     shift
 done
 
-if [ "$CLI_MODE" = true ]; then
+if [ "$CLI_MODE" = true ] || [ ! -t 0 ]; then
+    save_cache
     [ -z "$ACTION" ] && ACTION="install"
     case "$ACTION" in
         install) core_install ;;

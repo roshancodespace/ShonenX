@@ -185,5 +185,10 @@ public final class GeneratedPluginRegistrant {
     } catch (Exception e) {
       Log.e(TAG, "Error registering plugin wakelock_plus, dev.fluttercommunity.plus.wakelock.WakelockPlusPlugin", e);
     }
+    try {
+      flutterEngine.getPlugins().add(new com.abandoft.webview_all_android.WebviewAllAndroidPlugin());
+    } catch (Exception e) {
+      Log.e(TAG, "Error registering plugin webview_all_android, com.abandoft.webview_all_android.WebviewAllAndroidPlugin", e);
+    }
   }
 }

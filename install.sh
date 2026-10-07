@@ -1,31 +1,50 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-trap 'tput cnorm 2>/dev/null || true; echo -e "\n\033[31m[!] Operation aborted.\033[0m"; exit 130' INT TERM
-
-DEFAULT_REPO="roshancodespace/ShonenX"
+DEFAULT_REPO="${SHONENX_REPO:-${REPO:-roshancodespace/ShonenX}}"
 EXE_NAME="shonenx"
 DEFAULT_ICON_URL="https://raw.githubusercontent.com/roshancodespace/shonenx/main/assets/images/app_icon.png"
 
+# Temporary directory handling with safe cleanup
+TMP_DIR=""
+cleanup() {
+    [ -n "$TMP_DIR" ] && [ -d "$TMP_DIR" ] && rm -rf "$TMP_DIR"
+    tput cnorm 2>/dev/null || true
+}
+trap cleanup EXIT
+trap 'cleanup; echo -e "\n\033[31m[!] Operation aborted.\033[0m"; exit 130' INT TERM
+
 IS_TERMUX=false
+IS_IMMUTABLE=false
 SUDO="sudo"
+
 if [ -n "${TERMUX_VERSION:-}" ]; then
-    IS_TERMUX=true; SUDO=""
+    IS_TERMUX=true
+    SUDO=""
     BIN_DIR="$PREFIX/bin"
     DESKTOP_DIR=""
     ICON_DIR=""
-    DEFAULT_INSTALL_DIR="$HOME/.local/share/ShonenX"
-    CACHE_DIR="$HOME/.config/ShonenX"
+    DEFAULT_INSTALL_DIR="$HOME/.local/share/shonenx"
+    CACHE_DIR="$HOME/.config/shonenx"
     DOCS_DIR="$HOME/storage/shared/Documents"
     [ ! -d "$DOCS_DIR" ] && DOCS_DIR="$HOME/Documents"
 else
     command -v sudo >/dev/null 2>&1 || SUDO=""
-    BIN_DIR="$HOME/.local/bin"
+    BIN_DIR="${XDG_BIN_HOME:-$HOME/.local/bin}"
     DESKTOP_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/applications"
     ICON_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/icons/hicolor/512x512/apps"
-    DEFAULT_INSTALL_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/ShonenX"
-    CACHE_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/ShonenX"
+    DEFAULT_INSTALL_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/shonenx"
+    CACHE_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/shonenx"
     DOCS_DIR="$(command -v xdg-user-dir >/dev/null 2>&1 && xdg-user-dir DOCUMENTS 2>/dev/null || echo "$HOME/Documents")"
+fi
+
+# Detect immutable / atomic OS (Bazzite, Fedora Silverblue/Kinoite/Atomic, SteamOS, vanilla OS, etc.)
+if [ -f /run/ostree-booted ] || [ -d /sysroot/ostree ] || [ ! -w /usr ]; then
+    IS_IMMUTABLE=true
+elif [ -f /etc/os-release ]; then
+    if grep -qiE "bazzite|silverblue|kinoite|sericea|onyx|atomic|steamos" /etc/os-release 2>/dev/null; then
+        IS_IMMUTABLE=true
+    fi
 fi
 
 CACHE_FILE="$CACHE_DIR/installer.cache"
@@ -38,8 +57,11 @@ ACTION=""
 DRY_RUN=false
 UNINSTALL_MODE="purge"
 SKIP_DEPS=false
+PREFER_ZIP=false
+PREFER_APPIMAGE=false
 
 if [ -f "$CACHE_FILE" ]; then
+    # shellcheck disable=SC1090
     source "$CACHE_FILE" 2>/dev/null || true
 fi
 
@@ -48,12 +70,36 @@ ok()   { echo -e "\033[32m[+]\033[0m $1"; }
 err()  { echo -e "\033[31m[!]\033[0m $1"; }
 warn() { echo -e "\033[33m[!]\033[0m $1"; }
 
+detect_system_arch() {
+    local raw_arch
+    raw_arch="$(uname -m 2>/dev/null || echo "unknown")"
+    case "$raw_arch" in
+        x86_64|amd64)
+            SYSTEM_ARCH="x86_64"
+            ALT_ARCH="amd64"
+            ;;
+        aarch64|arm64)
+            SYSTEM_ARCH="aarch64"
+            ALT_ARCH="arm64"
+            ;;
+        armv7l|armv7|armhf)
+            SYSTEM_ARCH="armv7"
+            ALT_ARCH="armhf"
+            ;;
+        *)
+            SYSTEM_ARCH="$raw_arch"
+            ALT_ARCH=""
+            ;;
+    esac
+}
+
 save_cache() {
     mkdir -p "$CACHE_DIR" 2>/dev/null || true
     {
         echo "REPO=\"$REPO\""
         echo "ICON_INPUT=\"$ICON_INPUT\""
         echo "INSTALL_DIR=\"$INSTALL_DIR\""
+        echo "PREFER_ZIP=\"$PREFER_ZIP\""
     } > "$CACHE_FILE" 2>/dev/null || true
     return 0
 }
@@ -80,6 +126,7 @@ remove_path() {
 remove_glob() {
     local pattern="$1"
     local desc="${2:-}"
+    # shellcheck disable=SC2086
     for item in $pattern; do
         if [ -e "$item" ] || [ -L "$item" ]; then
             if [ "$DRY_RUN" = true ]; then
@@ -144,28 +191,42 @@ check_dependencies() {
 
     log "checking system dependencies..."
     
-    local missing=0
+    local missing_mpv=0
+    local missing_secret=0
+    local missing_webkit=0
     local missing_ffmpeg=0
 
     if ! $IS_TERMUX; then
-        ldconfig -p 2>/dev/null | grep -q "libmpv" || missing=1
-        ldconfig -p 2>/dev/null | grep -q "libsecret" || missing=1
-        ldconfig -p 2>/dev/null | grep -q -i "webkit2gtk\|webkitgtk" || missing=1
-        if command -v pacman >/dev/null 2>&1; then
-            ldconfig -p 2>/dev/null | grep -q -i "wpewebkit" || missing=1
-        fi
+        ldconfig -p 2>/dev/null | grep -q "libmpv" || missing_mpv=1
+        ldconfig -p 2>/dev/null | grep -q "libsecret" || missing_secret=1
+        ldconfig -p 2>/dev/null | grep -q -i "webkit2gtk\|webkitgtk" || missing_webkit=1
     else
-        command -v mpv >/dev/null 2>&1 || missing=1
+        command -v mpv >/dev/null 2>&1 || missing_mpv=1
     fi
 
     command -v ffmpeg >/dev/null 2>&1 || missing_ffmpeg=1
-    [ "$missing_ffmpeg" -eq 1 ] && missing=1
 
-    if [ "$missing" -eq 0 ]; then
-        ok "all dependencies found."
+    local total_missing=$((missing_mpv + missing_secret + missing_webkit + missing_ffmpeg))
+
+    if [ "$total_missing" -eq 0 ]; then
+        ok "all recommended system dependencies found."
         return 0
     fi
 
+    # On immutable / atomic systems, NEVER attempt to invoke package managers modifying the host OS.
+    if [ "$IS_IMMUTABLE" = true ]; then
+        log "detected immutable/atomic OS (OSTree/Bazzite/SteamOS/Silverblue)."
+        log "skipping host package-manager modifications. System libraries are managed by the OS image."
+        if [ "$missing_mpv" -eq 1 ]; then
+            warn "Note: libmpv not found in ldconfig. If media playback has issues, ensure mpv is in your base image."
+        fi
+        if [ "$missing_ffmpeg" -eq 1 ]; then
+            warn "Note: ffmpeg not found. ShonenX will use raw segment stitching for TS downloads."
+        fi
+        return 0
+    fi
+
+    # Non-interactive environment without sudo credentials: skip
     if ! $IS_TERMUX && [ ! -t 0 ]; then
         if [ -n "$SUDO" ] && ! sudo -n true 2>/dev/null; then
             log "non-interactive environment: skipping sudo dependency checks."
@@ -173,7 +234,7 @@ check_dependencies() {
         fi
     fi
 
-    warn "missing dependencies. attempting to auto-install..."
+    warn "missing some recommended dependencies (mpv/libsecret/webkit/ffmpeg)."
     if [ "$missing_ffmpeg" -eq 1 ]; then
         log "Note: ShonenX defaults to FFmpeg for safely remuxing downloaded TS segments."
         log "If skipped, it will fallback to a raw, unsafe stitching method."
@@ -189,7 +250,7 @@ check_dependencies() {
         $SUDO apt-get update -qq || true
         $SUDO apt-get install -y libmpv-dev mpv libsecret-1-0 libwebkit2gtk-4.1-0 ffmpeg || failed=1
     elif command -v pacman >/dev/null 2>&1; then
-        $SUDO pacman -S --needed --noconfirm mpv libsecret webkit2gtk-4.1 wpewebkit ffmpeg || failed=1
+        $SUDO pacman -S --needed --noconfirm mpv libsecret webkit2gtk-4.1 ffmpeg || failed=1
     elif command -v dnf >/dev/null 2>&1; then
         $SUDO dnf install -y mpv-libs mpv libsecret webkit2gtk4.1 ffmpeg || failed=1
     elif command -v zypper >/dev/null 2>&1; then
@@ -202,9 +263,9 @@ check_dependencies() {
     tput civis 2>/dev/null || true 
 
     if [ "$failed" -eq 1 ]; then
-        warn "Package manager encountered an error (likely a conflict)."
-        warn "Skipping dependency installation. ShonenX may still run fine."
-        sleep 2
+        warn "Package manager installation was skipped or encountered an issue."
+        warn "Continuing user-space installation. ShonenX may still run fine."
+        sleep 1
     else
         ok "dependencies installed."
     fi
@@ -214,76 +275,299 @@ check_dependencies() {
 
 setup_path() {
     $IS_TERMUX && return 0
-    [[ ":$PATH:" == *":$BIN_DIR:"* ]] && return 0
+    if [[ ":$PATH:" == *":$BIN_DIR:"* ]]; then
+        ok "$BIN_DIR is already in your PATH."
+        return 0
+    fi
 
-    log "adding $BIN_DIR to PATH in shell configs..."
+    warn "$BIN_DIR is NOT currently in your PATH."
+    log "adding $BIN_DIR to shell configuration files..."
+
+    local added=false
     if [ -f "$HOME/.bashrc" ] && ! grep -qF "$BIN_DIR" "$HOME/.bashrc"; then
-        echo -e "\nexport PATH=\"\$PATH:$BIN_DIR\"" >> "$HOME/.bashrc" || true
+        echo -e "\nexport PATH=\"\$PATH:$BIN_DIR\"" >> "$HOME/.bashrc" && added=true || true
     fi
     if [ -f "$HOME/.zshrc" ] && ! grep -qF "$BIN_DIR" "$HOME/.zshrc"; then
-        echo -e "\nexport PATH=\"\$PATH:$BIN_DIR\"" >> "$HOME/.zshrc" || true
+        echo -e "\nexport PATH=\"\$PATH:$BIN_DIR\"" >> "$HOME/.zshrc" && added=true || true
     fi
-    
     if [ -d "$HOME/.config/fish" ]; then
         touch "$HOME/.config/fish/config.fish" 2>/dev/null || true
         if ! grep -qF "$BIN_DIR" "$HOME/.config/fish/config.fish"; then
-            echo -e "\nfish_add_path $BIN_DIR" >> "$HOME/.config/fish/config.fish" || true
+            echo -e "\nfish_add_path $BIN_DIR" >> "$HOME/.config/fish/config.fish" && added=true || true
         fi
     fi
+
+    echo ""
+    log "To run '$EXE_NAME' from your current terminal immediately, run:"
+    echo -e "    \033[32mexport PATH=\"\$PATH:$BIN_DIR\"\033[0m"
+    if [ "$added" = true ]; then
+        log "Or restart your terminal session for PATH changes to take effect."
+    fi
+    echo ""
+    return 0
+}
+
+find_release_assets() {
+    local json="$1"
+    APPIMAGE_URL=""
+    ZIP_URL=""
+
+    local all_urls
+    all_urls=$(echo "$json" | grep -o '"browser_download_url": "[^"]*' | sed 's/"browser_download_url": "//' || true)
+
+    # 1. Search for AppImage matching arch
+    while read -r url; do
+        [ -z "$url" ] && continue
+        local fname="${url##*/}"
+        if [[ "$fname" =~ \.[Aa][Pp][Pp][Ii][Mm][Aa][Gg][Ee]$ ]]; then
+            if [[ "$fname" == *"$SYSTEM_ARCH"* ]] || ([ -n "$ALT_ARCH" ] && [[ "$fname" == *"$ALT_ARCH"* ]]); then
+                APPIMAGE_URL="$url"
+                break
+            elif [[ "$SYSTEM_ARCH" == "x86_64" ]] && [[ "$fname" =~ [Ll]inux.*\.AppImage$ ]] && ! [[ "$fname" =~ (arm|aarch|x86_32|i686) ]]; then
+                APPIMAGE_URL="$url"
+                break
+            fi
+        fi
+    done <<< "$all_urls"
+
+    # 2. Search for Linux ZIP matching arch
+    while read -r url; do
+        [ -z "$url" ] && continue
+        local fname="${url##*/}"
+        if [[ "$fname" =~ \.[Zz][Ii][Pp]$ ]] && [[ "$fname" =~ [Ll]inux|[Ll]INUX ]]; then
+            if [[ "$fname" == *"$SYSTEM_ARCH"* ]] || ([ -n "$ALT_ARCH" ] && [[ "$fname" == *"$ALT_ARCH"* ]]); then
+                ZIP_URL="$url"
+                break
+            elif [[ "$SYSTEM_ARCH" == "x86_64" ]] && ! [[ "$fname" =~ (arm|aarch|x86_32|i686) ]]; then
+                ZIP_URL="$url"
+                break
+            fi
+        fi
+    done <<< "$all_urls"
+}
+
+check_fuse_capability() {
+    local appimage="$1"
+
+    # Attempt to query the AppImage version / help
+    local output
+    output=$("$appimage" --appimage-version 2>&1 || true)
+    
+    if echo "$output" | grep -qiE "libfuse\.so\.2|require FUSE|cannot mount"; then
+        return 1
+    fi
+
+    # Also test /dev/fuse accessibility if present
+    if [ ! -e /dev/fuse ]; then
+        return 1
+    fi
+
     return 0
 }
 
 core_install() {
     $CLI_MODE || clear
+    detect_system_arch
+
+    case "$SYSTEM_ARCH" in
+        x86_64|aarch64) ;;
+        *)
+            err "unsupported architecture: $SYSTEM_ARCH. ShonenX Linux builds support x86_64 and aarch64."
+            return 1
+            ;;
+    esac
+
     check_dependencies
 
-    log "fetching release info for $REPO..."
-    local api_url="https://api.github.com/repos/$REPO/releases/latest"
-    [ "$SELECTED_TAG" != "latest" ] && api_url="https://api.github.com/repos/$REPO/releases/tags/$SELECTED_TAG"
+    log "fetching release info for $REPO ($SYSTEM_ARCH)..."
+    local release_json=""
+    if [ "$SELECTED_TAG" != "latest" ]; then
+        release_json=$(curl -sL "https://api.github.com/repos/$REPO/releases/tags/$SELECTED_TAG")
+    else
+        release_json=$(curl -sL "https://api.github.com/repos/$REPO/releases/latest")
+        if echo "$release_json" | grep -q '"message": "Not Found"'; then
+            local fallback_json
+            fallback_json=$(curl -sL "https://api.github.com/repos/$REPO/releases?per_page=1")
+            if echo "$fallback_json" | grep -q '"tag_name":'; then
+                release_json="$fallback_json"
+            fi
+        fi
+    fi
 
-    local release_json
-    release_json=$(curl -s "$api_url")
     if echo "$release_json" | grep -q '"message": "Not Found"'; then
-        err "repo or release not found."
+        err "repo or release not found: $REPO ($SELECTED_TAG)"
         return 1
     fi
 
-    local download_url version
-    download_url=$(echo "$release_json" | grep -o '"browser_download_url": "[^"]*' | grep -i "linux" | sed 's/"browser_download_url": "//' | head -n 1)
+    local version
     version=$(echo "$release_json" | grep -o '"tag_name": "[^"]*' | sed 's/"tag_name": "//' | head -n 1)
 
-    [ -z "$download_url" ] && { err "no linux asset found."; return 1; }
+    find_release_assets "$release_json"
 
-    log "downloading $version..."
-    local tmp_zip="/tmp/shonenx.zip"
-    
-    curl -# -L "$download_url" -o "$tmp_zip"
-
-    log "extracting to $INSTALL_DIR..."
-    rm -rf "$INSTALL_DIR" && mkdir -p "$INSTALL_DIR"
-    unzip -q -o "$tmp_zip" -d "$INSTALL_DIR"
-    rm -f "$tmp_zip"
-
-    if [ -d "$INSTALL_DIR/linux" ]; then
-        find "$INSTALL_DIR/linux" -maxdepth 1 -mindepth 1 -exec mv -t "$INSTALL_DIR" {} + 2>/dev/null || true
-        rmdir "$INSTALL_DIR/linux" 2>/dev/null || true
+    if [ -z "$APPIMAGE_URL" ] && [ -z "$ZIP_URL" ]; then
+        err "no compatible Linux artifact found for architecture '$SYSTEM_ARCH' in release $version."
+        return 1
     fi
 
-    local exe_path
-    exe_path=$(find "$INSTALL_DIR" -type f -name "$EXE_NAME" | head -n 1)
-    [ -z "$exe_path" ] && { err "binary not found inside zip."; return 1; }
+    # Determine candidate format
+    local chosen_format=""
+    if [ "$PREFER_ZIP" = true ] && [ -n "$ZIP_URL" ]; then
+        chosen_format="zip"
+    elif [ "$PREFER_APPIMAGE" = true ] && [ -n "$APPIMAGE_URL" ]; then
+        chosen_format="appimage"
+    elif [ -n "$APPIMAGE_URL" ]; then
+        chosen_format="appimage"
+    else
+        chosen_format="zip"
+    fi
 
-    chmod +x "$exe_path"
+    # Create safe temporary staging directory
+    TMP_DIR="$(mktemp -d -t shonenx-install.XXXXXX 2>/dev/null || mktemp -d)"
+
+    local installed_target_bin=""
+    local install_success=false
+
+    # Attempt AppImage flow
+    if [ "$chosen_format" = "appimage" ]; then
+        log "downloading AppImage ($version, $SYSTEM_ARCH)..."
+        local tmp_appimage="$TMP_DIR/shonenx.AppImage"
+        if ! curl -# -L "$APPIMAGE_URL" -o "$tmp_appimage"; then
+            err "failed to download AppImage."
+            return 1
+        fi
+
+        if [ ! -s "$tmp_appimage" ]; then
+            err "downloaded AppImage is empty."
+            return 1
+        fi
+
+        chmod +x "$tmp_appimage"
+
+        log "verifying AppImage runtime & FUSE compatibility..."
+        if ! check_fuse_capability "$tmp_appimage"; then
+            warn "AppImage execution failed: FUSE (libfuse.so.2) is not available on this system."
+            
+            if [ -n "$ZIP_URL" ]; then
+                log "automatically falling back to standalone Linux ZIP archive..."
+                chosen_format="zip"
+            else
+                log "no Linux ZIP release found; attempting FUSE-less AppImage extraction..."
+                local extract_dir="$TMP_DIR/extracted"
+                mkdir -p "$extract_dir"
+                if (cd "$extract_dir" && "$tmp_appimage" --appimage-extract >/dev/null 2>&1); then
+                    ok "extracted AppImage contents successfully without FUSE."
+                    local extracted_root="$extract_dir/squashfs-root"
+                    mkdir -p "$INSTALL_DIR"
+                    rm -rf "$INSTALL_DIR"/*
+                    cp -r "$extracted_root"/* "$INSTALL_DIR"/
+                    local found_bin
+                    found_bin=$(find "$INSTALL_DIR" -maxdepth 2 -type f \( -name "$EXE_NAME" -o -name "ShonenX" -o -name "AppRun" \) -executable 2>/dev/null | head -n 1)
+                    [ -z "$found_bin" ] && found_bin="$INSTALL_DIR/AppRun"
+                    chmod +x "$found_bin"
+                    installed_target_bin="$found_bin"
+                    install_success=true
+                else
+                    err "AppImage requires FUSE (libfuse.so.2) to run."
+                    err "Please install fuse2/libfuse2 on your host, or install using a standalone ZIP archive."
+                    return 1
+                fi
+            fi
+        else
+            mkdir -p "$INSTALL_DIR"
+            # Remove any prior bundle files while preserving directory
+            rm -rf "$INSTALL_DIR"/*
+            cp -f "$tmp_appimage" "$INSTALL_DIR/$EXE_NAME.AppImage"
+            chmod +x "$INSTALL_DIR/$EXE_NAME.AppImage"
+            installed_target_bin="$INSTALL_DIR/$EXE_NAME.AppImage"
+            install_success=true
+            ok "AppImage installed to $INSTALL_DIR/$EXE_NAME.AppImage"
+        fi
+    fi
+
+    # Fallback or primary ZIP flow
+    if [ "$chosen_format" = "zip" ] && [ "$install_success" = false ]; then
+        if [ -z "$ZIP_URL" ]; then
+            err "no Linux ZIP archive available for $SYSTEM_ARCH."
+            return 1
+        fi
+
+        log "downloading standalone Linux bundle ($version, $SYSTEM_ARCH)..."
+        local tmp_zip="$TMP_DIR/shonenx.zip"
+        if ! curl -# -L "$ZIP_URL" -o "$tmp_zip"; then
+            err "failed to download Linux ZIP archive."
+            return 1
+        fi
+
+        if [ ! -s "$tmp_zip" ]; then
+            err "downloaded ZIP is empty."
+            return 1
+        fi
+
+        log "verifying ZIP archive integrity..."
+        if ! unzip -tq "$tmp_zip" >/dev/null 2>&1; then
+            err "downloaded archive is corrupt or incomplete."
+            return 1
+        fi
+
+        local extract_dir="$TMP_DIR/extracted"
+        mkdir -p "$extract_dir"
+        unzip -q -o "$tmp_zip" -d "$extract_dir"
+
+        local exe_candidate
+        exe_candidate=$(find "$extract_dir" -maxdepth 3 -type f \( -name "$EXE_NAME" -o -name "ShonenX" \) -executable 2>/dev/null | head -n 1)
+        if [ -z "$exe_candidate" ]; then
+            exe_candidate=$(find "$extract_dir" -maxdepth 3 -type f \( -name "$EXE_NAME" -o -name "ShonenX" \) 2>/dev/null | head -n 1)
+        fi
+
+        if [ -z "$exe_candidate" ]; then
+            err "could not locate '$EXE_NAME' binary inside extracted archive."
+            return 1
+        fi
+
+        local bundle_root
+        bundle_root="$(dirname "$exe_candidate")"
+
+        mkdir -p "$INSTALL_DIR"
+        rm -rf "$INSTALL_DIR"/*
+        cp -r "$bundle_root"/* "$INSTALL_DIR"/
+
+        local target_bin="$INSTALL_DIR/$(basename "$exe_candidate")"
+        chmod +x "$target_bin"
+        installed_target_bin="$target_bin"
+        install_success=true
+        ok "standalone bundle installed to $INSTALL_DIR"
+    fi
+
+    if [ "$install_success" = false ] || [ -z "$installed_target_bin" ]; then
+        err "installation failed to produce an executable binary."
+        return 1
+    fi
+
+    # Create launcher script in ~/.local/bin
     mkdir -p "$BIN_DIR"
-    ln -sf "$exe_path" "$BIN_DIR/$EXE_NAME"
-    ok "linked to $BIN_DIR/$EXE_NAME"
+    cat > "$BIN_DIR/$EXE_NAME" <<EOF
+#!/usr/bin/env bash
+# ShonenX launcher
+# Workaround for WebKitGTK DMA-BUF issue with NVIDIA/Wayland
+export WEBKIT_DISABLE_DMABUF_RENDERER="\${WEBKIT_DISABLE_DMABUF_RENDERER:-1}"
+exec "$installed_target_bin" "\$@"
+EOF
+    chmod +x "$BIN_DIR/$EXE_NAME"
+    ok "configured launcher at $BIN_DIR/$EXE_NAME"
 
+    # Desktop shortcut & icon integration
     if [ -n "$DESKTOP_DIR" ]; then
-        log "setting up desktop shortcut..."
+        log "setting up desktop launcher and icon..."
         mkdir -p "$ICON_DIR" "$DESKTOP_DIR"
-        
-        if [[ "$ICON_INPUT" =~ ^https?:// ]]; then
-            curl -sL "$ICON_INPUT" -o "$ICON_DIR/shonenx.png"
+
+        # Attempt to locate icon from the installed files first
+        local local_icon
+        local_icon=$(find "$INSTALL_DIR" -type f \( -name "shonenx.png" -o -name "app_icon.png" -o -name "application_icon.png" \) 2>/dev/null | head -n 1)
+
+        if [ -n "$local_icon" ] && [ -f "$local_icon" ]; then
+            cp -f "$local_icon" "$ICON_DIR/shonenx.png"
+        elif [[ "$ICON_INPUT" =~ ^https?:// ]]; then
+            curl -sL "$ICON_INPUT" -o "$ICON_DIR/shonenx.png" 2>/dev/null || true
         else
             cp -f "${ICON_INPUT/#\~/$HOME}" "$ICON_DIR/shonenx.png" 2>/dev/null || true
         fi
@@ -292,31 +576,32 @@ core_install() {
 [Desktop Entry]
 Version=1.0
 Name=ShonenX
-Exec=$BIN_DIR/$EXE_NAME %u
+Comment=Minimal yet feature-rich Anime/Manga Client
+Exec="$BIN_DIR/$EXE_NAME" %u
 Icon=$ICON_DIR/shonenx.png
 Terminal=false
 Type=Application
-Categories=Network;Entertainment;
+Categories=Network;AudioVideo;Player;Entertainment;
 MimeType=x-scheme-handler/aniyomi;x-scheme-handler/tachiyomi;x-scheme-handler/mangayomi;x-scheme-handler/cloudstream;x-scheme-handler/cloudstreamrepo;x-scheme-handler/kotatsu;x-scheme-handler/sora;x-scheme-handler/shonenx;x-scheme-handler/mihon;
+StartupWMClass=shonenx
 EOF
-        command -v update-desktop-database >/dev/null 2>&1 && update-desktop-database "$DESKTOP_DIR" || true
-        
-        if command -v xdg-mime >/dev/null 2>&1; then
-            xdg-mime default shonenx.desktop x-scheme-handler/aniyomi
-            xdg-mime default shonenx.desktop x-scheme-handler/tachiyomi
-            xdg-mime default shonenx.desktop x-scheme-handler/mangayomi
-            xdg-mime default shonenx.desktop x-scheme-handler/cloudstream
-            xdg-mime default shonenx.desktop x-scheme-handler/cloudstreamrepo
-            xdg-mime default shonenx.desktop x-scheme-handler/kotatsu
-            xdg-mime default shonenx.desktop x-scheme-handler/sora
-            xdg-mime default shonenx.desktop x-scheme-handler/shonenx
-            xdg-mime default shonenx.desktop x-scheme-handler/mihon
+        chmod 644 "$DESKTOP_DIR/shonenx.desktop"
+
+        if command -v update-desktop-database >/dev/null 2>&1; then
+            update-desktop-database "$DESKTOP_DIR" 2>/dev/null || true
         fi
+
+        if command -v xdg-mime >/dev/null 2>&1; then
+            for scheme in aniyomi tachiyomi mangayomi cloudstream cloudstreamrepo kotatsu sora shonenx mihon; do
+                xdg-mime default shonenx.desktop "x-scheme-handler/$scheme" 2>/dev/null || true
+            done
+        fi
+        ok "created desktop entry at $DESKTOP_DIR/shonenx.desktop"
     fi
 
     setup_path
     save_cache
-    ok "install complete! run '$EXE_NAME' to start."
+    ok "installation complete! run '$EXE_NAME' to start ShonenX."
 }
 
 core_uninstall() {
@@ -341,9 +626,10 @@ core_uninstall() {
     log "removing ShonenX binaries and shortcuts..."
 
     remove_path "$INSTALL_DIR" "installation directory"
-    remove_path "$BIN_DIR/$EXE_NAME" "binary symlink"
+    remove_path "${XDG_DATA_HOME:-$HOME/.local/share}/ShonenX" "legacy installation directory"
+    remove_path "$BIN_DIR/$EXE_NAME" "binary launcher"
     remove_path "$BIN_DIR/shonenx-manager" "manager symlink"
-    remove_path "$HOME/.local/bin/$EXE_NAME" "local binary symlink"
+    remove_path "$HOME/.local/bin/$EXE_NAME" "local binary launcher"
     remove_path "$HOME/.local/bin/shonenx-manager" "local manager symlink"
 
     if [ -n "$DESKTOP_DIR" ]; then
@@ -424,15 +710,20 @@ core_uninstall() {
 
 core_status() {
     $CLI_MODE || clear
+    detect_system_arch
     echo -e "\033[35m\033[1m--- System Status ---\033[0m\n"
     if [ -f "$BIN_DIR/$EXE_NAME" ] || [ -d "$INSTALL_DIR" ]; then
         echo -e "App Status   : \033[32mInstalled\033[0m"
-        [ -f "$BIN_DIR/$EXE_NAME" ] && echo -e "Binary       : $BIN_DIR/$EXE_NAME"
+        [ -f "$BIN_DIR/$EXE_NAME" ] && echo -e "Launcher     : $BIN_DIR/$EXE_NAME"
     else
         echo -e "App Status   : \033[31mNot Installed\033[0m"
     fi
+    echo -e "Architecture : $SYSTEM_ARCH"
+    echo -e "System Type  : $([ "$IS_IMMUTABLE" = true ] && echo -e "\033[33mImmutable / Atomic OS (OSTree/Bazzite/Silverblue)\033[0m" || echo "Traditional Linux")"
     echo -e "Target Repo  : $REPO"
     echo -e "Install Dir  : $INSTALL_DIR"
+    echo -e "Bin Dir      : $BIN_DIR $([[ ":$PATH:" == *":$BIN_DIR:"* ]] && echo -e "\033[32m(in PATH)\033[0m" || echo -e "\033[33m(NOT in PATH)\033[0m")"
+    echo -e "Desktop Dir  : $DESKTOP_DIR $([ -f "$DESKTOP_DIR/shonenx.desktop" ] && echo -e "\033[32m(desktop entry exists)\033[0m" || echo -e "\033[90m(none)\033[0m")"
     echo -e "Config Dir   : $CACHE_DIR $([ -d "$CACHE_DIR" ] && echo -e "\033[32m(exists)\033[0m" || echo -e "\033[90m(none)\033[0m")"
     echo -e "Docs Dir     : $DOCS_DIR/ShonenX $([ -d "$DOCS_DIR/ShonenX" ] && echo -e "\033[32m(exists)\033[0m" || echo -e "\033[90m(none)\033[0m")"
     echo -e "Cache Dir    : ${XDG_CACHE_HOME:-$HOME/.cache}/com.roshancodespace.shonenx $([ -d "${XDG_CACHE_HOME:-$HOME/.cache}/com.roshancodespace.shonenx" ] && echo -e "\033[32m(exists)\033[0m" || echo -e "\033[90m(none)\033[0m")\n"
@@ -465,7 +756,7 @@ run_tui() {
     tput civis 2>/dev/null || true
 
     while true; do
-        draw_menu $selected
+        draw_menu "$selected"
         
         read -rsn1 key || true
         
@@ -559,16 +850,22 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         --install)          ACTION="install" ;;
         --skip-deps|--no-deps) SKIP_DEPS=true ;;
+        --prefer-zip)       PREFER_ZIP=true ;;
+        --prefer-appimage)  PREFER_APPIMAGE=true ;;
         --uninstall)        ACTION="uninstall" ;;
         --purge)            ACTION="uninstall"; UNINSTALL_MODE="purge" ;;
         --keep-downloads)   UNINSTALL_MODE="keep-downloads" ;;
         --keep-data)        UNINSTALL_MODE="keep-data" ;;
         --dry-run)          DRY_RUN=true ;;
         --status)           ACTION="status" ;;
-        --repo)             REPO="$2"; shift ;;
-        --tag)              SELECTED_TAG="$2"; shift ;;
-        --dir)              INSTALL_DIR="$2"; shift ;;
-        --icon)             ICON_INPUT="$2"; shift ;;
+        -r|--repo)          REPO="$2"; shift ;;
+        --repo=*)           REPO="${1#*=}" ;;
+        -t|--tag)           SELECTED_TAG="$2"; shift ;;
+        --tag=*)            SELECTED_TAG="${1#*=}" ;;
+        -d|--dir)           INSTALL_DIR="$2"; shift ;;
+        --dir=*)            INSTALL_DIR="${1#*=}" ;;
+        -i|--icon)          ICON_INPUT="$2"; shift ;;
+        --icon=*)           ICON_INPUT="${1#*=}" ;;
         --clear-cache) 
             rm -rf "$CACHE_DIR"
             ok "installer cache cleared."
@@ -579,8 +876,10 @@ while [[ $# -gt 0 ]]; do
             echo ""
             echo "Install Options:"
             echo "  --install           Run installation (default)"
+            echo "  --prefer-zip        Prefer standalone Linux ZIP package over AppImage"
+            echo "  --prefer-appimage   Prefer AppImage package over ZIP package"
             echo "  --skip-deps         Skip dependency checking and installation"
-            echo "  --repo <user/repo>  Specify custom GitHub repository"
+            echo "  --repo <user/repo>  Specify custom GitHub repository (default: $DEFAULT_REPO)"
             echo "  --tag <tag>         Specify release tag (default: latest)"
             echo "  --dir <path>        Specify custom installation directory"
             echo "  --icon <path|url>   Specify custom icon for desktop entry"

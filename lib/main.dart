@@ -3,11 +3,8 @@ import 'dart:ui';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_single_instance/flutter_single_instance.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 import 'package:shonenx/app_init.dart';
 import 'package:shonenx/shared/providers/database_provider.dart';
 import 'package:shonenx/shared/providers/storage_provider.dart';
@@ -26,27 +23,8 @@ import 'package:shonenx/shared/widgets/global_background.dart';
 final _log = AppLogger.scope('Main');
 final _riverpodLog = AppLogger.scope('RiverpodObserver');
 
-WebViewEnvironment? webViewEnvironment;
-
 void main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  if (!kIsWeb && defaultTargetPlatform == TargetPlatform.windows) {
-    try {
-      final availableVersion = await WebViewEnvironment.getAvailableVersion();
-      if (availableVersion != null) {
-        final document = await getApplicationDocumentsDirectory();
-        webViewEnvironment = await WebViewEnvironment.create(
-          settings: WebViewEnvironmentSettings(
-            userDataFolder: p.join(document.path, 'flutter_inappwebview'),
-          ),
-        );
-      }
-    } catch (e) {
-      _log.e('Failed to initialize WebViewEnvironment: $e');
-    }
-  }
-
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
     if (!await FlutterSingleInstance().isFirstInstance()) {
       await FlutterSingleInstance().focus({"args": args});

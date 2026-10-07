@@ -5,7 +5,6 @@
 list(APPEND FLUTTER_PLUGIN_LIST
   anymex_extension_runtime_bridge
   dynamic_color
-  flutter_inappwebview_linux
   flutter_qjs
   flutter_timezone
   gtk
@@ -16,6 +15,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   screen_retriever_linux
   url_launcher_linux
   volume_controller
+  webview_all_linux
   window_manager
   window_to_front
 )

@@ -16,3 +16,4 @@
 [submodule "packages/flutter_web_auth"]
 	path = packages/flutter_web_auth
 	url = https://github.com/roshancodespace/flutter_web_auth_2.git
+	branch = patch_webview_all

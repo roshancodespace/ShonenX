@@ -175,7 +175,7 @@ class PlayerController extends Notifier<PlayerState> {
       _endingSkipCooldownTimer?.cancel();
       _progressTracker.cancel();
       _engine.dispose();
-      unawaited(TorrentStreamResolver.dispose());
+      // unawaited(TorrentStreamResolver.dispose());
     });
 
     ref.listen(subtitlePrefsProvider, (prev, current) {
@@ -754,21 +754,24 @@ class PlayerController extends Notifier<PlayerState> {
   }) async {
     VideoStream resolvedStream = stream;
     if (isTorrentUrl(stream.url)) {
-      final ep = episode ?? state.activeEpisode;
-      final epString = ep != null
-          ? (ep.number % 1 == 0 ? '${ep.number.toInt()}' : '${ep.number}')
-          : null;
-
-      final resolved = await TorrentStreamResolver.resolve(
-        stream.url,
-        episode: epString,
+      throw Exception(
+        'Torrent is temporarily disabled. Please use another server.',
       );
+      // final ep = episode ?? state.activeEpisode;
+      // final epString = ep != null
+      //     ? (ep.number % 1 == 0 ? '${ep.number.toInt()}' : '${ep.number}')
+      //     : null;
 
-      if (resolved.streamUrl.isEmpty) {
-        throw Exception('Failed to resolve torrent stream URL.');
-      }
+      // final resolved = await TorrentStreamResolver.resolve(
+      //   stream.url,
+      //   episode: epString,
+      // );
 
-      resolvedStream = stream.copyWith(url: resolved.streamUrl);
+      // if (resolved.streamUrl.isEmpty) {
+      //   throw Exception('Failed to resolve torrent stream URL.');
+      // }
+
+      // resolvedStream = stream.copyWith(url: resolved.streamUrl);
     }
 
     if (resolvedStream.requiresProxy) {

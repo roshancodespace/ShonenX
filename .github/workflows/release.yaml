@@ -429,6 +429,7 @@ jobs:
       - name: Init specific submodules
         run: |
           git submodule update --init packages/anymex_extension_bridge
+          git submodule update --init packages/flutter_web_auth
           git submodule update --init packages/commentum_client
           git submodule update --init packages/byte_me
 
@@ -504,6 +505,7 @@ jobs:
       - name: Init specific submodules
         run: |
           git submodule update --init packages/anymex_extension_bridge
+          git submodule update --init packages/flutter_web_auth
           git submodule update --init packages/commentum_client
           git submodule update --init packages/byte_me
 

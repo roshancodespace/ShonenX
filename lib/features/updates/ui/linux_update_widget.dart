@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:shonenx/features/updates/models/github_release.dart';
-import 'package:shonenx/core/utils/env.dart';
+import 'package:shonenx/features/updates/services/update_service.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 
 class LinuxUpdateWidget extends StatefulWidget {
@@ -217,20 +217,19 @@ class _LinuxUpdateWidgetState extends State<LinuxUpdateWidget> {
       return;
     }
 
-    final repo = Env.RELEASE_REPO.trim().isNotEmpty
-        ? Env.RELEASE_REPO.trim()
-        : 'roshancodespace/ShonenX';
+    final repo = UpdateService.resolveRepo();
     final tagArg = widget.release != null
         ? '--tag ${widget.release!.tagName}'
         : '';
+    final repoArg = '--repo $repo';
 
     _addLog('[*] Updating to $targetVersion ($repo)...');
 
     try {
       final localScript = File('${Directory.current.path}/install.sh');
       final scriptCmd = localScript.existsSync()
-          ? 'bash "${localScript.path}" --install --skip-deps $tagArg'
-          : 'curl -fsSL https://raw.githubusercontent.com/$repo/main/install.sh | bash -s -- --install --skip-deps $tagArg';
+          ? 'bash "${localScript.path}" --install --skip-deps $repoArg $tagArg'
+          : 'curl -fsSL https://raw.githubusercontent.com/$repo/main/install.sh | bash -s -- --install --skip-deps $repoArg $tagArg';
 
       // Use setsid so the entire subshell and children belong to a single killable process group
       Process process;

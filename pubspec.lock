@@ -1077,13 +1077,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.2"
-  libtorrent_flutter:
-    dependency: "direct overridden"
-    description:
-      path: "packages/anymex_extension_bridge/packages/libtorrent_flutter"
-      relative: true
-    source: path
-    version: "1.8.5"
   lints:
     dependency: transitive
     description:

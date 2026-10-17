@@ -240,21 +240,38 @@ class HTTP {
       }
     }
 
-    final requestHeaders = Map<String, String>.from(headers ?? {});
+    // Normalize all headers to lower-case keys to eliminate case-insensitive duplicates (e.g. Referer vs referer)
+    final requestHeaders = <String, String>{};
+    if (headers != null) {
+      for (final entry in headers.entries) {
+        final key = entry.key.trim().toLowerCase();
+        if (key.isNotEmpty) {
+          requestHeaders[key] = entry.value;
+        }
+      }
+    }
 
     final sessionManager = SessionManager();
     final cookies = await sessionManager.getCookies(url);
     final userAgent =
         await sessionManager.getUserAgent(url) ?? NetworkConfig.globalUserAgent;
 
-    requestHeaders.addAll(NetworkConfig.globalHeaders);
-    requestHeaders['user-agent'] = userAgent;
-    if (cookies.isNotEmpty) {
-      // Don't overwrite if caller explicitly provided a cookie
-      final hasCookie = requestHeaders.keys.any(
-        (k) => k.toLowerCase() == 'cookie',
+    for (final entry in NetworkConfig.globalHeaders.entries) {
+      requestHeaders.putIfAbsent(
+        entry.key.trim().toLowerCase(),
+        () => entry.value,
       );
-      if (!hasCookie) {
+    }
+    requestHeaders['user-agent'] = userAgent;
+
+    if (cookies.isNotEmpty) {
+      final existingCookie = requestHeaders['cookie'];
+      if (existingCookie != null && existingCookie.isNotEmpty) {
+        if (!existingCookie.contains('cf_clearance') &&
+            cookies.contains('cf_clearance')) {
+          requestHeaders['cookie'] = '$existingCookie; $cookies';
+        }
+      } else {
         requestHeaders['cookie'] = cookies;
       }
     }
@@ -262,10 +279,7 @@ class HTTP {
     rhttp.HttpBody? rBody;
 
     if (body != null) {
-      final hasContentType = requestHeaders.keys.any(
-        (k) => k.toLowerCase() == 'content-type',
-      );
-      if (!hasContentType) {
+      if (!requestHeaders.containsKey('content-type')) {
         requestHeaders['content-type'] = 'application/json';
       }
       rBody = rhttp.HttpBody.text(body is String ? body : jsonEncode(body));

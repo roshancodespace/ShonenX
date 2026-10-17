@@ -92,14 +92,33 @@ if detect_immutable_os; then
     IS_IMMUTABLE=true
 fi
 
-# Locate existing cache file across potential case variations
+# Locate existing cache file across potential case variations and locations
 CACHE_FILE="$CACHE_DIR/installer.cache"
 if [ ! -f "$CACHE_FILE" ]; then
-    if [ -f "${XDG_CONFIG_HOME:-$HOME/.config}/ShonenX/installer.cache" ]; then
-        CACHE_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/ShonenX/installer.cache"
-    elif [ -f "${XDG_CONFIG_HOME:-$HOME/.config}/shonenx/installer.cache" ]; then
-        CACHE_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/shonenx/installer.cache"
+    local_candidates=(
+        "${XDG_CONFIG_HOME:-$HOME/.config}/ShonenX/installer.cache"
+        "${XDG_CONFIG_HOME:-$HOME/.config}/shonenx/installer.cache"
+        "$DEFAULT_INSTALL_DIR/installer.cache"
+        "$DEFAULT_INSTALL_DIR/.installer.cache"
+        "${XDG_DATA_HOME:-$HOME/.local/share}/ShonenX/installer.cache"
+        "${XDG_DATA_HOME:-$HOME/.local/share}/shonenx/installer.cache"
+    )
+    if [ -n "${SUDO_USER:-}" ] && [ "$SUDO_USER" != "root" ]; then
+        sudo_home="$(getent passwd "$SUDO_USER" 2>/dev/null | cut -d: -f6 || true)"
+        [ -z "$sudo_home" ] && sudo_home="/home/$SUDO_USER"
+        local_candidates+=(
+            "$sudo_home/.config/ShonenX/installer.cache"
+            "$sudo_home/.config/shonenx/installer.cache"
+            "$sudo_home/.local/share/ShonenX/installer.cache"
+            "$sudo_home/.local/share/shonenx/installer.cache"
+        )
     fi
+    for candidate in "${local_candidates[@]}"; do
+        if [ -f "$candidate" ]; then
+            CACHE_FILE="$candidate"
+            break
+        fi
+    done
 fi
 
 REPO="$DEFAULT_REPO"
@@ -165,6 +184,20 @@ save_cache() {
     fi
     if [ -d "${XDG_CONFIG_HOME:-$HOME/.config}/shonenx" ] && [ "$CACHE_FILE" != "${XDG_CONFIG_HOME:-$HOME/.config}/shonenx/installer.cache" ]; then
         cp "$CACHE_FILE" "${XDG_CONFIG_HOME:-$HOME/.config}/shonenx/installer.cache" 2>/dev/null || true
+    fi
+    if [ -d "$INSTALL_DIR" ]; then
+        cp "$CACHE_FILE" "$INSTALL_DIR/installer.cache" 2>/dev/null || true
+    fi
+    if [ -n "${SUDO_USER:-}" ] && [ "$SUDO_USER" != "root" ]; then
+        local sudo_home
+        sudo_home="$(getent passwd "$SUDO_USER" 2>/dev/null | cut -d: -f6 || true)"
+        [ -z "$sudo_home" ] && sudo_home="/home/$SUDO_USER"
+        if [ -d "$sudo_home/.config/ShonenX" ]; then
+            cp "$CACHE_FILE" "$sudo_home/.config/ShonenX/installer.cache" 2>/dev/null || true
+        fi
+        if [ -d "$sudo_home/.config/shonenx" ]; then
+            cp "$CACHE_FILE" "$sudo_home/.config/shonenx/installer.cache" 2>/dev/null || true
+        fi
     fi
     return 0
 }
@@ -965,9 +998,17 @@ run_tui() {
     done
 }
 
+# Normalize arguments if passed directly via `bash -c "$script" --flag ...` where bash assigns the first flag to $0
+if [[ "${0:-}" == "--" ]]; then
+    :
+elif [[ "${0:-}" == -* ]]; then
+    set -- "$0" "$@"
+fi
+
 while [[ $# -gt 0 ]]; do
     CLI_MODE=true
     case "$1" in
+        --)                 shift; continue ;;
         --install)          ACTION="install" ;;
         --skip-deps|--no-deps) SKIP_DEPS=true ;;
         --prefer-zip)       PREFER_ZIP=true ;;
@@ -987,7 +1028,15 @@ while [[ $# -gt 0 ]]; do
         -i|--icon)          ICON_INPUT="$2"; shift ;;
         --icon=*)           ICON_INPUT="${1#*=}" ;;
         --clear-cache) 
-            rm -f "${XDG_CONFIG_HOME:-$HOME/.config}/ShonenX/installer.cache" "${XDG_CONFIG_HOME:-$HOME/.config}/shonenx/installer.cache" "$CACHE_FILE" 2>/dev/null || true
+            rm -f "${XDG_CONFIG_HOME:-$HOME/.config}/ShonenX/installer.cache" \
+                  "${XDG_CONFIG_HOME:-$HOME/.config}/shonenx/installer.cache" \
+                  "$INSTALL_DIR/installer.cache" \
+                  "$CACHE_FILE" 2>/dev/null || true
+            if [ -n "${SUDO_USER:-}" ] && [ "$SUDO_USER" != "root" ]; then
+                sudo_home="$(getent passwd "$SUDO_USER" 2>/dev/null | cut -d: -f6 || true)"
+                [ -z "$sudo_home" ] && sudo_home="/home/$SUDO_USER"
+                rm -f "$sudo_home/.config/ShonenX/installer.cache" "$sudo_home/.config/shonenx/installer.cache" 2>/dev/null || true
+            fi
             ok "installer cache cleared."
             exit 0
             ;;
@@ -999,7 +1048,7 @@ while [[ $# -gt 0 ]]; do
             echo "  --prefer-zip        Prefer standalone Linux ZIP package over AppImage"
             echo "  --prefer-appimage   Prefer AppImage package over ZIP package"
             echo "  --skip-deps         Skip dependency checking and installation"
-            echo "  --repo <user/repo>  Specify custom GitHub repository (default: $DEFAULT_REPO)"
+            echo "  --repo <user/repo>  Specify custom GitHub repository (current: $REPO)"
             echo "  --tag <tag>         Specify release tag (default: latest)"
             echo "  --dir <path>        Specify custom installation directory"
             echo "  --icon <path|url>   Specify custom icon for desktop entry"

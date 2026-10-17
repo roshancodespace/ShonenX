@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
@@ -90,10 +91,48 @@ class UpdateService {
 
   UpdateService(this._ref);
 
+  static String resolveRepo() {
+    final envRepo = Env.RELEASE_REPO.trim();
+    if (envRepo.isNotEmpty) return envRepo;
+    return getCachedInstallerRepo() ?? 'roshancodespace/ShonenX';
+  }
+
+  static String? getCachedInstallerRepo() {
+    try {
+      final home = Platform.environment['HOME'] ?? '';
+      final configHome =
+          Platform.environment['XDG_CONFIG_HOME'] ??
+          (home.isNotEmpty ? '$home/.config' : '');
+      final candidates = [
+        if (configHome.isNotEmpty) '$configHome/ShonenX/installer.cache',
+        if (configHome.isNotEmpty) '$configHome/shonenx/installer.cache',
+        if (home.isNotEmpty) '$home/.local/share/ShonenX/installer.cache',
+        if (home.isNotEmpty) '$home/.local/share/shonenx/installer.cache',
+      ];
+      for (final path in candidates) {
+        final f = File(path);
+        if (f.existsSync()) {
+          final lines = f.readAsLinesSync();
+          for (final line in lines) {
+            final match = RegExp(
+              r'^REPO=["\x27]?([^"\x27\s]+)["\x27]?',
+            ).firstMatch(line.trim());
+            if (match != null &&
+                match.group(1) != null &&
+                match.group(1)!.isNotEmpty) {
+              return match.group(1)!.trim();
+            }
+          }
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
+
   Future<GitHubRelease?> checkForUpdate({bool force = false}) async {
-    final repo = Env.RELEASE_REPO.trim();
+    final repo = resolveRepo();
     if (repo.isEmpty) {
-      _log.w('Env.RELEASE_REPO is not configured.');
+      _log.w('Release repo is not configured and no cached repo found.');
       return null;
     }
 
@@ -196,7 +235,7 @@ class UpdateService {
   }
 
   Future<List<GitHubRelease>> fetchAllReleases() async {
-    final repo = Env.RELEASE_REPO.trim();
+    final repo = resolveRepo();
     if (repo.isEmpty) return [];
     final apiUrl = 'https://api.github.com/repos/$repo/releases';
     try {

@@ -127,6 +127,7 @@ jobs:
       - name: Init specific submodules
         run: |
           git submodule update --init packages/anymex_extension_bridge
+          git submodule update --init packages/flutter_web_auth
           git submodule update --init packages/commentum_client
           git submodule update --init packages/byte_me
 
@@ -211,7 +212,7 @@ jobs:
     steps:
       - name: Install system dependencies & optimize Arch container
         run: |
-          pacman -Syu --noconfirm git jq zip unzip curl xz tar clang cmake ninja pkgconf gtk3 libsecret webkit2gtk-4.1 wpewebkit libwpe wpebackend-fdo mpv alsa-lib rustup
+          pacman -Syu --noconfirm git jq zip unzip curl xz tar clang cmake ninja pkgconf gtk3 libsecret webkit2gtk-4.1 wpewebkit mpv alsa-lib rustup
           pacman -Scc --noconfirm
 
       - name: Setup Rust toolchain (Linux)
@@ -225,6 +226,7 @@ jobs:
       - name: Init specific submodules
         run: |
           git submodule update --init packages/anymex_extension_bridge
+          git submodule update --init packages/flutter_web_auth
           git submodule update --init packages/commentum_client
           git submodule update --init packages/byte_me
 
@@ -342,6 +344,7 @@ jobs:
       - name: Init specific submodules
         run: |
           git submodule update --init packages/anymex_extension_bridge
+          git submodule update --init packages/flutter_web_auth
           git submodule update --init packages/commentum_client
           git submodule update --init packages/byte_me
 

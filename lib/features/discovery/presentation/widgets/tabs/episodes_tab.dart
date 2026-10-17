@@ -28,17 +28,26 @@ import 'package:shonenx/features/comments/presentation/widgets/comments_tab.dart
 import 'package:shonenx/features/tracking/providers/tracking_prefs_provider.dart';
 import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
 
-class EpisodesTabWidget extends ConsumerWidget {
-  final UnifiedMedia media;
-  final bool isTv;
+class EpisodesTabWidget extends ConsumerStatefulWidget {
+  const EpisodesTabWidget({super.key, required this.media});
 
-  const EpisodesTabWidget({super.key, required this.media, this.isTv = false});
+  final UnifiedMedia media;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final cs = Theme.of(context).colorScheme;
+  ConsumerState<EpisodesTabWidget> createState() => _EpisodesTabWidgetState();
+}
 
-    final sourcesAsync = ref.watch(media.type.availableSourcesProvider);
+class _EpisodesTabWidgetState extends ConsumerState<EpisodesTabWidget>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+
+    final cs = Theme.of(context).colorScheme;
+    final sourcesAsync = ref.watch(widget.media.type.availableSourcesProvider);
 
     if (sourcesAsync.isLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -47,13 +56,16 @@ class EpisodesTabWidget extends ConsumerWidget {
     final sources = sourcesAsync.value ?? [];
 
     if (sources.isEmpty) {
-      return _NoExtensionsPlaceholder(mediaType: media.type);
+      return _NoExtensionsPlaceholder(mediaType: widget.media.type);
     }
 
     return Column(
       children: [
-        if (media.sourceId == null && !isTv) ...[
-          StaggeredFadeIn(index: 0, child: _EpisodesHeader(media: media)),
+        if (widget.media.sourceId == null) ...[
+          StaggeredFadeIn(
+            index: 0,
+            child: _EpisodesHeader(media: widget.media),
+          ),
 
           Container(
             width: double.maxFinite,
@@ -63,14 +75,14 @@ class EpisodesTabWidget extends ConsumerWidget {
         ],
         Expanded(
           child: EpisodeListPanel(
-            media: media,
-            isTv: isTv,
+            media: widget.media,
             useScrollController: false,
             onEpisodeTap: (UnifiedEpisode episode, SourceInfo sourceInfo) {
-              if (media.type == MediaType.MANGA ||
-                  media.type == MediaType.NOVEL) {
+              if (widget.media.type == MediaType.MANGA ||
+                  widget.media.type == MediaType.NOVEL) {
                 final historyEntries =
-                    ref.read(historyForMediaProvider(media.id)).value ?? [];
+                    ref.read(historyForMediaProvider(widget.media.id)).value ??
+                    [];
                 final historyEntry = historyEntries
                     .where((e) => e.itemNumber == episode.number)
                     .firstOrNull;
@@ -86,7 +98,7 @@ class EpisodesTabWidget extends ConsumerWidget {
 
                 context.pushReader(
                   ReaderModeOnline(
-                    media: media,
+                    media: widget.media,
                     episode: episode,
                     sourceInfo: sourceInfo,
                     startPosition: startPosition,
@@ -94,7 +106,8 @@ class EpisodesTabWidget extends ConsumerWidget {
                 );
               } else {
                 final historyEntries =
-                    ref.read(historyForMediaProvider(media.id)).value ?? [];
+                    ref.read(historyForMediaProvider(widget.media.id)).value ??
+                    [];
                 final historyEntry = historyEntries
                     .where((e) => e.itemNumber == episode.number)
                     .firstOrNull;
@@ -118,7 +131,7 @@ class EpisodesTabWidget extends ConsumerWidget {
 
                 context.pushPlayer(
                   PlayerModeOnline(
-                    media: media,
+                    media: widget.media,
                     episode: episode,
                     sourceInfo: sourceInfo,
                     startPosition: startPosition,
@@ -136,14 +149,14 @@ class EpisodesTabWidget extends ConsumerWidget {
                     AppBottomSheet.show(
                       context: episodeActionsContext,
                       title:
-                          '${(media.type == MediaType.MANGA || media.type == MediaType.NOVEL) ? 'Chapter' : 'Episode'} $epNum Discussion',
+                          '${(widget.media.type == MediaType.MANGA || widget.media.type == MediaType.NOVEL) ? 'Chapter' : 'Episode'} $epNum Discussion',
                       contentPadding: EdgeInsets.zero,
                       child: SizedBox(
                         height:
                             MediaQuery.of(episodeActionsContext).size.height *
                             0.78,
                         child: CommentsTabWidget(
-                          media: media,
+                          media: widget.media,
                           initialEpisodeNumber: epNum,
                         ),
                       ),
@@ -157,7 +170,7 @@ class EpisodesTabWidget extends ConsumerWidget {
                     AppBottomSheet.show(
                       context: episodeActionsContext,
                       title:
-                          '${(media.type == MediaType.MANGA || media.type == MediaType.NOVEL) ? 'Chapter' : 'Episode'} ${episode.number.toString().contains('.0') ? episode.number.toInt() : episode.number}',
+                          '${(widget.media.type == MediaType.MANGA || widget.media.type == MediaType.NOVEL) ? 'Chapter' : 'Episode'} ${episode.number.toString().contains('.0') ? episode.number.toInt() : episode.number}',
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -169,7 +182,7 @@ class EpisodesTabWidget extends ConsumerWidget {
                               AppBottomSheet.show(
                                 context: episodeActionsContext,
                                 title:
-                                    '${media.type == MediaType.MANGA ? 'Chapter' : 'Episode'} $epNum Discussion',
+                                    '${widget.media.type == MediaType.MANGA ? 'Chapter' : 'Episode'} $epNum Discussion',
                                 contentPadding: EdgeInsets.zero,
                                 child: SizedBox(
                                   height:
@@ -178,14 +191,14 @@ class EpisodesTabWidget extends ConsumerWidget {
                                       ).size.height *
                                       0.78,
                                   child: CommentsTabWidget(
-                                    media: media,
+                                    media: widget.media,
                                     initialEpisodeNumber: epNum,
                                   ),
                                 ),
                               );
                             },
                           ),
-                          if (media.type == MediaType.ANIME)
+                          if (widget.media.type == MediaType.ANIME)
                             ListTile(
                               title: const Text('Stream / Download'),
                               leading: const Icon(Icons.tune_rounded),
@@ -197,13 +210,13 @@ class EpisodesTabWidget extends ConsumerWidget {
                                   ref
                                           .read(
                                             mediaPreferenceProvider(
-                                              MediaArgs.fromMedia(media),
+                                              MediaArgs.fromMedia(widget.media),
                                             ),
                                           )
                                           .value
                                           ?.sourceInfo ??
                                       sources.first,
-                                  media,
+                                  widget.media,
                                 );
                               },
                             ),

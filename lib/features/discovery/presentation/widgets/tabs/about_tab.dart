@@ -18,7 +18,7 @@ import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/shared/widgets/staggered_fade_in.dart';
 import 'package:shonenx/source_engine/source_engine_provider.dart';
 
-class AboutTabWidget extends ConsumerWidget {
+class AboutTabWidget extends ConsumerStatefulWidget {
   final UnifiedMedia media;
   final VoidCallback? onEpisodesTabRequested;
   final double uiRoundness;
@@ -31,60 +31,79 @@ class AboutTabWidget extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AboutTabWidget> createState() => _AboutTabWidgetState();
+}
+
+class _AboutTabWidgetState extends ConsumerState<AboutTabWidget>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
 
-    final hasTags = media.tags != null && media.tags!.isNotEmpty;
-    final hasGenres = media.genres != null && media.genres!.isNotEmpty;
-    final hasRelations = media.relations != null && media.relations!.isNotEmpty;
+    final hasTags = widget.media.tags != null && widget.media.tags!.isNotEmpty;
+    final hasGenres =
+        widget.media.genres != null && widget.media.genres!.isNotEmpty;
+    final hasRelations =
+        widget.media.relations != null && widget.media.relations!.isNotEmpty;
     final hasRecommendations =
-        media.recommendations != null && media.recommendations!.isNotEmpty;
+        widget.media.recommendations != null &&
+        widget.media.recommendations!.isNotEmpty;
     final hasCharacters =
-        (media.characters != null && media.characters!.isNotEmpty) ||
-        media.id.isNotEmpty;
+        (widget.media.characters != null &&
+            widget.media.characters!.isNotEmpty) ||
+        widget.media.id.isNotEmpty;
     final hasLinks =
-        media.externalLinks != null && media.externalLinks!.isNotEmpty;
+        widget.media.externalLinks != null &&
+        widget.media.externalLinks!.isNotEmpty;
 
     final items = <Widget>[];
 
     // Airing Banner
-    if (media.airingAt != null) {
+    if (widget.media.airingAt != null) {
       items.add(
         Padding(
           padding: const EdgeInsets.only(bottom: 16),
           child: _AiringBanner(
-            media: media,
-            onEpisodesTabRequested: onEpisodesTabRequested,
-            uiRoundness: uiRoundness,
+            media: widget.media,
+            onEpisodesTabRequested: widget.onEpisodesTabRequested,
+            uiRoundness: widget.uiRoundness,
           ),
         ),
       );
     }
 
     // Synopsis Section
-    items.add(Synopsis(description: media.description ?? ''));
+    items.add(Synopsis(description: widget.media.description ?? ''));
 
     // Information & Details Key-Value List
     items.add(
       Padding(
         padding: const EdgeInsets.only(top: 20),
-        child: _MediaDetailsSection(media: media, uiRoundness: uiRoundness),
+        child: _MediaDetailsSection(
+          media: widget.media,
+          uiRoundness: widget.uiRoundness,
+        ),
       ),
     );
 
     // Alternative Titles Tile
-    if (media.title.english != null ||
-        media.title.romaji != null ||
-        media.title.native != null ||
-        (media.synonyms != null && media.synonyms!.isNotEmpty)) {
+    if (widget.media.title.english != null ||
+        widget.media.title.romaji != null ||
+        widget.media.title.native != null ||
+        (widget.media.synonyms != null && widget.media.synonyms!.isNotEmpty)) {
       items.add(
         Padding(
           padding: const EdgeInsets.only(top: 16),
           child: _AlternativeTitlesTile(
-            title: media.title,
-            synonyms: media.synonyms ?? [],
-            uiRoundness: uiRoundness,
+            title: widget.media.title,
+            synonyms: widget.media.synonyms ?? [],
+            uiRoundness: widget.uiRoundness,
           ),
         ),
       );
@@ -96,10 +115,10 @@ class AboutTabWidget extends ConsumerWidget {
         Padding(
           padding: const EdgeInsets.only(top: 20),
           child: _GenresAndTagsSection(
-            genres: media.genres ?? [],
-            tags: media.tags ?? [],
-            mediaType: media.type,
-            uiRoundness: uiRoundness,
+            genres: widget.media.genres ?? [],
+            tags: widget.media.tags ?? [],
+            mediaType: widget.media.type,
+            uiRoundness: widget.uiRoundness,
             textTheme: textTheme,
           ),
         ),
@@ -112,11 +131,11 @@ class AboutTabWidget extends ConsumerWidget {
         Padding(
           padding: const EdgeInsets.only(top: 24),
           child: _CharactersList(
-            mediaId: media.id,
-            mediaType: media.type,
-            mediaTitle: media.title.getPreferedTitle,
-            characters: media.characters ?? [],
-            uiRoundness: uiRoundness,
+            mediaId: widget.media.id,
+            mediaType: widget.media.type,
+            mediaTitle: widget.media.title.getPreferedTitle,
+            characters: widget.media.characters ?? [],
+            uiRoundness: widget.uiRoundness,
           ),
         ),
       );
@@ -138,8 +157,8 @@ class AboutTabWidget extends ConsumerWidget {
               ),
               const SizedBox(height: 10),
               _ExternalLinksList(
-                links: media.externalLinks!,
-                uiRoundness: uiRoundness,
+                links: widget.media.externalLinks!,
+                uiRoundness: widget.uiRoundness,
               ),
             ],
           ),
@@ -163,8 +182,8 @@ class AboutTabWidget extends ConsumerWidget {
               ),
               const SizedBox(height: 12),
               _RelationsList(
-                relations: media.relations!,
-                parentType: media.type,
+                relations: widget.media.relations!,
+                parentType: widget.media.type,
               ),
             ],
           ),
@@ -187,7 +206,9 @@ class AboutTabWidget extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 12),
-              _RecommendationsList(recommendations: media.recommendations!),
+              _RecommendationsList(
+                recommendations: widget.media.recommendations!,
+              ),
             ],
           ),
         ),

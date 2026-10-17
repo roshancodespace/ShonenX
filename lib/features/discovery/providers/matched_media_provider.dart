@@ -84,8 +84,17 @@ class MediaMatchNotifier extends AsyncNotifier<MatchedMediaState> {
 
   @override
   Future<MatchedMediaState> build() async {
-    state = const AsyncLoading();
-    final prefs = await ref.watch(mediaPreferenceProvider(args).future);
+    final MediaPreferenceState prefs;
+    final prefValue = ref.watch(mediaPreferenceProvider(args)).value;
+    if (prefValue != null) {
+      prefs = prefValue;
+    } else {
+      prefs = await ref.watch(mediaPreferenceProvider(args).future);
+    }
+
+    state = AsyncData(
+      MatchedMediaState(sourceInfo: prefs.sourceInfo, isLoading: true),
+    );
 
     if (args.sourceId != null && args.providerId != null) {
       final availableSources = await ref.watch(

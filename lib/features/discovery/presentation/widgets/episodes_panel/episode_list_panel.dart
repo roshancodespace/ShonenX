@@ -5,7 +5,9 @@ import 'package:shonenx/core/utils/responsive.dart';
 import 'package:shonenx/features/discovery/domain/media_args.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/episodes_panel/episode_tiles.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/sheets/batch_download/batch_download_sheet.dart';
+import 'package:shonenx/features/discovery/presentation/widgets/sheets/manual_match_sheet.dart';
 import 'package:shonenx/features/discovery/providers/episodes_provider.dart';
+import 'package:shonenx/features/discovery/providers/matched_media_provider.dart';
 import 'package:shonenx/features/reader/providers/preferred_scanlator_provider.dart';
 import 'package:shonenx/shared/models/unified_episode.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
@@ -106,6 +108,7 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
       _isRetrying = true;
     });
 
+    ref.invalidate(matchedMediaProvider(matchArgs));
     await ref.read(episodesListProvider(matchArgs).notifier).refreshEpisodes();
 
     if (mounted) {
@@ -115,15 +118,41 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
     }
   }
 
+  void _openManualMatch(BuildContext context, MediaArgs matchArgs) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => ManualMatchSheet(
+        mediaTitle: widget.media.title.getPreferedTitle,
+        type: widget.media.type,
+        matchArgs: matchArgs,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final viewMode = ref.watch(
       uiPrefsProvider.select((s) => s.episodeViewMode),
     );
     final matchArgs = MediaArgs.fromMedia(widget.media);
+    final matchedMediaState = ref.watch(matchedMediaProvider(matchArgs));
     final episodesAsync = ref.watch(episodesListProvider(matchArgs));
+
+    final isMatching =
+        matchedMediaState.isLoading ||
+        (matchedMediaState.value?.isLoading ?? false);
+    final isSourceMismatch =
+        matchedMediaState.value != null &&
+        episodesAsync.value != null &&
+        matchedMediaState.value!.sourceInfo.id !=
+            episodesAsync.value!.source.id;
     final isBusy =
-        _isRetrying || episodesAsync.isRefreshing || episodesAsync.isLoading;
+        _isRetrying ||
+        episodesAsync.isRefreshing ||
+        episodesAsync.isLoading ||
+        isMatching ||
+        isSourceMismatch;
 
     final primaryTracker = ref.watch(primaryTrackerProvider);
     final trackingState = ref.watch(
@@ -166,7 +195,138 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
     final effectiveCurrentEpisodeNumber =
         widget.currentEpisodeNumber ?? historyEntries.firstOrNull?.itemNumber;
 
+    if (matchedMediaState.hasError) {
+      final error = matchedMediaState.error;
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.error_outline_rounded,
+                size: 48,
+                color: Theme.of(context).colorScheme.error,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                error.toString().contains('Cloudflare')
+                    ? 'Cloudflare verification failed. Please try turning off "In-app Cloudflare Bypass" in settings to use the proxy, or perform a manual match.'
+                    : 'Failed to match media: $error',
+                textAlign: TextAlign.center,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: isBusy ? null : () => _triggerRetry(matchArgs),
+                icon: isBusy
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.refresh_rounded),
+                label: Text(isBusy ? 'Fetching...' : 'Retry Search'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (isMatching || isSourceMismatch) {
+      final sourceName = matchedMediaState.value?.sourceInfo.name;
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const CircularProgressIndicator(),
+            const SizedBox(height: 16),
+            Text(
+              isMatching
+                  ? (sourceName != null
+                        ? 'Searching match on $sourceName...'
+                        : 'Searching match...')
+                  : (sourceName != null
+                        ? 'Fetching episodes from $sourceName...'
+                        : 'Fetching episodes...'),
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 13,
+                color: Colors.white70,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (!isMatching &&
+        matchedMediaState.value != null &&
+        matchedMediaState.value!.matchedMedia == null) {
+      final sourceName = matchedMediaState.value!.sourceInfo.name;
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.folder_open_rounded,
+                size: 48,
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'No match found on $sourceName',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Try performing a manual match for "${widget.media.title.getPreferedTitle}"',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Wrap(
+                spacing: 12,
+                runSpacing: 8,
+                alignment: WrapAlignment.center,
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: isBusy ? null : () => _triggerRetry(matchArgs),
+                    icon: isBusy
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.refresh_rounded),
+                    label: Text(isBusy ? 'Retrying...' : 'Retry Search'),
+                  ),
+                  FilledButton.icon(
+                    onPressed: () => _openManualMatch(context, matchArgs),
+                    icon: const Icon(Icons.tune_rounded),
+                    label: const Text('Manual Match'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return episodesAsync.when(
+      skipLoadingOnReload: false,
       loading: () {
         final progressMsg = ref.watch(episodeMetadataProgressProvider).value;
         return Center(
@@ -230,6 +390,9 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
       ),
       data: (state) {
         if (state.episodes.isEmpty) {
+          if (isBusy) {
+            return const Center(child: CircularProgressIndicator());
+          }
           return Center(
             child: Padding(
               padding: const EdgeInsets.all(24.0),
@@ -262,16 +425,32 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 20),
-                  ElevatedButton.icon(
-                    onPressed: isBusy ? null : () => _triggerRetry(matchArgs),
-                    icon: isBusy
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.refresh_rounded),
-                    label: Text(isBusy ? 'Fetching...' : 'Retry Fetching'),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 8,
+                    alignment: WrapAlignment.center,
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: isBusy
+                            ? null
+                            : () => _triggerRetry(matchArgs),
+                        icon: isBusy
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.refresh_rounded),
+                        label: Text(isBusy ? 'Fetching...' : 'Retry Fetching'),
+                      ),
+                      FilledButton.icon(
+                        onPressed: () => _openManualMatch(context, matchArgs),
+                        icon: const Icon(Icons.tune_rounded),
+                        label: const Text('Manual Match'),
+                      ),
+                    ],
                   ),
                 ],
               ),

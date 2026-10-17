@@ -627,7 +627,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
     final tracker = ref.watch(metadataSourceProvider);
 
     return filtersAsync.when(
-      loading: () => _buildQuickTilesSkeleton(uiRoundness),
+      loading: () =>
+          _buildQuickTilesSkeleton(context, colorScheme, uiRoundness),
       error: (error, _) => Center(
         child: Padding(
           padding: const EdgeInsets.all(32),
@@ -785,7 +786,26 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
     );
   }
 
-  Widget _buildQuickTilesSkeleton(double uiRoundness) {
+  Widget _buildQuickTilesSkeleton(
+    BuildContext context,
+    ColorScheme colorScheme,
+    double uiRoundness,
+  ) {
+    const dummyItems = [
+      'Action',
+      'Adventure',
+      'Comedy',
+      'Drama',
+      'Fantasy',
+      'Horror',
+      'Romance',
+      'Sci-Fi',
+      'Slice of Life',
+      'Supernatural',
+      'Mystery',
+      'Sports',
+    ];
+
     return Skeletonizer(
       enabled: true,
       child: CustomScrollView(
@@ -794,13 +814,23 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-              child: Container(
-                width: 140,
-                height: 22,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(4),
-                  color: Colors.white,
-                ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.category_rounded,
+                    size: 18,
+                    color: colorScheme.primary,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Browse Genres',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -813,15 +843,14 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
                 crossAxisSpacing: 10,
                 mainAxisSpacing: 10,
               ),
-              delegate: SliverChildBuilderDelegate(
-                (context, index) => Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(uiRoundness),
-                    color: Colors.white,
-                  ),
-                ),
-                childCount: 8,
-              ),
+              delegate: SliverChildBuilderDelegate((context, index) {
+                return _buildQuickTileCard(
+                  context: context,
+                  name: dummyItems[index % dummyItems.length],
+                  isTag: false,
+                  uiRoundness: uiRoundness,
+                );
+              }, childCount: 10),
             ),
           ),
         ],

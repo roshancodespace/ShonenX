@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/discovery/domain/media_args.dart';
 import 'package:shonenx/features/discovery/providers/matched_media_provider.dart';
+import 'package:shonenx/features/discovery/providers/media_preference_provider.dart';
 import 'package:shonenx/features/episode_metadata/providers/episode_metadata_providers.dart';
 import 'package:shonenx/shared/models/unified_episode.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
@@ -35,6 +36,7 @@ class EpisodesListNotifier extends AsyncNotifier<EpisodesListState> {
     final log = AppLogger.scope('EpisodesListProvider').child('fetch');
     final title = arg.mediaTitle;
 
+    ref.watch(mediaPreferenceProvider(arg));
     final contentPrefs = ref.watch(contentPrefsProvider);
     final metadataService = ref.watch(episodeMetadataServiceProvider);
 
@@ -56,6 +58,8 @@ class EpisodesListNotifier extends AsyncNotifier<EpisodesListState> {
           type: arg.type,
         )).future,
       );
+
+      state = AsyncData(sourceEpisodesState);
 
       if (!arg.type.usesAnimeSources || sourceEpisodesState.episodes.isEmpty) {
         return sourceEpisodesState;
@@ -123,9 +127,13 @@ class SourceEpisodesNotifier extends AsyncNotifier<EpisodesListState> {
     ref.watch(sourceSettingsProvider(arg.sourceId));
 
     try {
-      final allSources = await ref.watch(
-        arg.type.availableSourcesProvider.future,
-      );
+      final List<SourceInfo> allSources;
+      final sourcesValue = ref.watch(arg.type.availableSourcesProvider).value;
+      if (sourcesValue != null) {
+        allSources = sourcesValue;
+      } else {
+        allSources = await ref.watch(arg.type.availableSourcesProvider.future);
+      }
 
       final sourceInfo = allSources
           .where(

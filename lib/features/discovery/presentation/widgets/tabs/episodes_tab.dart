@@ -259,21 +259,28 @@ class _EpisodesHeader extends ConsumerWidget {
 
     final matchedMediaState = ref.watch(matchedMediaProvider(matchArgs));
 
+    final activeSourceInfo =
+        sourceState?.sourceInfo ?? matchedMediaState.value?.sourceInfo;
+    final sourceName = activeSourceInfo?.name ?? 'Unknown';
+
+    final isMatchingNewSource =
+        sourceState != null &&
+        matchedMediaState.value != null &&
+        matchedMediaState.value!.sourceInfo.id != sourceState.sourceInfo.id;
+
     final String matchedTitle;
     final bool hasError = matchedMediaState.hasError;
 
     if (hasError) {
       matchedTitle = 'Failed to match';
-    } else if (matchedMediaState.isLoading) {
+    } else if (matchedMediaState.isLoading ||
+        isMatchingNewSource ||
+        (matchedMediaState.value?.isLoading ?? false)) {
       matchedTitle = 'Searching...';
     } else {
       matchedTitle =
           matchedMediaState.value?.matchedMedia?.title ?? 'No match found';
     }
-
-    final activeSourceInfo =
-        matchedMediaState.value?.sourceInfo ?? sourceState?.sourceInfo;
-    final sourceName = activeSourceInfo?.name ?? 'Unknown';
 
     final String? sourceIconUrl = activeSourceInfo?.iconUrl;
 

@@ -32,59 +32,64 @@ const DownloadTaskSchema = CollectionSchema(
       name: r'episodeNumber',
       type: IsarType.double,
     ),
-    r'fileName': PropertySchema(
+    r'errorReason': PropertySchema(
       id: 3,
+      name: r'errorReason',
+      type: IsarType.string,
+    ),
+    r'fileName': PropertySchema(
+      id: 4,
       name: r'fileName',
       type: IsarType.string,
     ),
     r'headers': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'headers',
       type: IsarType.objectList,
 
       target: r'DownloadHeader',
     ),
-    r'isM3u8': PropertySchema(id: 5, name: r'isM3u8', type: IsarType.bool),
-    r'mediaId': PropertySchema(id: 6, name: r'mediaId', type: IsarType.string),
+    r'isM3u8': PropertySchema(id: 6, name: r'isM3u8', type: IsarType.bool),
+    r'mediaId': PropertySchema(id: 7, name: r'mediaId', type: IsarType.string),
     r'progress': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'progress',
       type: IsarType.double,
     ),
     r'requiresProxy': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'requiresProxy',
       type: IsarType.bool,
     ),
     r'savePath': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'savePath',
       type: IsarType.string,
     ),
     r'status': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'status',
       type: IsarType.byte,
       enumMap: _DownloadTaskstatusEnumValueMap,
     ),
     r'subtitles': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'subtitles',
       type: IsarType.objectList,
 
       target: r'DownloadSubtitle',
     ),
     r'totalBytes': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'totalBytes',
       type: IsarType.long,
     ),
     r'updatedAt': PropertySchema(
-      id: 13,
+      id: 14,
       name: r'updatedAt',
       type: IsarType.dateTime,
     ),
-    r'url': PropertySchema(id: 14, name: r'url', type: IsarType.string),
+    r'url': PropertySchema(id: 15, name: r'url', type: IsarType.string),
   },
 
   estimateSize: _downloadTaskEstimateSize,
@@ -125,6 +130,12 @@ int _downloadTaskEstimateSize(
   Map<Type, List<int>> allOffsets,
 ) {
   var bytesCount = offsets.last;
+  {
+    final value = object.errorReason;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   bytesCount += 3 + object.fileName.length * 3;
   bytesCount += 3 + object.headers.length * 3;
   {
@@ -165,28 +176,29 @@ void _downloadTaskSerialize(
   writer.writeDateTime(offsets[0], object.createdAt);
   writer.writeLong(offsets[1], object.downloadedBytes);
   writer.writeDouble(offsets[2], object.episodeNumber);
-  writer.writeString(offsets[3], object.fileName);
+  writer.writeString(offsets[3], object.errorReason);
+  writer.writeString(offsets[4], object.fileName);
   writer.writeObjectList<DownloadHeader>(
-    offsets[4],
+    offsets[5],
     allOffsets,
     DownloadHeaderSchema.serialize,
     object.headers,
   );
-  writer.writeBool(offsets[5], object.isM3u8);
-  writer.writeString(offsets[6], object.mediaId);
-  writer.writeDouble(offsets[7], object.progress);
-  writer.writeBool(offsets[8], object.requiresProxy);
-  writer.writeString(offsets[9], object.savePath);
-  writer.writeByte(offsets[10], object.status.index);
+  writer.writeBool(offsets[6], object.isM3u8);
+  writer.writeString(offsets[7], object.mediaId);
+  writer.writeDouble(offsets[8], object.progress);
+  writer.writeBool(offsets[9], object.requiresProxy);
+  writer.writeString(offsets[10], object.savePath);
+  writer.writeByte(offsets[11], object.status.index);
   writer.writeObjectList<DownloadSubtitle>(
-    offsets[11],
+    offsets[12],
     allOffsets,
     DownloadSubtitleSchema.serialize,
     object.subtitles,
   );
-  writer.writeLong(offsets[12], object.totalBytes);
-  writer.writeDateTime(offsets[13], object.updatedAt);
-  writer.writeString(offsets[14], object.url);
+  writer.writeLong(offsets[13], object.totalBytes);
+  writer.writeDateTime(offsets[14], object.updatedAt);
+  writer.writeString(offsets[15], object.url);
 }
 
 DownloadTask _downloadTaskDeserialize(
@@ -199,35 +211,36 @@ DownloadTask _downloadTaskDeserialize(
   object.createdAt = reader.readDateTime(offsets[0]);
   object.downloadedBytes = reader.readLong(offsets[1]);
   object.episodeNumber = reader.readDouble(offsets[2]);
-  object.fileName = reader.readString(offsets[3]);
+  object.errorReason = reader.readStringOrNull(offsets[3]);
+  object.fileName = reader.readString(offsets[4]);
   object.headers =
       reader.readObjectList<DownloadHeader>(
-        offsets[4],
+        offsets[5],
         DownloadHeaderSchema.deserialize,
         allOffsets,
         DownloadHeader(),
       ) ??
       [];
   object.id = id;
-  object.isM3u8 = reader.readBool(offsets[5]);
-  object.mediaId = reader.readString(offsets[6]);
-  object.progress = reader.readDouble(offsets[7]);
-  object.requiresProxy = reader.readBool(offsets[8]);
-  object.savePath = reader.readString(offsets[9]);
+  object.isM3u8 = reader.readBool(offsets[6]);
+  object.mediaId = reader.readString(offsets[7]);
+  object.progress = reader.readDouble(offsets[8]);
+  object.requiresProxy = reader.readBool(offsets[9]);
+  object.savePath = reader.readString(offsets[10]);
   object.status =
-      _DownloadTaskstatusValueEnumMap[reader.readByteOrNull(offsets[10])] ??
+      _DownloadTaskstatusValueEnumMap[reader.readByteOrNull(offsets[11])] ??
       DownloadStatus.pending;
   object.subtitles =
       reader.readObjectList<DownloadSubtitle>(
-        offsets[11],
+        offsets[12],
         DownloadSubtitleSchema.deserialize,
         allOffsets,
         DownloadSubtitle(),
       ) ??
       [];
-  object.totalBytes = reader.readLong(offsets[12]);
-  object.updatedAt = reader.readDateTime(offsets[13]);
-  object.url = reader.readString(offsets[14]);
+  object.totalBytes = reader.readLong(offsets[13]);
+  object.updatedAt = reader.readDateTime(offsets[14]);
+  object.url = reader.readString(offsets[15]);
   return object;
 }
 
@@ -245,8 +258,10 @@ P _downloadTaskDeserializeProp<P>(
     case 2:
       return (reader.readDouble(offset)) as P;
     case 3:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 4:
+      return (reader.readString(offset)) as P;
+    case 5:
       return (reader.readObjectList<DownloadHeader>(
                 offset,
                 DownloadHeaderSchema.deserialize,
@@ -255,21 +270,21 @@ P _downloadTaskDeserializeProp<P>(
               ) ??
               [])
           as P;
-    case 5:
-      return (reader.readBool(offset)) as P;
     case 6:
-      return (reader.readString(offset)) as P;
-    case 7:
-      return (reader.readDouble(offset)) as P;
-    case 8:
       return (reader.readBool(offset)) as P;
-    case 9:
+    case 7:
       return (reader.readString(offset)) as P;
+    case 8:
+      return (reader.readDouble(offset)) as P;
+    case 9:
+      return (reader.readBool(offset)) as P;
     case 10:
+      return (reader.readString(offset)) as P;
+    case 11:
       return (_DownloadTaskstatusValueEnumMap[reader.readByteOrNull(offset)] ??
               DownloadStatus.pending)
           as P;
-    case 11:
+    case 12:
       return (reader.readObjectList<DownloadSubtitle>(
                 offset,
                 DownloadSubtitleSchema.deserialize,
@@ -278,11 +293,11 @@ P _downloadTaskDeserializeProp<P>(
               ) ??
               [])
           as P;
-    case 12:
-      return (reader.readLong(offset)) as P;
     case 13:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readLong(offset)) as P;
     case 14:
+      return (reader.readDateTime(offset)) as P;
+    case 15:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -698,6 +713,165 @@ extension DownloadTaskQueryFilter
 
           epsilon: epsilon,
         ),
+      );
+    });
+  }
+
+  QueryBuilder<DownloadTask, DownloadTask, QAfterFilterCondition>
+  errorReasonIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'errorReason'),
+      );
+    });
+  }
+
+  QueryBuilder<DownloadTask, DownloadTask, QAfterFilterCondition>
+  errorReasonIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'errorReason'),
+      );
+    });
+  }
+
+  QueryBuilder<DownloadTask, DownloadTask, QAfterFilterCondition>
+  errorReasonEqualTo(String? value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'errorReason',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DownloadTask, DownloadTask, QAfterFilterCondition>
+  errorReasonGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'errorReason',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DownloadTask, DownloadTask, QAfterFilterCondition>
+  errorReasonLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'errorReason',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DownloadTask, DownloadTask, QAfterFilterCondition>
+  errorReasonBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'errorReason',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DownloadTask, DownloadTask, QAfterFilterCondition>
+  errorReasonStartsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'errorReason',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DownloadTask, DownloadTask, QAfterFilterCondition>
+  errorReasonEndsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'errorReason',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DownloadTask, DownloadTask, QAfterFilterCondition>
+  errorReasonContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'errorReason',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DownloadTask, DownloadTask, QAfterFilterCondition>
+  errorReasonMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'errorReason',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DownloadTask, DownloadTask, QAfterFilterCondition>
+  errorReasonIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'errorReason', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<DownloadTask, DownloadTask, QAfterFilterCondition>
+  errorReasonIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'errorReason', value: ''),
       );
     });
   }
@@ -1759,6 +1933,19 @@ extension DownloadTaskQuerySortBy
     });
   }
 
+  QueryBuilder<DownloadTask, DownloadTask, QAfterSortBy> sortByErrorReason() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'errorReason', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DownloadTask, DownloadTask, QAfterSortBy>
+  sortByErrorReasonDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'errorReason', Sort.desc);
+    });
+  }
+
   QueryBuilder<DownloadTask, DownloadTask, QAfterSortBy> sortByFileName() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'fileName', Sort.asc);
@@ -1923,6 +2110,19 @@ extension DownloadTaskQuerySortThenBy
     });
   }
 
+  QueryBuilder<DownloadTask, DownloadTask, QAfterSortBy> thenByErrorReason() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'errorReason', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DownloadTask, DownloadTask, QAfterSortBy>
+  thenByErrorReasonDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'errorReason', Sort.desc);
+    });
+  }
+
   QueryBuilder<DownloadTask, DownloadTask, QAfterSortBy> thenByFileName() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'fileName', Sort.asc);
@@ -2080,6 +2280,14 @@ extension DownloadTaskQueryWhereDistinct
     });
   }
 
+  QueryBuilder<DownloadTask, DownloadTask, QDistinct> distinctByErrorReason({
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'errorReason', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<DownloadTask, DownloadTask, QDistinct> distinctByFileName({
     bool caseSensitive = true,
   }) {
@@ -2173,6 +2381,12 @@ extension DownloadTaskQueryProperty
   QueryBuilder<DownloadTask, double, QQueryOperations> episodeNumberProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'episodeNumber');
+    });
+  }
+
+  QueryBuilder<DownloadTask, String?, QQueryOperations> errorReasonProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'errorReason');
     });
   }
 

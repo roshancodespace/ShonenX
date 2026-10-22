@@ -10,6 +10,7 @@ import 'package:shonenx/features/player/domain/player_mode.dart';
 import 'package:shonenx/features/downloads/domain/models/download_task.dart';
 import 'package:shonenx/features/downloads/providers/download_prefs_provider.dart';
 import 'package:shonenx/features/downloads/providers/download_provider.dart';
+import 'package:shonenx/core/services/one_dm_service.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
 
@@ -186,9 +187,11 @@ class _DownloadTileState extends ConsumerState<_DownloadTile> {
     final status = task.status;
     final isDone = status == DownloadStatus.completed;
     final isCanceled = status == DownloadStatus.canceled;
+    final isFailed = status == DownloadStatus.failed;
 
     return InkWell(
-      onTap: null,
+      onTap: isFailed ? () => _showErrorDetailsSheet(context, ref, task) : null,
+      borderRadius: BorderRadius.circular(8),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
@@ -237,9 +240,59 @@ class _DownloadTileState extends ConsumerState<_DownloadTile> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: colors.onSurfaceVariant,
+                      color: isFailed ? colors.error : colors.onSurfaceVariant,
+                      fontWeight: isFailed ? FontWeight.w500 : null,
                     ),
                   ),
+                  if (isFailed &&
+                      task.errorReason != null &&
+                      task.errorReason!.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    GestureDetector(
+                      onTap: () => _showErrorDetailsSheet(context, ref, task),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: colors.errorContainer.withValues(alpha: 0.35),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: colors.error.withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.info_outline_rounded,
+                              size: 13,
+                              color: colors.error,
+                            ),
+                            const SizedBox(width: 5),
+                            Flexible(
+                              child: Text(
+                                task.errorReason!,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: colors.error,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 3),
+                            Icon(
+                              Icons.chevron_right_rounded,
+                              size: 14,
+                              color: colors.error,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                   if (!isDone && !isCanceled) ...[
                     const SizedBox(height: 8),
                     LinearProgressIndicator(
@@ -286,8 +339,15 @@ class _DownloadTileState extends ConsumerState<_DownloadTile> {
                           .read(downloadManagerProvider.notifier)
                           .pauseDownload(task.id),
                     ),
-                  if (status == DownloadStatus.paused ||
-                      status == DownloadStatus.failed ||
+                  if (status == DownloadStatus.failed)
+                    _IconBtn(
+                      icon: Icons.refresh_rounded,
+                      color: colors.primary,
+                      onPressed: () => ref
+                          .read(downloadManagerProvider.notifier)
+                          .startDownload(task),
+                    )
+                  else if (status == DownloadStatus.paused ||
                       status == DownloadStatus.canceled)
                     _IconBtn(
                       icon: Icons.play_arrow_rounded,
@@ -307,6 +367,273 @@ class _DownloadTileState extends ConsumerState<_DownloadTile> {
               ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showErrorDetailsSheet(
+    BuildContext context,
+    WidgetRef ref,
+    DownloadTask task,
+  ) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final error = task.errorReason?.trim() ?? 'Unknown error occurred.';
+
+    final isRateLimit =
+        error.toLowerCase().contains('429') ||
+        error.toLowerCase().contains('rate limit') ||
+        error.toLowerCase().contains('throttl');
+    final isForbidden =
+        error.toLowerCase().contains('403') ||
+        error.toLowerCase().contains('forbidden') ||
+        error.toLowerCase().contains('expired');
+    final isNetwork =
+        error.toLowerCase().contains('network') ||
+        error.toLowerCase().contains('connection') ||
+        error.toLowerCase().contains('timeout') ||
+        error.toLowerCase().contains('socket');
+
+    AppBottomSheet.show(
+      context: context,
+      title: 'Download Interrupted',
+      titleIcon: Icons.warning_amber_rounded,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // File Name Header
+          Text(
+            task.fileName.isNotEmpty
+                ? task.fileName
+                : 'Episode ${task.episodeNumber}',
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 12),
+
+          // Preserved Data Info Card
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: colors.primaryContainer.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: colors.primary.withValues(alpha: 0.25)),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.check_circle_outline_rounded,
+                  color: colors.primary,
+                  size: 20,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Progress Preserved (${(task.progress * 100).toStringAsFixed(1)}%)',
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: colors.primary,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        'Downloaded segments (${_mb(task.downloadedBytes)} MB) are kept safely on disk. Resuming will pick up where it stopped without restarting from 0%.',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colors.onSurfaceVariant,
+                          height: 1.35,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Error Diagnosis Card
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: colors.errorContainer.withValues(alpha: 0.25),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: colors.error.withValues(alpha: 0.3)),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.error_outline_rounded,
+                  color: colors.error,
+                  size: 20,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Reason for Failure',
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: colors.error,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        error,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colors.onSurface,
+                          height: 1.35,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+
+          // Suggested Resolution
+          Text(
+            'Recommended Resolution',
+            style: theme.textTheme.labelLarge?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 6),
+          if (isRateLimit) ...[
+            _resolutionBullet(
+              context,
+              'Server Throttling (HTTP 429)',
+              'The video host blocked requests because too many segments downloaded simultaneously. Wait a few seconds, then tap Resume.',
+            ),
+            _resolutionBullet(
+              context,
+              'Lower Concurrency',
+              'Go to Settings → Downloads and reduce "Concurrent Downloads" or "Concurrent Segments" to prevent triggering CDN rate limits.',
+            ),
+          ] else if (isForbidden) ...[
+            _resolutionBullet(
+              context,
+              'Expired Stream URL (HTTP 403)',
+              'The stream link or access token has expired. Tap Resume to attempt auto-refresh, or re-open the episode player to get fresh links.',
+            ),
+          ] else if (isNetwork) ...[
+            _resolutionBullet(
+              context,
+              'Connection Interrupted',
+              'The connection dropped or timed out. Verify your Wi-Fi or mobile data connection and tap Resume.',
+            ),
+          ] else ...[
+            _resolutionBullet(
+              context,
+              'Resume Stream',
+              'Tap Resume Download below to retry connecting and download remaining segments.',
+            ),
+          ],
+          const SizedBox(height: 20),
+
+          // Action Buttons
+          Row(
+            children: [
+              Expanded(
+                child: FilledButton.icon(
+                  icon: const Icon(Icons.refresh_rounded, size: 18),
+                  label: const Text('Resume Download'),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    ref
+                        .read(downloadManagerProvider.notifier)
+                        .startDownload(task);
+                  },
+                ),
+              ),
+              const SizedBox(width: 8),
+              if (Platform.isAndroid) ...[
+                IconButton.filledTonal(
+                  icon: const Icon(Icons.open_in_new_rounded, size: 18),
+                  tooltip: 'Download via 1DM',
+                  onPressed: () async {
+                    Navigator.of(context).pop();
+                    await OneDMService.instance.download(
+                      url: task.url,
+                      fileName: task.fileName,
+                      headers: task.headersMap,
+                    );
+                  },
+                ),
+                const SizedBox(width: 8),
+              ],
+              IconButton.outlined(
+                icon: Icon(
+                  Icons.delete_outline_rounded,
+                  size: 18,
+                  color: colors.error,
+                ),
+                tooltip: 'Cancel & Delete',
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  ref
+                      .read(downloadManagerProvider.notifier)
+                      .cancelDownload(task.id);
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+
+  Widget _resolutionBullet(BuildContext context, String title, String body) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            margin: const EdgeInsets.only(top: 6, right: 8),
+            width: 5,
+            height: 5,
+            decoration: BoxDecoration(
+              color: colors.primary,
+              shape: BoxShape.circle,
+            ),
+          ),
+          Expanded(
+            child: RichText(
+              text: TextSpan(
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colors.onSurfaceVariant,
+                  height: 1.35,
+                ),
+                children: [
+                  TextSpan(
+                    text: '$title: ',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: colors.onSurface,
+                    ),
+                  ),
+                  TextSpan(text: body),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -342,6 +669,13 @@ class _DownloadTileState extends ConsumerState<_DownloadTile> {
           ? ' (${task.totalSegments} seg)'
           : '';
       return '$name · ${_mb(task.totalBytes > 0 ? task.totalBytes : task.downloadedBytes)} MB$segText';
+    }
+    if (task.status == DownloadStatus.failed) {
+      final pct = (task.progress * 100).toStringAsFixed(0);
+      final mbText = task.totalBytes > 0
+          ? '${_mb(task.downloadedBytes)}/${_mb(task.totalBytes)} MB'
+          : '${_mb(task.downloadedBytes)} MB';
+      return 'Failed ($pct% · $mbText saved) · Tap for details';
     }
     if (task.status == DownloadStatus.canceled) {
       return name;

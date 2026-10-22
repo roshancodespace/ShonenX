@@ -508,6 +508,7 @@ class ThemeSettingsScreen extends ConsumerWidget {
                         subtitle: 'Clear custom background image',
                         isDestructive: true,
                         onTap: () async {
+                          WallpaperProcessor.clearCache();
                           notifier.updateTheme(
                             (p) => p.copyWith(
                               clearWallpaperSettings: true,
@@ -1213,14 +1214,28 @@ class _WallpaperColorSchemesSelectorState
   @override
   void initState() {
     super.initState();
-    _loadSeeds();
+    final cached = WallpaperProcessor.getCachedPaletteSeeds(widget.imagePath);
+    if (cached != null && cached.isNotEmpty) {
+      _seeds = cached;
+      _isLoading = false;
+    } else {
+      _loadSeeds();
+    }
   }
 
   @override
   void didUpdateWidget(covariant _WallpaperColorSchemesSelector oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.imagePath != widget.imagePath) {
-      _loadSeeds();
+      final cached = WallpaperProcessor.getCachedPaletteSeeds(widget.imagePath);
+      if (cached != null && cached.isNotEmpty) {
+        setState(() {
+          _seeds = cached;
+          _isLoading = false;
+        });
+      } else {
+        _loadSeeds();
+      }
     }
   }
 

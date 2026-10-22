@@ -246,20 +246,23 @@ class HTTP {
       for (final entry in headers.entries) {
         final key = entry.key.trim().toLowerCase();
         if (key.isNotEmpty) {
-          requestHeaders[key] = entry.value;
+          requestHeaders[key] = entry.value
+              .replaceAll('\r', '')
+              .replaceAll('\n', '')
+              .trim();
         }
       }
     }
 
     final sessionManager = SessionManager();
-    final cookies = await sessionManager.getCookies(url);
+    final cookies = sessionManager.getCookiesSync(url);
     final userAgent =
-        await sessionManager.getUserAgent(url) ?? NetworkConfig.globalUserAgent;
+        sessionManager.getUserAgentSync(url) ?? NetworkConfig.globalUserAgent;
 
     for (final entry in NetworkConfig.globalHeaders.entries) {
       requestHeaders.putIfAbsent(
         entry.key.trim().toLowerCase(),
-        () => entry.value,
+        () => entry.value.replaceAll('\r', '').replaceAll('\n', '').trim(),
       );
     }
     requestHeaders['user-agent'] = userAgent;

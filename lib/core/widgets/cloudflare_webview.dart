@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shonenx/shared/widgets/app_icon_button.dart';
 import 'package:webview_all/webview_all.dart';
@@ -106,7 +107,7 @@ class _CloudflareWebViewState extends State<CloudflareWebView> {
     if (_isSyncing) return;
     _isSyncing = true;
     try {
-      await SessionManager().syncFromWebView(_controller, widget.url);
+      await _extractAndSaveSession();
       if (mounted) {
         setState(() => _synced = true);
       }
@@ -115,6 +116,117 @@ class _CloudflareWebViewState extends State<CloudflareWebView> {
     } finally {
       _isSyncing = false;
     }
+  }
+
+  Future<void> _extractAndSaveSession() async {
+    final log = _log.child('extractSession');
+    String currentUrl = widget.url;
+    try {
+      final url = await _controller.currentUrl();
+      if (url != null && url.isNotEmpty) {
+        currentUrl = url;
+      }
+    } catch (e) {
+      log.w('Could not read controller.currentUrl(): $e');
+    }
+
+    final targetUrl = currentUrl.isNotEmpty ? currentUrl : widget.url;
+    final host = SessionManager.extractHost(targetUrl);
+    if (host.isEmpty) return;
+
+    final cookieManager = WebViewCookieManager();
+    final Map<String, String> collectedCookies = {};
+
+    final candidateUris = <Uri>[];
+    void addCandidate(String u) {
+      final uri = Uri.tryParse(u);
+      if (uri != null && uri.hasAuthority && !candidateUris.contains(uri)) {
+        candidateUris.add(uri);
+      }
+    }
+
+    addCandidate(targetUrl);
+    addCandidate('https://$host/');
+
+    for (final uri in candidateUris) {
+      try {
+        final cookies = await cookieManager.getCookies(domain: uri);
+        for (final c in cookies) {
+          if (c.name.isNotEmpty) {
+            collectedCookies[c.name] = c.value;
+          }
+        }
+      } catch (e) {
+        log.v('WebViewCookieManager.getCookies error for $uri: $e');
+      }
+    }
+
+    try {
+      final jsResult = await _controller.runJavaScriptReturningResult(
+        'document.cookie',
+      );
+      final jsCookieStr = _cleanJsResult(jsResult);
+      if (jsCookieStr.isNotEmpty && jsCookieStr != 'null') {
+        for (final pair in jsCookieStr.split(';')) {
+          final trimmed = pair.trim();
+          if (trimmed.isEmpty) continue;
+          final eqIdx = trimmed.indexOf('=');
+          if (eqIdx > 0) {
+            final key = trimmed.substring(0, eqIdx).trim();
+            final val = trimmed.substring(eqIdx + 1).trim();
+            collectedCookies.putIfAbsent(key, () => val);
+          }
+        }
+      }
+    } catch (_) {}
+
+    String userAgent = '';
+    try {
+      final ua = await _controller.getUserAgent();
+      if (ua != null && ua.trim().isNotEmpty) {
+        userAgent = ua.trim();
+      }
+    } catch (_) {}
+
+    if (userAgent.isEmpty) {
+      try {
+        final uaResult = await _controller.runJavaScriptReturningResult(
+          'navigator.userAgent',
+        );
+        final cleanUA = _cleanJsResult(uaResult);
+        if (cleanUA.isNotEmpty && cleanUA != 'null') {
+          userAgent = cleanUA;
+        }
+      } catch (_) {}
+    }
+
+    final cookieString = collectedCookies.entries
+        .map((e) => '${e.key}=${e.value}')
+        .join('; ');
+
+    if (cookieString.isNotEmpty || userAgent.isNotEmpty) {
+      await SessionManager().saveSession(
+        targetUrl,
+        cookie: cookieString.isNotEmpty ? cookieString : null,
+        userAgent: userAgent.isNotEmpty ? userAgent : null,
+      );
+      log.s(
+        'Session synced for $host (cookies: ${collectedCookies.length}, clearance: ${collectedCookies.containsKey('cf_clearance')})',
+      );
+    }
+  }
+
+  static String _cleanJsResult(Object? result) {
+    if (result == null) return '';
+    String s = result.toString().trim();
+    if (s.startsWith('"') && s.endsWith('"') && s.length >= 2) {
+      try {
+        s = jsonDecode(s) as String;
+      } catch (_) {
+        s = s.substring(1, s.length - 1);
+      }
+    }
+    return s.trim();
   }
 
   void _onSyncAndClose() async {

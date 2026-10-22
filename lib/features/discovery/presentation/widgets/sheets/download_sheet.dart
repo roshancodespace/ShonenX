@@ -10,6 +10,7 @@ import 'package:shonenx/core/network/http_client.dart';
 import 'package:shonenx/core/services/one_dm_service.dart';
 import 'package:shonenx/core/utils/device_info.dart';
 import 'package:shonenx/core/utils/http_x.dart';
+import 'package:shonenx/core/utils/subtitle_extractor.dart';
 import 'package:shonenx/features/downloads/domain/models/download_task.dart';
 import 'package:shonenx/features/downloads/providers/download_prefs_provider.dart';
 import 'package:shonenx/features/downloads/providers/download_provider.dart';
@@ -350,40 +351,55 @@ class _DownloadSheetState extends ConsumerState<DownloadSheet> {
     VideoStream? stream,
     VideoServer? server,
   }) async {
-    final allSubtitles = <SubtitleTrack>[];
-    if (stream != null && stream.subtitles.isNotEmpty) {
-      for (final sub in stream.subtitles) {
-        if (sub.url.isNotEmpty && sub != SubtitleTrack.none) {
-          allSubtitles.add(sub);
-        }
-      }
-    } else if (_servers != null) {
-      for (final srv in _servers!) {
-        final streams = _streamsCache[_serverKey(srv)] ?? [];
-        for (final s in streams) {
-          for (final sub in s.subtitles) {
-            if (sub.url.isNotEmpty && sub != SubtitleTrack.none) {
-              final sLabel = sub.label ?? sub.language;
-              final label = '${srv.name} - $sLabel';
-              allSubtitles.add(sub.copyWith(label: label));
+    final serverStreams = <VideoServer, List<VideoStream>>{};
+
+    if (server != null && stream != null) {
+      final key = _serverKey(server);
+      serverStreams[server] = _streamsCache[key] ?? [stream];
+    }
+
+    if (_servers == null) {
+      try {
+        _servers = await ref
+            .read(animeSourceProvider(widget.source))
+            .getServers(widget.episode.id);
+      } catch (_) {}
+    }
+
+    if (_servers != null && _servers!.isNotEmpty) {
+      final missingServers = _servers!
+          .where((s) => !_streamsCache.containsKey(_serverKey(s)))
+          .toList();
+
+      if (missingServers.isNotEmpty) {
+        final results = await Future.wait(
+          missingServers.map((s) async {
+            try {
+              return await ref
+                  .read(animeSourceProvider(widget.source))
+                  .getSources(widget.episode.id, s);
+            } catch (_) {
+              return <VideoStream>[];
             }
-          }
+          }),
+        );
+        for (int i = 0; i < missingServers.length; i++) {
+          _streamsCache[_serverKey(missingServers[i])] = results[i];
+        }
+      }
+
+      for (final s in _servers!) {
+        final streams = _streamsCache[_serverKey(s)];
+        if (streams != null && streams.isNotEmpty) {
+          serverStreams[s] = streams;
         }
       }
     }
 
-    if (allSubtitles.isEmpty) {
-      return [];
-    }
+    final subsList = SubtitleExtractor.extractFromServers(serverStreams);
+    if (subsList.isEmpty) return [];
 
-    final uniqueSubs = <String, SubtitleTrack>{};
-    for (final sub in allSubtitles) {
-      if (!uniqueSubs.containsKey(sub.url)) {
-        uniqueSubs[sub.url] = sub;
-      }
-    }
-    final subsList = uniqueSubs.values.toList();
-
+    if (!mounted) return [];
     return AppBottomSheet.show<List<SubtitleTrack>>(
       context: context,
       title: 'Select Subtitles',
@@ -1073,7 +1089,7 @@ class _SubtitleSelectionSheetState extends State<_SubtitleSelectionSheet> {
               final isSelected = _selected.contains(sub);
               return CheckboxListTile(
                 title: Text(
-                  sub.label ?? sub.language,
+                  SubtitleExtractor.formatDisplayTitle(sub),
                   style: TextStyle(
                     fontWeight: isSelected
                         ? FontWeight.w600

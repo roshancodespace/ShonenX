@@ -8,6 +8,7 @@ import 'package:shonenx/core/network/http_client.dart';
 import 'package:shonenx/core/services/one_dm_service.dart';
 import 'package:shonenx/core/utils/device_info.dart';
 import 'package:shonenx/core/utils/http_x.dart';
+import 'package:shonenx/core/utils/subtitle_extractor.dart';
 import 'package:shonenx/features/downloads/domain/models/download_task.dart';
 import 'package:shonenx/features/downloads/providers/download_prefs_provider.dart';
 import 'package:shonenx/features/downloads/providers/download_provider.dart';
@@ -100,6 +101,10 @@ class BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
   String? streamsError;
   VideoStream? selectedStream;
 
+  List<SubtitleTrack> availableSubtitles = [];
+  bool loadingSubtitles = false;
+  final Map<String, List<VideoStream>> referenceStreamsCache = {};
+
   Set<String> selectedSubtitleLabels = {};
 
   int currentIndex = 0;
@@ -185,6 +190,10 @@ class BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
       selectedServer = null;
       availableStreams = null;
       selectedStream = null;
+      availableSubtitles = [];
+      loadingSubtitles = false;
+      selectedSubtitleLabels.clear();
+      referenceStreamsCache.clear();
     });
     fetchServersForReference(firstEp);
   }
@@ -237,6 +246,7 @@ class BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
   ) async {
     setState(() {
       loadingStreams = true;
+      loadingSubtitles = true;
       streamsError = null;
       availableStreams = null;
       selectedStream = null;
@@ -244,29 +254,36 @@ class BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
     });
     try {
       final sourceImpl = ref.read(animeSourceProvider(widget.source));
-      final streams = await sourceImpl.getSources(ep.id, server);
+      final serverKey = '${server.id}_${server.name}_${server.type.name}';
 
-      final splitStreamsList = <VideoStream>[];
-      final httpClient = ref.read(httpClientProvider);
+      List<VideoStream> splitStreamsList;
+      if (referenceStreamsCache.containsKey(serverKey)) {
+        splitStreamsList = referenceStreamsCache[serverKey]!;
+      } else {
+        final streams = await sourceImpl.getSources(ep.id, server);
+        splitStreamsList = <VideoStream>[];
+        final httpClient = ref.read(httpClientProvider);
 
-      for (final stream in streams) {
-        splitStreamsList.add(stream);
-        try {
-          final parsedQualities = await httpClient.splitM3U8(
-            stream.url,
-            headers: stream.headers,
-          );
-          for (final q in parsedQualities) {
-            splitStreamsList.add(
-              VideoStream(
-                url: q.url,
-                headers: stream.headers,
-                quality: q.quality,
-                subtitles: stream.subtitles,
-              ),
+        for (final stream in streams) {
+          splitStreamsList.add(stream);
+          try {
+            final parsedQualities = await httpClient.splitM3U8(
+              stream.url,
+              headers: stream.headers,
             );
-          }
-        } catch (_) {}
+            for (final q in parsedQualities) {
+              splitStreamsList.add(
+                VideoStream(
+                  url: q.url,
+                  headers: stream.headers,
+                  quality: q.quality,
+                  subtitles: stream.subtitles,
+                ),
+              );
+            }
+          } catch (_) {}
+        }
+        referenceStreamsCache[serverKey] = splitStreamsList;
       }
 
       if (mounted) {
@@ -278,11 +295,50 @@ class BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
           }
         });
       }
+
+      final serverStreams = <VideoServer, List<VideoStream>>{
+        server: splitStreamsList,
+      };
+
+      final otherServers = (availableServers ?? [])
+          .where((s) => s.id != server.id || s.type != server.type)
+          .toList();
+
+      if (otherServers.isNotEmpty) {
+        final streamsList = await Future.wait(
+          otherServers.map((s) async {
+            final key = '${s.id}_${s.name}_${s.type.name}';
+            if (referenceStreamsCache.containsKey(key)) {
+              return referenceStreamsCache[key]!;
+            }
+            try {
+              final sStreams = await sourceImpl.getSources(ep.id, s);
+              referenceStreamsCache[key] = sStreams;
+              return sStreams;
+            } catch (_) {
+              return <VideoStream>[];
+            }
+          }),
+        );
+        for (int i = 0; i < otherServers.length; i++) {
+          serverStreams[otherServers[i]] = streamsList[i];
+        }
+      }
+
+      final extractedSubs = SubtitleExtractor.extractFromServers(serverStreams);
+
+      if (mounted) {
+        setState(() {
+          availableSubtitles = extractedSubs;
+          loadingSubtitles = false;
+        });
+      }
     } catch (e) {
       if (mounted) {
         setState(() {
           streamsError = e.toString();
           loadingStreams = false;
+          loadingSubtitles = false;
         });
       }
     }
@@ -295,12 +351,6 @@ class BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
     if (selectedServer == null || selectedStream == null) return;
 
     if (fromIndexZero) {
-      final subLabels = await _promptSubtitlesForBatch();
-      if (subLabels == null) {
-        return; // User cancelled
-      }
-      selectedSubtitleLabels = subLabels;
-
       if (Platform.isAndroid) {
         final permission = await DeviceInfo.isAndroid10OrBelow()
             ? Permission.storage
@@ -456,7 +506,36 @@ class BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
           matchedStream.headers,
         );
 
-        final matchedSubs = matchedStream.subtitles
+        final epServerStreams = <VideoServer, List<VideoStream>>{
+          matchedServer: splitStreamsList,
+        };
+        var epSubtitles = SubtitleExtractor.extractFromServers(epServerStreams);
+
+        if (selectedSubtitleLabels.isNotEmpty && servers.length > 1) {
+          final hasAllSubs = selectedSubtitleLabels.every(
+            (sel) => epSubtitles.any((sub) => _matchesSubtitle(sub, {sel})),
+          );
+          if (!hasAllSubs) {
+            final otherServers = servers
+                .where((s) => s.id != matchedServer.id)
+                .toList();
+            final streamsList = await Future.wait(
+              otherServers.map((s) async {
+                try {
+                  return await sourceImpl.getSources(ep.id, s);
+                } catch (_) {
+                  return <VideoStream>[];
+                }
+              }),
+            );
+            for (int i = 0; i < otherServers.length; i++) {
+              epServerStreams[otherServers[i]] = streamsList[i];
+            }
+            epSubtitles = SubtitleExtractor.extractFromServers(epServerStreams);
+          }
+        }
+
+        final matchedSubs = epSubtitles
             .where(
               (sub) =>
                   _matchesSubtitle(sub, selectedSubtitleLabels) &&
@@ -627,53 +706,22 @@ class BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
 
   bool _matchesSubtitle(SubtitleTrack sub, Set<String> selected) {
     if (selected.isEmpty) return false;
-    final sLabel = sub.label ?? sub.language;
-    final lang = sub.language;
-    return selected.contains(sLabel) ||
-        selected.contains(lang) ||
-        selected.any(
-          (l) =>
-              l == sLabel ||
-              l == lang ||
-              l.endsWith(' - $sLabel') ||
-              l.endsWith(' - $lang'),
-        );
-  }
+    final display = SubtitleExtractor.formatDisplayTitle(sub).toLowerCase();
+    final sLabel = (sub.label ?? '').toLowerCase();
+    final lang = sub.language.toLowerCase();
 
-  Future<Set<String>?> _promptSubtitlesForBatch() async {
-    final allSubtitles = <SubtitleTrack>[];
-    if (selectedStream != null) {
-      for (final sub in selectedStream!.subtitles) {
-        if (sub.url.isNotEmpty && sub != SubtitleTrack.none) {
-          final sLabel = sub.label ?? sub.language;
-          allSubtitles.add(sub.copyWith(label: sLabel));
-        }
+    for (final sel in selected) {
+      final s = sel.toLowerCase();
+      if (s == display || s == sLabel || s == lang) return true;
+      if (display.contains(s) || s.contains(display)) return true;
+      if (sLabel.isNotEmpty && (sLabel.contains(s) || s.contains(sLabel))) {
+        return true;
+      }
+      if (lang.isNotEmpty && (lang.contains(s) || s.contains(lang))) {
+        return true;
       }
     }
-
-    if (allSubtitles.isEmpty) {
-      return {};
-    }
-
-    final uniqueSubs = <String, SubtitleTrack>{};
-    for (final sub in allSubtitles) {
-      if (!uniqueSubs.containsKey(sub.url)) {
-        uniqueSubs[sub.url] = sub;
-      }
-    }
-    final subsList = uniqueSubs.values.toList();
-
-    final selectedTracks = await AppBottomSheet.show<List<SubtitleTrack>>(
-      context: context,
-      title: 'Select Subtitles',
-      titleIcon: Icons.subtitles_rounded,
-      child: _SubtitleSelectionSheet(subtitles: subsList),
-    );
-
-    if (selectedTracks == null) {
-      return null;
-    }
-    return selectedTracks.map((e) => e.label ?? e.language).toSet();
+    return false;
   }
 
   Widget _buildCurrentStep() {
@@ -688,113 +736,5 @@ class BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
       case BatchStep.failedRecovery:
         return FailedRecoveryStep(state: this);
     }
-  }
-}
-
-class _SubtitleSelectionSheet extends StatefulWidget {
-  final List<SubtitleTrack> subtitles;
-
-  const _SubtitleSelectionSheet({required this.subtitles});
-
-  @override
-  State<_SubtitleSelectionSheet> createState() =>
-      _SubtitleSelectionSheetState();
-}
-
-class _SubtitleSelectionSheetState extends State<_SubtitleSelectionSheet> {
-  final Set<SubtitleTrack> _selected = {};
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final allSelected =
-        widget.subtitles.isNotEmpty &&
-        _selected.length == widget.subtitles.length;
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (widget.subtitles.length > 1)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '${_selected.length} of ${widget.subtitles.length} selected',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: cs.onSurfaceVariant,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                TextButton(
-                  onPressed: () {
-                    setState(() {
-                      if (allSelected) {
-                        _selected.clear();
-                      } else {
-                        _selected.addAll(widget.subtitles);
-                      }
-                    });
-                  },
-                  child: Text(allSelected ? 'Deselect All' : 'Select All'),
-                ),
-              ],
-            ),
-          ),
-        Flexible(
-          child: ListView.builder(
-            shrinkWrap: true,
-            physics: const BouncingScrollPhysics(),
-            itemCount: widget.subtitles.length,
-            itemBuilder: (context, index) {
-              final sub = widget.subtitles[index];
-              final isSelected = _selected.contains(sub);
-              return CheckboxListTile(
-                title: Text(
-                  sub.label ?? sub.language,
-                  style: TextStyle(
-                    fontWeight: isSelected
-                        ? FontWeight.w600
-                        : FontWeight.normal,
-                  ),
-                ),
-                value: isSelected,
-                activeColor: cs.primary,
-                onChanged: (checked) {
-                  setState(() {
-                    if (checked == true) {
-                      _selected.add(sub);
-                    } else {
-                      _selected.remove(sub);
-                    }
-                  });
-                },
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              );
-            },
-          ),
-        ),
-        const SizedBox(height: 16),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(null),
-              child: const Text('Cancel'),
-            ),
-            const SizedBox(width: 8),
-            FilledButton(
-              onPressed: () => Navigator.of(context).pop(_selected.toList()),
-              child: const Text('Download'),
-            ),
-          ],
-        ),
-      ],
-    );
   }
 }

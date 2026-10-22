@@ -48,26 +48,38 @@ class NotificationSubscription {
     'createdAt': createdAt.toIso8601String(),
   };
 
-  static NotificationSubscription fromBackupMap(Map<String, dynamic> m) =>
-      NotificationSubscription()
-        ..type = SubscriptionType.values.firstWhere(
-          (e) => e.name == m['type'],
-          orElse: () => SubscriptionType.animeAiring,
-        )
-        ..referenceId = m['referenceId'] as String
-        ..title = m['title'] as String
-        ..image = m['image'] as String
-        ..isEnabled = m['isEnabled'] as bool? ?? true
-        ..mode = SubscriptionMode.values.firstWhere(
-          (e) => e.name == m['mode'],
-          orElse: () => SubscriptionMode.nextOnly,
-        )
-        ..offsetMinutes = m['offsetMinutes'] as int? ?? 0
-        ..upcomingIdentifier = m['upcomingIdentifier'] as String?
-        ..upcomingTime = m['upcomingTime'] != null
-            ? DateTime.tryParse(m['upcomingTime'] as String)
-            : null
-        ..createdAt =
-            DateTime.tryParse(m['createdAt'] as String? ?? '') ??
-            DateTime.now();
+  static NotificationSubscription fromBackupMap(Map<String, dynamic> m) {
+    final typeName = m['type']?.toString();
+    final type = SubscriptionType.values.firstWhere(
+      (e) => e.name == typeName,
+      orElse: () => SubscriptionType.animeAiring,
+    );
+    final modeName = m['mode']?.toString();
+    final mode = SubscriptionMode.values.firstWhere(
+      (e) => e.name == modeName,
+      orElse: () => SubscriptionMode.nextOnly,
+    );
+
+    int offset = 0;
+    final rawOffset = m['offsetMinutes'];
+    if (rawOffset is num) {
+      offset = rawOffset.toInt();
+    } else if (rawOffset is String) {
+      offset = int.tryParse(rawOffset) ?? 0;
+    }
+
+    return NotificationSubscription()
+      ..type = type
+      ..referenceId = (m['referenceId'] ?? m['id'] ?? '')?.toString() ?? ''
+      ..title =
+          (m['title'] ?? m['name'] ?? 'Untitled')?.toString() ?? 'Untitled'
+      ..image = (m['image'] ?? m['cover'] ?? '')?.toString() ?? ''
+      ..isEnabled = m['isEnabled'] is bool ? (m['isEnabled'] as bool) : true
+      ..mode = mode
+      ..offsetMinutes = offset
+      ..upcomingIdentifier = m['upcomingIdentifier']?.toString()
+      ..upcomingTime = DateTime.tryParse(m['upcomingTime']?.toString() ?? '')
+      ..createdAt =
+          DateTime.tryParse(m['createdAt']?.toString() ?? '') ?? DateTime.now();
+  }
 }

@@ -5,12 +5,12 @@ class StreamCleaner {
   );
 
   static final RegExp _domainRegex = RegExp(
-    r'(\b[a-zA-Z0-9_\-]+\.(?:com|org|net|tw|site|xyz|info|tv|to|is|ru|me|top|vip|pro|cc|in|co)\b)|(-[0-9]*[a-zA-Z0-9_\-]+\.[a-zA-Z]{2,4})',
+    r'-?[a-zA-Z0-9\-]{2,30}\.(?:com|org|net|tw|site|xyz|info|tv|to|is|ru|me|top|vip|pro|cc|in|co)\b',
     caseSensitive: false,
   );
 
   static final RegExp _extRegex = RegExp(
-    r'\.(mkv|mp4|avi|ts|m3u8|webm|mov|flv)$',
+    r'\.(mkv|mp4|avi|ts|m3u8|webm|mov|flv)(?=\s*\[|\s*\(|\s|$)',
     caseSensitive: false,
   );
 
@@ -28,6 +28,18 @@ class StreamCleaner {
     r'\b(DDP\s*5\.1|DD\s*5\.1|Atmos|TrueHD|5\.1|7\.1|Dual[\s\-]Audio|Multi[\s\-]Audio|AAC(?:\s*2\.0)?)\b',
     caseSensitive: false,
   );
+
+  /// Checks if a string is a noisy/bloated release filename or link title.
+  static bool isBloated(String raw) {
+    if (raw.length > 50) return true;
+    if (_extRegex.hasMatch(raw)) return true;
+    if (_domainRegex.hasMatch(raw)) return true;
+    if (_releaseTagsRegex.hasMatch(raw)) return true;
+    if (RegExp(r'[a-zA-Z0-9]\.[a-zA-Z0-9]+\.[a-zA-Z0-9]+').hasMatch(raw)) {
+      return true;
+    }
+    return false;
+  }
 
   /// Extracts clean standardized resolution (e.g. '4K', '1440p', '1080p', '720p', '480p', '360p', '240p', or 'Auto').
   static String extractResolution(String? raw) {
@@ -117,33 +129,59 @@ class StreamCleaner {
     return match?.group(1)?.trim();
   }
 
-  /// Extracts server or host name (e.g. "FSL Server" from "V-Cloud[FSL Server]").
+  /// Extracts server or host name (e.g. "V-Cloud [FSL Server]" from "V-Cloud[FSL Server]").
   static String? extractServer(String raw) {
     final trimmed = raw.trim();
 
-    // Pattern: Provider[Server Name] e.g. V-Cloud[FSL Server] or [FSL Server 2]
-    final bracketMatch = RegExp(
-      r'^(?:[A-Za-z0-9_\-\s]+)?\[([^\]]+)\]',
+    // 1. Pattern: Provider[Server Name] e.g. V-Cloud[FSL Server] or HubCloud[Server 1]
+    final providerBracketMatch = RegExp(
+      r'^([A-Za-z0-9_\-\s]+)\[([^\]]+)\]',
     ).firstMatch(trimmed);
-    if (bracketMatch != null) {
-      final inside = bracketMatch.group(1)!.trim();
-      // Make sure it's not a file size or resolution
+    if (providerBracketMatch != null) {
+      final provider = providerBracketMatch.group(1)!.trim();
+      final inside = providerBracketMatch.group(2)!.trim();
       if (!_sizeRegex.hasMatch(inside) &&
           _normalizeResolutionWord(inside) == null) {
+        if (provider.isNotEmpty) {
+          return '$provider [$inside]';
+        }
         return inside;
       }
     }
 
-    // Pattern: Server Name - ... or Server Name: ...
-    final prefixMatch = RegExp(
-      r'^([A-Za-z0-9\s]+(?:Server|Mirror|Cloud|Wish|Fast|Stream|Hub)[A-Za-z0-9\s]*?)[\s\-:]',
-      caseSensitive: false,
-    ).firstMatch(trimmed);
-    if (prefixMatch != null) {
-      return prefixMatch.group(1)!.trim();
+    // 2. Pattern: Any bracket containing a server/link name (not size and not resolution)
+    final bracketMatches = RegExp(r'\[([^\]]+)\]').allMatches(trimmed);
+    for (final m in bracketMatches) {
+      final inside = m.group(1)!.trim();
+      if (!_sizeRegex.hasMatch(inside) &&
+          _normalizeResolutionWord(inside) == null &&
+          !inside.toLowerCase().contains('vegamovies')) {
+        return inside;
+      }
     }
 
-    // Pattern: Simple server name like "Server 1" or "FSL 2"
+    // 3. Pattern: Delimiter prefix (e.g. "Vidcloud - 1080p" or "Server 1 : 1080p")
+    final delimMatch = RegExp(
+      r'^([^–—\-:|]+?)(?:\s+[–—\-]\s+|\s*[:|]\s*)',
+    ).firstMatch(trimmed);
+    if (delimMatch != null) {
+      final prefix = delimMatch.group(1)!.trim();
+      if (_normalizeResolutionWord(prefix) == null &&
+          !prefix.toLowerCase().startsWith('http')) {
+        return prefix;
+      }
+    }
+
+    // 4. Pattern: Known host / server names anywhere in string
+    final hostMatch = RegExp(
+      r'\b(V-?Cloud|HubCloud|Gofile|PixelDrain|GDFlix|DropGalaxy|FastCloud|StreamWish|StreamTape|StreamSB|Vidcloud|UpCloud|MegaCloud|Mp4Upload|FileLions|DoodStream|MixDrop)\b',
+      caseSensitive: false,
+    ).firstMatch(trimmed);
+    if (hostMatch != null) {
+      return hostMatch.group(0)!.trim();
+    }
+
+    // 5. Pattern: Simple server name like "Server 1" or "Mirror 2"
     final simpleMatch = RegExp(
       r'\b(Server\s*\d+|Mirror\s*\d+|Host\s*\d+)\b',
       caseSensitive: false,
@@ -176,15 +214,19 @@ class StreamCleaner {
   }
 
   /// Cleans and formats a stream title for stream/server selection.
-  /// E.g. "V-Cloud[FSL Server] Spider-Man...[13.13 GB] (4K)" -> "FSL Server • 4K (13.13 GB)"
+  /// If title is normal/clean (not a bloated raw release filename), returns it intact.
+  /// E.g. "V-Cloud[FSL Server] Spider-Man...[13.13 GB] (4K)" -> "V-Cloud [FSL Server] • 4K (13.13 GB)"
+  /// E.g. "Vidcloud - 1080p" -> "Vidcloud - 1080p"
   static String cleanStreamTitle(String? raw, {String? explicitSize}) {
     if (raw == null || raw.trim().isEmpty) return 'Auto';
     final trimmed = raw.trim();
     if (trimmed.toLowerCase() == 'auto') return 'Auto';
 
-    // If it's already a clean simple quality like "1080p", "720p", "4K"
-    if (_isCleanShortQuality(trimmed)) {
-      if (explicitSize != null && explicitSize.isNotEmpty) {
+    // If it's not a bloated release filename, keep it intact!
+    if (!isBloated(trimmed)) {
+      if (explicitSize != null &&
+          explicitSize.isNotEmpty &&
+          !trimmed.contains(explicitSize)) {
         return '$trimmed ($explicitSize)';
       }
       return trimmed;
@@ -195,76 +237,41 @@ class StreamCleaner {
     final size = explicitSize ?? extractSize(trimmed);
     final audioCodec = extractAudioCodec(trimmed);
 
-    final parts = <String>[];
-
+    // If we have a server name, we build a clean title: Server • Resolution (Size) • AudioCodec
     if (server != null && server.isNotEmpty) {
-      parts.add(server);
-    }
-
-    if (resolution != 'Auto') {
-      if (size != null && size.isNotEmpty) {
-        parts.add('$resolution ($size)');
-      } else {
-        parts.add(resolution);
+      final parts = <String>[server];
+      if (resolution != 'Auto') {
+        if (size != null && size.isNotEmpty) {
+          parts.add('$resolution ($size)');
+        } else {
+          parts.add(resolution);
+        }
+      } else if (size != null && size.isNotEmpty) {
+        parts.add(size);
       }
-    } else if (size != null && size.isNotEmpty) {
-      parts.add(size);
-    }
 
-    if (audioCodec != null && audioCodec.isNotEmpty) {
-      // Only append if title is short enough
-      if (parts.length <= 2) {
-        parts.add(audioCodec);
+      if (audioCodec != null && audioCodec.isNotEmpty) {
+        if (parts.length <= 2) {
+          parts.add(audioCodec);
+        }
       }
-    }
 
-    if (parts.isNotEmpty) {
       return parts.join(' • ');
     }
 
-    // Fallback: strip domains, file extensions, and repetitive dots
-    return _stripNoiseFallback(trimmed);
+    // Fallback: strip noise, but DO NOT drop words or collapse to just resolution
+    return _stripNoiseFallback(
+      trimmed,
+      resolution: resolution,
+      size: size,
+      audioCodec: audioCodec,
+    );
   }
 
   /// Cleans and formats a quality label for the quality selector dropdown/sheet.
-  /// E.g. "4K (13.13 GB) • FSL Server"
+  /// Keeps identifying server, size, and source information intact.
   static String cleanQualityLabel(String? raw, {String? explicitSize}) {
-    if (raw == null || raw.trim().isEmpty) return 'Auto';
-    final trimmed = raw.trim();
-    if (trimmed.toLowerCase() == 'auto') return 'Auto';
-
-    if (_isCleanShortQuality(trimmed)) {
-      if (explicitSize != null && explicitSize.isNotEmpty) {
-        return '$trimmed ($explicitSize)';
-      }
-      return trimmed;
-    }
-
-    final resolution = extractResolution(trimmed);
-    final size = explicitSize ?? extractSize(trimmed);
-    final server = extractServer(trimmed);
-    final audioCodec = extractAudioCodec(trimmed);
-
-    final parts = <String>[];
-
-    final resLabel = StringBuffer();
-    resLabel.write(resolution != 'Auto' ? resolution : 'Quality');
-    if (size != null && size.isNotEmpty) {
-      resLabel.write(' ($size)');
-    }
-    parts.add(resLabel.toString());
-
-    if (server != null && server.isNotEmpty) {
-      parts.add(server);
-    } else if (audioCodec != null && audioCodec.isNotEmpty) {
-      parts.add(audioCodec);
-    }
-
-    if (parts.isNotEmpty) {
-      return parts.join(' • ');
-    }
-
-    return _stripNoiseFallback(trimmed);
+    return cleanStreamTitle(raw, explicitSize: explicitSize);
   }
 
   /// Sanitizes any preference string to guarantee that long filenames or urls
@@ -301,29 +308,23 @@ class StreamCleaner {
     return 'Auto';
   }
 
-  static bool _isCleanShortQuality(String str) {
-    final lower = str.toLowerCase();
-    const cleanList = [
-      'auto',
-      '4k',
-      '1440p',
-      '1080p',
-      '720p',
-      '480p',
-      '360p',
-      '240p',
-      'fhd',
-      'hd',
-      'sd',
-    ];
-    return cleanList.contains(lower);
-  }
-
-  static String _stripNoiseFallback(String raw) {
+  static String _stripNoiseFallback(
+    String raw, {
+    String? resolution,
+    String? size,
+    String? audioCodec,
+  }) {
     var cleaned = raw
         .replaceAll(_extRegex, '')
         .replaceAll(_domainRegex, '')
         .replaceAll(_releaseTagsRegex, '');
+
+    if (size != null && size.isNotEmpty) {
+      cleaned = cleaned
+          .replaceAll('[$size]', '')
+          .replaceAll('($size)', '')
+          .replaceAll(size, '');
+    }
 
     // Replace dots and underscores with spaces
     cleaned = cleaned.replaceAll(RegExp(r'[\._]'), ' ');
@@ -331,9 +332,39 @@ class StreamCleaner {
     // Normalize multiple spaces
     cleaned = cleaned.replaceAll(RegExp(r'\s+'), ' ').trim();
 
-    if (cleaned.length > 40) {
-      return '${cleaned.substring(0, 37).trim()}...';
+    // Avoid duplicate resolution in text if present
+    if (resolution != null && resolution != 'Auto') {
+      cleaned = cleaned
+          .replaceAll(RegExp('\\b$resolution\\b', caseSensitive: false), '')
+          .trim();
+      cleaned = cleaned.replaceAll(RegExp(r'\s+'), ' ').trim();
     }
-    return cleaned.isEmpty ? 'Stream' : cleaned;
+
+    final parts = <String>[];
+    if (cleaned.isNotEmpty) {
+      if (cleaned.length > 35) {
+        cleaned = '${cleaned.substring(0, 32).trim()}...';
+      }
+      parts.add(cleaned);
+    }
+
+    if (resolution != null && resolution != 'Auto') {
+      if (size != null && size.isNotEmpty) {
+        parts.add('$resolution ($size)');
+      } else {
+        parts.add(resolution);
+      }
+    } else if (size != null && size.isNotEmpty) {
+      parts.add(size);
+    }
+
+    if (audioCodec != null && audioCodec.isNotEmpty) {
+      parts.add(audioCodec);
+    }
+
+    if (parts.isNotEmpty) {
+      return parts.join(' • ');
+    }
+    return resolution != 'Auto' ? (resolution ?? 'Stream') : 'Stream';
   }
 }

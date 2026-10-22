@@ -150,6 +150,7 @@ class PlayerBottomSheetTrigger<T> extends StatelessWidget {
   final bool? isDisabled;
   final bool withBadge;
   final String? displayText;
+  final String? sheetTitle;
   final Widget? displayWidget;
   final bool isHighlighted;
   final String? Function(T)? subtitleBuilder;
@@ -163,6 +164,7 @@ class PlayerBottomSheetTrigger<T> extends StatelessWidget {
     required this.items,
     required this.itemLabel,
     required this.onChanged,
+    this.sheetTitle,
     this.onLongPress,
     this.isDisabled,
     this.withBadge = true,
@@ -190,7 +192,7 @@ class PlayerBottomSheetTrigger<T> extends StatelessWidget {
                   () {
                     AppBottomSheet.showSelector<T>(
                       context: context,
-                      title: displayText ?? '',
+                      title: sheetTitle ?? displayText ?? '',
                       items: items,
                       selectedValue: value,
                       itemLabel: itemLabel,

@@ -13,6 +13,7 @@ import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/core/router/app_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/network/doh/doh_resolver.dart';
+import 'package:shonenx/core/network/session_manager.dart';
 import 'package:shonenx/core/remote_config/ui/remote_config_listener.dart';
 import 'package:shonenx/core/theme/app_theme.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
@@ -59,6 +60,7 @@ void main(List<String> args) async {
     ).wait;
     log.i('AppInit and SharedPreferences ready');
     DohResolver.instance.init(sharedPreference);
+    SessionManager().initWithPrefs(sharedPreference);
 
     Uri? startupUri;
 

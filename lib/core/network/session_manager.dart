@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:anymex_extension_runtime_bridge/anymex_extension_runtime_bridge.dart'
     as bridge;
-import 'package:webview_all/webview_all.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 
 final sessionManagerProvider = Provider<SessionManager>(
@@ -17,12 +16,18 @@ class BypassSession {
   final DateTime updatedAt;
 
   BypassSession({
-    required this.cookie,
-    required this.userAgent,
+    required String cookie,
+    required String userAgent,
     DateTime? updatedAt,
-  }) : updatedAt = updatedAt ?? DateTime.now();
+  }) : cookie = _sanitize(cookie),
+       userAgent = _sanitize(userAgent),
+       updatedAt = updatedAt ?? DateTime.now();
 
   bool get hasClearance => cookie.contains('cf_clearance');
+
+  static String _sanitize(String val) {
+    return val.replaceAll('\r', '').replaceAll('\n', '').trim();
+  }
 
   factory BypassSession.fromJson(Map<String, dynamic> json) {
     return BypassSession(
@@ -55,7 +60,7 @@ class BypassSession {
   }
 }
 
-/// Manages Cloudflare bypass sessions, mapping cookies and user-agents to domains.
+/// Manager for Cloudflare cookies and User-Agent bypass sessions.
 class SessionManager {
   static final SessionManager _instance = SessionManager._internal();
   factory SessionManager() => _instance;
@@ -63,136 +68,147 @@ class SessionManager {
 
   static final _log = AppLogger.scope(SessionManager);
 
-  /// Map of Host/Domain -> BypassSession
-  Map<String, BypassSession> _sessions = {};
+  final Map<String, BypassSession> _sessions = {};
   bool _initialized = false;
-  Completer<void>? _initCompleter;
+  Future<void>? _initFuture;
 
-  /// Explicitly initialize SessionManager and populate bridge maps from disk.
-  Future<void> init() => _init();
-
-  Future<void> _init() async {
+  /// Synchronously initialize with an existing SharedPreferences instance.
+  void initWithPrefs(SharedPreferences prefs) {
     if (_initialized) return;
-    if (_initCompleter != null) return _initCompleter!.future;
+    _loadFromPrefs(prefs);
+    _initialized = true;
+  }
+
+  /// Initialize SessionManager and restore persisted sessions.
+  Future<void> _init([SharedPreferences? prefs]) async {
+    if (_initialized) return;
+    if (_initFuture != null) return _initFuture;
 
     final completer = Completer<void>();
-    _initCompleter = completer;
+    _initFuture = completer.future;
 
     try {
-      _log.d('Loading persisted Cloudflare sessions...');
-      final prefs = await SharedPreferences.getInstance();
-      final sessionsJsonStr =
-          prefs.getString('cloudflare_bypass_sessions') ?? '{}';
-      final Map<String, dynamic> decoded = jsonDecode(sessionsJsonStr);
-
-      _sessions = decoded.map((key, value) {
-        return MapEntry(
-          key,
-          BypassSession.fromJson(value as Map<String, dynamic>),
-        );
-      });
-
-      // Synchronize all restored sessions to AnymeXRuntimeBridge memory maps
-      for (final entry in _sessions.entries) {
-        _syncToBridgeMemory(
-          entry.key,
-          entry.value.cookie,
-          entry.value.userAgent,
-        );
-      }
-
+      final p = prefs ?? await SharedPreferences.getInstance();
+      _loadFromPrefs(p);
       _initialized = true;
-      _log.s(
-        'Initialized with ${_sessions.length} session(s) cached: [${_sessions.keys.join(', ')}]',
-      );
       completer.complete();
     } catch (e, st) {
       _initialized = true;
       _log.e('Failed to load sessions from SharedPreferences: $e', e, st);
       completer.complete();
     } finally {
-      _initCompleter = null;
+      _initFuture = null;
     }
   }
 
-  /// Extracts the hostname from a URL or raw domain string.
-  static String extractHost(String urlOrDomain) {
-    final trimmed = urlOrDomain.trim();
-    if (trimmed.isEmpty) return '';
-
+  void _loadFromPrefs(SharedPreferences prefs) {
     try {
-      final uri = Uri.tryParse(trimmed);
-      if (uri != null && uri.hasAuthority && uri.host.isNotEmpty) {
-        return uri.host.toLowerCase();
-      }
-    } catch (_) {}
+      final raw = prefs.getString('cloudflare_bypass_sessions');
+      if (raw == null || raw.isEmpty) return;
 
-    String host = trimmed;
-    if (host.contains('://')) {
-      host = host.split('://').last;
+      final Map<String, dynamic> decoded = jsonDecode(raw);
+      final Map<String, BypassSession> loaded = {};
+
+      decoded.forEach((key, value) {
+        if (value is Map<String, dynamic>) {
+          final host = extractHost(key);
+          if (host.isNotEmpty) {
+            loaded[host] = BypassSession.fromJson(value);
+          }
+        }
+      });
+
+      _sessions.addAll(loaded);
+
+      // Sync restored sessions into AnymeXRuntimeBridge memory maps
+      _syncAllToBridge();
+
+      _log.s(
+        'Restored ${_sessions.length} session(s) cached: [${_sessions.keys.join(', ')}]',
+      );
+    } catch (e, st) {
+      _log.e('Failed to parse persisted sessions: $e', e, st);
     }
-    host = host.split('/').first;
-    host = host.split('?').first;
-    host = host.split('#').first;
-    if (host.contains(':')) {
-      host = host.split(':').first;
-    }
-    return host.toLowerCase().trim();
   }
 
-  /// Finds a [BypassSession] for [urlOrDomain] using progressive domain fallback:
-  /// 1. Exact host
-  /// 2. Host without 'www.'
-  /// 3. Host with 'www.'
-  /// 4. Root/parent domain (e.g. sub.domain.com -> domain.com)
-  /// 5. Suffix/subdomain match against existing session keys
+  /// Extracts the normalized lowercase hostname from a URL or raw domain.
+  static String extractHost(String urlOrDomain) {
+    var raw = urlOrDomain.trim();
+    if (raw.isEmpty) return '';
+
+    if (raw.contains('://')) {
+      final uri = Uri.tryParse(raw);
+      if (uri != null && uri.host.isNotEmpty) {
+        return _cleanHost(uri.host);
+      }
+      raw = raw.split('://').last;
+    }
+
+    final slashIdx = raw.indexOf('/');
+    if (slashIdx != -1) raw = raw.substring(0, slashIdx);
+
+    final qIdx = raw.indexOf('?');
+    if (qIdx != -1) raw = raw.substring(0, qIdx);
+
+    final hIdx = raw.indexOf('#');
+    if (hIdx != -1) raw = raw.substring(0, hIdx);
+
+    final colonIdx = raw.indexOf(':');
+    if (colonIdx != -1 && !raw.contains('::')) {
+      raw = raw.substring(0, colonIdx);
+    }
+
+    return _cleanHost(raw);
+  }
+
+  static String _cleanHost(String host) {
+    var h = host.trim().toLowerCase();
+    if (h.endsWith('.')) {
+      h = h.substring(0, h.length - 1);
+    }
+    return h;
+  }
+
+  /// Fast, deterministic O(1) domain lookup with safe hierarchy fallbacks.
   BypassSession? _lookupSession(String urlOrDomain) {
     final host = extractHost(urlOrDomain);
-    if (host.isEmpty) return null;
+    if (host.isEmpty || _sessions.isEmpty) return null;
 
     // 1. Exact match
-    if (_sessions.containsKey(host)) return _sessions[host];
+    final exact = _sessions[host];
+    if (exact != null) return exact;
 
-    // 2. Without 'www.'
-    final cleanHost = host.startsWith('www.') ? host.substring(4) : host;
-    if (_sessions.containsKey(cleanHost)) return _sessions[cleanHost];
-
-    // 3. With 'www.'
-    final withWww = 'www.$cleanHost';
-    if (_sessions.containsKey(withWww)) return _sessions[withWww];
-
-    // 4. Parent domain
-    final parts = host.split('.');
-    if (parts.length >= 2) {
-      final parentDomain = parts.sublist(parts.length - 2).join('.');
-      if (_sessions.containsKey(parentDomain)) return _sessions[parentDomain];
+    // 2. www-stripped or www-prepended match
+    if (host.startsWith('www.')) {
+      final clean = host.substring(4);
+      final match = _sessions[clean];
+      if (match != null) return match;
+    } else {
+      final withWww = 'www.$host';
+      final match = _sessions[withWww];
+      if (match != null) return match;
     }
 
-    // 5. Suffix match
-    for (final entry in _sessions.entries) {
-      final key = entry.key;
-      if (host.endsWith('.$key') || key.endsWith('.$host')) {
-        return entry.value;
+    // 3. Parent domain lookups (e.g. sub.domain.com -> domain.com)
+    final parts = host.split('.');
+    if (parts.length > 2) {
+      for (int i = 1; i < parts.length - 1; i++) {
+        final parent = parts.sublist(i).join('.');
+        final match = _sessions[parent];
+        if (match != null) return match;
       }
     }
 
     return null;
   }
 
-  /// Injects cookies and user-agent directly into AnymeXRuntimeBridge in-memory maps
-  /// for host, cleanHost, www-host, and parentDomain so extensions find them immediately.
-  void _syncToBridgeMemory(String host, String cookie, String userAgent) {
+  /// Injects cookies and user-agent into AnymeXRuntimeBridge memory maps.
+  void _syncHostToBridge(String host, String cookie, String userAgent) {
     if (host.isEmpty) return;
     final cleanHost = host.startsWith('www.') ? host.substring(4) : host;
     final withWww = 'www.$cleanHost';
-    final parts = cleanHost.split('.');
-    final parentDomain = parts.length >= 2
-        ? parts.sublist(parts.length - 2).join('.')
-        : '';
 
     final targets = <String>{host, cleanHost, withWww};
-    if (parentDomain.isNotEmpty) targets.add(parentDomain);
-
     for (final target in targets) {
       if (cookie.isNotEmpty) {
         bridge.AnymeXRuntimeBridge.cookiesMap[target] = cookie;
@@ -203,16 +219,22 @@ class SessionManager {
     }
   }
 
-  /// Dispatches cookies and user-agent to the native extension engine if active.
+  void _syncAllToBridge() {
+    for (final entry in _sessions.entries) {
+      _syncHostToBridge(entry.key, entry.value.cookie, entry.value.userAgent);
+    }
+  }
+
+  /// Dispatches cookies and user-agent to the native extension engine safely.
   Future<void> _pushToBridgeNative(
-    String origin,
+    String host,
     String cookie,
     String userAgent,
   ) async {
-    if (!bridge.AnymeXRuntimeBridge.controller.isReady.value ||
-        origin.isEmpty) {
+    if (!bridge.AnymeXRuntimeBridge.controller.isReady.value || host.isEmpty) {
       return;
     }
+    final origin = 'https://$host';
     try {
       if (cookie.isNotEmpty) {
         await bridge.AnymeXRuntimeBridge.setCookies(origin, cookie);
@@ -221,111 +243,89 @@ class SessionManager {
         await bridge.AnymeXRuntimeBridge.setUserAgent(origin, userAgent);
       }
       _log.d('Pushed cookies & UA to native extension runtime for $origin');
-    } catch (e, st) {
-      _log.w(
-        'Failed to push to native extension runtime for $origin: $e',
-        e,
-        st,
-      );
+    } catch (e) {
+      _log.w('Failed to push to native extension runtime for $origin: $e');
     }
   }
 
+  /// Saves session data for [urlOrDomain].
   Future<void> saveSession(
     String urlOrDomain, {
     String? cookie,
     String? userAgent,
   }) async {
-    await _saveSession(urlOrDomain, cookie: cookie, userAgent: userAgent);
-  }
-
-  Future<void> _saveSession(
-    String urlOrDomain, {
-    String? cookie,
-    String? userAgent,
-  }) async {
-    await _init();
-
     final host = extractHost(urlOrDomain);
-    if (host.isEmpty) {
-      _log.w('Cannot save session: invalid urlOrDomain "$urlOrDomain"');
+    if (host.isEmpty) return;
+
+    final cleanHost = host.startsWith('www.') ? host.substring(4) : host;
+    final current =
+        _lookupSession(cleanHost) ?? BypassSession(cookie: '', userAgent: '');
+
+    final newCookie = cookie != null && cookie.isNotEmpty
+        ? cookie
+        : current.cookie;
+    final newUA = userAgent != null && userAgent.isNotEmpty
+        ? userAgent
+        : current.userAgent;
+
+    if (newCookie == current.cookie &&
+        newUA == current.userAgent &&
+        _sessions.containsKey(cleanHost)) {
       return;
     }
 
-    final cleanHost = host.startsWith('www.') ? host.substring(4) : host;
-    final origin = _getOrigin(urlOrDomain);
+    final updated = current.copyWith(
+      cookie: newCookie,
+      userAgent: newUA,
+      updatedAt: DateTime.now(),
+    );
 
-    final currentSession =
-        _lookupSession(host) ?? BypassSession(cookie: '', userAgent: '');
-
-    String updatedCookie = currentSession.cookie;
-    String updatedUA = currentSession.userAgent;
-    bool changed = false;
-
-    if (cookie != null &&
-        cookie.isNotEmpty &&
-        currentSession.cookie != cookie) {
-      updatedCookie = cookie;
-      changed = true;
+    _sessions[cleanHost] = updated;
+    if (host != cleanHost) {
+      _sessions[host] = updated;
     }
 
-    if (userAgent != null &&
-        userAgent.isNotEmpty &&
-        currentSession.userAgent != userAgent) {
-      updatedUA = userAgent;
-      changed = true;
+    // Sync bridge memory maps immediately
+    _syncHostToBridge(cleanHost, newCookie, newUA);
+    if (host != cleanHost) {
+      _syncHostToBridge(host, newCookie, newUA);
     }
 
-    if (changed || !_sessions.containsKey(cleanHost)) {
-      final newSession = currentSession.copyWith(
-        cookie: updatedCookie,
-        userAgent: updatedUA,
-        updatedAt: DateTime.now(),
-      );
+    // Persist to disk asynchronously
+    unawaited(_persistSessions());
 
-      _sessions[cleanHost] = newSession;
-      _sessions[host] = newSession;
-
-      // Update in-memory bridge maps
-      _syncToBridgeMemory(cleanHost, updatedCookie, updatedUA);
-
-      // Persist to SharedPreferences
-      try {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString(
-          'cloudflare_bypass_sessions',
-          jsonEncode(_sessions.map((k, v) => MapEntry(k, v.toJson()))),
-        );
-        _log.s(
-          'Saved session for $cleanHost (cf_clearance: ${newSession.hasClearance}, cookies: ${updatedCookie.isNotEmpty}, UA: ${updatedUA.isNotEmpty})',
-        );
-      } catch (e, st) {
-        _log.e('Failed to persist session to SharedPreferences', e, st);
-      }
-
-      // Push to native bridge if runtime is active
-      if (origin.isNotEmpty) {
-        await _pushToBridgeNative(origin, updatedCookie, updatedUA);
-      }
-    }
+    // Push to native bridge if runtime is active
+    unawaited(_pushToBridgeNative(cleanHost, newCookie, newUA));
   }
 
-  Future<String> getCookies(String urlOrDomain) async {
-    await _init();
-    return getCookiesSync(urlOrDomain);
+  Future<void> _persistSessions() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final copy = Map<String, BypassSession>.from(_sessions);
+      final encoded = jsonEncode(copy.map((k, v) => MapEntry(k, v.toJson())));
+      await prefs.setString('cloudflare_bypass_sessions', encoded);
+    } catch (e, st) {
+      _log.e('Failed to persist session to SharedPreferences: $e', e, st);
+    }
   }
 
   String getCookiesSync(String urlOrDomain) {
     return _lookupSession(urlOrDomain)?.cookie ?? '';
   }
 
-  Future<String?> getUserAgent(String urlOrDomain) async {
-    await _init();
-    return getUserAgentSync(urlOrDomain);
+  Future<String> getCookies(String urlOrDomain) async {
+    if (!_initialized) await _init();
+    return getCookiesSync(urlOrDomain);
   }
 
   String? getUserAgentSync(String urlOrDomain) {
     final ua = _lookupSession(urlOrDomain)?.userAgent;
     return (ua != null && ua.isNotEmpty) ? ua : null;
+  }
+
+  Future<String?> getUserAgent(String urlOrDomain) async {
+    if (!_initialized) await _init();
+    return getUserAgentSync(urlOrDomain);
   }
 
   bool hasClearance(String urlOrDomain) {
@@ -337,7 +337,6 @@ class SessionManager {
   }
 
   Future<void> clearSession(String urlOrDomain) async {
-    await _init();
     final host = extractHost(urlOrDomain);
     if (host.isEmpty) return;
 
@@ -356,20 +355,11 @@ class SessionManager {
     bridge.AnymeXRuntimeBridge.userAgentMap.remove(cleanHost);
     bridge.AnymeXRuntimeBridge.userAgentMap.remove(withWww);
 
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(
-        'cloudflare_bypass_sessions',
-        jsonEncode(_sessions.map((k, v) => MapEntry(k, v.toJson()))),
-      );
-      _log.i('Cleared session for $cleanHost');
-    } catch (e, st) {
-      _log.e('Failed to persist cleared session in SharedPreferences', e, st);
-    }
+    unawaited(_persistSessions());
+    _log.i('Cleared session for $cleanHost');
   }
 
   Future<void> clearAllSessions() async {
-    await _init();
     _sessions.clear();
     bridge.AnymeXRuntimeBridge.cookiesMap.clear();
     bridge.AnymeXRuntimeBridge.userAgentMap.clear();
@@ -379,172 +369,7 @@ class SessionManager {
       await prefs.remove('cloudflare_bypass_sessions');
       _log.i('Cleared all Cloudflare sessions');
     } catch (e, st) {
-      _log.e('Failed to clear sessions in SharedPreferences', e, st);
+      _log.e('Failed to clear sessions from SharedPreferences: $e', e, st);
     }
-  }
-
-  Future<void> syncFromWebView(
-    WebViewController controller,
-    String fallbackUrl,
-  ) async {
-    final log = _log.child('syncFromWebView');
-    log.i('Extracting session from WebView for: $fallbackUrl');
-
-    String currentUrl = fallbackUrl;
-    try {
-      final url = await controller.currentUrl();
-      if (url != null && url.isNotEmpty) {
-        currentUrl = url;
-      }
-    } catch (e) {
-      log.w('Could not read controller.currentUrl(): $e');
-    }
-
-    final targetUrl = currentUrl.isNotEmpty ? currentUrl : fallbackUrl;
-    final origin = _getOrigin(targetUrl);
-    final host = extractHost(targetUrl);
-
-    if (host.isEmpty) {
-      log.w('Could not resolve valid host from "$targetUrl"');
-      return;
-    }
-
-    // 1. Extract cookies from WebViewCookieManager across candidate URIs
-    final cookieManager = WebViewCookieManager();
-    final Map<String, String> collectedCookies = {};
-
-    final candidateUris = <Uri>[];
-    void addCandidate(String u) {
-      final uri = Uri.tryParse(u);
-      if (uri != null && uri.hasAuthority && !candidateUris.contains(uri)) {
-        candidateUris.add(uri);
-      }
-    }
-
-    if (currentUrl.isNotEmpty) addCandidate(currentUrl);
-    if (origin.isNotEmpty) {
-      addCandidate(origin.endsWith('/') ? origin : '$origin/');
-      addCandidate(
-        origin.endsWith('/') ? origin.substring(0, origin.length - 1) : origin,
-      );
-    }
-    if (fallbackUrl.isNotEmpty) {
-      addCandidate(fallbackUrl);
-      if (!fallbackUrl.endsWith('/')) addCandidate('$fallbackUrl/');
-    }
-
-    for (final uri in candidateUris) {
-      try {
-        final cookies = await cookieManager.getCookies(domain: uri);
-        for (final c in cookies) {
-          if (c.name.isNotEmpty) {
-            collectedCookies[c.name] = c.value;
-          }
-        }
-      } catch (e) {
-        log.v('WebViewCookieManager.getCookies error for $uri: $e');
-      }
-    }
-
-    // 2. Extract cookies via JS document.cookie (supplements non-HttpOnly cookies)
-    try {
-      final jsResult = await controller.runJavaScriptReturningResult(
-        'document.cookie',
-      );
-      final jsCookieStr = _cleanJsResult(jsResult);
-      if (jsCookieStr.isNotEmpty && jsCookieStr != 'null') {
-        final pairs = jsCookieStr.split(';');
-        for (final pair in pairs) {
-          final trimmed = pair.trim();
-          if (trimmed.isEmpty) continue;
-          final eqIdx = trimmed.indexOf('=');
-          if (eqIdx > 0) {
-            final key = trimmed.substring(0, eqIdx).trim();
-            final val = trimmed.substring(eqIdx + 1).trim();
-            collectedCookies.putIfAbsent(key, () => val);
-          }
-        }
-      }
-    } catch (e) {
-      log.v('document.cookie evaluation failed: $e');
-    }
-
-    // 3. Extract User Agent
-    String userAgent = '';
-    try {
-      final ua = await controller.getUserAgent();
-      if (ua != null && ua.trim().isNotEmpty) {
-        userAgent = ua.trim();
-      }
-    } catch (e) {
-      log.v('controller.getUserAgent failed: $e');
-    }
-
-    if (userAgent.isEmpty) {
-      try {
-        final uaResult = await controller.runJavaScriptReturningResult(
-          'navigator.userAgent',
-        );
-        final cleanUA = _cleanJsResult(uaResult);
-        if (cleanUA.isNotEmpty && cleanUA != 'null') {
-          userAgent = cleanUA;
-        }
-      } catch (e) {
-        log.v('navigator.userAgent evaluation failed: $e');
-      }
-    }
-
-    final cookieString = collectedCookies.entries
-        .map((e) => '${e.key}=${e.value}')
-        .join('; ');
-
-    final hasClearance = collectedCookies.containsKey('cf_clearance');
-
-    log.d(
-      'Session extraction results for $host:\n'
-      '  • Cookies found: ${collectedCookies.length} (${collectedCookies.keys.join(', ')})\n'
-      '  • cf_clearance: $hasClearance\n'
-      '  • User-Agent: ${userAgent.isNotEmpty ? (userAgent.length > 70 ? "${userAgent.substring(0, 70)}..." : userAgent) : "NOT FOUND"}',
-    );
-
-    if (cookieString.isNotEmpty || userAgent.isNotEmpty) {
-      await _saveSession(
-        origin.isNotEmpty ? origin : host,
-        cookie: cookieString.isNotEmpty ? cookieString : null,
-        userAgent: userAgent.isNotEmpty ? userAgent : null,
-      );
-
-      if (hasClearance) {
-        log.s('Verified cf_clearance acquired and session synced for $host');
-      } else {
-        log.i('Session cookies synced for $host (awaiting cf_clearance)');
-      }
-    } else {
-      log.w('Could not extract any cookies or user-agent for $host');
-    }
-  }
-
-  String _getOrigin(String urlOrDomain) {
-    try {
-      final uri = Uri.tryParse(urlOrDomain);
-      if (uri != null && uri.hasScheme && uri.hasAuthority) {
-        return '${uri.scheme}://${uri.host}';
-      }
-    } catch (_) {}
-    final host = extractHost(urlOrDomain);
-    return host.isNotEmpty ? 'https://$host' : '';
-  }
-
-  static String _cleanJsResult(Object? result) {
-    if (result == null) return '';
-    String s = result.toString().trim();
-    if (s.startsWith('"') && s.endsWith('"') && s.length >= 2) {
-      try {
-        s = jsonDecode(s) as String;
-      } catch (_) {
-        s = s.substring(1, s.length - 1);
-      }
-    }
-    return s.trim();
   }
 }

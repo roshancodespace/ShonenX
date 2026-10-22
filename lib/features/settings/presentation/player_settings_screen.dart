@@ -9,6 +9,7 @@ import 'package:shonenx/features/settings/presentation/widgets/gesture_settings_
 import 'package:shonenx/features/settings/presentation/widgets/subtitle_settings_sheet.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
 import 'package:shonenx/shared/models/video_server.dart';
+import 'package:shonenx/core/utils/stream_cleaner.dart';
 import 'package:shonenx/shared/widgets/app_dialog.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
 
@@ -22,6 +23,15 @@ class PlayerSettingsScreen extends ConsumerWidget {
 
     final aniskipPrefs = ref.watch(aniskipPrefsProvider);
     final aniskipPrefsNotifier = ref.read(aniskipPrefsProvider.notifier);
+
+    final cleanQuality = StreamCleaner.sanitizeDefaultQuality(
+      playerPrefs.defaultQuality,
+    );
+    if (cleanQuality != playerPrefs.defaultQuality) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        prefsNotifier.setDefaultQuality(cleanQuality);
+      });
+    }
 
     return AppScaffold(
       title: 'Player',
@@ -112,17 +122,15 @@ class PlayerSettingsScreen extends ConsumerWidget {
               SettingsDropdownTile<String>(
                 icon: Icons.high_quality_rounded,
                 title: 'Default Video Quality',
-                value: _kQualityOptions.containsKey(playerPrefs.defaultQuality)
-                    ? playerPrefs.defaultQuality
-                    : playerPrefs.defaultQuality,
+                value: cleanQuality,
                 items: [
                   ..._kQualityOptions.entries.map(
                     (e) => DropdownMenuItem(value: e.key, child: Text(e.value)),
                   ),
-                  if (!_kQualityOptions.containsKey(playerPrefs.defaultQuality))
+                  if (!_kQualityOptions.containsKey(cleanQuality))
                     DropdownMenuItem(
-                      value: playerPrefs.defaultQuality,
-                      child: Text(playerPrefs.defaultQuality),
+                      value: cleanQuality,
+                      child: Text(cleanQuality),
                     ),
                   const DropdownMenuItem(
                     value: '__custom__',
@@ -135,11 +143,15 @@ class PlayerSettingsScreen extends ConsumerWidget {
                       context,
                       title: 'Custom Video Quality',
                       hint: 'e.g. 4K, 2160p, 1440p, 1080p',
-                      initialValue: playerPrefs.defaultQuality,
-                      onSubmitted: (q) => prefsNotifier.setDefaultQuality(q),
+                      initialValue: cleanQuality,
+                      onSubmitted: (q) => prefsNotifier.setDefaultQuality(
+                        StreamCleaner.sanitizeDefaultQuality(q),
+                      ),
                     );
                   } else if (val != null) {
-                    prefsNotifier.setDefaultQuality(val);
+                    prefsNotifier.setDefaultQuality(
+                      StreamCleaner.sanitizeDefaultQuality(val),
+                    );
                   }
                 },
               ),

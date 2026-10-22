@@ -411,12 +411,12 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
           PlayerBottomSheetTrigger<VideoStream>(
             value: widget.playerState.activeStream,
             items: widget.playerState.streams,
-            itemLabel: (s) => s.quality,
+            itemLabel: (s) => s.displayTitle,
             onChanged: (v) {
               widget.controller.changeStream(v);
             },
             displayText: trimText(
-              widget.playerState.activeStream?.quality ?? 'Auto',
+              widget.playerState.activeStream?.displayTitle ?? 'Auto',
               maxLength: 40,
             ),
           ),

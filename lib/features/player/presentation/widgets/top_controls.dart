@@ -108,14 +108,14 @@ class TopControls extends ConsumerWidget {
     final actionButtons = <Widget>[
       if (showQuality) ...[
         PlayerQualityButton(
-          qualityText: playerState.activeQuality?.quality ?? 'Auto',
+          qualityText: playerState.activeQuality?.resolution ?? 'Auto',
           onTap: () {
             AppBottomSheet.showSelector<VideoStream>(
               context: context,
               title: 'Select Quality',
               items: playerState.qualities,
               selectedValue: playerState.activeQuality,
-              itemLabel: (s) => s.quality,
+              itemLabel: (s) => s.displayQuality,
               onChanged: (v) {
                 controller.changeQuality(v);
               },
@@ -271,7 +271,7 @@ class TopControls extends ConsumerWidget {
         ? 'Normal (1.0x)'
         : '${currentSpeed}x';
 
-    final activeQualityText = playerState.activeQuality?.quality ?? 'Auto';
+    final activeQualityText = playerState.activeQuality?.resolution ?? 'Auto';
     final hasMultipleQualities =
         mode is PlayerModeOnline && playerState.qualities.length > 1;
 
@@ -360,7 +360,7 @@ class TopControls extends ConsumerWidget {
                         title: 'Select Quality',
                         items: playerState.qualities,
                         selectedValue: playerState.activeQuality,
-                        itemLabel: (s) => s.quality,
+                        itemLabel: (s) => s.displayQuality,
                         onChanged: (v) {
                           controller.changeQuality(v);
                         },

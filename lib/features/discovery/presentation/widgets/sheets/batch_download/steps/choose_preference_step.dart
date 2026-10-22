@@ -210,7 +210,7 @@ class ChoosePreferenceStep extends StatelessWidget {
                       final isSelected = state.selectedStream == stream;
                       return ChoiceChip(
                         label: Text(
-                          stream.quality,
+                          stream.displayTitle,
                           style: TextStyle(
                             fontWeight: isSelected
                                 ? FontWeight.w700

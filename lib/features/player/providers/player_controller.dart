@@ -719,10 +719,9 @@ class PlayerController extends Notifier<PlayerState> {
       return;
     }
 
-    _resolver.preferredQuality = newQuality.quality;
-    ref
-        .read(playerPrefsProvider.notifier)
-        .setDefaultQuality(newQuality.quality);
+    final cleanQuality = newQuality.resolution;
+    _resolver.preferredQuality = cleanQuality;
+    ref.read(playerPrefsProvider.notifier).setDefaultQuality(cleanQuality);
 
     final currentPos = _engine.currentPosition;
 

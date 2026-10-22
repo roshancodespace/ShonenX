@@ -1,3 +1,5 @@
+import 'package:shonenx/core/utils/stream_cleaner.dart';
+
 class VideoStream {
   final String url;
   final Map<String, String>? headers;
@@ -14,6 +16,23 @@ class VideoStream {
     this.size,
     this.requiresProxy = false,
   });
+
+  /// Clean, concise resolution string (e.g. '4K', '1080p', 'Auto').
+  String get resolution => StreamCleaner.extractResolution(quality);
+
+  /// Clean, human-readable display label for stream / server selection.
+  /// E.g. 'FSL Server • 4K (13.13 GB)'
+  String get displayTitle =>
+      StreamCleaner.cleanStreamTitle(quality, explicitSize: size);
+
+  /// Clean, human-readable display label for quality selection.
+  /// E.g. '4K (13.13 GB) • FSL Server'
+  String get displayQuality =>
+      StreamCleaner.cleanQualityLabel(quality, explicitSize: size);
+
+  /// Clean display title with optional explicit/cached size.
+  String displayTitleWithSize(String? s) =>
+      StreamCleaner.cleanStreamTitle(quality, explicitSize: s ?? size);
 
   VideoStream copyWith({
     String? url,

@@ -541,6 +541,11 @@ class _ExtensionsSettingsScreenState
   List<Widget> _buildActions(BuildContext context) {
     return [
       IconButton(
+        icon: const Icon(Icons.dashboard_customize_outlined),
+        tooltip: 'Addons (TorrServer)',
+        onPressed: () => context.pushSettingsAddons(),
+      ),
+      IconButton(
         icon: const Icon(Icons.speed_rounded),
         tooltip: 'Test Extensions',
         onPressed: () => context.pushSettingsExtensionsTest(),

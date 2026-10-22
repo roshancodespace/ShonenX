@@ -23,6 +23,7 @@ import 'package:shonenx/features/player/domain/player_mode.dart';
 import 'package:shonenx/features/player/presentation/player_screen.dart';
 import 'package:shonenx/features/reader/domain/reader_mode.dart';
 import 'package:shonenx/features/reader/presentation/reader_screen.dart';
+import 'package:shonenx/features/settings/presentation/addons_settings_screen.dart';
 import 'package:shonenx/features/settings/presentation/cache_settings_screen.dart';
 import 'package:shonenx/features/settings/presentation/download_settings_screen.dart';
 import 'package:shonenx/features/settings/presentation/home_settings_screen.dart';
@@ -380,6 +381,10 @@ final routerProvider = Provider<GoRouter>((ref) {
                 builder: (context, state) => const ExtensionTesterScreen(),
               ),
             ],
+          ),
+          GoRoute(
+            path: 'addons',
+            builder: (context, state) => const AddonsSettingsScreen(),
           ),
           GoRoute(
             path: 'remote_config_editor',

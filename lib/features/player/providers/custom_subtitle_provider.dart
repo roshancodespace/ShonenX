@@ -10,7 +10,11 @@ final customSubtitleProvider = FutureProvider.autoDispose<List<SubtitleCue>>((
   final subtitleUrl = playerState.activeSubtitle?.url;
   final headers = playerState.activeStream?.headers;
 
-  if (subtitleUrl == null || subtitleUrl.isEmpty) return [];
+  if (subtitleUrl == null ||
+      subtitleUrl.isEmpty ||
+      subtitleUrl.startsWith('internal:')) {
+    return [];
+  }
 
   final http = ref.read(httpClientProvider);
   return SubtitleParser.parseFromUrl(

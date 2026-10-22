@@ -760,7 +760,11 @@ class PlayerController extends Notifier<PlayerState> {
     if (_isDisposed) return;
 
     final useCustomSub = ref.read(subtitlePrefsProvider).useCustomSubtitle;
-    final activeSub = (useCustomSub || subtitle == null || subtitle.url.isEmpty)
+    final isInternal = subtitle != null && subtitle.url.startsWith('internal:');
+    final activeSub =
+        ((useCustomSub && !isInternal) ||
+            subtitle == null ||
+            subtitle.url.isEmpty)
         ? null
         : subtitle;
 
@@ -826,8 +830,12 @@ class PlayerController extends Notifier<PlayerState> {
   // Set native subtitle track (or clear it if using custom Flutter overlay)
   Future<void> _applyNativeSubtitle(SubtitleTrack? subtitle) async {
     final useCustom = ref.read(subtitlePrefsProvider).useCustomSubtitle;
+    final isInternal = subtitle != null && subtitle.url.startsWith('internal:');
     try {
-      if (useCustom || subtitle == null || subtitle.url.isEmpty) {
+      if ((useCustom && !isInternal) ||
+          subtitle == null ||
+          subtitle == SubtitleTrack.none ||
+          subtitle.url.isEmpty) {
         if (!_isNativeSubtitleDisabled) {
           await _engine.setSubtitle(null);
           _isNativeSubtitleDisabled = true;

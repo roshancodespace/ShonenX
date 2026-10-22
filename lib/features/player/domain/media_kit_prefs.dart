@@ -109,7 +109,7 @@ class MediaKitPrefs {
     this.audioNormalizePreset = MediaKitAudioNormalizePreset.none,
     this.colorPreset = MediaKitColorPreset.default_,
     this.rawConfiguration = '',
-    this.libassEnabled = false,
+    this.libassEnabled = true,
     this.brightness = 0,
     this.contrast = 0,
     this.saturation = 0,

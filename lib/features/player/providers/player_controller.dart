@@ -7,6 +7,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 
 import 'package:collection/collection.dart';
 import 'package:shonenx/core/network/http_client.dart';
+import 'package:shonenx/core/utils/subtitle_extractor.dart';
 import 'package:shonenx/features/discovery/domain/media_args.dart';
 import 'package:shonenx/features/discovery/providers/episodes_provider.dart';
 import 'package:shonenx/features/discord/providers/discord_rpc_provider.dart';
@@ -511,61 +512,13 @@ class PlayerController extends Notifier<PlayerState> {
     }
   }
 
-  String? _resolveSubtitleLabel(
-    SubtitleTrack sub,
-    VideoStream stream,
-    VideoServer? server,
-  ) {
-    final serverName = server?.name.trim();
-    final originalLabel = sub.label?.trim();
-    final quality = stream.quality.trim();
-    final serverLower = serverName?.toLowerCase() ?? '';
-    final hasValidServer =
-        serverName != null &&
-        serverLower.isNotEmpty &&
-        serverLower != 'default' &&
-        serverLower != 'auto';
-    final hasQuality = quality.isNotEmpty && quality.toLowerCase() != 'auto';
-
-    final parts = <String>[];
-
-    if (hasValidServer) parts.add(serverName);
-    if (hasQuality) parts.add(quality);
-
-    if (originalLabel != null &&
-        originalLabel.isNotEmpty &&
-        originalLabel.toLowerCase() != 'auto' &&
-        originalLabel.toLowerCase() != 'default' &&
-        originalLabel.toLowerCase() != sub.language.toLowerCase() &&
-        (!hasValidServer ||
-            !originalLabel.toLowerCase().contains(serverLower))) {
-      parts.add(originalLabel);
-    }
-
-    if (parts.isEmpty) return null;
-    return parts.join(' • ');
-  }
-
   List<SubtitleTrack> _mapSubtitles(
     Map<VideoServer, List<VideoStream>> serverStreams,
   ) {
-    final newSubtitles = <SubtitleTrack>[SubtitleTrack.none];
-    final Set<String> seenUrls = {};
-
-    for (final entry in serverStreams.entries) {
-      final server = entry.key;
-      for (final stream in entry.value) {
-        for (final sub in stream.subtitles) {
-          if (!seenUrls.contains(sub.url) && sub.url.isNotEmpty) {
-            seenUrls.add(sub.url);
-            newSubtitles.add(
-              sub.copyWith(label: _resolveSubtitleLabel(sub, stream, server)),
-            );
-          }
-        }
-      }
-    }
-    return newSubtitles;
+    return SubtitleExtractor.extractFromServers(
+      serverStreams,
+      includeNone: true,
+    );
   }
 
   Future<void> _fetchAdditionalSubtitles(

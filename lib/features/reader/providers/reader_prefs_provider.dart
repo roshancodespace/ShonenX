@@ -77,6 +77,7 @@ class ReaderPrefState {
   final bool showMiniStatus;
   final bool keepScreenOn;
   final bool tapToTurnPage;
+  final bool doubleTapToZoom;
 
   const ReaderPrefState({
     this.direction = ReaderDirection.webtoon,
@@ -86,6 +87,7 @@ class ReaderPrefState {
     this.showMiniStatus = true,
     this.keepScreenOn = true,
     this.tapToTurnPage = true,
+    this.doubleTapToZoom = true,
   });
 
   ReaderPrefState copyWith({
@@ -96,6 +98,7 @@ class ReaderPrefState {
     bool? showMiniStatus,
     bool? keepScreenOn,
     bool? tapToTurnPage,
+    bool? doubleTapToZoom,
   }) {
     return ReaderPrefState(
       direction: direction ?? this.direction,
@@ -105,6 +108,7 @@ class ReaderPrefState {
       showMiniStatus: showMiniStatus ?? this.showMiniStatus,
       keepScreenOn: keepScreenOn ?? this.keepScreenOn,
       tapToTurnPage: tapToTurnPage ?? this.tapToTurnPage,
+      doubleTapToZoom: doubleTapToZoom ?? this.doubleTapToZoom,
     );
   }
 
@@ -116,6 +120,7 @@ class ReaderPrefState {
     'showMiniStatus': showMiniStatus,
     'keepScreenOn': keepScreenOn,
     'tapToTurnPage': tapToTurnPage,
+    'doubleTapToZoom': doubleTapToZoom,
   };
 
   factory ReaderPrefState.fromJson(Map<String, dynamic> json) {
@@ -139,6 +144,7 @@ class ReaderPrefState {
       showMiniStatus: json['showMiniStatus'] as bool? ?? true,
       keepScreenOn: json['keepScreenOn'] as bool? ?? true,
       tapToTurnPage: json['tapToTurnPage'] as bool? ?? true,
+      doubleTapToZoom: json['doubleTapToZoom'] as bool? ?? true,
     );
   }
 }
@@ -192,6 +198,11 @@ class ReaderPrefsNotifier extends Notifier<ReaderPrefState> {
 
   void updateTapToTurnPage(bool tap) {
     state = state.copyWith(tapToTurnPage: tap);
+    _saveDb();
+  }
+
+  void updateDoubleTapToZoom(bool value) {
+    state = state.copyWith(doubleTapToZoom: value);
     _saveDb();
   }
 

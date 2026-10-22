@@ -125,6 +125,13 @@ class ReaderSettingsContent extends ConsumerWidget {
               onChanged: (val) => prefsNotifier.updateTapToTurnPage(val),
             ),
             SettingsSwitchTile(
+              icon: Icons.zoom_in_rounded,
+              title: 'Double Tap to Zoom',
+              subtitle: 'Double tap to zoom in or out of area tapped',
+              value: readerPrefs.doubleTapToZoom,
+              onChanged: (val) => prefsNotifier.updateDoubleTapToZoom(val),
+            ),
+            SettingsSwitchTile(
               icon: Icons.screen_lock_portrait_outlined,
               title: 'Keep Screen Awake',
               subtitle: 'Prevent display from sleeping while reading',

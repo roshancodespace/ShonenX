@@ -33,6 +33,8 @@ class DownloadManagerNotifier extends AsyncNotifier<DownloadManagerNotifier> {
   final Set<String> _trackedJobs = {};
   final Map<int, int> _lastNotifiedPct = {};
   final Map<int, DateTime> _lastDbWriteTime = {};
+  final Map<int, StreamSubscription> _statusSubs = {};
+  final Map<int, StreamSubscription> _progressSubs = {};
 
   DownloadRepository get repo => ref.read(downloadRepositoryProvider);
 
@@ -141,6 +143,7 @@ class DownloadManagerNotifier extends AsyncNotifier<DownloadManagerNotifier> {
     }
 
     task.status = DownloadStatus.pending;
+    task.errorReason = null;
     task.createdAt = DateTime.now();
     task.updatedAt = DateTime.now();
     await repo.putTask(task);
@@ -193,7 +196,10 @@ class DownloadManagerNotifier extends AsyncNotifier<DownloadManagerNotifier> {
   void _listenToJob(int dbTaskId, bm.DownloadTask job) {
     final notif = NotificationService.instance;
 
-    job.progressStream.listen((progress) async {
+    _progressSubs[dbTaskId]?.cancel();
+    _statusSubs[dbTaskId]?.cancel();
+
+    _progressSubs[dbTaskId] = job.progressStream.listen((progress) async {
       final now = DateTime.now();
       final lastWrite = _lastDbWriteTime[dbTaskId];
 
@@ -233,7 +239,7 @@ class DownloadManagerNotifier extends AsyncNotifier<DownloadManagerNotifier> {
       }
     });
 
-    job.statusStream.listen((status) async {
+    _statusSubs[dbTaskId] = job.statusStream.listen((status) async {
       final task = await repo.getTaskById(dbTaskId);
       if (task == null) return;
 
@@ -244,9 +250,11 @@ class DownloadManagerNotifier extends AsyncNotifier<DownloadManagerNotifier> {
       switch (status) {
         case bm.DownloadStatus.queued:
           task.status = DownloadStatus.pending;
+          task.errorReason = null;
           break;
         case bm.DownloadStatus.downloading:
           task.status = DownloadStatus.downloading;
+          task.errorReason = null;
           break;
         case bm.DownloadStatus.paused:
           task.status = DownloadStatus.paused;
@@ -254,14 +262,14 @@ class DownloadManagerNotifier extends AsyncNotifier<DownloadManagerNotifier> {
           break;
         case bm.DownloadStatus.completed:
           task.status = DownloadStatus.completed;
+          task.errorReason = null;
           await notif.showDownloadComplete(id: dbTaskId, title: title);
           await repo.deleteTask(dbTaskId);
-          _trackedJobs.remove(job.id);
-          _lastNotifiedPct.remove(dbTaskId);
-          _lastDbWriteTime.remove(dbTaskId);
+          _cleanupJob(dbTaskId, job.id);
           return;
         case bm.DownloadStatus.failed:
           task.status = DownloadStatus.failed;
+          task.errorReason = job.error ?? 'Download failed. Tap to retry.';
           await notif.showDownloadFailed(id: dbTaskId, title: title);
           break;
         case bm.DownloadStatus.cancelled:
@@ -276,11 +284,17 @@ class DownloadManagerNotifier extends AsyncNotifier<DownloadManagerNotifier> {
       if (status == bm.DownloadStatus.completed ||
           status == bm.DownloadStatus.failed ||
           status == bm.DownloadStatus.cancelled) {
-        _trackedJobs.remove(job.id);
-        _lastNotifiedPct.remove(dbTaskId);
-        _lastDbWriteTime.remove(dbTaskId);
+        _cleanupJob(dbTaskId, job.id);
       }
     });
+  }
+
+  void _cleanupJob(int dbTaskId, String jobId) {
+    _trackedJobs.remove(jobId);
+    _lastNotifiedPct.remove(dbTaskId);
+    _lastDbWriteTime.remove(dbTaskId);
+    _statusSubs.remove(dbTaskId)?.cancel();
+    _progressSubs.remove(dbTaskId)?.cancel();
   }
 
   Future<void> pauseDownload(int taskId) async {

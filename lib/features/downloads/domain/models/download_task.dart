@@ -74,6 +74,8 @@ class DownloadTask {
   int totalBytes = 0;
   int downloadedBytes = 0;
 
+  String? errorReason;
+
   @ignore
   String speed = '';
   @ignore

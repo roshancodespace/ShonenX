@@ -24,10 +24,44 @@ class BackupSettingsScreen extends ConsumerStatefulWidget {
 class _BackupSettingsScreenState extends ConsumerState<BackupSettingsScreen> {
   final _exportCategories = Set<BackupCategory>.from(BackupCategory.values);
   bool _exporting = false;
+  bool _importing = false;
+  Map<BackupCategory, int>? _existingCounts;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadExistingCounts();
+  }
+
+  Future<void> _loadExistingCounts() async {
+    try {
+      final counts = await ref.read(backupServiceProvider).getExistingCounts();
+      if (mounted) {
+        setState(() {
+          _existingCounts = counts;
+        });
+      }
+    } catch (_) {}
+  }
+
+  int get _totalRecordsCount {
+    if (_existingCounts == null) return 0;
+    return _existingCounts!.values.fold(0, (sum, val) => sum + val);
+  }
+
+  String _getCategorySubtitle(BackupCategory cat) {
+    final count = _existingCounts?[cat];
+    if (count == null) return cat.description;
+    return '${cat.description} • $count ${cat == BackupCategory.notifications
+        ? "subscriptions"
+        : cat == BackupCategory.appPreferences
+        ? "settings"
+        : "items"}';
+  }
 
   Future<void> _export({bool share = false}) async {
     if (_exportCategories.isEmpty) {
-      _snack('Select at least one category');
+      _snack('Select at least one category to export');
       return;
     }
 
@@ -95,6 +129,7 @@ class _BackupSettingsScreenState extends ConsumerState<BackupSettingsScreen> {
   }
 
   Future<void> _import() async {
+    setState(() => _importing = true);
     try {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.any,
@@ -141,6 +176,8 @@ class _BackupSettingsScreenState extends ConsumerState<BackupSettingsScreen> {
             .first;
         _snack('Invalid backup file: $msg');
       }
+    } finally {
+      if (mounted) setState(() => _importing = false);
     }
   }
 
@@ -152,20 +189,100 @@ class _BackupSettingsScreenState extends ConsumerState<BackupSettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
     return AppScaffold(
       title: 'Backup & Restore',
       body: ListView(
         padding: const EdgeInsets.only(bottom: 50),
         children: [
+          // ── Restore ──
+          SettingsSection(
+            title: 'Restore',
+            subtitle: 'Import data from a previously exported backup file',
+            children: [
+              SettingsActionTile(
+                icon: Icons.settings_backup_restore_rounded,
+                title: 'Restore from file',
+                subtitle: 'Select a .json backup file to inspect and restore',
+                trailing: _importing
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Icon(
+                        Icons.chevron_right,
+                        size: 20,
+                        color: cs.onSurfaceVariant,
+                      ),
+                onTap: _importing ? null : _import,
+              ),
+            ],
+          ),
+
+          const Divider(height: 24, indent: 16, endIndent: 16),
+
+          // ── Export ──
           SettingsSection(
             title: 'Export',
-            subtitle: 'Choose what to include in your backup',
+            subtitle: 'Choose what to include in your backup file',
             children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 2,
+                ),
+                child: Row(
+                  children: [
+                    if (_existingCounts != null)
+                      Text(
+                        '$_totalRecordsCount local records',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: cs.onSurfaceVariant,
+                        ),
+                      ),
+                    const Spacer(),
+                    TextButton(
+                      style: TextButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _exportCategories.addAll(BackupCategory.values);
+                        });
+                      },
+                      child: const Text(
+                        'Select All',
+                        style: TextStyle(fontSize: 12),
+                      ),
+                    ),
+                    TextButton(
+                      style: TextButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _exportCategories.clear();
+                        });
+                      },
+                      child: const Text(
+                        'Clear',
+                        style: TextStyle(fontSize: 12),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
               for (final cat in BackupCategory.values)
                 SettingsSwitchTile(
                   icon: cat.icon,
                   title: cat.label,
-                  subtitle: cat.description,
+                  subtitle: _getCategorySubtitle(cat),
                   value: _exportCategories.contains(cat),
                   onChanged: (v) => setState(() {
                     v
@@ -176,7 +293,7 @@ class _BackupSettingsScreenState extends ConsumerState<BackupSettingsScreen> {
               Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 10.0,
-                  vertical: 6.0,
+                  vertical: 8.0,
                 ),
                 child: Row(
                   children: [
@@ -185,7 +302,16 @@ class _BackupSettingsScreenState extends ConsumerState<BackupSettingsScreen> {
                         onPressed: _exporting
                             ? null
                             : () => _export(share: false),
-                        icon: const Icon(Icons.save_outlined),
+                        icon: _exporting
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Icon(Icons.save_outlined),
                         label: Text(_exporting ? 'Exporting…' : 'Save Backup'),
                       ),
                     ),
@@ -197,19 +323,6 @@ class _BackupSettingsScreenState extends ConsumerState<BackupSettingsScreen> {
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(height: 10),
-            ],
-          ),
-          const Divider(height: 1, indent: 16, endIndent: 16),
-          SettingsSection(
-            title: 'Import',
-            children: [
-              SettingsActionTile(
-                icon: Icons.download_outlined,
-                title: 'Restore from file',
-                subtitle: 'Select a .json backup',
-                onTap: _import,
               ),
             ],
           ),

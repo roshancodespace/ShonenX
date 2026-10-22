@@ -63,43 +63,150 @@ class HistoryEntry {
   @Index()
   DateTime lastUpdated = DateTime.now();
 
-  Map<String, dynamic> toBackupMap() => {
-    'mediaId': mediaId,
-    'mediaType': mediaType,
-    'itemNumber': itemNumber,
-    'mediaIdMal': mediaIdMal,
-    'mediaTitle': mediaTitle,
-    'itemTitle': itemTitle,
-    'cover': cover,
-    'banner': banner,
-    'thumbnailUrl': thumbnailUrl,
-    'progress': progress,
-    'total': total,
-    'totalItems': totalItems,
-    'sourceId': sourceId,
-    'sourceName': sourceName,
-    'providerId': providerId,
-    'externalIdsJson': externalIdsJson,
-    'lastUpdated': lastUpdated.toIso8601String(),
-  };
+  Map<String, dynamic> toBackupMap() {
+    double safeItemNumber = itemNumber;
+    if (safeItemNumber.isNaN || safeItemNumber.isInfinite) {
+      safeItemNumber = 1.0;
+    }
+    return {
+      'mediaId': mediaId,
+      'mediaType': mediaType,
+      'itemNumber': safeItemNumber,
+      'mediaIdMal': mediaIdMal,
+      'mediaTitle': mediaTitle,
+      'itemTitle': itemTitle,
+      'cover': cover,
+      'banner': banner,
+      'thumbnailUrl': thumbnailUrl,
+      'progress': progress,
+      'total': total,
+      'totalItems': totalItems,
+      'sourceId': sourceId,
+      'sourceName': sourceName,
+      'providerId': providerId,
+      'externalIdsJson': externalIdsJson,
+      'lastUpdated': lastUpdated.toIso8601String(),
+    };
+  }
 
-  static HistoryEntry fromBackupMap(Map<String, dynamic> m) => HistoryEntry()
-    ..mediaId = m['mediaId'] as String
-    ..mediaType = m['mediaType'] as String
-    ..itemNumber = (m['itemNumber'] as num).toDouble()
-    ..mediaIdMal = m['mediaIdMal'] as String?
-    ..mediaTitle = m['mediaTitle'] as String
-    ..itemTitle = m['itemTitle'] as String?
-    ..cover = m['cover'] as String?
-    ..banner = m['banner'] as String?
-    ..thumbnailUrl = m['thumbnailUrl'] as String?
-    ..progress = (m['progress'] as num).toInt()
-    ..total = (m['total'] as num).toInt()
-    ..totalItems = m['totalItems'] as int?
-    ..sourceId = m['sourceId'] as String?
-    ..sourceName = m['sourceName'] as String?
-    ..providerId = m['providerId'] as String?
-    ..externalIdsJson = m['externalIdsJson'] as String?
-    ..lastUpdated =
-        DateTime.tryParse(m['lastUpdated'] as String? ?? '') ?? DateTime.now();
+  static HistoryEntry fromBackupMap(Map<String, dynamic> m) {
+    final rawMediaId = m['mediaId'] ?? m['animeId'] ?? m['mangaId'] ?? m['id'];
+    final safeMediaId =
+        rawMediaId?.toString() ??
+        'unknown_${DateTime.now().millisecondsSinceEpoch}';
+
+    String safeMediaType = m['mediaType']?.toString().toLowerCase() ?? '';
+    if (safeMediaType.isEmpty) {
+      if (m.containsKey('episodeNumber') ||
+          m.containsKey('animeId') ||
+          m.containsKey('durationInMilliseconds')) {
+        safeMediaType = MediaType.ANIME.id;
+      } else if (m.containsKey('chapterNumber') ||
+          m.containsKey('mangaId') ||
+          m.containsKey('positionPage')) {
+        safeMediaType = MediaType.MANGA.id;
+      } else {
+        safeMediaType = MediaType.ANIME.id;
+      }
+    }
+
+    double safeItemNumber = 1.0;
+    final rawItemNumber =
+        m['itemNumber'] ??
+        m['episodeNumber'] ??
+        m['chapterNumber'] ??
+        m['number'];
+    if (rawItemNumber is num &&
+        !rawItemNumber.isNaN &&
+        !rawItemNumber.isInfinite) {
+      safeItemNumber = rawItemNumber.toDouble();
+    } else if (rawItemNumber is String) {
+      safeItemNumber = double.tryParse(rawItemNumber) ?? 1.0;
+    }
+
+    String safeMediaTitle = '';
+    final rawMediaTitle =
+        m['mediaTitle'] ?? m['animeTitle'] ?? m['mangaTitle'] ?? m['title'];
+    if (rawMediaTitle is String) {
+      safeMediaTitle = rawMediaTitle;
+    } else if (rawMediaTitle is Map) {
+      safeMediaTitle =
+          rawMediaTitle['english']?.toString() ??
+          rawMediaTitle['romaji']?.toString() ??
+          rawMediaTitle['native']?.toString() ??
+          '';
+    }
+    if (safeMediaTitle.isEmpty) {
+      safeMediaTitle = 'Untitled';
+    }
+
+    int safeProgress = 0;
+    final rawProgress =
+        m['progress'] ??
+        m['positionInMilliseconds'] ??
+        m['positionPage'] ??
+        m['position'];
+    if (rawProgress is num) {
+      safeProgress = rawProgress.toInt();
+    } else if (rawProgress is String) {
+      safeProgress =
+          int.tryParse(rawProgress) ??
+          (double.tryParse(rawProgress)?.toInt() ?? 0);
+    }
+
+    int safeTotal = 0;
+    final rawTotal =
+        m['total'] ??
+        m['durationInMilliseconds'] ??
+        m['totalPages'] ??
+        m['duration'];
+    if (rawTotal is num) {
+      safeTotal = rawTotal.toInt();
+    } else if (rawTotal is String) {
+      safeTotal =
+          int.tryParse(rawTotal) ?? (double.tryParse(rawTotal)?.toInt() ?? 0);
+    }
+
+    // Convert legacy watch history from milliseconds to seconds if needed
+    if (safeMediaType == MediaType.ANIME.id) {
+      if (m.containsKey('positionInMilliseconds') && safeProgress > 1000) {
+        safeProgress = Duration(milliseconds: safeProgress).inSeconds;
+      }
+      if (m.containsKey('durationInMilliseconds') && safeTotal > 1000) {
+        safeTotal = Duration(milliseconds: safeTotal).inSeconds;
+      }
+    }
+
+    int? safeTotalItems;
+    final rawTotalItems =
+        m['totalItems'] ?? m['totalEpisodes'] ?? m['totalChapters'];
+    if (rawTotalItems is num) {
+      safeTotalItems = rawTotalItems.toInt();
+    } else if (rawTotalItems is String) {
+      safeTotalItems = int.tryParse(rawTotalItems);
+    }
+
+    return HistoryEntry()
+      ..mediaId = safeMediaId
+      ..mediaType = safeMediaType
+      ..itemNumber = safeItemNumber
+      ..mediaIdMal = (m['mediaIdMal'] ?? m['animeIdMal'] ?? m['mangaIdMal'])
+          ?.toString()
+      ..mediaTitle = safeMediaTitle
+      ..itemTitle = (m['itemTitle'] ?? m['episodeTitle'] ?? m['chapterTitle'])
+          ?.toString()
+      ..cover = (m['cover'] ?? m['coverImage'] ?? m['image'])?.toString()
+      ..banner = m['banner']?.toString()
+      ..thumbnailUrl = m['thumbnailUrl']?.toString()
+      ..progress = safeProgress
+      ..total = safeTotal
+      ..totalItems = safeTotalItems
+      ..sourceId = m['sourceId']?.toString()
+      ..sourceName = m['sourceName']?.toString()
+      ..providerId = m['providerId']?.toString()
+      ..externalIdsJson = m['externalIdsJson']?.toString()
+      ..lastUpdated =
+          DateTime.tryParse(m['lastUpdated']?.toString() ?? '') ??
+          DateTime.now();
+  }
 }

@@ -5,6 +5,8 @@ import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:shonenx/core/router/app_navigator.dart';
 import 'package:shonenx/shared/providers/backup_provider.dart';
 import 'package:shonenx/core/services/backup_service.dart';
@@ -23,7 +25,7 @@ class _BackupSettingsScreenState extends ConsumerState<BackupSettingsScreen> {
   final _exportCategories = Set<BackupCategory>.from(BackupCategory.values);
   bool _exporting = false;
 
-  Future<void> _export() async {
+  Future<void> _export({bool share = false}) async {
     if (_exportCategories.isEmpty) {
       _snack('Select at least one category');
       return;
@@ -43,28 +45,47 @@ class _BackupSettingsScreenState extends ConsumerState<BackupSettingsScreen> {
           .first;
       final fileName = 'shonenx_backup_$timestamp.json';
 
+      if (share) {
+        final tempDir = await getTemporaryDirectory();
+        final tempFile = File('${tempDir.path}/$fileName');
+        await tempFile.writeAsString(json, flush: true);
+
+        await SharePlus.instance.share(
+          ShareParams(
+            files: [XFile(tempFile.path)],
+            text: 'ShonenX Backup ($fileName)',
+          ),
+        );
+        return;
+      }
+
       String? savePath;
+      final bytes = Uint8List.fromList(utf8.encode(json));
 
       if (Platform.isAndroid || Platform.isIOS) {
         savePath = await FilePicker.platform.saveFile(
           dialogTitle: 'Save backup',
           fileName: fileName,
-          type: FileType.custom,
-          allowedExtensions: ['json'],
-          bytes: Uint8List.fromList(utf8.encode(json)),
+          bytes: bytes,
         );
       } else {
         savePath = await FilePicker.platform.saveFile(
           dialogTitle: 'Save backup',
           fileName: fileName,
         );
-        if (savePath != null) {
-          await File(savePath).writeAsString(json);
-        }
       }
 
-      if (savePath != null && mounted) {
-        _snack('Backup saved');
+      if (savePath != null) {
+        try {
+          final file = File(savePath);
+          if (!await file.exists() || await file.length() == 0) {
+            await file.writeAsString(json, flush: true);
+          }
+        } catch (_) {}
+
+        if (mounted) {
+          _snack('Backup saved');
+        }
       }
     } catch (e) {
       if (mounted) _snack('Export failed: $e');
@@ -76,21 +97,50 @@ class _BackupSettingsScreenState extends ConsumerState<BackupSettingsScreen> {
   Future<void> _import() async {
     try {
       final result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
+        type: FileType.any,
         allowedExtensions: ['json'],
+        withData: true,
       );
 
-      if (result == null || result.files.single.path == null) return;
+      if (result == null || result.files.isEmpty) return;
 
-      final file = File(result.files.single.path!);
-      final json = await file.readAsString();
-      final manifest = BackupManifest.fromJson(json);
+      final pickedFile = result.files.single;
+      String? jsonContent;
+
+      if (pickedFile.bytes != null && pickedFile.bytes!.isNotEmpty) {
+        jsonContent = utf8.decode(pickedFile.bytes!, allowMalformed: true);
+      } else if (pickedFile.path != null) {
+        final file = File(pickedFile.path!);
+        if (await file.exists()) {
+          final bytes = await file.readAsBytes();
+          jsonContent = utf8.decode(bytes, allowMalformed: true);
+        }
+      }
+
+      if (jsonContent == null || jsonContent.trim().isEmpty) {
+        if (mounted) _snack('Backup file is empty');
+        return;
+      }
+
+      final manifest = BackupManifest.fromJson(jsonContent);
+
+      if (manifest.categories.isEmpty) {
+        if (mounted) _snack('No valid backup data found in file');
+        return;
+      }
 
       if (mounted) {
         context.pushSettingsBackupPreview(manifest);
       }
     } catch (e) {
-      if (mounted) _snack('Invalid backup file');
+      if (mounted) {
+        final msg = e
+            .toString()
+            .replaceFirst('Exception: ', '')
+            .split('\n')
+            .first;
+        _snack('Invalid backup file: $msg');
+      }
     }
   }
 
@@ -124,11 +174,28 @@ class _BackupSettingsScreenState extends ConsumerState<BackupSettingsScreen> {
                   }),
                 ),
               Padding(
-                padding: const EdgeInsets.all(10.0),
-                child: FilledButton.icon(
-                  onPressed: _exporting ? null : _export,
-                  icon: const Icon(Icons.upload_outlined),
-                  label: Text(_exporting ? 'Exporting…' : 'Export Backup'),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10.0,
+                  vertical: 6.0,
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: FilledButton.icon(
+                        onPressed: _exporting
+                            ? null
+                            : () => _export(share: false),
+                        icon: const Icon(Icons.save_outlined),
+                        label: Text(_exporting ? 'Exporting…' : 'Save Backup'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton.filledTonal(
+                      onPressed: _exporting ? null : () => _export(share: true),
+                      icon: const Icon(Icons.share_outlined),
+                      tooltip: 'Share Backup',
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 10),

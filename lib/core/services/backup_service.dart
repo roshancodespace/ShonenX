@@ -9,7 +9,6 @@ import 'package:shonenx/features/history/domain/models/history_entry.dart';
 import 'package:shonenx/features/library/domain/models/library_entry.dart';
 import 'package:shonenx/features/notifications/domain/models/notification_subscription.dart';
 import 'package:shonenx/features/tracking/domain/isar_tracker_link.dart';
-import 'package:shonenx/shared/models/unified_media.dart';
 
 enum BackupCategory {
   library('Library', 'Saved anime & manga with status & progress'),
@@ -56,6 +55,29 @@ class BackupManifest {
     final value = data[category.name];
     if (value is List) return value.length;
     if (value is Map) return value.length;
+
+    // Fallbacks for legacy/alternative keys
+    if (category == BackupCategory.history) {
+      int count = 0;
+      final wh = data['watchHistory'];
+      if (wh is List) count += wh.length;
+      final rh = data['readHistory'];
+      if (rh is List) count += rh.length;
+      if (count > 0) return count;
+    } else if (category == BackupCategory.library) {
+      final wl = data['watchlist'];
+      if (wl is Map) return wl.length;
+      final al = data['animeLibrary'];
+      final ml = data['mangaLibrary'];
+      int count = 0;
+      if (al is List) count += al.length;
+      if (ml is List) count += ml.length;
+      if (count > 0) return count;
+    } else if (category == BackupCategory.appPreferences) {
+      final s = data['settings'];
+      if (s is Map) return s.length;
+      if (s is List) return s.length;
+    }
     return 0;
   }
 
@@ -69,22 +91,196 @@ class BackupManifest {
   }
 
   factory BackupManifest.fromJson(String source) {
-    final map = jsonDecode(source) as Map<String, dynamic>;
-    return BackupManifest(
-      appVersion: map['appVersion'] as String? ?? 'unknown',
-      exportDate:
-          DateTime.tryParse(map['exportDate'] as String? ?? '') ??
-          DateTime.now(),
-      categories: (map['categories'] as List<dynamic>? ?? []).map((name) {
-        if (name == 'watchHistory' || name == 'readHistory') {
-          return BackupCategory.history;
+    String cleaned = source.trim();
+    if (cleaned.startsWith('\uFEFF')) {
+      cleaned = cleaned.substring(1).trim();
+    }
+    // Remove markdown code fences if wrapped in them
+    if (cleaned.startsWith('```')) {
+      final firstNewline = cleaned.indexOf('\n');
+      if (firstNewline != -1) {
+        cleaned = cleaned.substring(firstNewline + 1);
+      }
+      if (cleaned.endsWith('```')) {
+        cleaned = cleaned.substring(0, cleaned.length - 3);
+      }
+      cleaned = cleaned.trim();
+    }
+
+    Map<String, dynamic> map;
+    try {
+      final decoded = jsonDecode(cleaned);
+      if (decoded is Map) {
+        map = Map<String, dynamic>.from(decoded);
+      } else {
+        throw const FormatException('Root backup JSON is not an object');
+      }
+    } catch (_) {
+      // Fallback repair: strip trailing commas before closing braces/brackets
+      final repaired = cleaned.replaceAllMapped(
+        RegExp(r',\s*([}\]])'),
+        (match) => match.group(1)!,
+      );
+      final decoded = jsonDecode(repaired);
+      if (decoded is Map) {
+        map = Map<String, dynamic>.from(decoded);
+      } else {
+        throw const FormatException('Root backup JSON is not an object');
+      }
+    }
+
+    // 1. Resolve 'data' payload (handling double-encoded strings or root-level maps)
+    dynamic rawData = map['data'];
+    if (rawData is String) {
+      try {
+        rawData = jsonDecode(rawData);
+      } catch (_) {}
+    }
+
+    final data = <String, dynamic>{};
+    if (rawData is Map) {
+      for (final e in rawData.entries) {
+        data[e.key.toString()] = e.value;
+      }
+    } else {
+      // Extract root-level data keys if 'data' object is missing
+      for (final key in [
+        'library',
+        'history',
+        'watchHistory',
+        'readHistory',
+        'notifications',
+        'trackerLinks',
+        'mediaPreferences',
+        'appPreferences',
+        'watchlist',
+        'animeLibrary',
+        'mangaLibrary',
+        'novelLibrary',
+        'settings',
+      ]) {
+        if (map.containsKey(key)) {
+          data[key] = map[key];
         }
-        return BackupCategory.values.firstWhere(
-          (c) => c.name == name,
-          orElse: () => BackupCategory.library,
+      }
+    }
+
+    // 2. Normalize legacy library formats (Hive watchlist / AnymeX libraries)
+    if (data['watchlist'] is Map && data['library'] == null) {
+      final list = <Map<String, dynamic>>[];
+      for (final val in (data['watchlist'] as Map).values) {
+        if (val is Map) list.add(Map<String, dynamic>.from(val));
+      }
+      data['library'] = list;
+    }
+    if ((data['animeLibrary'] is List || data['mangaLibrary'] is List) &&
+        data['library'] == null) {
+      final anymexLib = <Map<String, dynamic>>[];
+      if (data['animeLibrary'] is List) {
+        for (final item in data['animeLibrary'] as List) {
+          if (item is Map) anymexLib.add(Map<String, dynamic>.from(item));
+        }
+      }
+      if (data['mangaLibrary'] is List) {
+        for (final item in data['mangaLibrary'] as List) {
+          if (item is Map) anymexLib.add(Map<String, dynamic>.from(item));
+        }
+      }
+      if (anymexLib.isNotEmpty) {
+        data['library'] = anymexLib;
+      }
+    }
+
+    // 3. Normalize legacy settings formats
+    if (data['settings'] != null && data['appPreferences'] == null) {
+      if (data['settings'] is Map) {
+        data['appPreferences'] = Map<String, dynamic>.from(
+          data['settings'] as Map,
         );
-      }).toSet(),
-      data: map['data'] as Map<String, dynamic>? ?? {},
+      } else if (data['settings'] is List) {
+        final prefMap = <String, dynamic>{};
+        for (final item in data['settings'] as List) {
+          if (item is Map && item['key'] != null) {
+            prefMap[item['key'].toString()] = item['value'];
+          }
+        }
+        data['appPreferences'] = prefMap;
+      }
+    }
+
+    // 4. Normalize legacy watchHistory and readHistory into history
+    if (data['history'] == null) {
+      final combinedHistory = <dynamic>[];
+      if (data['watchHistory'] is List) {
+        combinedHistory.addAll(data['watchHistory'] as List);
+      }
+      if (data['readHistory'] is List) {
+        combinedHistory.addAll(data['readHistory'] as List);
+      }
+      if (combinedHistory.isNotEmpty) {
+        data['history'] = combinedHistory;
+      }
+    }
+
+    // 5. Parse and auto-detect categories
+    final categories = <BackupCategory>{};
+    final rawCats = map['categories'];
+    if (rawCats is List) {
+      for (final name in rawCats) {
+        final str = name?.toString();
+        if (str == 'watchHistory' || str == 'readHistory' || str == 'history') {
+          categories.add(BackupCategory.history);
+        } else if (str == 'library' ||
+            str == 'watchlist' ||
+            str == 'animeLibrary') {
+          categories.add(BackupCategory.library);
+        } else if (str == 'appPreferences' || str == 'settings') {
+          categories.add(BackupCategory.appPreferences);
+        } else {
+          final matched = BackupCategory.values.where((c) => c.name == str);
+          if (matched.isNotEmpty) {
+            categories.add(matched.first);
+          }
+        }
+      }
+    }
+
+    // Auto-detect categories from present data to recover broken manifests
+    if (data.containsKey('library') ||
+        data.containsKey('watchlist') ||
+        data.containsKey('animeLibrary')) {
+      categories.add(BackupCategory.library);
+    }
+    if (data.containsKey('history') ||
+        data.containsKey('watchHistory') ||
+        data.containsKey('readHistory')) {
+      categories.add(BackupCategory.history);
+    }
+    if (data.containsKey('notifications')) {
+      categories.add(BackupCategory.notifications);
+    }
+    if (data.containsKey('trackerLinks')) {
+      categories.add(BackupCategory.trackerLinks);
+    }
+    if (data.containsKey('mediaPreferences')) {
+      categories.add(BackupCategory.mediaPreferences);
+    }
+    if (data.containsKey('appPreferences') || data.containsKey('settings')) {
+      categories.add(BackupCategory.appPreferences);
+    }
+
+    // Fallback date and version
+    final exportDateStr = (map['exportDate'] ?? map['timestamp'] ?? map['date'])
+        ?.toString();
+    final exportDate = DateTime.tryParse(exportDateStr ?? '') ?? DateTime.now();
+    final appVersion =
+        (map['appVersion'] ?? map['version'])?.toString() ?? 'unknown';
+
+    return BackupManifest(
+      appVersion: appVersion,
+      exportDate: exportDate,
+      categories: categories,
+      data: data,
     );
   }
 }
@@ -151,10 +347,13 @@ class BackupService {
           await _importLibrary(manifest.data['library'] as List<dynamic>?);
         case BackupCategory.history:
           await _importHistory(manifest.data['history'] as List<dynamic>?);
-          await _importLegacyHistory(
-            watchHistory: manifest.data['watchHistory'] as List<dynamic>?,
-            readHistory: manifest.data['readHistory'] as List<dynamic>?,
-          );
+          // If legacy separate keys are present and weren't in history
+          if (manifest.data['history'] == null) {
+            await _importLegacyHistory(
+              watchHistory: manifest.data['watchHistory'] as List<dynamic>?,
+              readHistory: manifest.data['readHistory'] as List<dynamic>?,
+            );
+          }
         case BackupCategory.notifications:
           await _importNotifications(
             manifest.data['notifications'] as List<dynamic>?,
@@ -220,10 +419,17 @@ class BackupService {
             'preferredSourceId': e.preferredSourceId,
             'preferredSourceName': e.preferredSourceName,
             'preferredSourceType': e.preferredSourceType,
-            'matchedMediaTitle': e.matchedMediaTitle,
-            'matchedMediaId': e.matchedMediaId,
-            'preferredTracker': e.preferredTracker,
-            'trackerMediaId': e.trackerMediaId,
+            'matchedMediaTitle': e.matchedMediaTitle ?? e.manualOverrideTitle,
+            'matchedMediaId': e.matchedMediaId ?? e.manualOverrideId,
+            'preferredTracker': e.preferredTracker ?? e.preferredAiringTracker,
+            'trackerMediaId': e.trackerMediaId ?? e.manualAiringTrackerId,
+            // Legacy keys mirrored for backward compatibility
+            'manualOverrideTitle': e.matchedMediaTitle ?? e.manualOverrideTitle,
+            'manualOverrideId': e.matchedMediaId ?? e.manualOverrideId,
+            'preferredAiringTracker':
+                e.preferredTracker ?? e.preferredAiringTracker,
+            'manualAiringTrackerId':
+                e.trackerMediaId ?? e.manualAiringTrackerId,
           },
         )
         .toList();
@@ -243,9 +449,14 @@ class BackupService {
     await _isar.writeTxn(() async {
       await _isar.libraryEntrys.clear();
       for (final item in items) {
-        await _isar.libraryEntrys.put(
-          LibraryEntry.fromBackupMap(item as Map<String, dynamic>),
-        );
+        if (item is! Map) continue;
+        try {
+          final entry = LibraryEntry.fromBackupMap(
+            Map<String, dynamic>.from(item),
+          );
+          if (entry.providerId.isEmpty && entry.title.isEmpty) continue;
+          await _isar.libraryEntrys.put(entry);
+        } catch (_) {}
       }
     });
   }
@@ -255,9 +466,14 @@ class BackupService {
     await _isar.writeTxn(() async {
       await _isar.historyEntrys.clear();
       for (final item in items) {
-        await _isar.historyEntrys.put(
-          HistoryEntry.fromBackupMap(item as Map<String, dynamic>),
-        );
+        if (item is! Map) continue;
+        try {
+          final entry = HistoryEntry.fromBackupMap(
+            Map<String, dynamic>.from(item),
+          );
+          if (entry.mediaId.isEmpty && entry.mediaTitle.isEmpty) continue;
+          await _isar.historyEntrys.put(entry);
+        } catch (_) {}
       }
     });
   }
@@ -266,65 +482,12 @@ class BackupService {
     List<dynamic>? watchHistory,
     List<dynamic>? readHistory,
   }) async {
-    if ((watchHistory == null || watchHistory.isEmpty) &&
-        (readHistory == null || readHistory.isEmpty)) {
-      return;
-    }
-
-    await _isar.writeTxn(() async {
-      await _isar.historyEntrys.clear();
-
-      if (watchHistory != null) {
-        for (final item in watchHistory) {
-          final m = item as Map<String, dynamic>;
-          final entry = HistoryEntry()
-            ..mediaId = m['animeId'] as String
-            ..mediaType = MediaType.ANIME.id
-            ..itemNumber = (m['episodeNumber'] as num).toDouble()
-            ..mediaIdMal = m['animeIdMal'] as String?
-            ..mediaTitle = m['animeTitle'] as String
-            ..itemTitle = m['episodeTitle'] as String?
-            ..cover = m['cover'] as String?
-            ..banner = m['banner'] as String?
-            ..thumbnailUrl = m['thumbnailUrl'] as String?
-            ..progress = (m['positionInMilliseconds'] as num).toInt()
-            ..total = (m['durationInMilliseconds'] as num).toInt()
-            ..sourceId = m['sourceId'] as String?
-            ..sourceName = m['sourceName'] as String?
-            ..providerId = m['providerId'] as String?
-            ..externalIdsJson = m['externalIdsJson'] as String?
-            ..lastUpdated =
-                DateTime.tryParse(m['lastUpdated'] as String? ?? '') ??
-                DateTime.now();
-          await _isar.historyEntrys.put(entry);
-        }
-      }
-
-      if (readHistory != null) {
-        for (final item in readHistory) {
-          final m = item as Map<String, dynamic>;
-          final entry = HistoryEntry()
-            ..mediaId = m['mangaId'] as String
-            ..mediaType = MediaType.MANGA.id
-            ..itemNumber = (m['chapterNumber'] as num).toDouble()
-            ..mediaIdMal = m['mangaIdMal'] as String?
-            ..mediaTitle = m['mangaTitle'] as String
-            ..itemTitle = m['chapterTitle'] as String?
-            ..cover = m['cover'] as String?
-            ..banner = m['banner'] as String?
-            ..progress = (m['positionPage'] as num).toInt()
-            ..total = (m['totalPages'] as num).toInt()
-            ..sourceId = m['sourceId'] as String?
-            ..sourceName = m['sourceName'] as String?
-            ..providerId = m['providerId'] as String?
-            ..externalIdsJson = m['externalIdsJson'] as String?
-            ..lastUpdated =
-                DateTime.tryParse(m['lastUpdated'] as String? ?? '') ??
-                DateTime.now();
-          await _isar.historyEntrys.put(entry);
-        }
-      }
-    });
+    final items = <dynamic>[
+      if (watchHistory != null) ...watchHistory,
+      if (readHistory != null) ...readHistory,
+    ];
+    if (items.isEmpty) return;
+    await _importHistory(items);
   }
 
   Future<void> _importNotifications(List<dynamic>? items) async {
@@ -333,37 +496,45 @@ class BackupService {
     await _isar.writeTxn(() async {
       await _isar.notificationSubscriptions.clear();
       for (final item in items) {
-        final sub = NotificationSubscription.fromBackupMap(
-          item as Map<String, dynamic>,
-        );
-        await _isar.notificationSubscriptions.put(sub);
+        if (item is! Map) continue;
+        try {
+          final sub = NotificationSubscription.fromBackupMap(
+            Map<String, dynamic>.from(item),
+          );
+          if (sub.referenceId.isEmpty) continue;
+          await _isar.notificationSubscriptions.put(sub);
+        } catch (_) {}
       }
     });
 
     // Automatically reschedule all upcoming local notification reminders
-    final activeSubs = await _isar.notificationSubscriptions.where().findAll();
-    for (final sub in activeSubs) {
-      if (!sub.isEnabled) continue;
-      if (sub.upcomingTime != null) {
-        final scheduledTime = sub.upcomingTime!.subtract(
-          Duration(minutes: sub.offsetMinutes),
-        );
-        if (scheduledTime.isAfter(DateTime.now())) {
-          final notifId = NotificationService.generateId(
-            sub.type.name,
-            sub.referenceId,
-            sub.upcomingIdentifier ?? 'unknown',
+    try {
+      final activeSubs = await _isar.notificationSubscriptions
+          .where()
+          .findAll();
+      for (final sub in activeSubs) {
+        if (!sub.isEnabled) continue;
+        if (sub.upcomingTime != null) {
+          final scheduledTime = sub.upcomingTime!.subtract(
+            Duration(minutes: sub.offsetMinutes),
           );
-          await notifService.schedule(
-            id: notifId,
-            title: 'New Update Alert: ${sub.title}',
-            body:
-                'A new update (${sub.upcomingIdentifier ?? ''}) is arriving soon!',
-            scheduleTime: scheduledTime,
-          );
+          if (scheduledTime.isAfter(DateTime.now())) {
+            final notifId = NotificationService.generateId(
+              sub.type.name,
+              sub.referenceId,
+              sub.upcomingIdentifier ?? 'unknown',
+            );
+            await notifService.schedule(
+              id: notifId,
+              title: 'New Update Alert: ${sub.title}',
+              body:
+                  'A new update (${sub.upcomingIdentifier ?? ''}) is arriving soon!',
+              scheduleTime: scheduledTime,
+            );
+          }
         }
       }
-    }
+    } catch (_) {}
   }
 
   Future<void> _importTrackerLinks(List<dynamic>? items) async {
@@ -371,9 +542,14 @@ class BackupService {
     await _isar.writeTxn(() async {
       await _isar.isarTrackerLinks.clear();
       for (final item in items) {
-        await _isar.isarTrackerLinks.put(
-          IsarTrackerLink.fromBackupMap(item as Map<String, dynamic>),
-        );
+        if (item is! Map) continue;
+        try {
+          final link = IsarTrackerLink.fromBackupMap(
+            Map<String, dynamic>.from(item),
+          );
+          if (link.primaryMediaId.isEmpty) continue;
+          await _isar.isarTrackerLinks.put(link);
+        } catch (_) {}
       }
     });
   }
@@ -383,21 +559,36 @@ class BackupService {
     await _isar.writeTxn(() async {
       await _isar.mediaPreferences.clear();
       for (final item in items) {
-        final m = item as Map<String, dynamic>;
-        final pref = MediaPreference()
-          ..mediaTitle = m['mediaTitle'] as String
-          ..preferredSourceId = m['preferredSourceId'] as String
-          ..preferredSourceName = m['preferredSourceName'] as String
-          ..preferredSourceType = m['preferredSourceType'] as String
-          ..matchedMediaTitle =
-              (m['matchedMediaTitle'] ?? m['manualOverrideTitle']) as String?
-          ..matchedMediaId =
-              (m['matchedMediaId'] ?? m['manualOverrideId']) as String?
-          ..preferredTracker =
-              (m['preferredTracker'] ?? m['preferredAiringTracker']) as String?
-          ..trackerMediaId =
-              (m['trackerMediaId'] ?? m['manualAiringTrackerId']) as String?;
-        await _isar.mediaPreferences.put(pref);
+        if (item is! Map) continue;
+        try {
+          final m = Map<String, dynamic>.from(item);
+          final title = (m['mediaTitle'] ?? m['title'])?.toString();
+          if (title == null || title.isEmpty) continue;
+
+          final pref = MediaPreference()
+            ..mediaTitle = title
+            ..preferredSourceId =
+                (m['preferredSourceId'] ?? m['sourceId'] ?? '')?.toString() ??
+                ''
+            ..preferredSourceName =
+                (m['preferredSourceName'] ?? m['sourceName'] ?? '')
+                    ?.toString() ??
+                ''
+            ..preferredSourceType =
+                (m['preferredSourceType'] ?? m['sourceType'] ?? '')
+                    ?.toString() ??
+                ''
+            ..matchedMediaTitle =
+                (m['matchedMediaTitle'] ?? m['manualOverrideTitle'])?.toString()
+            ..matchedMediaId = (m['matchedMediaId'] ?? m['manualOverrideId'])
+                ?.toString()
+            ..preferredTracker =
+                (m['preferredTracker'] ?? m['preferredAiringTracker'])
+                    ?.toString()
+            ..trackerMediaId =
+                (m['trackerMediaId'] ?? m['manualAiringTrackerId'])?.toString();
+          await _isar.mediaPreferences.put(pref);
+        } catch (_) {}
       }
     });
   }
@@ -406,20 +597,24 @@ class BackupService {
     if (prefs == null || prefs.isEmpty) return;
     for (final e in prefs.entries) {
       final value = e.value;
-      if (value is String) {
-        await _prefs.setString(e.key, value);
-      } else if (value is int) {
-        await _prefs.setInt(e.key, value);
-      } else if (value is double) {
-        await _prefs.setDouble(e.key, value);
-      } else if (value is bool) {
-        await _prefs.setBool(e.key, value);
-      } else if (value is List) {
-        await _prefs.setStringList(
-          e.key,
-          value.map((v) => v.toString()).toList(),
-        );
-      }
+      try {
+        if (value is String) {
+          await _prefs.setString(e.key, value);
+        } else if (value is int) {
+          await _prefs.setInt(e.key, value);
+        } else if (value is double) {
+          await _prefs.setDouble(e.key, value);
+        } else if (value is bool) {
+          await _prefs.setBool(e.key, value);
+        } else if (value is List) {
+          await _prefs.setStringList(
+            e.key,
+            value.map((v) => v.toString()).toList(),
+          );
+        } else if (value is Map) {
+          await _prefs.setString(e.key, jsonEncode(value));
+        }
+      } catch (_) {}
     }
   }
 }

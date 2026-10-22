@@ -369,6 +369,21 @@ class BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
           );
           if (!granted) return;
         }
+
+        final batteryStatus =
+            await Permission.ignoreBatteryOptimizations.status;
+        if (!batteryStatus.isGranted) {
+          if (!mounted) return;
+          await PermissionSheet.show(
+            context,
+            permission: Permission.ignoreBatteryOptimizations,
+            title: 'Background Download Permission',
+            description:
+                'To keep downloads running when ShonenX is in the background or recent apps, please disable battery optimization.',
+            rationale:
+                'Android restricts background network and processor tasks to save battery. Disabling optimization ensures downloads are not paused when switching apps.',
+          );
+        }
       }
       currentIndex = 0;
       successCount = 0;

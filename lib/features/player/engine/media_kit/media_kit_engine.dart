@@ -94,12 +94,11 @@ class MediaKitEngine implements VideoEngine {
     await setPropSafe('cache-on-disk', 'no');
     await setPropSafe('demuxer-max-bytes', '134217728'); // 128MB
     await setPropSafe('demuxer-max-back-bytes', '33554432'); // 32MB
-    
+
     await setPropSafe('autosync', '30');
     await setPropSafe('framedrop', 'no');
     await setPropSafe('seg_max_retry', '5');
     await setPropSafe('network-timeout', '30');
-
 
     try {
       await _player.setVolume(prefs.boostVolume ? 140 : 100);
@@ -397,11 +396,18 @@ class MediaKitEngine implements VideoEngine {
   Future<void> setSubtitle(stream.SubtitleTrack? subtitle) async {
     _currentSubtitle = subtitle;
 
+    final player = _player.platform;
+
     if (subtitle == null ||
         subtitle == stream.SubtitleTrack.none ||
         subtitle.url.isEmpty) {
       _log.d('Disabling subtitle');
       await _player.setSubtitleTrack(SubtitleTrack.no());
+      if (player is NativePlayer) {
+        try {
+          await player.setProperty('sub-visibility', 'no');
+        } catch (_) {}
+      }
     } else if (subtitle.url.startsWith('internal:')) {
       final trackId = subtitle.url.replaceFirst('internal:', '');
       _log.d(
@@ -413,11 +419,23 @@ class MediaKitEngine implements VideoEngine {
         orElse: () => SubtitleTrack(trackId, null, subtitle.language),
       );
       await _player.setSubtitleTrack(target);
+      if (player is NativePlayer) {
+        try {
+          await player.setProperty('sub-visibility', 'yes');
+          await player.setProperty('sub-ass', 'yes');
+        } catch (_) {}
+      }
     } else {
       _log.d('Setting subtitle: ${subtitle.url} (lang: ${subtitle.language})');
       await _player.setSubtitleTrack(
         SubtitleTrack.uri(subtitle.url, language: subtitle.language),
       );
+      if (player is NativePlayer) {
+        try {
+          await player.setProperty('sub-visibility', 'yes');
+          await player.setProperty('sub-ass', 'yes');
+        } catch (_) {}
+      }
     }
   }
 

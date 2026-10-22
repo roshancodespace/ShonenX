@@ -21,6 +21,7 @@ class _PermissionsSettingsScreenState
   PermissionStatus? _exactAlarmStatus;
   PermissionStatus? _storageStatus;
   PermissionStatus? _manageStorageStatus;
+  PermissionStatus? _batteryOptimizationStatus;
 
   @override
   void initState() {
@@ -55,6 +56,9 @@ class _PermissionsSettingsScreenState
     final manageStorage = Platform.isAndroid
         ? await Permission.manageExternalStorage.status
         : PermissionStatus.granted;
+    final batteryOpt = Platform.isAndroid
+        ? await Permission.ignoreBatteryOptimizations.status
+        : PermissionStatus.granted;
 
     if (mounted) {
       setState(() {
@@ -62,6 +66,7 @@ class _PermissionsSettingsScreenState
         _exactAlarmStatus = exactAlarm;
         _storageStatus = storage;
         _manageStorageStatus = manageStorage;
+        _batteryOptimizationStatus = batteryOpt;
       });
     }
   }
@@ -154,6 +159,15 @@ class _PermissionsSettingsScreenState
                 onTap: () => _requestPermission(Permission.notification),
               ),
               if (Platform.isAndroid) ...[
+                SettingsActionTile(
+                  icon: Icons.battery_charging_full_rounded,
+                  title: 'Ignore Battery Optimizations',
+                  subtitle:
+                      'Keep downloads running when app is in background or recent apps',
+                  trailing: _buildStatusBadge(_batteryOptimizationStatus, cs),
+                  onTap: () =>
+                      _requestPermission(Permission.ignoreBatteryOptimizations),
+                ),
                 SettingsActionTile(
                   icon: Icons.alarm_rounded,
                   title: 'Exact Alarms (Android 12+)',

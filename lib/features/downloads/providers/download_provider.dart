@@ -215,6 +215,11 @@ class DownloadManagerNotifier extends AsyncNotifier<DownloadManagerNotifier> {
       final task = await repo.getTaskById(dbTaskId);
       if (task == null) return;
 
+      if (task.status == DownloadStatus.pending) {
+        task.status = DownloadStatus.downloading;
+        task.errorReason = null;
+      }
+
       task.downloadedBytes = progress.receivedBytes;
       task.totalBytes = progress.totalBytes ?? 0;
       task.progress = progress.percent;
@@ -239,7 +244,7 @@ class DownloadManagerNotifier extends AsyncNotifier<DownloadManagerNotifier> {
       }
     });
 
-    _statusSubs[dbTaskId] = job.statusStream.listen((status) async {
+    Future<void> handleStatus(bm.DownloadStatus status) async {
       final task = await repo.getTaskById(dbTaskId);
       if (task == null) return;
 
@@ -286,7 +291,14 @@ class DownloadManagerNotifier extends AsyncNotifier<DownloadManagerNotifier> {
           status == bm.DownloadStatus.cancelled) {
         _cleanupJob(dbTaskId, job.id);
       }
-    });
+    }
+
+    _statusSubs[dbTaskId] = job.statusStream.listen(handleStatus);
+
+    // If job has already transitioned past queued before subscription, sync status immediately
+    if (job.status != bm.DownloadStatus.queued) {
+      handleStatus(job.status);
+    }
   }
 
   void _cleanupJob(int dbTaskId, String jobId) {

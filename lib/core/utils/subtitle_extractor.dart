@@ -70,4 +70,65 @@ class SubtitleExtractor {
     }
     return '$lang • $label';
   }
+
+  static const Map<String, List<String>> languageAliases = {
+    'en': ['en', 'eng', 'english'],
+    'ja': ['ja', 'jpn', 'japanese', 'nihongo'],
+    'es': ['es', 'spa', 'spanish', 'espanol', 'español', 'castilian', 'latin'],
+    'fr': ['fr', 'fre', 'fra', 'french', 'francais', 'français'],
+    'de': ['de', 'ger', 'deu', 'german', 'deutsch'],
+    'pt': ['pt', 'por', 'portuguese', 'portugues', 'português', 'brazilian'],
+    'it': ['it', 'ita', 'italian', 'italiano'],
+    'ru': ['ru', 'rus', 'russian', 'russkiy'],
+    'ar': ['ar', 'ara', 'arabic'],
+    'hi': ['hi', 'hin', 'hindi'],
+    'id': ['id', 'ind', 'indonesian', 'bahasa'],
+    'tr': ['tr', 'tur', 'turkish', 'turkce', 'türkçe'],
+    'vi': ['vi', 'vie', 'vietnamese', 'tieng viet', 'tiếng việt'],
+    'th': ['th', 'tha', 'thai'],
+    'pl': ['pl', 'pol', 'polish', 'polski'],
+    'zh': ['zh', 'chi', 'zho', 'chinese', 'mandarin', 'cantonese'],
+    'ko': ['ko', 'kor', 'korean', 'hangul'],
+    'nl': ['nl', 'dut', 'nld', 'dutch', 'nederlands'],
+    'fil': ['fil', 'tgl', 'tagalog', 'filipino'],
+    'ms': ['ms', 'may', 'msa', 'malay'],
+    'sv': ['sv', 'swe', 'swedish', 'svenska'],
+    'uk': ['uk', 'ukr', 'ukrainian'],
+    'ro': ['ro', 'rum', 'ron', 'romanian'],
+    'el': ['el', 'gre', 'ell', 'greek'],
+    'hu': ['hu', 'hun', 'hungarian'],
+    'cs': ['cs', 'cze', 'ces', 'czech'],
+    'da': ['da', 'dan', 'danish'],
+    'fi': ['fi', 'fin', 'finnish'],
+    'no': ['no', 'nor', 'norwegian'],
+    'he': ['he', 'heb', 'hebrew'],
+  };
+
+  static String? normalizeLanguageCode(String raw) {
+    final clean = raw.toLowerCase().trim();
+    if (clean.isEmpty) return null;
+
+    final tokens = clean
+        .split(RegExp(r'[^a-z0-9áéíóúñçãõâêîôûäëïöü]'))
+        .where((t) => t.isNotEmpty)
+        .toList();
+    if (tokens.isEmpty) return null;
+
+    for (final entry in languageAliases.entries) {
+      for (final alias in entry.value) {
+        if (tokens.contains(alias) || clean == alias) {
+          return entry.key;
+        }
+      }
+    }
+
+    return tokens.first;
+  }
+
+  static bool matchesLanguage(String lang1, String lang2) {
+    final code1 = normalizeLanguageCode(lang1);
+    final code2 = normalizeLanguageCode(lang2);
+    if (code1 == null || code2 == null) return false;
+    return code1 == code2;
+  }
 }

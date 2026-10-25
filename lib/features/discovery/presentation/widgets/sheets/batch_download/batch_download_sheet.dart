@@ -550,13 +550,11 @@ class BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
           }
         }
 
-        final matchedSubs = epSubtitles
-            .where(
-              (sub) =>
-                  _matchesSubtitle(sub, selectedSubtitleLabels) &&
-                  sub.url.isNotEmpty,
-            )
-            .toList();
+        final matchedSubs = _resolveMatchedSubtitles(
+          epSubtitles,
+          selectedSubtitleLabels,
+          prefServerName: prefServerName,
+        );
 
         if (use1DM) {
           oneDmUrls.add(extractedUrl);
@@ -721,22 +719,90 @@ class BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
 
   bool _matchesSubtitle(SubtitleTrack sub, Set<String> selected) {
     if (selected.isEmpty) return false;
-    final display = SubtitleExtractor.formatDisplayTitle(sub).toLowerCase();
-    final sLabel = (sub.label ?? '').toLowerCase();
-    final lang = sub.language.toLowerCase();
+    final subDisplay = SubtitleExtractor.formatDisplayTitle(
+      sub,
+    ).toLowerCase().trim();
 
     for (final sel in selected) {
-      final s = sel.toLowerCase();
-      if (s == display || s == sLabel || s == lang) return true;
-      if (display.contains(s) || s.contains(display)) return true;
-      if (sLabel.isNotEmpty && (sLabel.contains(s) || s.contains(sLabel))) {
-        return true;
-      }
-      if (lang.isNotEmpty && (lang.contains(s) || s.contains(lang))) {
+      if (sel.toLowerCase().trim() == subDisplay) return true;
+
+      final templateSub = availableSubtitles
+          .where((t) => SubtitleExtractor.formatDisplayTitle(t) == sel)
+          .firstOrNull;
+      final targetLang = templateSub?.language ?? sel;
+
+      if (SubtitleExtractor.matchesLanguage(sub.language, targetLang)) {
         return true;
       }
     }
     return false;
+  }
+
+  List<SubtitleTrack> _resolveMatchedSubtitles(
+    List<SubtitleTrack> candidates,
+    Set<String> selectedLabels, {
+    String? prefServerName,
+  }) {
+    if (selectedLabels.isEmpty || candidates.isEmpty) return [];
+
+    final matched = <SubtitleTrack>[];
+    final usedUrls = <String>{};
+
+    for (final sel in selectedLabels) {
+      final templateSub = availableSubtitles
+          .where((t) => SubtitleExtractor.formatDisplayTitle(t) == sel)
+          .firstOrNull;
+      final targetLang = templateSub?.language ?? sel;
+      final targetLabel = (templateSub?.label ?? '').toLowerCase().trim();
+
+      // Find candidates that match this target's language or exact display title
+      final langMatches = candidates.where((c) {
+        if (usedUrls.contains(c.url) || c.url.isEmpty) return false;
+        final cDisplay = SubtitleExtractor.formatDisplayTitle(
+          c,
+        ).toLowerCase().trim();
+        if (cDisplay == sel.toLowerCase().trim()) return true;
+        return SubtitleExtractor.matchesLanguage(c.language, targetLang);
+      }).toList();
+
+      if (langMatches.isEmpty) continue;
+
+      // Score candidates to select the single best matching track for this template
+      SubtitleTrack? best;
+      int bestScore = -1;
+
+      for (final candidate in langMatches) {
+        int score = 10; // base score for language match
+        final cDisplay = SubtitleExtractor.formatDisplayTitle(
+          candidate,
+        ).toLowerCase().trim();
+        if (cDisplay == sel.toLowerCase().trim()) {
+          score += 100; // exact display title match
+        }
+        if (prefServerName != null &&
+            (candidate.label ?? '').toLowerCase().contains(
+              prefServerName.toLowerCase(),
+            )) {
+          score += 30; // matches user's preferred server
+        }
+        if (targetLabel.isNotEmpty &&
+            (candidate.label ?? '').toLowerCase().trim() == targetLabel) {
+          score += 20; // matches template track label
+        }
+
+        if (score > bestScore) {
+          bestScore = score;
+          best = candidate;
+        }
+      }
+
+      if (best != null) {
+        usedUrls.add(best.url);
+        matched.add(best);
+      }
+    }
+
+    return matched;
   }
 
   Widget _buildCurrentStep() {

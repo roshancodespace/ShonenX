@@ -1,9 +1,9 @@
 import 'dart:async';
 
-import 'package:anymex_extension_runtime_bridge/anymex_extension_runtime_bridge.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
+import 'package:shonenx/source_engine/addon_service.dart';
 
 import 'package:collection/collection.dart';
 import 'package:shonenx/core/network/http_client.dart';
@@ -176,7 +176,7 @@ class PlayerController extends Notifier<PlayerState> {
       _endingSkipCooldownTimer?.cancel();
       _progressTracker.cancel();
       _engine.dispose();
-      // unawaited(TorrentStreamResolver.dispose());
+      unawaited(ref.read(addonServiceProvider).stopTorrentStream());
     });
 
     ref.listen(subtitlePrefsProvider, (prev, current) {
@@ -465,7 +465,10 @@ class PlayerController extends Notifier<PlayerState> {
           subtitle: SubtitleTrack.none,
           startAt: startPosition,
           episode: episode,
-        ).then((_) => _updateDiscordRpc()),
+        ).then((_) => _updateDiscordRpc()).catchError((e) {
+          if (!ref.mounted) return;
+          state = state.copyWith(isLoading: false, error: e.toString());
+        }),
       );
 
       final httpClient = ref.read(httpClientProvider);
@@ -705,25 +708,27 @@ class PlayerController extends Notifier<PlayerState> {
     UnifiedEpisode? episode,
   }) async {
     VideoStream resolvedStream = stream;
-    if (isTorrentUrl(stream.url)) {
-      throw Exception(
-        'Torrent is temporarily disabled. Please use another server.',
+    final addonService = ref.read(addonServiceProvider);
+
+    if (addonService.isTorrentUrl(stream.url)) {
+      final ep = episode ?? state.activeEpisode;
+      final epString = ep != null
+          ? (ep.number % 1 == 0 ? '${ep.number.toInt()}' : '${ep.number}')
+          : null;
+
+      final resolvedUrl = await addonService.resolveTorrentStream(
+        url: stream.url,
+        episode: epString,
+        title: _media?.title.getPreferedTitle,
       );
-      // final ep = episode ?? state.activeEpisode;
-      // final epString = ep != null
-      //     ? (ep.number % 1 == 0 ? '${ep.number.toInt()}' : '${ep.number}')
-      //     : null;
 
-      // final resolved = await TorrentStreamResolver.resolve(
-      //   stream.url,
-      //   episode: epString,
-      // );
+      if (resolvedUrl.isEmpty) {
+        throw Exception('Failed to resolve torrent stream URL.');
+      }
 
-      // if (resolved.streamUrl.isEmpty) {
-      //   throw Exception('Failed to resolve torrent stream URL.');
-      // }
-
-      // resolvedStream = stream.copyWith(url: resolved.streamUrl);
+      resolvedStream = stream.copyWith(url: resolvedUrl);
+    } else {
+      unawaited(addonService.stopTorrentStream());
     }
 
     if (resolvedStream.requiresProxy) {

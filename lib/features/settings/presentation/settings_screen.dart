@@ -50,6 +50,12 @@ class SettingsScreen extends ConsumerWidget {
                 onLongPress: () => context.pushSettingsRemoteConfigEditor(),
               ),
               SettingsNavTile(
+                icon: Icons.dashboard_customize_outlined,
+                title: 'Addons',
+                subtitle: 'Torrent engines & streaming helpers (TorrServer)',
+                onTap: () => context.pushSettingsAddons(),
+              ),
+              SettingsNavTile(
                 icon: Icons.download_outlined,
                 title: 'Downloads',
                 subtitle: 'Download location, file naming',

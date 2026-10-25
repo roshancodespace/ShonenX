@@ -36,6 +36,7 @@ extension AppNavigator on BuildContext {
   }
 
   void pushSettingsExtensionsTest() => push('/settings/extensions/test');
+  void pushSettingsAddons() => push('/settings/addons');
   void pushSettingsRemoteConfigEditor() =>
       push('/settings/remote_config_editor');
   void pushSettingsContent() => push('/settings/content');

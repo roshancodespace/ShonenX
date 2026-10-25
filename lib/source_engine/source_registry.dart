@@ -10,6 +10,8 @@ import 'package:anymex_extension_runtime_bridge/anymex_extension_runtime_bridge.
 import 'package:shonenx/source_engine/models/source_info.dart';
 import 'package:shonenx/source_engine/providers/inbuilt_sources_provider.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
+export 'addon_service.dart';
+export 'models/addon_info.dart';
 
 final extensionManagerProvider =
     NotifierProvider<ExtensionManagerNotifier, bridge.Extension>(

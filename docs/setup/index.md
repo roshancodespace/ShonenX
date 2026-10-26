@@ -107,6 +107,21 @@ flutter run -d windows
 flutter run -d android
 ```
 
+### Step 5: Building a Flatpak Package (Linux)
+
+You can package ShonenX as an isolated, single-file `.flatpak` bundle using our automated helper script:
+
+1. **Install Flatpak tools**:
+   * **Ubuntu / Debian:** `sudo apt install -y flatpak flatpak-builder`
+   * **Arch Linux:** `sudo pacman -S --needed flatpak flatpak-builder`
+   * **Fedora:** `sudo dnf install -y flatpak flatpak-builder`
+
+2. **Execute the Flatpak build script**:
+   ```bash
+   ./flatpak/build-flatpak.sh
+   ```
+   This script builds the Linux release bundle, ensures the GNOME 47 runtime is present, compiles `libmpv` in the sandbox, and exports `ShonenX-linux-x86_64.flatpak`.
+
 ---
 
 ## Troubleshooting Common Build Issues

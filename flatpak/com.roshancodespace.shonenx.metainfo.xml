@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>com.roshancodespace.shonenx</id>
+  <name>ShonenX</name>
+  <summary>Minimal yet feature-rich Anime and Manga client</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-only</project_license>
+  
+  <developer id="com.roshancodespace">
+    <name>Roshan Kumar Sharma</name>
+  </developer>
+
+  <description>
+    <p>
+      ShonenX is a cross-platform, minimal, yet feature-rich Anime and Manga client with seamless extension support, parallel progress tracking across AniList, MyAnimeList, and Kitsu, and native high-performance media playback.
+    </p>
+    <p>Key features:</p>
+    <ul>
+      <li>Parallel tracking across AniList, MyAnimeList, Kitsu, and Simkl</li>
+      <li>Custom video player with gesture controls and styled subtitles</li>
+      <li>Manga reader with webtoon, horizontal, and vertical reading modes</li>
+      <li>Offline batch and single episode/chapter downloads</li>
+      <li>Extension engine supporting Aniyomi and Mangayomi sources</li>
+      <li>Modern fluid UI with AMOLED dark mode and custom palettes</li>
+    </ul>
+  </description>
+
+  <launchable type="desktop-id">com.roshancodespace.shonenx.desktop</launchable>
+
+  <screenshots>
+    <screenshot type="default">
+      <image>https://raw.githubusercontent.com/roshancodespace/ShonenX/main/screenshots/desktop/home.jpg</image>
+      <caption>ShonenX home screen</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/roshancodespace/ShonenX/main/screenshots/desktop/details.jpg</image>
+      <caption>Anime details and episode list</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/roshancodespace/ShonenX/main/screenshots/desktop/stream.jpg</image>
+      <caption>Hardware-accelerated media player</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/roshancodespace/ShonenX/main/screenshots/desktop/anilist.jpg</image>
+      <caption>AniList integration view</caption>
+    </screenshot>
+  </screenshots>
+
+  <url type="homepage">https://github.com/roshancodespace/ShonenX</url>
+  <url type="bugtracker">https://github.com/roshancodespace/ShonenX/issues</url>
+  <url type="help">https://github.com/roshancodespace/ShonenX/discussions</url>
+  <url type="vcs-browser">https://github.com/roshancodespace/ShonenX</url>
+
+  <provides>
+    <mediatype>x-scheme-handler/shonenx</mediatype>
+    <mediatype>x-scheme-handler/aniyomi</mediatype>
+    <mediatype>x-scheme-handler/mangayomi</mediatype>
+  </provides>
+
+  <releases>
+    <release version="2.1.5" date="2026-10-25">
+      <description>
+        <p>Release v2.1.5 with backup/restore improvements, enhanced subtitle handling, and batch download bug fixes.</p>
+      </description>
+    </release>
+  </releases>
+
+  <content_rating type="oars-1.1" />
+</component>

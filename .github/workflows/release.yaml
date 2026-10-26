@@ -13,6 +13,9 @@ on:
       build_linux:
         type: boolean
         default: true
+      build_flatpak:
+        type: boolean
+        default: true
       build_windows:
         type: boolean
         default: true
@@ -333,6 +336,108 @@ jobs:
             ShonenX-linux.zip
             ShonenX-linux-x86_64.AppImage
 
+  build-flatpak:
+    needs: resolve-release-tag
+    if: github.event_name == 'push' || github.event.inputs.build_flatpak == 'true' || (github.event.inputs.build_flatpak == '' && github.event.inputs.build_linux == 'true')
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Init specific submodules
+        run: |
+          git submodule update --init packages/anymex_extension_bridge
+          git submodule update --init packages/flutter_web_auth
+          git submodule update --init packages/commentum_client
+          git submodule update --init packages/byte_me
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            cmake \
+            ninja-build \
+            pkg-config \
+            libgtk-3-dev \
+            libsecret-1-dev \
+            libmpv-dev \
+            libwebkit2gtk-4.1-dev \
+            flatpak \
+            flatpak-builder
+
+      - name: Setup Rust toolchain
+        run: |
+          rustup default stable
+          rustup update
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.41.9
+          cache: true
+
+      - name: Enable Linux config
+        run: flutter config --enable-linux-desktop
+
+      - name: Override pubspec.yaml version
+        if: github.event_name == 'workflow_dispatch'
+        shell: bash
+        run: |
+          CLEAN_VER="${{ needs.resolve-release-tag.outputs.tag_name }}"
+          CLEAN_VER="${CLEAN_VER#v}"
+
+          EXISTING_VER=$(grep '^version:' pubspec.yaml | awk '{print $2}')
+          if [[ "$EXISTING_VER" == *"+"* ]] && [[ "$CLEAN_VER" != *"+"* ]]; then
+            BUILD_NUM="+${EXISTING_VER#*+}"
+            CLEAN_VER="${CLEAN_VER}${BUILD_NUM}"
+          fi
+
+          echo "Overriding pubspec.yaml version to: $CLEAN_VER"
+          sed -i -e "s/^version: .*/version: $CLEAN_VER/g" pubspec.yaml
+
+      - name: Create env file
+        run: |
+          cat > keys.json <<EOF
+          {
+            "ANILIST_CLIENT_ID": "${{ secrets.ANILIST_CLIENT_ID }}",
+            "ANILIST_CLIENT_SECRET": "${{ secrets.ANILIST_CLIENT_SECRET }}",
+            "MAL_CLIENT_ID": "${{ secrets.MAL_CLIENT_ID }}",
+            "MAL_CLIENT_SECRET": "${{ secrets.MAL_CLIENT_SECRET }}",
+            "SIMKL_CLIENT_ID": "${{ secrets.SIMKL_CLIENT_ID }}",
+            "SIMKL_CLIENT_SECRET": "${{ secrets.SIMKL_CLIENT_SECRET }}",
+            "COMMENTUM_API_URL": "${{ secrets.COMMENTUM_API_URL }}",
+            "RELEASE_REPO": "roshancodespace/ShonenX"
+          }
+          EOF
+
+      - name: Get Dependencies
+        run: find . -name "pubspec.lock" -type f -delete && flutter pub upgrade -v
+
+      - name: Build Linux app release bundle
+        run: flutter build linux --release -v --dart-define-from-file=keys.json
+
+      - name: Prepare Flatpak directory
+        run: |
+          rm -rf flatpak/bundle
+          mkdir -p flatpak/bundle
+          cp -r build/linux/x64/release/bundle/* flatpak/bundle/
+
+      - name: Setup Flathub repository and runtimes
+        run: |
+          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          flatpak install --user -y flathub org.gnome.Platform//47 org.gnome.Sdk//47
+
+      - name: Build Flatpak bundle
+        run: |
+          flatpak-builder --user --install-deps-from=flathub --force-clean --disable-rofiles-fuse --repo=repo build-dir flatpak/com.roshancodespace.shonenx.yml
+          flatpak build-bundle repo ShonenX-linux-x86_64.flatpak com.roshancodespace.shonenx
+
+      - name: Upload Flatpak Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-flatpak
+          path: ShonenX-linux-x86_64.flatpak
+
   build-windows:
     needs: resolve-release-tag
     if: github.event_name == 'push' || github.event.inputs.build_windows == 'true'
@@ -575,6 +680,7 @@ jobs:
         resolve-release-tag,
         build-android,
         build-linux,
+        build-flatpak,
         build-windows,
         build-macos,
         build-ios,

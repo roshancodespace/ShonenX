@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=ShonenX
+GenericName=Anime & Manga Client
+Comment=Minimal yet feature-rich Anime and Manga client with extension support
+Exec=shonenx %u
+Icon=com.roshancodespace.shonenx
+Terminal=false
+Categories=AudioVideo;Player;Network;Feed;
+MimeType=x-scheme-handler/aniyomi;x-scheme-handler/tachiyomi;x-scheme-handler/mangayomi;x-scheme-handler/cloudstream;x-scheme-handler/cloudstreamrepo;x-scheme-handler/kotatsu;x-scheme-handler/sora;x-scheme-handler/shonenx;x-scheme-handler/mihon;
+Keywords=anime;manga;streaming;player;tracking;anilist;mal;kitsu;simkl;
+StartupWMClass=shonenx

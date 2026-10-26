@@ -30,18 +30,42 @@ Windows builds are available as an installer or portable archive:
 
 ## Linux Desktop
 
-For Linux users, we provide an automated shell installer that configures the executable and desktop launcher:
+### Option 1: Flatpak (Recommended)
+
+Flatpak packages ShonenX with all runtime dependencies (including hardware-accelerated `libmpv` and `WebKitGTK`) isolated inside an application sandbox. It runs uniformly across any distribution, including immutable systems like SteamOS (Steam Deck), Fedora Silverblue, and openSUSE MicroOS:
+
+1. Download `ShonenX-linux-x86_64.flatpak` from the [GitHub Releases](https://github.com/roshancodespace/ShonenX/releases) page.
+2. Install the bundle:
+   ```bash
+   flatpak install --user ShonenX-linux-x86_64.flatpak
+   ```
+3. Launch ShonenX:
+   ```bash
+   flatpak run com.roshancodespace.shonenx
+   ```
+
+### Option 2: Automated Install Script
+
+For native installations, we provide an interactive shell script that fetches the latest release, sets up desktop shortcuts, registers URL scheme handlers, and configures your PATH:
 
 ```bash
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/roshancodespace/ShonenX/main/install.sh)"
 ```
 
-### Video Playback Dependency (`libmpv`)
-Because ShonenX uses native `mpv` for hardware-accelerated video decoding and styled subtitles, ensure `libmpv` is installed:
+> [!TIP] Native Video Playback Dependency (`libmpv`)
+> When using the native shell installer or portable zip (outside of Flatpak), ensure `libmpv` is installed on your host:
+> * **Ubuntu / Debian / Mint:** `sudo apt install libmpv-dev libmpv2`
+> * **Arch / Manjaro / EndeavourOS:** `sudo pacman -S mpv`
+> * **Fedora:** `sudo dnf install mpv-libs`
 
-*   **Ubuntu / Debian / Mint:** `sudo apt install libmpv-dev libmpv2`
-*   **Arch / Manjaro / EndeavourOS:** `sudo pacman -S mpv`
-*   **Fedora:** `sudo dnf install mpv-libs`
+### Option 3: AppImage & Portable Zip
+
+Download `ShonenX-linux-x86_64.AppImage` or `ShonenX-linux.zip` from [GitHub Releases](https://github.com/roshancodespace/ShonenX/releases). For AppImage, make it executable and run:
+
+```bash
+chmod +x ShonenX-linux-x86_64.AppImage
+./ShonenX-linux-x86_64.AppImage
+```
 
 ---
 

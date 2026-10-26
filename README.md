@@ -165,14 +165,28 @@ Download the latest `.apk` from the [GitHub Releases](https://github.com/roshanc
 ### 🪟 Windows
 Download the `Windows-Portable.zip` or the `.exe` installer from the [Releases](https://github.com/roshancodespace/ShonenX/releases) page.
 
-### 🐧 Linux (Universal Install Script)
-We provide a universal interactive installation script for Linux users. It will fetch the latest release, extract it, set up the desktop icon, and add it to your PATH automatically.
+### 🐧 Linux
 
-Run the following command in your terminal:
+#### Option 1: Flatpak (Recommended — Sandboxed & Universal)
+Download the `ShonenX-linux-x86_64.flatpak` bundle from the [Releases](https://github.com/roshancodespace/ShonenX/releases) page and install:
+```bash
+flatpak install --user ShonenX-linux-x86_64.flatpak
+```
+Run with:
+```bash
+flatpak run com.roshancodespace.shonenx
+```
+*(Flatpak bundles all native multimedia dependencies such as `libmpv` in an isolated sandbox, ensuring seamless playback across any distribution, including Steam Deck / SteamOS, Fedora Silverblue, Arch, and Ubuntu).*
+
+#### Option 2: Universal Install Script
+We provide an interactive shell installation script for Linux. It fetches the latest release, configures desktop shortcuts, registers URL protocol handlers, and sets up your PATH automatically:
 ```bash
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/roshancodespace/ShonenX/main/install.sh)"
 ```
-*Note: You can run this same command again to uninstall ShonenX safely!*
+*Note: You can run this same command again to update or uninstall ShonenX safely!*
+
+#### Option 3: AppImage & Portable Zip
+Download `ShonenX-linux-x86_64.AppImage` or `ShonenX-linux.zip` directly from [GitHub Releases](https://github.com/roshancodespace/ShonenX/releases).
 
 ### macOS & iOS (⚠️ Highly Experimental)
 > [!WARNING]

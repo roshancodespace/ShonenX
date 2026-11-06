@@ -108,3 +108,7 @@ node_modules
 **/.vitepress/cache
 
 scratch
+
+# Nix build results
+result
+result-*

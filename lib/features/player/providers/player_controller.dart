@@ -177,6 +177,10 @@ class PlayerController extends Notifier<PlayerState> {
       _progressTracker.cancel();
       _engine.dispose();
       unawaited(ref.read(addonServiceProvider).stopTorrentStream());
+      if (_currentHlsStreamId != null) {
+        ref.read(streamServerProvider).unregister(_currentHlsStreamId!);
+        _currentHlsStreamId = null;
+      }
     });
 
     ref.listen(subtitlePrefsProvider, (prev, current) {

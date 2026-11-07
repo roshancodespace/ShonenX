@@ -70,7 +70,7 @@ class _BackupSettingsScreenState extends ConsumerState<BackupSettingsScreen> {
     try {
       final service = ref.read(backupServiceProvider);
       final manifest = await service.exportData(_exportCategories);
-      final json = manifest.toJson();
+      final json = await manifest.toJsonAsync();
 
       final timestamp = DateTime.now()
           .toIso8601String()
@@ -165,7 +165,7 @@ class _BackupSettingsScreenState extends ConsumerState<BackupSettingsScreen> {
         return;
       }
 
-      final manifest = BackupManifest.fromJson(jsonContent);
+      final manifest = await BackupManifest.fromJsonAsync(jsonContent);
 
       if (manifest.categories.isEmpty) {
         if (mounted) _snack('No valid backup data found in file');

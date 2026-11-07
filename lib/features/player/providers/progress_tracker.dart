@@ -53,14 +53,19 @@ class ProgressTracker {
     _screenshotController = controller;
   }
 
-  // Save progress every 5 seconds using context from the provider callback.
+  // Save progress periodically (throttled to 25 seconds to minimize flash writes & Isar churn)
   void start(ProgressContext Function() contextProvider) {
     _contextProvider = contextProvider;
     _progressTimer?.cancel();
     _progressTimer = Timer.periodic(
-      const Duration(seconds: 5),
+      const Duration(seconds: 25),
       (_) => unawaited(_savePeriodicProgress()),
     );
+  }
+
+  /// Immediately flushes current playback progress to disk.
+  Future<void> flushProgress({bool skipCapture = true}) async {
+    await _saveCurrentProgress(skipCapture: skipCapture);
   }
 
   Future<void> _savePeriodicProgress() async {

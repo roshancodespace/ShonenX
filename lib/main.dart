@@ -3,6 +3,10 @@ import 'dart:ui';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:shonenx/l10n/generated/app_localizations.dart';
+import 'package:shonenx/core/localization/cantonese_localizations_delegate.dart';
+import 'package:shonenx/shared/providers/locale_prefs_provider.dart';
 import 'package:flutter_single_instance/flutter_single_instance.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shonenx/app_init.dart';
@@ -124,7 +128,8 @@ class ShonenXApp extends ConsumerWidget {
     ref.listen(discordRpcProvider, (_, __) {});
 
     final themePrefs = ref.watch(themePrefsProvider);
-    log.d('Theme changed: ${themePrefs.themeMode}');
+    final appLocale = ref.watch(appLocaleProvider);
+    log.d('Theme changed: ${themePrefs.themeMode}, Locale: $appLocale');
 
     return DynamicColorBuilder(
       builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
@@ -140,6 +145,16 @@ class ShonenXApp extends ConsumerWidget {
         return MaterialApp.router(
           debugShowCheckedModeBanner: false,
           title: 'ShonenX',
+          locale: appLocale,
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            CantoneseMaterialLocalizationsDelegate(),
+            CantoneseCupertinoLocalizationsDelegate(),
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
           themeMode: themePrefs.themeMode,
           theme: lightTheme,
           darkTheme: darkTheme,

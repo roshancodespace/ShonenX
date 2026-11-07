@@ -26,10 +26,11 @@ class CalendarWeekHeader extends ConsumerWidget {
         weekStart.month == currentWeekMonday.month &&
         weekStart.day == currentWeekMonday.day;
 
-    final startStr = DateFormat('MMM d').format(weekStart);
+    final localeStr = Localizations.localeOf(context).toString();
+    final startStr = DateFormat('MMM d', localeStr).format(weekStart);
     final endStr = weekStart.month == weekEnd.month
-        ? DateFormat('d, yyyy').format(weekEnd)
-        : DateFormat('MMM d, yyyy').format(weekEnd);
+        ? DateFormat('d, yyyy', localeStr).format(weekEnd)
+        : DateFormat('MMM d, yyyy', localeStr).format(weekEnd);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),

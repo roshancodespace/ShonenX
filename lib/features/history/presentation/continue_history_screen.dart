@@ -2,6 +2,7 @@ import 'package:shonenx/shared/widgets/smart_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shonenx/core/localization/l10n_extension.dart';
 import 'package:shonenx/core/router/app_navigator.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/continue/continue_media_mixin.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
@@ -60,7 +61,7 @@ class _ContinueHistoryScreenState extends ConsumerState<ContinueHistoryScreen> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Deleted ${toDelete.length} item(s) from history'),
+          content: Text(context.l10n.historyDeletedCount(toDelete.length)),
         ),
       );
     }
@@ -81,7 +82,11 @@ class _ContinueHistoryScreenState extends ConsumerState<ContinueHistoryScreen> {
         children: [
           ListTile(
             leading: const Icon(Icons.play_arrow_rounded),
-            title: Text(isAnime ? 'Continue Watching' : 'Continue Reading'),
+            title: Text(
+              isAnime
+                  ? context.l10n.homeContinueWatching
+                  : context.l10n.homeContinueReading,
+            ),
             onTap: () {
               Navigator.pop(context);
               context.pushContinueHistoryItem(widget.type, id);
@@ -89,7 +94,7 @@ class _ContinueHistoryScreenState extends ConsumerState<ContinueHistoryScreen> {
           ),
           ListTile(
             leading: const Icon(Icons.info_outline),
-            title: const Text('Open Details (No Play)'),
+            title: Text(context.l10n.historyOpenDetails),
             onTap: () {
               Navigator.pop(context);
               context.pushDetails(
@@ -105,7 +110,7 @@ class _ContinueHistoryScreenState extends ConsumerState<ContinueHistoryScreen> {
           ),
           ListTile(
             leading: const Icon(Icons.checklist),
-            title: const Text('Select Media'),
+            title: Text(context.l10n.historySelectItems),
             onTap: () {
               Navigator.pop(context);
               setState(() {
@@ -116,9 +121,9 @@ class _ContinueHistoryScreenState extends ConsumerState<ContinueHistoryScreen> {
           ),
           ListTile(
             leading: const Icon(Icons.delete_outline, color: Colors.red),
-            title: const Text(
-              'Remove from History',
-              style: TextStyle(color: Colors.red),
+            title: Text(
+              context.l10n.commonRemove,
+              style: const TextStyle(color: Colors.red),
             ),
             onTap: () async {
               final messenger = ScaffoldMessenger.of(this.context);
@@ -126,7 +131,7 @@ class _ContinueHistoryScreenState extends ConsumerState<ContinueHistoryScreen> {
               await ref.read(historyRepositoryProvider).deleteByMediaId(id);
               if (mounted) {
                 messenger.showSnackBar(
-                  const SnackBar(content: Text('Removed from history')),
+                  SnackBar(content: Text(this.context.l10n.historyRemoved)),
                 );
               }
             },
@@ -147,7 +152,7 @@ class _ContinueHistoryScreenState extends ConsumerState<ContinueHistoryScreen> {
               child: TextField(
                 controller: _searchController,
                 decoration: InputDecoration(
-                  hintText: 'Search history...',
+                  hintText: context.l10n.historySearchHint,
                   prefixIcon: const Icon(Icons.search, size: 20),
                   suffixIcon: _searchQuery.isNotEmpty
                       ? IconButton(
@@ -186,8 +191,8 @@ class _ContinueHistoryScreenState extends ConsumerState<ContinueHistoryScreen> {
               },
               child: Text(
                 _selectedIds.length == filtered.length
-                    ? 'Deselect All'
-                    : 'Select All',
+                    ? context.l10n.historyDeselectAll
+                    : context.l10n.historySelectAll,
               ),
             ),
           ],
@@ -212,23 +217,25 @@ class _ContinueHistoryScreenState extends ConsumerState<ContinueHistoryScreen> {
 
     return AppScaffold(
       title: _isSelectionMode
-          ? '${_selectedIds.length} Selected'
-          : (isAnime ? 'Continue Watching' : 'Continue Reading'),
+          ? context.l10n.itemsSelected(_selectedIds.length)
+          : (isAnime
+                ? context.l10n.homeContinueWatching
+                : context.l10n.homeContinueReading),
       subtitle: _isSelectionMode
-          ? 'Select items to delete'
-          : 'Pick up where you left off',
+          ? context.l10n.historySelectItemsToDelete
+          : context.l10n.historyPickUpWhereYouLeftOff,
       actions: [
         if (_isSelectionMode) ...[
           IconButton(
             icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-            tooltip: 'Delete Selected',
+            tooltip: context.l10n.historyDeleteSelected,
             onPressed: _selectedIds.isEmpty
                 ? null
                 : () => _deleteSelected(isAnime),
           ),
           IconButton(
             icon: const Icon(Icons.close),
-            tooltip: 'Cancel Selection',
+            tooltip: context.l10n.historyCancelSelection,
             onPressed: () => setState(() {
               _isSelectionMode = false;
               _selectedIds.clear();
@@ -237,7 +244,7 @@ class _ContinueHistoryScreenState extends ConsumerState<ContinueHistoryScreen> {
         ] else ...[
           IconButton(
             icon: const Icon(Icons.checklist),
-            tooltip: 'Select Items',
+            tooltip: context.l10n.historySelectItems,
             onPressed: () => setState(() => _isSelectionMode = true),
           ),
         ],
@@ -254,7 +261,7 @@ class _ContinueHistoryScreenState extends ConsumerState<ContinueHistoryScreen> {
                 }).toList();
 
           if (entries.isEmpty) {
-            return const Center(child: Text('No history found.'));
+            return Center(child: Text(context.l10n.historyEmpty));
           }
 
           return Column(

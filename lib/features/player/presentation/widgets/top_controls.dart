@@ -11,6 +11,7 @@ import 'package:shonenx/features/player/providers/player_controller.dart';
 import 'package:shonenx/features/player/providers/player_prefs_provider.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
 import 'package:shonenx/features/settings/presentation/widgets/subtitle_settings_sheet.dart';
+import 'package:shonenx/features/settings/presentation/widgets/subtitle_translation_settings_sheet.dart';
 import 'package:shonenx/shared/models/video_stream.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 
@@ -425,6 +426,15 @@ class TopControls extends ConsumerWidget {
                       ),
                       builder: (context) => const SubtitleSettingsSheet(),
                     );
+                  },
+                ),
+                SettingsNavTile(
+                  icon: Icons.translate_rounded,
+                  title: 'Subtitle Translation',
+                  subtitle: 'Configure translation providers and API keys',
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    SubtitleTranslationSettingsSheet.show(context);
                   },
                 ),
                 SettingsNavTile(

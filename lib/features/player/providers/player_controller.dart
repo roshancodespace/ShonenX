@@ -20,6 +20,8 @@ import 'package:shonenx/features/player/providers/player_prefs_provider.dart';
 import 'package:shonenx/features/player/providers/progress_tracker.dart';
 import 'package:shonenx/features/player/providers/selection_resolver.dart';
 import 'package:shonenx/features/player/providers/subtitle_prefs_provider.dart';
+import 'package:shonenx/features/player/providers/subtitle_translation_prefs_provider.dart';
+import 'package:shonenx/features/player/providers/subtitle_translation_provider.dart';
 import 'package:shonenx/features/player/engine/video_engine.dart';
 import 'package:shonenx/features/player/engine/media_kit/media_kit_engine.dart';
 import 'package:shonenx/features/player/engine/better_player/better_player_engine.dart';
@@ -424,6 +426,7 @@ class PlayerController extends Notifier<PlayerState> {
       _currentSkips = [];
       _progressTracker.resetThumbnail();
       _engine.pause();
+      ref.read(runtimeSubtitleTranslationProvider.notifier).resetForNewStream();
     }
 
     state = state.copyWith(
@@ -494,6 +497,7 @@ class PlayerController extends Notifier<PlayerState> {
 
       if (activeSubtitle != SubtitleTrack.none) {
         _applyNativeSubtitle(activeSubtitle);
+        _checkAndTriggerAutoTranslation(activeSubtitle, subtitles);
       }
 
       if (qualityResult.active.url != activeStream.url &&
@@ -790,9 +794,13 @@ class PlayerController extends Notifier<PlayerState> {
       ref
           .read(playerPrefsProvider.notifier)
           .setDefaultSubtitleLang(newSubtitle.language);
+      ref.read(runtimeSubtitleTranslationProvider.notifier).resetForNewStream();
     } else if (newSubtitle != null) {
       _resolver.preferredSubtitleLang = 'Off';
       ref.read(playerPrefsProvider.notifier).setDefaultSubtitleLang('Off');
+      ref
+          .read(runtimeSubtitleTranslationProvider.notifier)
+          .disableTranslation();
     }
 
     state = state.copyWith(activeSubtitle: newSubtitle, error: null);
@@ -855,6 +863,45 @@ class PlayerController extends Notifier<PlayerState> {
       }
     } catch (e) {
       state = state.copyWith(error: 'Failed to switch subtitle: $e');
+    }
+  }
+
+  void _checkAndTriggerAutoTranslation(
+    SubtitleTrack activeSub,
+    List<SubtitleTrack> availableSubs,
+  ) {
+    final translationConfig = ref.read(subtitleTranslationPrefsProvider);
+    if (!translationConfig.enabled ||
+        !translationConfig.autoTranslateIfPreferredMissing) {
+      return;
+    }
+
+    final preferred = _resolver.preferredSubtitleLang;
+    if (preferred == null ||
+        preferred == 'Off' ||
+        preferred.toLowerCase() == 'none') {
+      return;
+    }
+
+    // Check if any available stream track already matches preferred language
+    final hasPreferred = availableSubs.any(
+      (s) =>
+          s.url.isNotEmpty && _resolver.matchesLanguage(s.language, preferred),
+    );
+
+    if (!hasPreferred && activeSub.url.isNotEmpty) {
+      final targetLang =
+          translationConfig.defaultTargetLanguage.isNotEmpty
+              ? translationConfig.defaultTargetLanguage
+              : preferred;
+
+      if (!_resolver.matchesLanguage(activeSub.language, targetLang)) {
+        unawaited(
+          ref
+              .read(runtimeSubtitleTranslationProvider.notifier)
+              .translateCurrentSubtitles(targetLang: targetLang),
+        );
+      }
     }
   }
 
@@ -962,6 +1009,25 @@ class PlayerController extends Notifier<PlayerState> {
       sourceInfo: _source?.sourceInfo,
       engine: _engine,
     );
+  }
+
+  void onAppBackgrounded() {
+    if (_isDisposed) return;
+    if (_engine.statusNotifier.value == PlayerStatus.playing) {
+      _engine.pause();
+    }
+    WakelockPlus.disable();
+    unawaited(_progressTracker.flushProgress(skipCapture: true));
+  }
+
+  void onAppForegrounded() {
+    if (_isDisposed) return;
+    _engine.syncState();
+    if (_engine.statusNotifier.value == PlayerStatus.playing) {
+      WakelockPlus.enable();
+    } else {
+      WakelockPlus.disable();
+    }
   }
 
   Future<void> captureExitThumbnail() async {

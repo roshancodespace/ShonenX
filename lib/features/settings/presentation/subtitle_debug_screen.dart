@@ -250,6 +250,9 @@ class _MockVideoEngine implements VideoEngine {
   Future<void> refresh() async {}
 
   @override
+  void syncState() {}
+
+  @override
   Future<void> seekRelative(Duration offset) async {}
 
   @override

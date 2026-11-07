@@ -138,6 +138,7 @@ class MediaKitEngine implements VideoEngine {
   Future<void> refresh() async {
     if (_currentStream == null || _disposed) return;
     _log.i('Refreshing MediaKitEngine');
+    statusNotifier.value = PlayerStatus.loading;
 
     final position = currentPosition;
     final isPlaying = _player.state.playing;
@@ -227,11 +228,17 @@ class MediaKitEngine implements VideoEngine {
         if (!_disposed) {
           if (buffering) {
             statusNotifier.value = PlayerStatus.buffering;
-          } else {
+          } else if (statusNotifier.value != PlayerStatus.ended &&
+              statusNotifier.value != PlayerStatus.error) {
             statusNotifier.value = _player.state.playing
                 ? PlayerStatus.playing
                 : PlayerStatus.paused;
           }
+        }
+      }),
+      _player.stream.completed.listen((completed) {
+        if (!_disposed && completed) {
+          statusNotifier.value = PlayerStatus.ended;
         }
       }),
       _player.stream.tracks.listen((tracks) {
@@ -266,6 +273,7 @@ class MediaKitEngine implements VideoEngine {
 
     Future.microtask(() {
       if (!_disposed) {
+        syncState();
         audioTracksNotifier.value = _player.state.tracks.audio
             .map((t) => _mapAudioTrack(t))
             .toList();
@@ -309,6 +317,7 @@ class MediaKitEngine implements VideoEngine {
   }) async {
     _currentStream = videoStream;
     _currentSubtitle = subtitle;
+    statusNotifier.value = PlayerStatus.loading;
 
     _log.i('Initializing player with URL: ${videoStream.url}');
     final media = Media(videoStream.url, httpHeaders: videoStream.headers);
@@ -345,6 +354,8 @@ class MediaKitEngine implements VideoEngine {
               controller: _controller,
               controls: NoVideoControls,
               fit: fit,
+              pauseUponEnteringBackgroundMode: false,
+              resumeUponEnteringForegroundMode: false,
               subtitleViewConfiguration: shouldShowFlutterSubtitle
                   ? SubtitleViewConfiguration(
                       padding: EdgeInsets.only(
@@ -366,10 +377,29 @@ class MediaKitEngine implements VideoEngine {
   }
 
   @override
-  Future<void> play() => _player.play();
+  Future<void> play() async {
+    statusNotifier.value = PlayerStatus.playing;
+    await _player.play();
+  }
 
   @override
-  Future<void> pause() => _player.pause();
+  Future<void> pause() async {
+    statusNotifier.value = PlayerStatus.paused;
+    await _player.pause();
+  }
+
+  @override
+  void syncState() {
+    if (_disposed) return;
+    if (_player.state.completed) {
+      statusNotifier.value = PlayerStatus.ended;
+    } else if (_player.state.buffering) {
+      statusNotifier.value = PlayerStatus.buffering;
+    } else {
+      statusNotifier.value =
+          _player.state.playing ? PlayerStatus.playing : PlayerStatus.paused;
+    }
+  }
 
   @override
   Future<void> seekTo(Duration position) => _player.seek(position);
@@ -383,6 +413,7 @@ class MediaKitEngine implements VideoEngine {
   @override
   Future<void> changeQuality(stream.VideoStream newStream) async {
     _log.i('Changing quality to URL: ${newStream.url}');
+    statusNotifier.value = PlayerStatus.loading;
     final currentPos = _player.state.position;
 
     await _player.open(Media(newStream.url, httpHeaders: newStream.headers));

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/core/localization/l10n_extension.dart';
 import 'package:shonenx/features/library/presentation/widgets/library_filters.dart';
 import 'package:shonenx/features/library/presentation/widgets/library_grid.dart';
 import 'package:shonenx/features/library/providers/library_view_provider.dart';
@@ -116,8 +117,11 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
     }
 
     return AppScaffold(
-      title: viewState.status.getLabelForMedia(viewState.mediaType),
-      subtitle: 'From Library',
+      title: viewState.status.getLocalizedLabelForMedia(
+        context,
+        viewState.mediaType,
+      ),
+      subtitle: context.l10n.libraryFromLibrary,
       actions: [
         if (ref.watch(trackingPrefsProvider.select((s) => s.primaryTracker)) !=
                 TrackerType.local &&
@@ -145,7 +149,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
                         ? Icons.cloud
                         : Icons.cloud_outlined,
                   ),
-                  tooltip: 'Cloud Library',
+                  tooltip: context.l10n.libraryCloud,
                 ),
                 ButtonSegment<LibraryMode>(
                   value: LibraryMode.local,
@@ -154,7 +158,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
                         ? Icons.folder
                         : Icons.folder_outlined,
                   ),
-                  tooltip: 'Local Library',
+                  tooltip: context.l10n.libraryLocal,
                 ),
               ],
               selected: {viewState.mode},

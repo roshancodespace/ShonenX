@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-
+import 'package:shonenx/core/localization/l10n_extension.dart';
 import 'package:shonenx/features/settings/presentation/reader_settings_screen.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 
@@ -77,7 +77,7 @@ class ReaderAppBar extends StatelessWidget implements PreferredSizeWidget {
                         color: themeInfo.textColor,
                         size: 18,
                       ),
-                      tooltip: 'Back',
+                      tooltip: context.l10n.commonBack,
                     ),
                     const SizedBox(width: 12),
                     Flexible(
@@ -147,10 +147,10 @@ class ReaderAppBar extends StatelessWidget implements PreferredSizeWidget {
                       color: themeInfo.textColor,
                       size: 20,
                     ),
-                    tooltip: 'Reader Settings',
+                    tooltip: context.l10n.readerSettings,
                     onPressed: () => AppBottomSheet.show(
                       context: context,
-                      title: 'Reader Settings',
+                      title: context.l10n.readerSettings,
                       child: const ReaderSettingsContent(),
                     ),
                   ),

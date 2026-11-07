@@ -34,6 +34,8 @@ class CalendarDayRow extends StatelessWidget {
         ? const AsyncLoading<List<CalendarEntry>>()
         : AsyncData(entries);
 
+    final localeStr = Localizations.localeOf(context).toString();
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 20.0),
       child: HorizontalSection<CalendarEntry>(
@@ -41,7 +43,7 @@ class CalendarDayRow extends StatelessWidget {
         titleWidget: Row(
           children: [
             Text(
-              DateFormat('EEEE').format(date),
+              DateFormat('EEEE', localeStr).format(date),
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w900,
@@ -51,7 +53,7 @@ class CalendarDayRow extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Text(
-              DateFormat('MMM d').format(date),
+              DateFormat('MMM d', localeStr).format(date),
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,

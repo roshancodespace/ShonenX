@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/core/localization/l10n_extension.dart';
 import 'package:shonenx/core/services/one_dm_service.dart';
 import 'package:shonenx/features/downloads/providers/download_prefs_provider.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
@@ -20,13 +21,13 @@ class DownloadSettingsScreen extends ConsumerWidget {
     final colors = Theme.of(context).colorScheme;
 
     return AppScaffold(
-      title: 'Downloads',
+      title: context.l10n.settingsDownloads,
       body: prefsAsync.when(
         data: (prefs) => ListView(
           padding: const EdgeInsets.only(bottom: 50),
           children: [
             SettingsSection(
-              title: 'Storage',
+              title: context.l10n.settingsStorage,
               children: [
                 AbsorbPointer(
                   absorbing: prefs.useOneDM,
@@ -36,7 +37,7 @@ class DownloadSettingsScreen extends ConsumerWidget {
                       children: [
                         SettingsActionTile(
                           icon: Icons.folder_outlined,
-                          title: 'Download Location',
+                          title: context.l10n.settingsLocation,
                           subtitle: prefs.downloadPath,
                           onTap: () async {
                             final String? directoryPath = await FilePicker
@@ -56,7 +57,7 @@ class DownloadSettingsScreen extends ConsumerWidget {
                           },
                           trailing: FilledButton.icon(
                             icon: const Icon(Icons.restore_outlined, size: 18),
-                            label: const Text('Reset'),
+                            label: Text(context.l10n.commonReset),
                             onPressed: () async {
                               final targetPath = await prefsNotifier
                                   .getDefaultDownloadPath();

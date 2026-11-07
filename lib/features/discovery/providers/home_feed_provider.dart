@@ -1,4 +1,6 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/core/localization/l10n_extension.dart';
 import 'package:shonenx/features/discovery/domain/models/home_section.dart';
 import 'package:shonenx/features/discovery/providers/discovery_prefs_provider.dart';
 import 'package:shonenx/features/discovery/providers/home_layout_provider.dart';
@@ -31,6 +33,60 @@ class HomeFeedSection {
   bool get isDiscovery => type == HomeSectionType.discovery;
   bool get isContinueMedia => type == HomeSectionType.continueMedia;
   bool get isLibraryStatus => type == HomeSectionType.libraryStatus;
+
+  String getLocalizedTitle(BuildContext context) {
+    final l10n = context.l10n;
+    if (isContinueMedia) {
+      return mediaType == MediaType.MANGA
+          ? l10n.homeContinueReading
+          : l10n.homeContinueWatching;
+    }
+    if (isLibraryStatus && homeSection?.libraryStatus != null) {
+      return homeSection!.libraryStatus!.getLocalizedLabelForMedia(
+        context,
+        mediaType,
+      );
+    }
+    switch (homeSection?.trackerCategory) {
+      case TrackerCategory.trending:
+        return mediaType == MediaType.MANGA
+            ? l10n.homeTrendingManga
+            : l10n.homeTrendingAnime;
+      case TrackerCategory.popular:
+        return mediaType == MediaType.MANGA
+            ? l10n.homePopularManga
+            : l10n.homePopularAnime;
+      case TrackerCategory.topRated:
+        return mediaType == MediaType.MANGA
+            ? l10n.homeTopRatedManga
+            : l10n.homeTopRatedAnime;
+      case TrackerCategory.recentlyUpdated:
+        return l10n.homeRecentlyUpdated;
+      default:
+        break;
+    }
+    final lower = title.toLowerCase();
+    if (lower.contains('trending')) {
+      return mediaType == MediaType.MANGA
+          ? l10n.homeTrendingManga
+          : l10n.homeTrendingAnime;
+    } else if (lower.contains('popular')) {
+      return mediaType == MediaType.MANGA
+          ? l10n.homePopularManga
+          : l10n.homePopularAnime;
+    } else if (lower.contains('top rated')) {
+      return mediaType == MediaType.MANGA
+          ? l10n.homeTopRatedManga
+          : l10n.homeTopRatedAnime;
+    } else if (lower.contains('airing')) {
+      return l10n.homeAiringToday;
+    } else if (lower.contains('recent episodes')) {
+      return l10n.homeRecentEpisodes;
+    } else if (lower.contains('recent chapters')) {
+      return l10n.homeRecentChapters;
+    }
+    return title;
+  }
 
   @override
   bool operator ==(Object other) {

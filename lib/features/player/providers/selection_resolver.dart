@@ -20,7 +20,8 @@ const Map<String, List<String>> _languageAliases = {
   'vi': ['vi', 'vie', 'vietnamese', 'tieng viet', 'tiếng việt'],
   'th': ['th', 'tha', 'thai'],
   'pl': ['pl', 'pol', 'polish', 'polski'],
-  'zh': ['zh', 'chi', 'zho', 'chinese', 'mandarin', 'cantonese'],
+  'zh': ['zh', 'chi', 'zho', 'chinese', 'mandarin'],
+  'yue': ['yue', 'cantonese', 'yueh', 'guangdong', 'hong kong', 'zh-yue', 'zh-hk'],
   'ko': ['ko', 'kor', 'korean', 'hangul'],
   'nl': ['nl', 'dut', 'nld', 'dutch', 'nederlands'],
   'fil': ['fil', 'tgl', 'tagalog', 'filipino'],
@@ -35,6 +36,11 @@ const Map<String, List<String>> _languageAliases = {
   'fi': ['fi', 'fin', 'finnish'],
   'no': ['no', 'nor', 'norwegian'],
   'he': ['he', 'heb', 'hebrew'],
+  'bn': ['bn', 'ben', 'bengali', 'bangla'],
+  'ta': ['ta', 'tam', 'tamil'],
+  'te': ['te', 'tel', 'telugu'],
+  'fa': ['fa', 'fas', 'per', 'persian', 'farsi'],
+  'ur': ['ur', 'urd', 'urdu'],
 };
 
 class SelectionResolver {

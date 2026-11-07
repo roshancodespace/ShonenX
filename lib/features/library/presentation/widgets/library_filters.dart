@@ -24,7 +24,10 @@ class LibraryFiltersWidget extends ConsumerWidget {
                 padding: const EdgeInsets.only(right: 8.0),
                 child: ChoiceChip(
                   label: Text(
-                    status.getLabelForMedia(viewState.mediaType),
+                    status.getLocalizedLabelForMedia(
+                      context,
+                      viewState.mediaType,
+                    ),
                     style: TextStyle(
                       color: isActive
                           ? theme.colorScheme.onSecondaryContainer

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/core/localization/l10n_extension.dart';
 import 'package:shonenx/core/router/app_navigator.dart';
 import 'package:shonenx/core/utils/focus_hover_detector.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/sheets/discovery_mode_sheet.dart';
@@ -24,37 +25,39 @@ class TvNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
     return SafeArea(
       bottom: false,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
         child: Row(
           children: [
-            const Text(
-              'ShonenX TV',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+            Text(
+              l10n.tvTitle,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
             ),
             const SizedBox(width: 32),
             _TvTabItem(
-              label: 'Home',
+              label: l10n.tvHome,
               isSelected: selectedIndex == 0,
               onTap: () => onTabSelected(0),
             ),
             const SizedBox(width: 12),
             _TvTabItem(
-              label: 'Discover',
+              label: l10n.tvDiscover,
               isSelected: selectedIndex == 1,
               onTap: () => onTabSelected(1),
             ),
             const SizedBox(width: 12),
             _TvTabItem(
-              label: 'Library',
+              label: l10n.tvLibrary,
               isSelected: selectedIndex == 2,
               onTap: () => onTabSelected(2),
             ),
             const SizedBox(width: 12),
             _TvTabItem(
-              label: 'Settings',
+              label: l10n.tvSettings,
               isSelected: false,
               onTap: () => context.pushSettings(),
             ),

@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/core/localization/l10n_extension.dart';
 import 'package:shonenx/core/network/doh/doh_provider.dart';
 import 'package:shonenx/core/network/doh/doh_resolver.dart';
 import 'package:shonenx/core/services/security_service.dart';
@@ -27,7 +28,7 @@ class SecuritySettingsScreen extends ConsumerWidget {
     final bioCapabilityAsync = ref.watch(biometricCapabilityProvider);
 
     return AppScaffold(
-      title: 'Security & Privacy',
+      title: context.l10n.settingsSecurity,
       body: ListView(
         padding: const EdgeInsets.only(bottom: 50),
         children: [

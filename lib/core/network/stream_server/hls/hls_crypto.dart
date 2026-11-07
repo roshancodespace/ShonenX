@@ -1,3 +1,4 @@
+import 'dart:isolate';
 import 'dart:typed_data';
 import 'package:encrypt/encrypt.dart';
 
@@ -21,6 +22,8 @@ class HlsCrypto {
     }
   }
 
+  /// Synchronous AES-128-CBC decryption.
+  /// Note: Prefer [decryptAsync] for large payloads (e.g. video segments) to avoid blocking the main isolate.
   static List<int> decrypt(
     List<int> encryptedBytes,
     List<int> keyBytes,
@@ -34,5 +37,29 @@ class HlsCrypto {
       iv: iv,
     );
     return decrypted;
+  }
+
+  /// Asynchronous AES-128-CBC decryption executed in a background isolate.
+  /// Prevents blocking the UI thread and dropped frames during HLS playback.
+  static Future<List<int>> decryptAsync(
+    List<int> encryptedBytes,
+    List<int> keyBytes,
+    IV iv,
+  ) {
+    final encData = encryptedBytes is Uint8List
+        ? encryptedBytes
+        : Uint8List.fromList(encryptedBytes);
+    final keyData =
+        keyBytes is Uint8List ? keyBytes : Uint8List.fromList(keyBytes);
+    final ivBytes = iv.bytes;
+
+    return Isolate.run(() {
+      final key = Key(keyData);
+      final encrypter = Encrypter(AES(key, mode: AESMode.cbc, padding: 'PKCS7'));
+      return encrypter.decryptBytes(
+        Encrypted(encData),
+        iv: IV(ivBytes),
+      );
+    });
   }
 }

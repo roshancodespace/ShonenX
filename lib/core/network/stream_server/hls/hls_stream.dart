@@ -94,7 +94,7 @@ class HlsStream extends ProxyStream {
         final key = await _getKey(keyUrl, httpClient);
         final iv = HlsCrypto.parseIv(ivStr);
 
-        final decrypted = HlsCrypto.decrypt(res.bodyBytes, key, iv);
+        final decrypted = await HlsCrypto.decryptAsync(res.bodyBytes, key, iv);
         response.add(decrypted);
       } else {
         // Pass through

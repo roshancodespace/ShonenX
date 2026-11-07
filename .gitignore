@@ -112,3 +112,4 @@ scratch
 # Nix build results
 result
 result-*
+.agents

@@ -13,6 +13,7 @@ abstract class VideoEngine {
   });
   Future<void> refresh();
   Future<void> dispose();
+  void syncState();
 
   // --- Commands ---
   Future<void> play();

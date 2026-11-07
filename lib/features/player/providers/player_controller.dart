@@ -964,6 +964,25 @@ class PlayerController extends Notifier<PlayerState> {
     );
   }
 
+  void onAppBackgrounded() {
+    if (_isDisposed) return;
+    if (_engine.statusNotifier.value == PlayerStatus.playing) {
+      _engine.pause();
+    }
+    WakelockPlus.disable();
+    unawaited(_progressTracker.flushProgress(skipCapture: true));
+  }
+
+  void onAppForegrounded() {
+    if (_isDisposed) return;
+    _engine.syncState();
+    if (_engine.statusNotifier.value == PlayerStatus.playing) {
+      WakelockPlus.enable();
+    } else {
+      WakelockPlus.disable();
+    }
+  }
+
   Future<void> captureExitThumbnail() async {
     await _progressTracker.captureExitThumbnail(
       media: _media,

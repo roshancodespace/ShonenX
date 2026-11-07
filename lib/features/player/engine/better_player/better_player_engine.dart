@@ -157,6 +157,7 @@ class BetterPlayerEngine implements VideoEngine {
     final config = BetterPlayerConfiguration(
       autoPlay: true,
       startAt: startAt,
+      handleLifecycle: false,
       controlsConfiguration: const BetterPlayerControlsConfiguration(
         showControls: false,
       ),
@@ -214,6 +215,8 @@ class BetterPlayerEngine implements VideoEngine {
 
     if (value.hasError) {
       statusNotifier.value = PlayerStatus.error;
+    } else if (event.betterPlayerEventType == BetterPlayerEventType.finished) {
+      statusNotifier.value = PlayerStatus.ended;
     } else if (value.isBuffering || !value.initialized) {
       statusNotifier.value = PlayerStatus.buffering;
     } else if (value.isPlaying) {
@@ -260,12 +263,33 @@ class BetterPlayerEngine implements VideoEngine {
 
   @override
   Future<void> play() async {
+    statusNotifier.value = PlayerStatus.playing;
     return _controller?.play();
   }
 
   @override
   Future<void> pause() async {
+    statusNotifier.value = PlayerStatus.paused;
     return _controller?.pause();
+  }
+
+  @override
+  void syncState() {
+    if (_controller == null) return;
+    final value = _controller!.videoPlayerController?.value;
+    if (value == null) return;
+    if (value.hasError) {
+      statusNotifier.value = PlayerStatus.error;
+    } else if (value.isBuffering || !value.initialized) {
+      statusNotifier.value = PlayerStatus.buffering;
+    } else if (value.position >= (value.duration ?? Duration.zero) &&
+        (value.duration ?? Duration.zero) > Duration.zero) {
+      statusNotifier.value = PlayerStatus.ended;
+    } else if (value.isPlaying) {
+      statusNotifier.value = PlayerStatus.playing;
+    } else {
+      statusNotifier.value = PlayerStatus.paused;
+    }
   }
 
   @override
@@ -282,7 +306,8 @@ class BetterPlayerEngine implements VideoEngine {
 
   @override
   Future<void> changeQuality(VideoStream newStream) async {
-    _log.i('Changing quality to URL: \${newStream.url}');
+    _log.i('Changing quality to URL: ${newStream.url}');
+    statusNotifier.value = PlayerStatus.loading;
     final currentPos = _controller?.videoPlayerController?.value.position;
     await initialize(newStream, startAt: currentPos);
   }

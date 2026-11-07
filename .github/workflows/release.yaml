@@ -424,12 +424,18 @@ jobs:
       - name: Build installer (InnoBundle)
         run: dart run inno_bundle --release --no-app
 
+      - name: Copy Windows Installer to root
+        shell: pwsh
+        run: |
+          Copy-Item "build/windows/x64/installer/Release/*.exe" -Destination "."
+          Get-ChildItem -Path . -Filter "*.exe"
+
       - name: Upload Windows Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: windows-artifacts
           path: |
-            build/windows/x64/installer/Release/*.exe
+            *.exe
             ShonenX-windows-portable.zip
 
   build-macos:
@@ -606,6 +612,13 @@ jobs:
         with:
           path: release-artifacts
           merge-multiple: true
+
+      - name: Flatten release artifacts
+        run: |
+          find release-artifacts -mindepth 2 -type f -exec mv -t release-artifacts/ {} +
+          find release-artifacts -mindepth 1 -type d -empty -delete
+          echo "Verified release artifacts:"
+          ls -lh release-artifacts
 
       - name: Generate Release Notes
         id: release_notes

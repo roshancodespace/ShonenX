@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rhttp/rhttp.dart' as rhttp;
 import 'package:shonenx/core/caching/cache_manager.dart';
@@ -41,36 +41,49 @@ class HttpResponse {
 }
 
 class HTTP {
-  HTTP._internal({CacheManager? cacheManager, DohResolver? dohResolver})
-    : _dohResolver = dohResolver ?? DohResolver.instance,
-      _client = rhttp.RhttpClient.createSync(
-        settings: rhttp.ClientSettings(
-          throwOnStatusCode: false,
-          userAgent:
-              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          tlsSettings: const rhttp.TlsSettings(verifyCertificates: false),
-          timeoutSettings: const rhttp.TimeoutSettings(
-            timeout: Duration(seconds: 30),
-            connectTimeout: Duration(seconds: 15),
-          ),
-          dnsSettings: rhttp.DnsSettings.dynamic(
-            resolver: (host) =>
-                (dohResolver ?? DohResolver.instance).resolve(host),
+  HTTP._internal({
+    CacheManager? cacheManager,
+    DohResolver? dohResolver,
+    bool verifyCertificates = true,
+  })  : _dohResolver = dohResolver ?? DohResolver.instance,
+        _client = rhttp.RhttpClient.createSync(
+          settings: rhttp.ClientSettings(
+            throwOnStatusCode: false,
+            userAgent:
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            tlsSettings: rhttp.TlsSettings(verifyCertificates: verifyCertificates),
+            timeoutSettings: const rhttp.TimeoutSettings(
+              timeout: Duration(seconds: 30),
+              connectTimeout: Duration(seconds: 15),
+            ),
+            dnsSettings: rhttp.DnsSettings.dynamic(
+              resolver: (host) =>
+                  (dohResolver ?? DohResolver.instance).resolve(host),
+            ),
           ),
         ),
-      ),
-      _cache = cacheManager;
+        _cache = cacheManager;
 
   static HTTP? _instance;
   static final _log = AppLogger.scope('HTTP');
 
-  factory HTTP({CacheManager? cacheManager, DohResolver? dohResolver}) {
+  factory HTTP({
+    CacheManager? cacheManager,
+    DohResolver? dohResolver,
+    bool verifyCertificates = true,
+  }) {
     final instance = _instance ??= HTTP._internal(
       cacheManager: cacheManager,
       dohResolver: dohResolver,
+      verifyCertificates: verifyCertificates,
     );
     if (cacheManager != null) instance._cache = cacheManager;
     return instance;
+  }
+
+  @visibleForTesting
+  static void resetInstance() {
+    _instance = null;
   }
 
   final DohResolver _dohResolver;

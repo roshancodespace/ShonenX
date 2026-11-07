@@ -94,7 +94,7 @@ class HTTP {
         settings: rhttp.ClientSettings(
           throwOnStatusCode: false,
           userAgent: NetworkConfig.globalUserAgent,
-          tlsSettings: const rhttp.TlsSettings(verifyCertificates: false),
+          tlsSettings: const rhttp.TlsSettings(verifyCertificates: true),
           timeoutSettings: const rhttp.TimeoutSettings(
             timeout: Duration(seconds: 30),
             connectTimeout: Duration(seconds: 15),

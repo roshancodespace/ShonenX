@@ -12,6 +12,23 @@ class AppTheme {
 
   static const _buttonMinSize = Size(64, 48);
 
+  static const _fontFamilyFallback = <String>[
+    'Noto Sans',
+    'Noto Sans Arabic',
+    'Noto Sans Bengali',
+    'Noto Sans Devanagari',
+    'Noto Sans JP',
+    'Noto Sans TC',
+    'Noto Sans HK',
+    'sans-serif',
+  ];
+
+  static TextTheme _applyFontFallback(TextTheme textTheme) {
+    return textTheme.apply(
+      fontFamilyFallback: _fontFamilyFallback,
+    );
+  }
+
   static ThemeData light(ThemePrefsState prefs, ColorScheme? colorScheme) {
     return _buildTheme(
       brightness: Brightness.light,
@@ -106,7 +123,7 @@ class AppTheme {
             appBarOpacity: prefs.useAmoled ? 1.0 : 0.90,
             transparentStatusBar: true,
             darkIsTrueBlack: prefs.useAmoled,
-            textTheme: GoogleFonts.montserratTextTheme(),
+            textTheme: _applyFontFallback(GoogleFonts.montserratTextTheme()),
             useMaterial3: true,
             swapLegacyOnMaterial3: true,
             visualDensity: FlexColorScheme.comfortablePlatformDensity,
@@ -132,7 +149,7 @@ class AppTheme {
             appBarStyle: FlexAppBarStyle.surface,
             appBarOpacity: 0.95,
             transparentStatusBar: true,
-            textTheme: GoogleFonts.montserratTextTheme(),
+            textTheme: _applyFontFallback(GoogleFonts.montserratTextTheme()),
             useMaterial3: true,
             swapLegacyOnMaterial3: true,
             visualDensity: FlexColorScheme.comfortablePlatformDensity,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/core/localization/l10n_extension.dart';
 import 'package:shonenx/core/router/app_navigator.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/sheets/discovery_mode_sheet.dart';
 import 'package:shonenx/features/discovery/providers/discovery_prefs_provider.dart';
@@ -80,11 +81,11 @@ class HomeHeader extends ConsumerWidget {
 
   const HomeHeader({super.key, this.styleOverride, this.isPreview = false});
 
-  String _getTimeGreeting() {
+  String _getTimeGreeting(BuildContext context) {
     final hour = DateTime.now().hour;
-    if (hour < 12) return 'Good morning';
-    if (hour < 17) return 'Good afternoon';
-    return 'Good evening';
+    if (hour < 12) return context.l10n.homeGoodMorning;
+    if (hour < 17) return context.l10n.homeGoodAfternoon;
+    return context.l10n.homeGoodEvening;
   }
 
   void _onProfileTap(BuildContext context, TrackerType trackerType) {
@@ -411,7 +412,7 @@ class HomeHeader extends ConsumerWidget {
     String? avatarUrl,
   ) {
     final cs = theme.colorScheme;
-    final timeGreeting = _getTimeGreeting();
+    final timeGreeting = _getTimeGreeting(context);
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -507,7 +508,7 @@ class HomeHeader extends ConsumerWidget {
     String? avatarUrl,
   ) {
     final cs = theme.colorScheme;
-    final timeGreeting = _getTimeGreeting();
+    final timeGreeting = _getTimeGreeting(context);
 
     return Container(
       decoration: BoxDecoration(color: cs.surfaceContainer),
@@ -639,7 +640,7 @@ class HomeHeader extends ConsumerWidget {
         ),
         SizedBox(width: gap),
         HeaderActionButton(
-          tooltip: 'Airing Calendar',
+          tooltip: context.l10n.homeAiringToday,
           borderRadius: borderRadius,
           buttonSize: buttonSize,
           iconSize: iconSize,
@@ -649,7 +650,7 @@ class HomeHeader extends ConsumerWidget {
         ),
         SizedBox(width: gap),
         HeaderActionButton(
-          tooltip: 'Settings',
+          tooltip: context.l10n.navSettings,
           borderRadius: borderRadius,
           buttonSize: buttonSize,
           iconSize: iconSize,

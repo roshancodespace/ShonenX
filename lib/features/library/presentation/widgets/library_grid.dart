@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/core/localization/l10n_extension.dart';
 import 'package:shonenx/core/router/app_navigator.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
@@ -62,7 +63,9 @@ class LibraryGridWidget extends ConsumerWidget {
 
       error: (err, stack) => Center(child: Text('ERR: $err')),
       data: (entries) {
-        if (entries.isEmpty) return const Center(child: Text('Empty List'));
+        if (entries.isEmpty) {
+          return Center(child: Text(context.l10n.libraryEmptyList));
+        }
 
         return NotificationListener<ScrollNotification>(
           onNotification: (ScrollNotification scrollInfo) {

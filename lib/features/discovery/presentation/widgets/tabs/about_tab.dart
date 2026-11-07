@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:shonenx/core/localization/l10n_extension.dart';
 import 'package:shonenx/shared/widgets/smart_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -150,7 +151,7 @@ class _AboutTabWidgetState extends ConsumerState<AboutTabWidget>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'External Links',
+                context.l10n.detailsExternalLinks,
                 style: textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w800,
                 ),
@@ -175,7 +176,7 @@ class _AboutTabWidgetState extends ConsumerState<AboutTabWidget>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Relations',
+                context.l10n.detailsRelations,
                 style: textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w800,
                 ),
@@ -200,7 +201,7 @@ class _AboutTabWidgetState extends ConsumerState<AboutTabWidget>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Recommendations',
+                context.l10n.detailsRecommendations,
                 style: textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w800,
                 ),
@@ -235,11 +236,12 @@ class _MediaDetailsSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final l10n = context.l10n;
 
     final details = <_DetailPair>[];
 
     if (media.studios != null && media.studios!.isNotEmpty) {
-      details.add(_DetailPair('Studio', media.studios!.join(', ')));
+      details.add(_DetailPair(l10n.detailsStudio, media.studios!.join(', ')));
     }
     if (media.source != null && media.source!.isNotEmpty) {
       details.add(
@@ -247,18 +249,18 @@ class _MediaDetailsSection extends StatelessWidget {
       );
     }
     if (media.duration != null && media.duration! > 0) {
-      details.add(_DetailPair('Duration', '${media.duration} mins'));
+      details.add(_DetailPair(l10n.detailsDuration, l10n.detailsMinutes(media.duration!)));
     }
     if (media.volumes != null && media.volumes! > 0) {
-      details.add(_DetailPair('Volumes', '${media.volumes}'));
+      details.add(_DetailPair(l10n.detailsVolumes, '${media.volumes}'));
     }
     if (media.favourites != null && media.favourites! > 0) {
       details.add(
-        _DetailPair('Favorites', _formatCompactNumber(media.favourites!)),
+        _DetailPair(l10n.detailsFavorites, _formatCompactNumber(media.favourites!)),
       );
     }
     if (media.popularity != null && media.popularity! > 0) {
-      details.add(_DetailPair('Popularity', '#${media.popularity}'));
+      details.add(_DetailPair(l10n.detailsPopularity, '#${media.popularity}'));
     }
 
     if (details.isEmpty) return const SizedBox.shrink();
@@ -267,7 +269,7 @@ class _MediaDetailsSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Information',
+          l10n.detailsInformation,
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w800,
           ),
@@ -341,22 +343,23 @@ class _AlternativeTitlesTileState extends State<_AlternativeTitlesTile> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final l10n = context.l10n;
 
     final rows = <Widget>[];
 
     if (widget.title.english != null && widget.title.english!.isNotEmpty) {
-      rows.add(_buildTitleRow('English', widget.title.english!, cs, theme));
+      rows.add(_buildTitleRow(l10n.detailsEnglish, widget.title.english!, cs, theme));
     }
     if (widget.title.romaji != null && widget.title.romaji!.isNotEmpty) {
-      rows.add(_buildTitleRow('Romaji', widget.title.romaji!, cs, theme));
+      rows.add(_buildTitleRow(l10n.detailsRomaji, widget.title.romaji!, cs, theme));
     }
     if (widget.title.native != null && widget.title.native!.isNotEmpty) {
-      rows.add(_buildTitleRow('Native', widget.title.native!, cs, theme));
+      rows.add(_buildTitleRow(l10n.detailsNative, widget.title.native!, cs, theme));
     }
 
     if (_expanded && widget.synonyms.isNotEmpty) {
       rows.add(
-        _buildTitleRow('Synonyms', widget.synonyms.join(', '), cs, theme),
+        _buildTitleRow(l10n.detailsSynonyms, widget.synonyms.join(', '), cs, theme),
       );
     }
 
@@ -376,7 +379,7 @@ class _AlternativeTitlesTileState extends State<_AlternativeTitlesTile> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Alternative Titles',
+                  context.l10n.detailsAlternativeTitles,
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w800,
                   ),

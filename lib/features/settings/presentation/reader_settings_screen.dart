@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/core/localization/l10n_extension.dart';
 import 'package:shonenx/features/reader/providers/reader_prefs_provider.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
@@ -9,7 +10,10 @@ class ReaderSettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppScaffold(title: 'Reader', body: const ReaderSettingsContent());
+    return AppScaffold(
+      title: context.l10n.settingsReader,
+      body: const ReaderSettingsContent(),
+    );
   }
 }
 
@@ -20,16 +24,17 @@ class ReaderSettingsContent extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final readerPrefs = ref.watch(readerPrefsProvider);
     final prefsNotifier = ref.read(readerPrefsProvider.notifier);
+    final l10n = context.l10n;
 
     return ListView(
       shrinkWrap: true,
       padding: const EdgeInsets.only(bottom: 50),
       children: [
         SettingsSection(
-          title: 'Display',
+          title: l10n.settingsDisplay,
           children: [
             SettingsSegmentedTile<ReaderBackgroundColor>(
-              title: 'Background Color',
+              title: l10n.readerBackgroundColor,
               segments: const [
                 ButtonSegment(
                   value: ReaderBackgroundColor.black,
@@ -50,7 +55,7 @@ class ReaderSettingsContent extends ConsumerWidget {
             ),
             SettingsDropdownTile<ReaderScaleType>(
               icon: Icons.aspect_ratio_outlined,
-              title: 'Image Scale',
+              title: l10n.readerZoom,
               value: readerPrefs.scaleType,
               items: ReaderScaleType.values
                   .map(
@@ -67,11 +72,11 @@ class ReaderSettingsContent extends ConsumerWidget {
           ],
         ),
         SettingsSection(
-          title: 'Reading Mode',
+          title: l10n.readerMode,
           children: [
             SettingsDropdownTile<ReaderDirection>(
               icon: Icons.chrome_reader_mode_outlined,
-              title: 'Reading Direction',
+              title: l10n.readerReadingDirection,
               value: readerPrefs.direction,
               items: ReaderDirection.values
                   .map(

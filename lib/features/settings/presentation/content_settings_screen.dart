@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/core/localization/l10n_extension.dart';
 import 'package:shonenx/shared/providers/content_prefs_provider.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
@@ -16,27 +17,27 @@ class ContentSettingsScreen extends ConsumerWidget {
     final prefs = ref.watch(contentPrefsProvider);
 
     return AppScaffold(
-      title: 'Content Settings',
+      title: context.l10n.settingsContent,
       body: ListView(
         padding: const EdgeInsets.only(bottom: 50),
         children: [
           SettingsSection(
-            title: 'Filters',
+            title: context.l10n.settingsFilters,
             children: [
               SettingsSegmentedTile<AdultContentMode>(
-                title: 'Show 18+ Content',
-                segments: const [
+                title: context.l10n.settingsAdultContent,
+                segments: [
                   ButtonSegment(
                     value: AdultContentMode.safe,
-                    label: Text('Safe'),
+                    label: Text(context.l10n.settingsSafe),
                   ),
                   ButtonSegment(
                     value: AdultContentMode.mixed,
-                    label: Text('Mixed'),
+                    label: Text(context.l10n.settingsMixed),
                   ),
                   ButtonSegment(
                     value: AdultContentMode.adultOnly,
-                    label: Text('18+ Only'),
+                    label: Text(context.l10n.settingsAdultOnly),
                   ),
                 ],
                 selected: {prefs.adultContentMode},
@@ -50,7 +51,7 @@ class ContentSettingsScreen extends ConsumerWidget {
               ),
               SettingsDropdownTile<TitlePreference>(
                 icon: Icons.title_rounded,
-                title: 'Preferred Title Language',
+                title: context.l10n.settingsTitleLanguage,
                 value: prefs.titlePreference,
                 items: TitlePreference.values
                     .map(

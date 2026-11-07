@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/core/localization/l10n_extension.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
@@ -21,7 +22,7 @@ class UiSettingsScreen extends ConsumerWidget {
     final themeNotifier = ref.read(themePrefsProvider.notifier);
 
     return AppScaffold(
-      title: 'UI',
+      title: context.l10n.settingsUi,
       body: ListView(
         padding: const EdgeInsets.only(bottom: 50),
         children: [

@@ -4,8 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'package:shonenx/core/localization/l10n_extension.dart';
 import 'package:shonenx/core/router/app_navigator.dart';
+import 'package:shonenx/features/settings/presentation/widgets/language_selection_sheet.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
+import 'package:shonenx/shared/providers/locale_prefs_provider.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
 import 'package:shonenx/shared/widgets/svg_icon.dart';
 
@@ -15,69 +18,78 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cs = ColorScheme.of(context);
+    final l10n = context.l10n;
+    final currentLocaleDisplay =
+        ref.watch(appLocaleProvider.notifier).currentDisplayName;
 
     return AppScaffold(
-      title: 'Settings',
+      title: l10n.settingsTitle,
       body: ListView(
         padding: const EdgeInsets.only(bottom: 50),
         children: [
           SettingsSection(
-            title: 'General',
+            title: l10n.settingsGeneral,
             children: [
               SettingsNavTile(
+                icon: Icons.translate_rounded,
+                title: l10n.settingsLanguage,
+                subtitle: currentLocaleDisplay,
+                onTap: () => LanguageSelectionSheet.show(context),
+              ),
+              SettingsNavTile(
                 icon: Icons.palette_outlined,
-                title: 'Appearance',
-                subtitle: 'Theme, pure black, accent colors',
+                title: l10n.settingsAppearance,
+                subtitle: l10n.settingsAppearanceSubtitle,
                 onTap: () => context.pushSettingsTheme(),
               ),
               SettingsNavTile(
                 icon: Icons.video_settings_outlined,
-                title: 'Player',
-                subtitle: 'Gestures, default quality, skips',
+                title: l10n.settingsPlayer,
+                subtitle: l10n.settingsPlayerSubtitle,
                 onTap: () => context.pushSettingsPlayer(),
               ),
               SettingsNavTile(
                 icon: Icons.chrome_reader_mode_outlined,
-                title: 'Reader',
-                subtitle: 'Reading mode, background, scale',
+                title: l10n.settingsReader,
+                subtitle: l10n.settingsReaderSubtitle,
                 onTap: () => context.pushSettingsReader(),
               ),
               SettingsNavTile(
                 icon: Icons.extension_outlined,
-                title: 'Extensions',
-                subtitle: 'External runtime engines & native sources',
+                title: l10n.settingsExtensions,
+                subtitle: l10n.settingsExtensionsSubtitle,
                 onTap: () => context.pushSettingsExtensions(),
                 onLongPress: () => context.pushSettingsRemoteConfigEditor(),
               ),
               SettingsNavTile(
                 icon: Icons.dashboard_customize_outlined,
-                title: 'Addons',
-                subtitle: 'Torrent engines & streaming helpers (TorrServer)',
+                title: l10n.settingsAddons,
+                subtitle: l10n.settingsAddonsSubtitle,
                 onTap: () => context.pushSettingsAddons(),
               ),
               SettingsNavTile(
                 icon: Icons.download_outlined,
-                title: 'Downloads',
-                subtitle: 'Download location, file naming',
+                title: l10n.settingsDownloads,
+                subtitle: l10n.settingsDownloadsSubtitle,
                 onTap: () => context.pushSettingsDownloads(),
               ),
               SettingsNavTile(
                 icon: Icons.filter_alt_outlined,
-                title: 'Content',
-                subtitle: 'Content filters, 18+ toggle',
+                title: l10n.settingsContent,
+                subtitle: l10n.settingsContentSubtitle,
                 onTap: () => context.pushSettingsContent(),
               ),
               SettingsNavTile(
                 icon: Icons.lock_outline_rounded,
-                title: 'Security & Privacy',
-                subtitle: 'PIN lock, biometrics, app protection',
+                title: l10n.settingsSecurity,
+                subtitle: l10n.settingsSecuritySubtitle,
                 onTap: () => context.pushSettingsSecurity(),
               ),
               if (Platform.isAndroid) ...[
                 SettingsNavTile(
                   icon: Icons.security_outlined,
-                  title: 'Permissions',
-                  subtitle: 'Manage app permissions',
+                  title: l10n.settingsPermissions,
+                  subtitle: l10n.settingsPermissionsSubtitle,
                   onTap: () => context.pushSettingsPermissions(),
                 ),
               ],
@@ -85,36 +97,36 @@ class SettingsScreen extends ConsumerWidget {
           ),
 
           SettingsSection(
-            title: 'Data & Sync',
+            title: l10n.settingsDataSync,
             children: [
               SettingsNavTile(
                 icon: Icons.sync_outlined,
-                title: 'Tracking',
-                subtitle: 'AniList, MyAnimeList connections',
+                title: l10n.settingsTracking,
+                subtitle: l10n.settingsTrackingSubtitle,
                 onTap: () => context.pushSettingsTracking(),
               ),
               SettingsNavTile(
                 icon: Icons.import_export_outlined,
-                title: 'Backup & Restore',
-                subtitle: 'Export or import your data',
+                title: l10n.settingsBackup,
+                subtitle: l10n.settingsBackupSubtitle,
                 onTap: () => context.pushSettingsBackup(),
               ),
             ],
           ),
 
           SettingsSection(
-            title: 'UI',
+            title: l10n.settingsUi,
             children: [
               SettingsNavTile(
                 icon: Icons.view_comfortable_outlined,
-                title: 'UI',
-                subtitle: 'UI settings',
+                title: l10n.settingsUi,
+                subtitle: l10n.settingsUiSubtitle,
                 onTap: () => context.pushSettingsUi(),
               ),
               SettingsNavTile(
                 icon: Icons.home_outlined,
-                title: 'Home',
-                subtitle: 'Home screen settings',
+                title: l10n.settingsHome,
+                subtitle: l10n.settingsHomeSubtitle,
                 onTap: () => context.pushSettingsHome(),
               ),
             ],
@@ -122,43 +134,43 @@ class SettingsScreen extends ConsumerWidget {
 
           if (Platform.isAndroid || Platform.isIOS || Platform.isMacOS)
             SettingsSection(
-              title: 'Notifications',
+              title: l10n.settingsNotifications,
               children: [
                 SettingsNavTile(
                   icon: Icons.notifications_active_outlined,
-                  title: 'Manage Notifications',
-                  subtitle: 'Manage your active subscriptions and reminders',
+                  title: l10n.settingsNotifications,
+                  subtitle: l10n.settingsNotificationsSubtitle,
                   onTap: () => context.pushSettingsNotifications(),
                 ),
               ],
             ),
 
           SettingsSection(
-            title: 'Misc',
+            title: l10n.settingsMisc,
             children: [
               SettingsNavTile(
                 icon: Icons.storage_outlined,
-                title: 'Cache Manager',
-                subtitle: 'Clear cache and thumbnails',
+                title: l10n.settingsCache,
+                subtitle: l10n.settingsCacheSubtitle,
                 onTap: () => context.pushSettingsCache(),
               ),
               SettingsNavTile(
                 icon: Icons.system_update_outlined,
-                title: 'Updates',
-                subtitle: 'Check for updates and pre-release preferences',
+                title: l10n.settingsUpdates,
+                subtitle: l10n.settingsUpdatesSubtitle,
                 onTap: () => context.pushSettingsUpdates(),
               ),
               SettingsNavTile(
                 icon: Icons.info_outline_rounded,
-                title: 'About',
-                subtitle: 'Version, developer, and links',
+                title: l10n.settingsAbout,
+                subtitle: l10n.settingsAboutSubtitle,
                 onTap: () => context.pushSettingsAbout(),
               ),
             ],
           ),
 
           SettingsSection(
-            title: 'Integrations',
+            title: l10n.settingsIntegrations,
             children: [
               SettingsNavTile(
                 leading: SvgIcon(
@@ -169,38 +181,38 @@ class SettingsScreen extends ConsumerWidget {
                 ''',
                   color: cs.primary,
                 ),
-                title: 'Discord RPC',
-                subtitle: 'Send Rich Presence to Discord',
+                title: l10n.settingsDiscordRpc,
+                subtitle: l10n.settingsDiscordRpcSubtitle,
                 onTap: context.pushSettingsDiscord,
               ),
             ],
           ),
 
           SettingsSection(
-            title: 'Advanced',
+            title: l10n.settingsAdvanced,
             children: [
               SettingsNavTile(
                 icon: Icons.auto_fix_high_outlined,
-                title: 'Troubleshoot & Repair',
-                subtitle: 'Force fix missing episodes and broken matches',
+                title: l10n.settingsTroubleshoot,
+                subtitle: l10n.settingsTroubleshootSubtitle,
                 onTap: () => context.pushSettingsTroubleshoot(),
               ),
               SettingsNavTile(
                 icon: Icons.bug_report_outlined,
-                title: 'Debug',
-                subtitle: 'Test notifications and UI components',
+                title: l10n.settingsDebug,
+                subtitle: l10n.settingsDebugSubtitle,
                 onTap: () => context.pushSettingsDebug(),
               ),
               SettingsNavTile(
                 icon: Icons.article_outlined,
-                title: 'Logs',
-                subtitle: 'View, copy, and export app logs',
+                title: l10n.settingsLogs,
+                subtitle: l10n.settingsLogsSubtitle,
                 onTap: () => context.pushSettingsLogs(),
               ),
             ],
           ),
           SettingsSection(
-            title: 'Support',
+            title: l10n.settingsSupport,
             children: [
               SettingsActionTile(
                 leading: SvgIcon(

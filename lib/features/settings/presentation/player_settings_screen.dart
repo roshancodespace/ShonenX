@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/core/localization/l10n_extension.dart';
 import 'package:shonenx/features/player/domain/aniskip_prefs.dart';
 import 'package:shonenx/features/player/presentation/widgets/media_kit/media_kit_settings.dart';
 import 'package:shonenx/features/player/providers/aniskip_prefs_provider.dart';
@@ -35,7 +36,7 @@ class PlayerSettingsScreen extends ConsumerWidget {
     }
 
     return AppScaffold(
-      title: 'Player',
+      title: context.l10n.settingsPlayer,
       body: ListView(
         padding: const EdgeInsets.only(bottom: 50),
         children: [

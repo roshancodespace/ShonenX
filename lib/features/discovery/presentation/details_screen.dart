@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 
+import 'package:shonenx/core/localization/l10n_extension.dart';
 import 'package:shonenx/core/router/app_navigator.dart';
 import 'package:shonenx/features/tracking/providers/tracker_auth_provider.dart';
 import 'package:shonenx/features/comments/presentation/widgets/comments_tab.dart';
@@ -518,11 +519,11 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen>
             indicatorSize: TabBarIndicatorSize.tab,
             textScaler: const TextScaler.linear(1.15),
             tabs: [
-              const Tab(text: 'About'),
+              Tab(text: context.l10n.detailsAbout),
               Tab(
                 text: widget.mediaType == MediaType.MANGA
-                    ? 'Chapters'
-                    : 'Episodes',
+                    ? context.l10n.detailsChapters
+                    : context.l10n.detailsEpisodes,
               ),
             ],
           ),
@@ -576,14 +577,14 @@ class _TrackerAppBarButton extends ConsumerWidget {
     return trackingState.when(
       loading: () => _buildButton(
         theme,
-        label: 'Loading...',
+        label: context.l10n.commonLoading,
         icon: Icons.hourglass_empty,
         isEnabled: false,
         uiRoundness: uiRoundness,
       ),
       error: (err, stack) => _buildButton(
         theme,
-        label: 'Sync Error',
+        label: context.l10n.detailsSyncError,
         icon: Icons.sync_problem,
         onPressed: () => _openManager(context),
         uiRoundness: uiRoundness,
@@ -595,7 +596,7 @@ class _TrackerAppBarButton extends ConsumerWidget {
             : links.containsKey(tracker.type);
         final isAuthenticated = tracker.type.isAuthenticated(ref);
 
-        String label = 'Add Tracker';
+        String label = context.l10n.detailsAddTracker;
         IconData icon = Icons.add;
 
         if (!isAuthenticated) {
@@ -604,14 +605,14 @@ class _TrackerAppBarButton extends ConsumerWidget {
         } else if (isTrackerLinked || tracker.type == TrackerType.local) {
           if (listItem != null) {
             label =
-                '${media.type == MediaType.MANGA ? "Ch" : "Ep"} ${listItem.progress.toInt()} • ${listItem.status.getLabelForMedia(media.type)}';
+                '${media.type == MediaType.MANGA ? "Ch" : "Ep"} ${listItem.progress.toInt()} • ${listItem.status.getLocalizedLabelForMedia(context, media.type)}';
             icon = Icons.bookmark_added;
           } else {
             label = 'Add to ${tracker.type.displayName}';
             icon = Icons.add_to_photos;
           }
         } else if (links.isNotEmpty) {
-          label = 'Manage Trackers';
+          label = context.l10n.detailsManageTrackers;
           icon = Icons.bookmarks;
         }
 
@@ -765,7 +766,7 @@ class _CommentsAppBarButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return AppIconButton(
-      tooltip: 'Discussion',
+      tooltip: context.l10n.detailsDiscussion,
       backgroundColor: theme.colorScheme.secondaryContainer,
       foregroundColor: theme.colorScheme.onSecondaryContainer,
       radius: uiRoundness,
@@ -778,7 +779,7 @@ class _CommentsAppBarButton extends StatelessWidget {
 void _showCommentsSheet(BuildContext context, UnifiedMedia media) {
   AppBottomSheet.show(
     context: context,
-    title: 'Discussion',
+    title: context.l10n.detailsDiscussion,
     contentPadding: EdgeInsets.zero,
     child: SizedBox(
       height: MediaQuery.of(context).size.height * 0.78,

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:shonenx/core/localization/l10n_extension.dart';
 import 'package:shonenx/core/utils/wallpaper_processor.dart';
 import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
 import 'package:shonenx/core/theme/exclusive_schemes.dart';
@@ -29,9 +30,9 @@ class ThemeSettingsScreen extends ConsumerWidget {
     return DefaultTabController(
       length: 3,
       child: AppScaffold(
-        title: 'Appearance',
-        barBottom: const PreferredSize(
-          preferredSize: Size.fromHeight(48),
+        title: context.l10n.settingsAppearance,
+        barBottom: PreferredSize(
+          preferredSize: const Size.fromHeight(48),
           child: TabBar(
             isScrollable: true,
             indicatorSize: TabBarIndicatorSize.tab,
@@ -39,24 +40,24 @@ class ThemeSettingsScreen extends ConsumerWidget {
             tabAlignment: TabAlignment.start,
             dividerColor: Colors.transparent,
             tabs: [
-              Tab(text: 'Themes'),
-              Tab(text: 'Effects'),
-              Tab(text: 'Wallpaper'),
+              Tab(text: context.l10n.settingsThemes),
+              Tab(text: context.l10n.settingsEffects),
+              Tab(text: context.l10n.settingsWallpaper),
             ],
           ),
         ),
         actions: [
           IconButton(
             icon: const Icon(Icons.restart_alt_rounded),
-            tooltip: 'Reset to Defaults',
+            tooltip: context.l10n.settingsResetDefaults,
             onPressed: () {
               ref
                   .read(themePrefsProvider.notifier)
                   .updateTheme((_) => const ThemePrefsState());
               ref.read(presetProvider.notifier).clearActivePresetMark();
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Theme settings reset to default'),
+                SnackBar(
+                  content: Text(context.l10n.settingsThemeResetSuccess),
                   behavior: SnackBarBehavior.floating,
                 ),
               );
@@ -72,22 +73,22 @@ class ThemeSettingsScreen extends ConsumerWidget {
               children: [
                 // Mode selection
                 SettingsSection(
-                  title: 'Mode',
+                  title: context.l10n.settingsMode,
                   children: [
                     SettingsSegmentedTile<ThemeMode>(
-                      title: 'Theme Mode',
-                      segments: const [
+                      title: context.l10n.settingsThemeMode,
+                      segments: [
                         ButtonSegment(
                           value: ThemeMode.system,
-                          label: Text('System'),
+                          label: Text(context.l10n.settingsThemeSystem),
                         ),
                         ButtonSegment(
                           value: ThemeMode.light,
-                          label: Text('Light'),
+                          label: Text(context.l10n.settingsThemeLight),
                         ),
                         ButtonSegment(
                           value: ThemeMode.dark,
-                          label: Text('Dark'),
+                          label: Text(context.l10n.settingsThemeDark),
                         ),
                       ],
                       selected: {themePrefs.themeMode},
@@ -96,7 +97,7 @@ class ThemeSettingsScreen extends ConsumerWidget {
                     ),
                     SettingsSwitchTile(
                       icon: Icons.palette_outlined,
-                      title: 'Dynamic Color',
+                      title: context.l10n.settingsDynamicColor,
                       subtitle: 'Uses wallpaper colors',
                       value: themePrefs.useDynamic,
                       onChanged: (v) => notifier.updateTheme(

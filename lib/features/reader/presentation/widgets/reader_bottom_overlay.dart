@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shonenx/core/localization/l10n_extension.dart';
 
 class ReaderBottomOverlay extends StatefulWidget {
   final int currentPage;
@@ -68,7 +69,7 @@ class _ReaderBottomOverlayState extends State<ReaderBottomOverlay> {
                         onPressed: widget.hasPrevChapter
                             ? widget.onPrevChapter
                             : null,
-                        tooltip: 'Previous Chapter',
+                        tooltip: context.l10n.readerPreviousChapter,
                       ),
                       _navButton(
                         icon: Icons.chevron_left_rounded,
@@ -76,7 +77,7 @@ class _ReaderBottomOverlayState extends State<ReaderBottomOverlay> {
                         onPressed: widget.currentPage > 0
                             ? () => widget.onPageChanged(widget.currentPage - 1)
                             : null,
-                        tooltip: 'Previous Page',
+                        tooltip: context.l10n.readerPreviousPage,
                       ),
                     ],
                   ),
@@ -88,7 +89,7 @@ class _ReaderBottomOverlayState extends State<ReaderBottomOverlay> {
                         onPressed: widget.currentPage < maxPage
                             ? () => widget.onPageChanged(widget.currentPage + 1)
                             : null,
-                        tooltip: 'Next Page',
+                        tooltip: context.l10n.readerNextPage,
                       ),
                       _navButton(
                         icon: Icons.skip_next_rounded,
@@ -96,13 +97,13 @@ class _ReaderBottomOverlayState extends State<ReaderBottomOverlay> {
                         onPressed: widget.hasNextChapter
                             ? widget.onNextChapter
                             : null,
-                        tooltip: 'Next Chapter',
+                        tooltip: context.l10n.readerNextChapter,
                       ),
                       _navButton(
                         icon: Icons.format_list_bulleted_rounded,
                         size: 18,
                         onPressed: widget.onChaptersTap,
-                        tooltip: 'Chapters List',
+                        tooltip: context.l10n.readerChaptersList,
                       ),
                     ],
                   ),

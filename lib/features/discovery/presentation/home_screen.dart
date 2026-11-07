@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/core/localization/l10n_extension.dart';
 import 'package:shonenx/core/router/app_navigator.dart';
 import 'package:shonenx/features/discovery/domain/models/home_section.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/cards/media_card.dart';
@@ -131,10 +132,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
 
             if (activeSections.isEmpty)
-              const SliverToBoxAdapter(
+              SliverToBoxAdapter(
                 child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 40),
-                  child: Center(child: Text('No active sections or sources')),
+                  padding: const EdgeInsets.symmetric(vertical: 40),
+                  child: Center(
+                    child: Text(context.l10n.homeNoActiveSections),
+                  ),
                 ),
               )
             else
@@ -175,9 +178,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     WidgetRef ref,
     HomeFeedSection section,
   ) {
+    final localizedTitle = section.getLocalizedTitle(context);
     switch (section.type) {
       case HomeSectionType.continueMedia:
-        return ContinueMediaRow(title: section.title, type: section.mediaType);
+        return ContinueMediaRow(title: localizedTitle, type: section.mediaType);
 
       case HomeSectionType.libraryStatus:
         final hs = section.homeSection;
@@ -191,7 +195,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             : ref.watch(primaryTrackerProvider);
 
         return LibraryRow(
-          title: section.title,
+          title: localizedTitle,
           status: hs.libraryStatus!,
           targetTracker: activeTracker.type,
           targetMediaType: section.mediaType,
@@ -206,7 +210,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         final metadataTracker = ref.watch(metadataSourceProvider);
 
         return HorizontalSection<UnifiedMedia>(
-          title: section.title,
+          title: localizedTitle,
           height: style.getLayout(isWideMode: isWide).height,
           onMoreTap: () => context.pushDiscover(
             category: section.title,
@@ -217,7 +221,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           errorBuilder: (context, error, st) {
             return _DiscoverySectionErrorWidget(
               height: style.getLayout(isWideMode: isWide).height,
-              sectionTitle: section.title,
+              sectionTitle: localizedTitle,
               trackerType: section.sourceInfo != null
                   ? null
                   : metadataTracker.type,

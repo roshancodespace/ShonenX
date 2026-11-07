@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/caching/cache_config.dart';
 import 'package:shonenx/core/caching/cache_manager.dart';
+import 'package:shonenx/core/localization/l10n_extension.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
 
@@ -71,7 +72,7 @@ class _CacheSettingsScreenState extends ConsumerState<CacheSettingsScreen> {
         : 0.0;
 
     return AppScaffold(
-      title: 'Cache Manager',
+      title: context.l10n.settingsCache,
       body: ListView(
         padding: const EdgeInsets.only(bottom: 50),
         children: [
@@ -175,7 +176,7 @@ class _CacheSettingsScreenState extends ConsumerState<CacheSettingsScreen> {
               ),
               SettingsDropdownTile<int>(
                 icon: Icons.storage_outlined,
-                title: 'Maximum Cache Size',
+                title: context.l10n.settingsMaxCacheSize,
                 value: cacheConfig.maxCacheSize,
                 items: const [
                   DropdownMenuItem(
@@ -211,7 +212,7 @@ class _CacheSettingsScreenState extends ConsumerState<CacheSettingsScreen> {
             children: [
               SettingsActionTile(
                 icon: Icons.delete_forever_outlined,
-                title: 'Clear Entire Cache',
+                title: context.l10n.settingsClearEntireCache,
                 subtitle: 'Delete all cached files and network logs.',
                 isDestructive: true,
                 onTap: () async {

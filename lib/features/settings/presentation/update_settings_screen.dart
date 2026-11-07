@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/core/localization/l10n_extension.dart';
 import 'package:shonenx/features/updates/models/github_release.dart';
 import 'package:shonenx/features/updates/services/update_service.dart';
 import 'package:shonenx/features/updates/ui/linux_update_widget.dart';
@@ -79,7 +80,7 @@ class _UpdateSettingsScreenState extends ConsumerState<UpdateSettingsScreen> {
     final releasesAsync = ref.watch(releasesListProvider);
 
     return AppScaffold(
-      title: 'Updates',
+      title: context.l10n.settingsUpdates,
       body: RefreshIndicator(
         onRefresh: () async {
           ref.invalidate(releasesListProvider);

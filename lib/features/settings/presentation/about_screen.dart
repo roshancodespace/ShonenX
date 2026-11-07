@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:shonenx/core/localization/l10n_extension.dart';
 import 'package:shonenx/core/network/http_client.dart';
 import 'package:shonenx/core/router/app_navigator.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
@@ -66,7 +67,7 @@ class AboutScreen extends ConsumerWidget {
     final contributors = ref.watch(githubContributorsProvider);
 
     return AppScaffold(
-      title: 'About',
+      title: context.l10n.settingsAbout,
       body: ListView(
         padding: const EdgeInsets.only(bottom: 50),
         children: [
@@ -87,19 +88,21 @@ class AboutScreen extends ConsumerWidget {
               const SizedBox(height: 4),
               packageInfo.when(
                 data: (info) => Text(
-                  'Version ${info.version}+${info.buildNumber}',
+                  context.l10n.settingsVersion(
+                    '${info.version}+${info.buildNumber}',
+                  ),
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: cs.onSurfaceVariant,
                   ),
                 ),
                 loading: () => Text(
-                  'Version ...',
+                  context.l10n.commonLoading,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: cs.onSurfaceVariant,
                   ),
                 ),
                 error: (_, __) => Text(
-                  'Version unknown',
+                  context.l10n.commonUnknown,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: cs.onSurfaceVariant,
                   ),
@@ -110,11 +113,11 @@ class AboutScreen extends ConsumerWidget {
           const SizedBox(height: 32),
 
           SettingsSection(
-            title: 'Links',
+            title: context.l10n.settingsLinks,
             children: [
               SettingsActionTile(
                 icon: Icons.system_update_outlined,
-                title: 'Check for Updates',
+                title: context.l10n.settingsCheckUpdates,
                 subtitle: 'Update settings and pre-release options',
                 onTap: () => context.pushSettingsUpdates(),
               ),
@@ -138,7 +141,7 @@ class AboutScreen extends ConsumerWidget {
               ),
               SettingsActionTile(
                 icon: Icons.bug_report_rounded,
-                title: 'Report an Issue',
+                title: context.l10n.settingsReportIssue,
                 subtitle: 'Found a bug? Let us know',
                 onTap: () => launchUrl(
                   Uri.parse(
@@ -151,18 +154,18 @@ class AboutScreen extends ConsumerWidget {
           ),
 
           SettingsSection(
-            title: 'Information',
+            title: context.l10n.detailsInformation,
             children: [
               SettingsActionTile(
                 icon: Icons.person_rounded,
-                title: 'Developer',
+                title: context.l10n.settingsDeveloper,
                 subtitle: 'roshancodespace',
                 onTap: () {},
               ),
             ],
           ),
           SettingsSection(
-            title: 'Contributors',
+            title: context.l10n.settingsContributors,
             children: [
               contributors.when(
                 loading: () => const ListTile(

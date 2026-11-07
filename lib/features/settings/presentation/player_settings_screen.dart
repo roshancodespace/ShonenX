@@ -1,12 +1,14 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/core/localization/l10n_extension.dart';
 import 'package:shonenx/features/player/domain/aniskip_prefs.dart';
 import 'package:shonenx/features/player/presentation/widgets/media_kit/media_kit_settings.dart';
 import 'package:shonenx/features/player/providers/aniskip_prefs_provider.dart';
 import 'package:shonenx/features/player/providers/player_prefs_provider.dart';
 import 'package:shonenx/features/settings/presentation/widgets/gesture_settings_sheet.dart';
 import 'package:shonenx/features/settings/presentation/widgets/subtitle_settings_sheet.dart';
+import 'package:shonenx/features/settings/presentation/widgets/subtitle_translation_settings_sheet.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
 import 'package:shonenx/shared/models/video_server.dart';
 import 'package:shonenx/core/utils/stream_cleaner.dart';
@@ -34,7 +36,7 @@ class PlayerSettingsScreen extends ConsumerWidget {
     }
 
     return AppScaffold(
-      title: 'Player',
+      title: context.l10n.settingsPlayer,
       body: ListView(
         padding: const EdgeInsets.only(bottom: 50),
         children: [
@@ -321,6 +323,15 @@ class PlayerSettingsScreen extends ConsumerWidget {
                 },
               ),
               SettingsActionTile(
+                icon: Icons.translate_rounded,
+                title: 'Subtitle Translation',
+                subtitle:
+                    'Configure AI translation providers, API keys, and auto-translation',
+                onTap: () {
+                  SubtitleTranslationSettingsSheet.show(context);
+                },
+              ),
+              SettingsActionTile(
                 icon: Icons.gesture_rounded,
                 title: 'Gesture Area',
                 subtitle: 'Customize active zones for volume and brightness',
@@ -468,21 +479,57 @@ const Map<String, String> _kAudioLangOptions = {
 };
 
 const Map<String, String> _kSubtitleLangOptions = {
-  'eng': 'ENG',
-  'Off': 'OFF',
-  'spa': 'SPA',
-  'fre': 'FRE',
-  'ger': 'GER',
-  'por': 'POR',
-  'ita': 'ITA',
-  'rus': 'RUS',
-  'ara': 'ARA',
-  'hin': 'HIN',
-  'ind': 'IND',
-  'tur': 'TUR',
-  'vie': 'VIE',
-  'tha': 'THA',
-  'pol': 'POL',
-  'chi': 'CHI',
-  'kor': 'KOR',
+  'Off': 'OFF (Disabled)',
+  'eng': 'ENG (English)',
+  'en': 'ENG (English)',
+  'spa': 'SPA (Spanish)',
+  'es': 'SPA (Spanish)',
+  'fre': 'FRE (French)',
+  'fr': 'FRE (French)',
+  'ger': 'GER (German)',
+  'de': 'GER (German)',
+  'por': 'POR (Portuguese)',
+  'pt': 'POR (Portuguese)',
+  'ita': 'ITA (Italian)',
+  'it': 'ITA (Italian)',
+  'rus': 'RUS (Russian)',
+  'ru': 'RUS (Russian)',
+  'ara': 'ARA (Arabic)',
+  'ar': 'ARA (Arabic)',
+  'hin': 'HIN (Hindi)',
+  'hi': 'HIN (Hindi)',
+  'ind': 'IND (Indonesian)',
+  'id': 'IND (Indonesian)',
+  'tur': 'TUR (Turkish)',
+  'tr': 'TUR (Turkish)',
+  'vie': 'VIE (Vietnamese)',
+  'vi': 'VIE (Vietnamese)',
+  'tha': 'THA (Thai)',
+  'th': 'THA (Thai)',
+  'pol': 'POL (Polish)',
+  'pl': 'POL (Polish)',
+  'chi': 'CHI (Chinese)',
+  'zh': 'CHI (Chinese)',
+  'yue': 'YUE (Cantonese)',
+  'kor': 'KOR (Korean)',
+  'ko': 'KOR (Korean)',
+  'ja': 'JPN (Japanese)',
+  'nl': 'DUT (Dutch)',
+  'fil': 'TGL (Filipino)',
+  'ms': 'MAY (Malay)',
+  'sv': 'SWE (Swedish)',
+  'uk': 'UKR (Ukrainian)',
+  'ro': 'RON (Romanian)',
+  'el': 'ELL (Greek)',
+  'hu': 'HUN (Hungarian)',
+  'cs': 'CES (Czech)',
+  'da': 'DAN (Danish)',
+  'fi': 'FIN (Finnish)',
+  'no': 'NOR (Norwegian)',
+  'he': 'HEB (Hebrew)',
+  'bn': 'BEN (Bengali)',
+  'ta': 'TAM (Tamil)',
+  'te': 'TEL (Telugu)',
+  'fa': 'FAS (Persian)',
+  'ur': 'URD (Urdu)',
 };

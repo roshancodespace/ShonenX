@@ -7,6 +7,7 @@ import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shonenx/core/localization/l10n_extension.dart';
 import 'package:shonenx/core/router/app_navigator.dart';
 import 'package:shonenx/core/router/nav_bar_theme.dart';
 
@@ -326,11 +327,14 @@ class _NavDest {
   const _NavDest(this.icon, this.label);
 }
 
-const _destinations = [
-  _NavDest(Icons.home_outlined, 'Home'),
-  _NavDest(Icons.search_rounded, 'Search'),
-  _NavDest(Icons.library_books_outlined, 'Library'),
-];
+List<_NavDest> _getDestinations(BuildContext context) {
+  final l10n = context.l10n;
+  return [
+    _NavDest(Icons.home_outlined, l10n.navHome),
+    _NavDest(Icons.search_rounded, l10n.navSearch),
+    _NavDest(Icons.library_books_outlined, l10n.navLibrary),
+  ];
+}
 
 class _BottomNavBar extends ConsumerWidget {
   final StatefulNavigationShell navigationShell;
@@ -361,6 +365,7 @@ class _BottomNavBar extends ConsumerWidget {
     );
 
     final isDocked = navBarStyle == NavBarStyle.docked;
+    final destinations = _getDestinations(context);
 
     final bottomMargin = isDocked ? 0.0 : r.height * 0.018;
 
@@ -377,12 +382,12 @@ class _BottomNavBar extends ConsumerWidget {
         backgroundColor: cs.surfaceContainer,
         indicatorColor: cs.primaryContainer,
         destinations: [
-          ..._destinations.map(
+          ...destinations.map(
             (d) => NavigationDestination(icon: Icon(d.icon), label: d.label),
           ),
-          const NavigationDestination(
-            icon: _DockedDownloadIcon(),
-            label: 'Downloads',
+          NavigationDestination(
+            icon: const _DockedDownloadIcon(),
+            label: context.l10n.navDownloads,
           ),
         ],
       );
@@ -411,6 +416,7 @@ class _BottomNavBar extends ConsumerWidget {
         ),
         child: _buildItemsRow(
           context,
+          destinations,
           cs,
           iconSize,
           fontSize,
@@ -484,6 +490,7 @@ class _BottomNavBar extends ConsumerWidget {
 
   Widget _buildItemsRow(
     BuildContext context,
+    List<_NavDest> destinations,
     ColorScheme cs,
     double iconSize,
     double fontSize,
@@ -493,7 +500,7 @@ class _BottomNavBar extends ConsumerWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.start,
-      children: List.generate(_destinations.length, (i) {
+      children: List.generate(destinations.length, (i) {
         final active = navigationShell.currentIndex == i;
         final themeData = NavBarThemeData.resolve(
           navBarStyle,
@@ -530,7 +537,7 @@ class _BottomNavBar extends ConsumerWidget {
                         opacity: active ? 1.0 : 0.55,
                         duration: const Duration(milliseconds: 250),
                         child: Icon(
-                          _destinations[i].icon,
+                          destinations[i].icon,
                           color: active
                               ? themeData.activeIconColor
                               : themeData.inactiveIconColor,
@@ -546,7 +553,7 @@ class _BottomNavBar extends ConsumerWidget {
                             ? Padding(
                                 padding: const EdgeInsets.only(left: 8),
                                 child: Text(
-                                  _destinations[i].label,
+                                  destinations[i].label,
                                   style: TextStyle(
                                     fontSize: fontSize,
                                     fontWeight: themeData.isMaterial3
@@ -791,7 +798,7 @@ class _SideNavBar extends ConsumerWidget {
                   indicatorColor: cs.primaryContainer,
                   groupAlignment: 0.0, // Center alignment
                   destinations: [
-                    ..._destinations.map(
+                    ..._getDestinations(context).map(
                       (d) => NavigationRailDestination(
                         icon: Icon(d.icon),
                         label: Text(d.label),
@@ -808,7 +815,7 @@ class _SideNavBar extends ConsumerWidget {
                   children: [
                     _DockedActionItem(
                       icon: const _DockedDownloadIcon(),
-                      label: 'Downloads',
+                      label: context.l10n.navDownloads,
                       isActive: navigationShell.currentIndex == 3,
                       onTap: () => navigationShell.goBranch(
                         3,
@@ -878,8 +885,9 @@ class _SideNavBar extends ConsumerWidget {
 
     final hideDownloadLabel = h.isBelowCompact;
     final hideNavLabels = h == HeightTier.cramped;
+    final destinations = _getDestinations(context);
     final itemsCol = Column(
-      children: List.generate(_destinations.length, (i) {
+      children: List.generate(destinations.length, (i) {
         final active = navigationShell.currentIndex == i;
         final themeData = NavBarThemeData.resolve(
           navBarStyle,
@@ -906,8 +914,8 @@ class _SideNavBar extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(activeItemRadius),
                       ),
               child: _PillContent(
-                icon: _destinations[i].icon,
-                label: _destinations[i].label,
+                icon: destinations[i].icon,
+                label: destinations[i].label,
                 active: active,
                 themeData: themeData,
                 heightTier: h,
@@ -1059,6 +1067,9 @@ class _PillContent extends StatelessWidget {
     );
 
     final showLabel = !forceHideLabel && (active || isDownload);
+    final locale = Localizations.localeOf(context);
+    final isNonLatinOrRtl = Directionality.of(context) == TextDirection.rtl ||
+        const {'ar', 'bn', 'yue', 'ja', 'hi'}.contains(locale.languageCode);
 
     final resolvedColor = active
         ? themeData.activeIconColor
@@ -1089,20 +1100,34 @@ class _PillContent extends StatelessWidget {
             child: showLabel
                 ? Padding(
                     padding: EdgeInsets.only(top: labelTopPad),
-                    child: RotatedBox(
-                      quarterTurns: -1,
-                      child: Text(
-                        label.toUpperCase(),
-                        style: TextStyle(
-                          fontSize: labelSize,
-                          letterSpacing: labelSpacing,
-                          fontWeight: themeData.isMaterial3
-                              ? FontWeight.w500
-                              : FontWeight.bold,
-                          color: resolvedTextColor,
-                        ),
-                      ),
-                    ),
+                    child: isNonLatinOrRtl
+                        ? Text(
+                            label,
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: labelSize * 0.85,
+                              fontWeight: themeData.isMaterial3
+                                  ? FontWeight.w500
+                                  : FontWeight.bold,
+                              color: resolvedTextColor,
+                            ),
+                          )
+                        : RotatedBox(
+                            quarterTurns: -1,
+                            child: Text(
+                              label.toUpperCase(),
+                              style: TextStyle(
+                                fontSize: labelSize,
+                                letterSpacing: labelSpacing,
+                                fontWeight: themeData.isMaterial3
+                                    ? FontWeight.w500
+                                    : FontWeight.bold,
+                                color: resolvedTextColor,
+                              ),
+                            ),
+                          ),
                   )
                 : const SizedBox.shrink(),
           ),
@@ -1187,7 +1212,7 @@ class _TallDownloadPillContent extends ConsumerWidget {
                     ),
             child: _PillContent(
               icon: Icons.download_outlined,
-              label: 'DOWNLOAD',
+              label: context.l10n.navDownloads,
               active: active,
               isDownload: true,
               themeData: themeData,

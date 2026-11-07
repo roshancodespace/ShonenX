@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:shonenx/core/localization/l10n_extension.dart';
 import 'package:shonenx/core/router/app_navigator.dart';
 import 'package:shonenx/features/player/domain/player_mode.dart';
 import 'package:shonenx/features/downloads/domain/models/download_task.dart';
@@ -50,7 +51,7 @@ class DownloadsScreen extends ConsumerWidget {
     return DefaultTabController(
       length: 2,
       child: AppScaffold(
-        title: 'Downloads',
+        title: context.l10n.downloadsTitle,
         barBottom: TabBar(
           indicatorColor: colors.primary,
           indicatorSize: TabBarIndicatorSize.tab,
@@ -61,9 +62,9 @@ class DownloadsScreen extends ConsumerWidget {
             fontWeight: FontWeight.w600,
           ),
           unselectedLabelStyle: theme.textTheme.labelLarge,
-          tabs: const [
-            Tab(text: 'Queue'),
-            Tab(text: 'Offline Files'),
+          tabs: [
+            Tab(text: context.l10n.downloadsQueue),
+            Tab(text: context.l10n.downloadsOfflineFiles),
           ],
         ),
         body: TabBarView(
@@ -76,10 +77,10 @@ class DownloadsScreen extends ConsumerWidget {
               error: (err, _) => Center(child: Text('Error: $err')),
               data: (tasks) {
                 if (tasks.isEmpty) {
-                  return const _EmptyState(
+                  return _EmptyState(
                     icon: Icons.download_for_offline_outlined,
-                    title: 'Queue is empty',
-                    subtitle: 'Active downloads will appear here.',
+                    title: context.l10n.downloadsQueueEmpty,
+                    subtitle: context.l10n.downloadsQueueEmptySubtitle,
                   );
                 }
                 return ListView.separated(

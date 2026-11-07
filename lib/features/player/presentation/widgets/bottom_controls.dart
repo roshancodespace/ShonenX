@@ -8,9 +8,13 @@ import 'package:shonenx/features/discovery/presentation/widgets/episodes_panel/e
 import 'package:shonenx/features/player/domain/player_mode.dart';
 import 'package:shonenx/features/player/engine/video_engine.dart';
 import 'package:shonenx/features/player/presentation/widgets/player_controls.dart';
+import 'package:shonenx/features/player/presentation/widgets/subtitle_translation_control_card.dart';
 import 'package:shonenx/features/player/providers/aniskip_provider.dart';
 import 'package:shonenx/features/player/providers/player_controller.dart';
+import 'package:shonenx/features/player/providers/subtitle_translation_prefs_provider.dart';
+import 'package:shonenx/features/player/providers/subtitle_translation_provider.dart';
 import 'package:shonenx/features/settings/presentation/widgets/subtitle_settings_sheet.dart';
+import 'package:shonenx/features/settings/presentation/widgets/subtitle_translation_settings_sheet.dart';
 import 'package:shonenx/shared/models/video_server.dart';
 import 'package:shonenx/shared/models/video_stream.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
@@ -504,6 +508,40 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            Consumer(
+              builder: (context, ref, _) {
+                final translationState = ref.watch(
+                  runtimeSubtitleTranslationProvider,
+                );
+                final translationConfig = ref.watch(
+                  subtitleTranslationPrefsProvider,
+                );
+                final hasActiveSub =
+                    activeSub != null &&
+                    activeSub != SubtitleTrack.none &&
+                    activeSub.url.isNotEmpty;
+
+                return SubtitleTranslationControlCard(
+                  translationState: translationState,
+                  translationConfig: translationConfig,
+                  hasActiveSub: hasActiveSub,
+                  onSelectTargetLanguage: (lang) {
+                    ref
+                        .read(runtimeSubtitleTranslationProvider.notifier)
+                        .translateCurrentSubtitles(targetLang: lang);
+                  },
+                  onDisableTranslation: () {
+                    ref
+                        .read(runtimeSubtitleTranslationProvider.notifier)
+                        .disableTranslation();
+                  },
+                  onOpenSettings: () {
+                    Navigator.of(context).pop();
+                    SubtitleTranslationSettingsSheet.show(context);
+                  },
+                );
+              },
+            ),
             _buildSubtitleTile(offOption, activeSub == offOption),
             const SizedBox(height: 8),
             for (final entry in groups.entries)

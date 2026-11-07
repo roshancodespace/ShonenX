@@ -52,6 +52,7 @@ class DiscordRpcNotifier extends Notifier<DiscordRpcState>
   @override
   DiscordRpcState build() {
     WidgetsBinding.instance.addObserver(this);
+    ref.onDispose(() => WidgetsBinding.instance.removeObserver(this));
 
     ref.listen<DiscordState>(discordProvider, (previous, next) {
       if (next.isLoggedIn && state.isEnabled) {

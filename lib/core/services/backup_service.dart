@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:isolate';
 
 import 'package:flutter/material.dart';
 import 'package:isar_community/isar.dart';
@@ -88,6 +89,24 @@ class BackupManifest {
       'categories': categories.map((c) => c.name).toList(),
       'data': data,
     });
+  }
+
+  /// Encodes backup JSON payload in a background isolate to prevent UI frame drops.
+  Future<String> toJsonAsync() {
+    final payload = {
+      'appVersion': appVersion,
+      'exportDate': exportDate.toIso8601String(),
+      'categories': categories.map((c) => c.name).toList(),
+      'data': data,
+    };
+    return Isolate.run(
+      () => const JsonEncoder.withIndent('  ').convert(payload),
+    );
+  }
+
+  /// Parses and repairs backup JSON payload in a background isolate.
+  static Future<BackupManifest> fromJsonAsync(String source) {
+    return Isolate.run(() => BackupManifest.fromJson(source));
   }
 
   factory BackupManifest.fromJson(String source) {

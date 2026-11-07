@@ -42,19 +42,32 @@ class LibraryEntry {
   int? year;
 
   @ignore
+  MediaExternalIds? _cachedExternalIds;
+  @ignore
+  String? _cachedExternalIdsJson;
+
+  @ignore
   MediaExternalIds get externalIds {
+    if (externalIdsJson == _cachedExternalIdsJson &&
+        _cachedExternalIds != null) {
+      return _cachedExternalIds!;
+    }
+    _cachedExternalIdsJson = externalIdsJson;
     if (externalIdsJson != null && externalIdsJson!.isNotEmpty) {
       try {
         final decoded = jsonDecode(externalIdsJson!) as Map<String, dynamic>;
-        return MediaExternalIds.fromMap(decoded);
+        return _cachedExternalIds = MediaExternalIds.fromMap(decoded);
       } catch (_) {}
     }
-    return const MediaExternalIds();
+    return _cachedExternalIds = const MediaExternalIds();
   }
 
   set externalIds(MediaExternalIds ids) {
+    _cachedExternalIds = ids;
     final map = ids.toMap();
-    externalIdsJson = map.isNotEmpty ? jsonEncode(map) : null;
+    _cachedExternalIdsJson = externalIdsJson = map.isNotEmpty
+        ? jsonEncode(map)
+        : null;
   }
 
   UnifiedMedia toUnifiedMedia() {

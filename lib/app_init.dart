@@ -152,12 +152,13 @@ class AppInit {
       );
 
       // Perform migration from MediaSourcePreference to MediaPreference
-      final oldPrefsCount = await isar.mediaSourcePreferences.count();
-      if (oldPrefsCount > 0) {
-        log.i(
-          'Migrating $oldPrefsCount MediaSourcePreferences to MediaPreferences...',
-        );
+      final hasOldPrefs =
+          await isar.mediaSourcePreferences.where().findFirst() != null;
+      if (hasOldPrefs) {
         final oldPrefs = await isar.mediaSourcePreferences.where().findAll();
+        log.i(
+          'Migrating ${oldPrefs.length} MediaSourcePreferences to MediaPreferences...',
+        );
 
         final newPrefs = oldPrefs
             .map(
@@ -179,15 +180,16 @@ class AppInit {
       }
 
       // Perform migration from WatchHistoryEntry and ReadHistoryEntry to HistoryEntry
-      final watchHistoryCount = await isar.watchHistoryEntrys.count();
-      final readHistoryCount = await isar.readHistoryEntrys.count();
-      if (watchHistoryCount > 0 || readHistoryCount > 0) {
-        log.i(
-          'Migrating $watchHistoryCount WatchHistory and $readHistoryCount ReadHistory to HistoryEntry...',
-        );
-
+      final hasOldWatch =
+          await isar.watchHistoryEntrys.where().findFirst() != null;
+      final hasOldRead =
+          await isar.readHistoryEntrys.where().findFirst() != null;
+      if (hasOldWatch || hasOldRead) {
         final watchEntries = await isar.watchHistoryEntrys.where().findAll();
         final readEntries = await isar.readHistoryEntrys.where().findAll();
+        log.i(
+          'Migrating ${watchEntries.length} WatchHistory and ${readEntries.length} ReadHistory to HistoryEntry...',
+        );
 
         final newHistoryEntries = <HistoryEntry>[];
         for (final entry in watchEntries) {

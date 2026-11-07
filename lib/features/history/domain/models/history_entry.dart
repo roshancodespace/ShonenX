@@ -41,23 +41,36 @@ class HistoryEntry {
   String? externalIdsJson;
 
   @ignore
+  MediaExternalIds? _cachedExternalIds;
+  @ignore
+  String? _cachedExternalIdsJson;
+
+  @ignore
   MediaExternalIds get externalIds {
+    if (externalIdsJson == _cachedExternalIdsJson &&
+        _cachedExternalIds != null) {
+      return _cachedExternalIds!;
+    }
+    _cachedExternalIdsJson = externalIdsJson;
     if (externalIdsJson != null && externalIdsJson!.isNotEmpty) {
       try {
         final decoded = jsonDecode(externalIdsJson!) as Map<String, dynamic>;
-        return MediaExternalIds.fromMap(decoded);
+        return _cachedExternalIds = MediaExternalIds.fromMap(decoded);
       } catch (_) {}
     }
     if (mediaIdMal != null && mediaIdMal!.isNotEmpty) {
-      return MediaExternalIds(mal: mediaIdMal);
+      return _cachedExternalIds = MediaExternalIds(mal: mediaIdMal);
     }
-    return const MediaExternalIds();
+    return _cachedExternalIds = const MediaExternalIds();
   }
 
   set externalIds(MediaExternalIds ids) {
+    _cachedExternalIds = ids;
     mediaIdMal = ids.mal;
     final map = ids.toMap();
-    externalIdsJson = map.isNotEmpty ? jsonEncode(map) : null;
+    _cachedExternalIdsJson = externalIdsJson = map.isNotEmpty
+        ? jsonEncode(map)
+        : null;
   }
 
   @Index()

@@ -53,8 +53,14 @@
 
   <provides>
     <mediatype>x-scheme-handler/shonenx</mediatype>
+    <mediatype>x-scheme-handler/mihon</mediatype>
     <mediatype>x-scheme-handler/aniyomi</mediatype>
+    <mediatype>x-scheme-handler/tachiyomi</mediatype>
     <mediatype>x-scheme-handler/mangayomi</mediatype>
+    <mediatype>x-scheme-handler/kotatsu</mediatype>
+    <mediatype>x-scheme-handler/sora</mediatype>
+    <mediatype>x-scheme-handler/cloudstream</mediatype>
+    <mediatype>x-scheme-handler/cloudstreamrepo</mediatype>
   </provides>
 
   <releases>

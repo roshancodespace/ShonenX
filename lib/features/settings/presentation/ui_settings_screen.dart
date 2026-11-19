@@ -3,8 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/localization/l10n_extension.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
+import 'package:shonenx/features/settings/presentation/widgets/appearance_sheet.dart';
+import 'package:shonenx/features/settings/presentation/widgets/card_style_picker.dart';
+import 'package:shonenx/features/settings/presentation/widgets/episode_mode_picker.dart';
+import 'package:shonenx/features/settings/presentation/widgets/home_header_style_picker.dart';
+import 'package:shonenx/features/settings/presentation/widgets/nav_bar_style_picker.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
-import 'package:shonenx/features/settings/presentation/widgets/ui_settings_sheets.dart';
+import 'package:shonenx/features/settings/presentation/widgets/sheet_physics_sheet.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
 
 class UiSettingsScreen extends ConsumerWidget {

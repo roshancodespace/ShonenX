@@ -909,4 +909,154 @@ class AppLocalizationsYue extends AppLocalizations {
 
   @override
   String get detailsSynonyms => '其他譯名';
+
+  @override
+  String get settingsSupportDevelopment => '支援開發';
+
+  @override
+  String get settingsSupportDevelopmentSubtitle => '買杯咖啡俾我，讓個項目繼續運作同保持無廣告！';
+
+  @override
+  String get settingsInfo => '資訊';
+
+  @override
+  String get settingsCustomize => '自訂';
+
+  @override
+  String get settingsAdvancedSettings => '設定';
+
+  @override
+  String get uiSettingsExperimental => '實驗性';
+
+  @override
+  String get uiSettingsLayoutMotion => '版面同動效';
+
+  @override
+  String get uiSettingsLayoutMotionSubtitle => '全域尺寸同埋面板動效 — 主題顏色喺「外觀風格」度';
+
+  @override
+  String get uiSettingsHomeScreen => '主頁';
+
+  @override
+  String get uiSettingsMediaCards => '媒體卡';
+
+  @override
+  String get uiSettingsEpisodes => '集數列表';
+
+  @override
+  String get uiSettingsNavigationBar => '導覽列';
+
+  @override
+  String get uiSettingsExperimentalTvTitle => '實驗性電視 / 新介面';
+
+  @override
+  String get uiSettingsExperimentalTvSubtitle => '為 D-pad、遙控同鍵盤導覽而設嘅電影感空間介面';
+
+  @override
+  String get uiSettingsSizingTitle => '尺寸同圓角';
+
+  @override
+  String get uiSettingsSizingSubtitle => '調整圓角半徑、元件縮放同文字縮放';
+
+  @override
+  String get uiSettingsSheetPhysicsTitle => '面板物理';
+
+  @override
+  String get uiSettingsSheetPhysicsSubtitle => '調整底部面板嘅動態物理';
+
+  @override
+  String get uiSettingsSheetPhysicsHammer => '鎚仔';
+
+  @override
+  String get uiSettingsSheetPhysicsSlideUp => '向上滑動';
+
+  @override
+  String get uiSettingsHeaderStyleTitle => '標頭樣式';
+
+  @override
+  String get uiSettingsHeaderStyleSubtitle => '揀選主頁標頭嘅版面';
+
+  @override
+  String get uiSettingsCardStyleTitle => '卡片樣式';
+
+  @override
+  String get uiSettingsCardStyleSubtitle => '主頁同探索嘅媒體卡樣式';
+
+  @override
+  String get uiSettingsContinueWatchingTitle => '繼續睇樣式';
+
+  @override
+  String get uiSettingsContinueWatchingSubtitle => '繼續睇嗰排卡片嘅樣式';
+
+  @override
+  String get uiSettingsContinueReadingTitle => '繼續睇漫畫樣式';
+
+  @override
+  String get uiSettingsContinueReadingSubtitle => '繼續睇漫畫嗰排卡片嘅樣式';
+
+  @override
+  String get uiSettingsEpisodeViewTitle => '集數 / 話數排版';
+
+  @override
+  String get uiSettingsEpisodeViewSubtitle => '集數列表嘅預設檢視模式';
+
+  @override
+  String get uiSettingsNavBarTitle => '導覽列樣式';
+
+  @override
+  String get uiSettingsNavBarSubtitle => '底部導覽列嘅樣式';
+
+  @override
+  String get settingsColorSource => '顏色來源';
+
+  @override
+  String get settingsColorSourceDynamicNote => '配色方案由動態配色管理。';
+
+  @override
+  String get settingsColorTweaks => '顏色微調';
+
+  @override
+  String get settingsDynamicColorSubtitle => '使用桌布顏色';
+
+  @override
+  String get settingsAmoledSubtitle => '喺 OLED 熒幕上節省電量';
+
+  @override
+  String get settingsAmoledDisabledWithWallpaper => '設定咗背景圖片時停用';
+
+  @override
+  String get settingsThemeVariantTitle => '顏色混合';
+
+  @override
+  String get settingsThemeVariantSubtitle => '系統顏色點樣混合入調色盤';
+
+  @override
+  String get settingsThemeStyle => '顏色混合風格';
+
+  @override
+  String get settingsSwapColors => '交換顏色';
+
+  @override
+  String get settingsSwapColorsSubtitle => '交換主要同次要顏色';
+
+  @override
+  String get settingsPresets => '預設';
+
+  @override
+  String get settingsThemePresetsTitle => '主題預設同圖庫';
+
+  @override
+  String get settingsThemePresetsSubtitle => '探索主題同匯入/匯出 JSON 預設';
+
+  @override
+  String get settingsExclusiveThemes => '獨家主題';
+
+  @override
+  String get settingsStandardSchemes => '標準配色方案';
+
+  @override
+  String get settingsExclusiveSchemes => '獨家配色方案';
+
+  @override
+  String get settingsTopGeneratedSchemes => '頂級生成配色';
 }

@@ -1177,5 +1177,205 @@
   "detailsSynonyms": "Synonyms",
   "@detailsSynonyms": {
     "description": "Label for detailsSynonyms"
+  },
+  "settingsSupportDevelopment": "Support Development",
+  "@settingsSupportDevelopment": {
+    "description": "Title for the support development tile on the settings index"
+  },
+  "settingsSupportDevelopmentSubtitle": "Buy me a coffee to keep the project alive and ad-free!",
+  "@settingsSupportDevelopmentSubtitle": {
+    "description": "Subtitle for the support development tile on the settings index"
+  },
+  "settingsInfo": "Info",
+  "@settingsInfo": {
+    "description": "Tooltip for the info button on settings dropdown tiles"
+  },
+  "settingsCustomize": "Customize",
+  "@settingsCustomize": {
+    "description": "Label for the button that opens customization options for a selected setting"
+  },
+  "settingsAdvancedSettings": "Settings",
+  "@settingsAdvancedSettings": {
+    "description": "Label for the Media Kit engine settings button"
+  },
+  "uiSettingsExperimental": "Experimental",
+  "@uiSettingsExperimental": {
+    "description": "Section title for experimental UI options"
+  },
+  "uiSettingsLayoutMotion": "Layout & Motion",
+  "@uiSettingsLayoutMotion": {
+    "description": "Section title for layout and sheet motion settings"
+  },
+  "uiSettingsLayoutMotionSubtitle": "Global sizing and sheet motion — theme colors live under Appearance",
+  "@uiSettingsLayoutMotionSubtitle": {
+    "description": "Subtitle directing theme colors to the Appearance section"
+  },
+  "uiSettingsHomeScreen": "Home Screen",
+  "@uiSettingsHomeScreen": {
+    "description": "Section title for home screen settings"
+  },
+  "uiSettingsMediaCards": "Media Cards",
+  "@uiSettingsMediaCards": {
+    "description": "Section title for media card settings"
+  },
+  "uiSettingsEpisodes": "Episodes",
+  "@uiSettingsEpisodes": {
+    "description": "Section title for episode settings"
+  },
+  "uiSettingsNavigationBar": "Navigation Bar",
+  "@uiSettingsNavigationBar": {
+    "description": "Section title for navigation bar settings"
+  },
+  "uiSettingsExperimentalTvTitle": "Experimental TV / New UI",
+  "@uiSettingsExperimentalTvTitle": {
+    "description": "Title for the experimental TV / new UI toggle"
+  },
+  "uiSettingsExperimentalTvSubtitle": "A cinematic, spatial interface built for D-pad, remote, and keyboard navigation",
+  "@uiSettingsExperimentalTvSubtitle": {
+    "description": "Subtitle for the experimental TV / new UI toggle"
+  },
+  "uiSettingsSizingTitle": "Sizing & Corners",
+  "@uiSettingsSizingTitle": {
+    "description": "Title for the sizing and corners appearance sheet entry"
+  },
+  "uiSettingsSizingSubtitle": "Adjust corner radius, widget scale, and text scale",
+  "@uiSettingsSizingSubtitle": {
+    "description": "Subtitle for the sizing and corners appearance sheet entry"
+  },
+  "uiSettingsSheetPhysicsTitle": "Sheet Physics",
+  "@uiSettingsSheetPhysicsTitle": {
+    "description": "Title for the sheet physics entry"
+  },
+  "uiSettingsSheetPhysicsSubtitle": "Adjust bottom sheet motion physics",
+  "@uiSettingsSheetPhysicsSubtitle": {
+    "description": "Subtitle for the sheet physics entry"
+  },
+  "uiSettingsSheetPhysicsHammer": "Hammer",
+  "@uiSettingsSheetPhysicsHammer": {
+    "description": "Chip label for hammer sheet physics"
+  },
+  "uiSettingsSheetPhysicsSlideUp": "Slide Up",
+  "@uiSettingsSheetPhysicsSlideUp": {
+    "description": "Chip label for slide-up sheet physics"
+  },
+  "uiSettingsHeaderStyleTitle": "Header Style",
+  "@uiSettingsHeaderStyleTitle": {
+    "description": "Title for the home header style entry"
+  },
+  "uiSettingsHeaderStyleSubtitle": "Choose the home header layout",
+  "@uiSettingsHeaderStyleSubtitle": {
+    "description": "Subtitle for the home header style entry"
+  },
+  "uiSettingsCardStyleTitle": "Card Style",
+  "@uiSettingsCardStyleTitle": {
+    "description": "Title for the media card style entry"
+  },
+  "uiSettingsCardStyleSubtitle": "Style of media cards on Home & Discover",
+  "@uiSettingsCardStyleSubtitle": {
+    "description": "Subtitle for the media card style entry"
+  },
+  "uiSettingsContinueWatchingTitle": "Continue Watching Style",
+  "@uiSettingsContinueWatchingTitle": {
+    "description": "Title for the continue watching style entry"
+  },
+  "uiSettingsContinueWatchingSubtitle": "Style of cards on the Continue Watching row",
+  "@uiSettingsContinueWatchingSubtitle": {
+    "description": "Subtitle for the continue watching style entry"
+  },
+  "uiSettingsContinueReadingTitle": "Continue Reading Style",
+  "@uiSettingsContinueReadingTitle": {
+    "description": "Title for the continue reading style entry"
+  },
+  "uiSettingsContinueReadingSubtitle": "Style of cards on the Continue Reading row",
+  "@uiSettingsContinueReadingSubtitle": {
+    "description": "Subtitle for the continue reading style entry"
+  },
+  "uiSettingsEpisodeViewTitle": "Episode / Chapter Layout",
+  "@uiSettingsEpisodeViewTitle": {
+    "description": "Title for the episode / chapter layout entry"
+  },
+  "uiSettingsEpisodeViewSubtitle": "Default view mode for episode lists",
+  "@uiSettingsEpisodeViewSubtitle": {
+    "description": "Subtitle for the episode / chapter layout entry"
+  },
+  "uiSettingsNavBarTitle": "Navigation Bar Style",
+  "@uiSettingsNavBarTitle": {
+    "description": "Title for the navigation bar style entry"
+  },
+  "uiSettingsNavBarSubtitle": "Style of the bottom navigation bar",
+  "@uiSettingsNavBarSubtitle": {
+    "description": "Subtitle for the navigation bar style entry"
+  },
+  "settingsColorSource": "Color Source",
+  "@settingsColorSource": {
+    "description": "Section title grouping the color source options"
+  },
+  "settingsColorSourceDynamicNote": "Color scheme is managed by Dynamic Color.",
+  "@settingsColorSourceDynamicNote": {
+    "description": "Note shown when Dynamic Color manages the color scheme"
+  },
+  "settingsColorTweaks": "Color Tweaks",
+  "@settingsColorTweaks": {
+    "description": "Section title grouping the color tweak options"
+  },
+  "settingsDynamicColorSubtitle": "Uses wallpaper colors",
+  "@settingsDynamicColorSubtitle": {
+    "description": "Subtitle for the Dynamic Color switch"
+  },
+  "settingsAmoledSubtitle": "Saves battery on OLED screens",
+  "@settingsAmoledSubtitle": {
+    "description": "Subtitle for the AMOLED switch"
+  },
+  "settingsAmoledDisabledWithWallpaper": "Disabled while background image is set",
+  "@settingsAmoledDisabledWithWallpaper": {
+    "description": "Subtitle for the AMOLED switch when it is disabled by a wallpaper"
+  },
+  "settingsThemeVariantTitle": "Color Blend",
+  "@settingsThemeVariantTitle": {
+    "description": "Title for the theme variant / color blend picker entry"
+  },
+  "settingsThemeVariantSubtitle": "How system colors are blended into the palette",
+  "@settingsThemeVariantSubtitle": {
+    "description": "Subtitle for the theme variant / color blend picker entry"
+  },
+  "settingsThemeStyle": "Color Blend Style",
+  "@settingsThemeStyle": {
+    "description": "Title of the theme variant picker sheet"
+  },
+  "settingsSwapColors": "Swap Colors",
+  "@settingsSwapColors": {
+    "description": "Title for the Swap Colors switch"
+  },
+  "settingsSwapColorsSubtitle": "Swap primary and secondary colors",
+  "@settingsSwapColorsSubtitle": {
+    "description": "Subtitle for the Swap Colors switch"
+  },
+  "settingsPresets": "Presets",
+  "@settingsPresets": {
+    "description": "Title of the presets section"
+  },
+  "settingsThemePresetsTitle": "Theme Presets & Gallery",
+  "@settingsThemePresetsTitle": {
+    "description": "Title of the theme presets gallery entry"
+  },
+  "settingsThemePresetsSubtitle": "Explore themes & import/export JSON presets",
+  "@settingsThemePresetsSubtitle": {
+    "description": "Subtitle of the theme presets gallery entry"
+  },
+  "settingsExclusiveThemes": "Exclusive Themes",
+  "@settingsExclusiveThemes": {
+    "description": "Title of the exclusive themes shelf"
+  },
+  "settingsStandardSchemes": "Standard Color Schemes",
+  "@settingsStandardSchemes": {
+    "description": "Title of the standard color schemes shelf or picker"
+  },
+  "settingsExclusiveSchemes": "Exclusive Color Schemes",
+  "@settingsExclusiveSchemes": {
+    "description": "Title of the exclusive color schemes picker sheet"
+  },
+  "settingsTopGeneratedSchemes": "Top Generated Schemes",
+  "@settingsTopGeneratedSchemes": {
+    "description": "Title of the top generated schemes shelf"
   }
 }

@@ -74,7 +74,7 @@ class PlayerSettingsScreen extends ConsumerWidget {
                     'Standalone player engine with advanced subtitle & shader support',
                 isSelected: playerPrefs.playerType == PlayerType.mediakit,
                 onSelect: () => prefsNotifier.changePlayer(PlayerType.mediakit),
-                customizeLabel: 'Settings',
+                customizeLabel: context.l10n.settingsAdvancedSettings,
                 customizeIcon: Icons.settings_outlined,
                 onCustomize: () {
                   showModalBottomSheet(

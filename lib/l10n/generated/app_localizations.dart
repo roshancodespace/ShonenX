@@ -1793,6 +1793,306 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Synonyms'**
   String get detailsSynonyms;
+
+  /// Title for the support development tile on the settings index
+  ///
+  /// In en, this message translates to:
+  /// **'Support Development'**
+  String get settingsSupportDevelopment;
+
+  /// Subtitle for the support development tile on the settings index
+  ///
+  /// In en, this message translates to:
+  /// **'Buy me a coffee to keep the project alive and ad-free!'**
+  String get settingsSupportDevelopmentSubtitle;
+
+  /// Tooltip for the info button on settings dropdown tiles
+  ///
+  /// In en, this message translates to:
+  /// **'Info'**
+  String get settingsInfo;
+
+  /// Label for the button that opens customization options for a selected setting
+  ///
+  /// In en, this message translates to:
+  /// **'Customize'**
+  String get settingsCustomize;
+
+  /// Label for the Media Kit engine settings button
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get settingsAdvancedSettings;
+
+  /// Section title for experimental UI options
+  ///
+  /// In en, this message translates to:
+  /// **'Experimental'**
+  String get uiSettingsExperimental;
+
+  /// Section title for layout and sheet motion settings
+  ///
+  /// In en, this message translates to:
+  /// **'Layout & Motion'**
+  String get uiSettingsLayoutMotion;
+
+  /// Subtitle directing theme colors to the Appearance section
+  ///
+  /// In en, this message translates to:
+  /// **'Global sizing and sheet motion — theme colors live under Appearance'**
+  String get uiSettingsLayoutMotionSubtitle;
+
+  /// Section title for home screen settings
+  ///
+  /// In en, this message translates to:
+  /// **'Home Screen'**
+  String get uiSettingsHomeScreen;
+
+  /// Section title for media card settings
+  ///
+  /// In en, this message translates to:
+  /// **'Media Cards'**
+  String get uiSettingsMediaCards;
+
+  /// Section title for episode settings
+  ///
+  /// In en, this message translates to:
+  /// **'Episodes'**
+  String get uiSettingsEpisodes;
+
+  /// Section title for navigation bar settings
+  ///
+  /// In en, this message translates to:
+  /// **'Navigation Bar'**
+  String get uiSettingsNavigationBar;
+
+  /// Title for the experimental TV / new UI toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Experimental TV / New UI'**
+  String get uiSettingsExperimentalTvTitle;
+
+  /// Subtitle for the experimental TV / new UI toggle
+  ///
+  /// In en, this message translates to:
+  /// **'A cinematic, spatial interface built for D-pad, remote, and keyboard navigation'**
+  String get uiSettingsExperimentalTvSubtitle;
+
+  /// Title for the sizing and corners appearance sheet entry
+  ///
+  /// In en, this message translates to:
+  /// **'Sizing & Corners'**
+  String get uiSettingsSizingTitle;
+
+  /// Subtitle for the sizing and corners appearance sheet entry
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust corner radius, widget scale, and text scale'**
+  String get uiSettingsSizingSubtitle;
+
+  /// Title for the sheet physics entry
+  ///
+  /// In en, this message translates to:
+  /// **'Sheet Physics'**
+  String get uiSettingsSheetPhysicsTitle;
+
+  /// Subtitle for the sheet physics entry
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust bottom sheet motion physics'**
+  String get uiSettingsSheetPhysicsSubtitle;
+
+  /// Chip label for hammer sheet physics
+  ///
+  /// In en, this message translates to:
+  /// **'Hammer'**
+  String get uiSettingsSheetPhysicsHammer;
+
+  /// Chip label for slide-up sheet physics
+  ///
+  /// In en, this message translates to:
+  /// **'Slide Up'**
+  String get uiSettingsSheetPhysicsSlideUp;
+
+  /// Title for the home header style entry
+  ///
+  /// In en, this message translates to:
+  /// **'Header Style'**
+  String get uiSettingsHeaderStyleTitle;
+
+  /// Subtitle for the home header style entry
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the home header layout'**
+  String get uiSettingsHeaderStyleSubtitle;
+
+  /// Title for the media card style entry
+  ///
+  /// In en, this message translates to:
+  /// **'Card Style'**
+  String get uiSettingsCardStyleTitle;
+
+  /// Subtitle for the media card style entry
+  ///
+  /// In en, this message translates to:
+  /// **'Style of media cards on Home & Discover'**
+  String get uiSettingsCardStyleSubtitle;
+
+  /// Title for the continue watching style entry
+  ///
+  /// In en, this message translates to:
+  /// **'Continue Watching Style'**
+  String get uiSettingsContinueWatchingTitle;
+
+  /// Subtitle for the continue watching style entry
+  ///
+  /// In en, this message translates to:
+  /// **'Style of cards on the Continue Watching row'**
+  String get uiSettingsContinueWatchingSubtitle;
+
+  /// Title for the continue reading style entry
+  ///
+  /// In en, this message translates to:
+  /// **'Continue Reading Style'**
+  String get uiSettingsContinueReadingTitle;
+
+  /// Subtitle for the continue reading style entry
+  ///
+  /// In en, this message translates to:
+  /// **'Style of cards on the Continue Reading row'**
+  String get uiSettingsContinueReadingSubtitle;
+
+  /// Title for the episode / chapter layout entry
+  ///
+  /// In en, this message translates to:
+  /// **'Episode / Chapter Layout'**
+  String get uiSettingsEpisodeViewTitle;
+
+  /// Subtitle for the episode / chapter layout entry
+  ///
+  /// In en, this message translates to:
+  /// **'Default view mode for episode lists'**
+  String get uiSettingsEpisodeViewSubtitle;
+
+  /// Title for the navigation bar style entry
+  ///
+  /// In en, this message translates to:
+  /// **'Navigation Bar Style'**
+  String get uiSettingsNavBarTitle;
+
+  /// Subtitle for the navigation bar style entry
+  ///
+  /// In en, this message translates to:
+  /// **'Style of the bottom navigation bar'**
+  String get uiSettingsNavBarSubtitle;
+
+  /// Section title grouping the color source options
+  ///
+  /// In en, this message translates to:
+  /// **'Color Source'**
+  String get settingsColorSource;
+
+  /// Note shown when Dynamic Color manages the color scheme
+  ///
+  /// In en, this message translates to:
+  /// **'Color scheme is managed by Dynamic Color.'**
+  String get settingsColorSourceDynamicNote;
+
+  /// Section title grouping the color tweak options
+  ///
+  /// In en, this message translates to:
+  /// **'Color Tweaks'**
+  String get settingsColorTweaks;
+
+  /// Subtitle for the Dynamic Color switch
+  ///
+  /// In en, this message translates to:
+  /// **'Uses wallpaper colors'**
+  String get settingsDynamicColorSubtitle;
+
+  /// Subtitle for the AMOLED switch
+  ///
+  /// In en, this message translates to:
+  /// **'Saves battery on OLED screens'**
+  String get settingsAmoledSubtitle;
+
+  /// Subtitle for the AMOLED switch when it is disabled by a wallpaper
+  ///
+  /// In en, this message translates to:
+  /// **'Disabled while background image is set'**
+  String get settingsAmoledDisabledWithWallpaper;
+
+  /// Title for the theme variant / color blend picker entry
+  ///
+  /// In en, this message translates to:
+  /// **'Color Blend'**
+  String get settingsThemeVariantTitle;
+
+  /// Subtitle for the theme variant / color blend picker entry
+  ///
+  /// In en, this message translates to:
+  /// **'How system colors are blended into the palette'**
+  String get settingsThemeVariantSubtitle;
+
+  /// Title of the theme variant picker sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Color Blend Style'**
+  String get settingsThemeStyle;
+
+  /// Title for the Swap Colors switch
+  ///
+  /// In en, this message translates to:
+  /// **'Swap Colors'**
+  String get settingsSwapColors;
+
+  /// Subtitle for the Swap Colors switch
+  ///
+  /// In en, this message translates to:
+  /// **'Swap primary and secondary colors'**
+  String get settingsSwapColorsSubtitle;
+
+  /// Title of the presets section
+  ///
+  /// In en, this message translates to:
+  /// **'Presets'**
+  String get settingsPresets;
+
+  /// Title of the theme presets gallery entry
+  ///
+  /// In en, this message translates to:
+  /// **'Theme Presets & Gallery'**
+  String get settingsThemePresetsTitle;
+
+  /// Subtitle of the theme presets gallery entry
+  ///
+  /// In en, this message translates to:
+  /// **'Explore themes & import/export JSON presets'**
+  String get settingsThemePresetsSubtitle;
+
+  /// Title of the exclusive themes shelf
+  ///
+  /// In en, this message translates to:
+  /// **'Exclusive Themes'**
+  String get settingsExclusiveThemes;
+
+  /// Title of the standard color schemes shelf or picker
+  ///
+  /// In en, this message translates to:
+  /// **'Standard Color Schemes'**
+  String get settingsStandardSchemes;
+
+  /// Title of the exclusive color schemes picker sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Exclusive Color Schemes'**
+  String get settingsExclusiveSchemes;
+
+  /// Title of the top generated schemes shelf
+  ///
+  /// In en, this message translates to:
+  /// **'Top Generated Schemes'**
+  String get settingsTopGeneratedSchemes;
 }
 
 class _AppLocalizationsDelegate

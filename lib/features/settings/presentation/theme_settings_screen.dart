@@ -95,59 +95,30 @@ class ThemeSettingsScreen extends ConsumerWidget {
                       onSelectionChanged: (Set<ThemeMode> s) => notifier
                           .updateTheme((p) => p.copyWith(themeMode: s.first)),
                     ),
-                    SettingsSwitchTile(
-                      icon: Icons.palette_outlined,
-                      title: context.l10n.settingsDynamicColor,
-                      subtitle: 'Uses wallpaper colors',
-                      value: themePrefs.useDynamic,
-                      onChanged: (v) => notifier.updateTheme(
-                        (p) =>
-                            p.copyWith(useDynamic: v, clearExclusiveScheme: v),
-                      ),
-                    ),
-                    SettingsSwitchTile(
-                      icon: Icons.dark_mode_outlined,
-                      title: 'Pure Black',
-                      subtitle: themePrefs.customBackgroundImagePath != null
-                          ? 'Disabled while background image is set'
-                          : 'Saves battery on OLED screens',
-                      value: themePrefs.useAmoled,
-                      onChanged:
-                          themePrefs.themeMode == ThemeMode.light ||
-                              themePrefs.customBackgroundImagePath != null
-                          ? null
-                          : (v) => notifier.updateTheme(
-                              (p) => p.copyWith(
-                                useAmoled: v,
-                                useGradients: v ? false : p.useGradients,
-                                useNoiseOverlay: v ? false : p.useNoiseOverlay,
-                                clearWallpaperSettings: v,
-                              ),
-                            ),
-                    ),
-                    SettingsSwitchTile(
-                      icon: Icons.swap_horiz_rounded,
-                      title: 'Swap Colors',
-                      subtitle: 'Swap primary and secondary colors',
-                      value: themePrefs.swapColors,
-                      onChanged: (v) => notifier.updateTheme(
-                        (p) => p.copyWith(swapColors: v),
-                      ),
-                    ),
                   ],
                 ),
 
                 // Presets
                 _buildPresetGalleryBanner(context, ref),
 
-                // Color Style
+                // Color source
                 SettingsSection(
-                  title: 'Color Style',
+                  title: context.l10n.settingsColorSource,
                   children: [
+                    SettingsSwitchTile(
+                      icon: Icons.palette_outlined,
+                      title: context.l10n.settingsDynamicColor,
+                      subtitle: context.l10n.settingsDynamicColorSubtitle,
+                      value: themePrefs.useDynamic,
+                      onChanged: (v) => notifier.updateTheme(
+                        (p) =>
+                            p.copyWith(useDynamic: v, clearExclusiveScheme: v),
+                      ),
+                    ),
                     SettingsActionTile(
                       icon: Icons.palette_outlined,
-                      title: 'Theme Variant',
-                      subtitle: themePrefs.themeVariant.displayName,
+                      title: context.l10n.settingsThemeVariantTitle,
+                      subtitle: context.l10n.settingsThemeVariantSubtitle,
                       onTap: () => _openThemeVariantPicker(
                         context,
                         themePrefs.themeVariant,
@@ -177,7 +148,7 @@ class ThemeSettingsScreen extends ConsumerWidget {
                 // Exclusive Schemes Shelf
                 if (!themePrefs.useDynamic) ...[
                   ThemePaletteShelf(
-                    title: 'Exclusive Themes',
+                    title: context.l10n.settingsExclusiveThemes,
                     countBadge: '${exclusiveSchemes.length} Themes',
                     items: exclusiveSchemes.entries
                         .map(
@@ -199,7 +170,7 @@ class ThemeSettingsScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 4),
                   ThemePaletteShelf(
-                    title: 'Standard Color Schemes',
+                    title: context.l10n.settingsStandardSchemes,
                     countBadge: '${FlexColor.schemes.length - 1} Themes',
                     items: FlexColor.schemes.entries
                         .where((e) => e.key != FlexScheme.custom)
@@ -228,21 +199,52 @@ class ThemeSettingsScreen extends ConsumerWidget {
                     ),
                   ),
                 ] else
-                  SettingsSection(
-                    title: 'Color Scheme',
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-                        child: Text(
-                          'Color scheme is managed by Dynamic Color.',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: cs.onSurfaceVariant,
-                          ),
-                        ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+                    child: Text(
+                      context.l10n.settingsColorSourceDynamicNote,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: cs.onSurfaceVariant,
                       ),
-                    ],
+                    ),
                   ),
+
+                // Color tweaks
+                SettingsSection(
+                  title: context.l10n.settingsColorTweaks,
+                  children: [
+                    SettingsSwitchTile(
+                      icon: Icons.dark_mode_outlined,
+                      title: context.l10n.settingsAmoled,
+                      subtitle: themePrefs.customBackgroundImagePath != null
+                          ? context.l10n.settingsAmoledDisabledWithWallpaper
+                          : context.l10n.settingsAmoledSubtitle,
+                      value: themePrefs.useAmoled,
+                      onChanged:
+                          themePrefs.themeMode == ThemeMode.light ||
+                              themePrefs.customBackgroundImagePath != null
+                          ? null
+                          : (v) => notifier.updateTheme(
+                              (p) => p.copyWith(
+                                useAmoled: v,
+                                useGradients: v ? false : p.useGradients,
+                                useNoiseOverlay: v ? false : p.useNoiseOverlay,
+                                clearWallpaperSettings: v,
+                              ),
+                            ),
+                    ),
+                    SettingsSwitchTile(
+                      icon: Icons.swap_horiz_rounded,
+                      title: context.l10n.settingsSwapColors,
+                      subtitle: context.l10n.settingsSwapColorsSubtitle,
+                      value: themePrefs.swapColors,
+                      onChanged: (v) => notifier.updateTheme(
+                        (p) => p.copyWith(swapColors: v),
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
 
@@ -546,12 +548,12 @@ class ThemeSettingsScreen extends ConsumerWidget {
 
   Widget _buildPresetGalleryBanner(BuildContext context, WidgetRef ref) {
     return SettingsSection(
-      title: 'Presets',
+      title: context.l10n.settingsPresets,
       children: [
         SettingsNavTile(
           icon: Icons.auto_awesome_outlined,
-          title: 'Theme Presets & Gallery',
-          subtitle: 'Explore themes & import/export JSON presets',
+          title: context.l10n.settingsThemePresetsTitle,
+          subtitle: context.l10n.settingsThemePresetsSubtitle,
           onTap: () => PresetGallerySheet.show(context),
         ),
       ],
@@ -566,7 +568,7 @@ class ThemeSettingsScreen extends ConsumerWidget {
   ) {
     AppBottomSheet.show(
       context: context,
-      title: 'Standard Color Schemes',
+      title: context.l10n.settingsStandardSchemes,
       child: _SchemePicker(
         currentScheme: currentScheme,
         isDark: isDark,
@@ -586,7 +588,7 @@ class ThemeSettingsScreen extends ConsumerWidget {
   ) {
     AppBottomSheet.show(
       context: context,
-      title: 'Exclusive Color Schemes',
+      title: context.l10n.settingsExclusiveSchemes,
       child: _ExclusiveSchemePicker(
         currentKey: currentKey,
         isDark: isDark,
@@ -606,7 +608,7 @@ class ThemeSettingsScreen extends ConsumerWidget {
   ) {
     AppBottomSheet.show(
       context: context,
-      title: 'Theme Style',
+      title: context.l10n.settingsThemeStyle,
       child: _ThemeVariantPicker(
         currentVariant: currentVariant,
         isDark: isDark,
@@ -823,8 +825,6 @@ class _ThemeVariantPicker extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final cs = Theme.of(context).colorScheme;
-
     return ListView.builder(
       shrinkWrap: true,
       itemCount: AppThemeVariant.values.length,
@@ -832,15 +832,15 @@ class _ThemeVariantPicker extends ConsumerWidget {
         final variant = AppThemeVariant.values[index];
         final isSelected = currentVariant == variant;
 
-        return ListTile(
-          title: Text(variant.displayName),
-          subtitle: Text(variant.subtitle),
+        return SettingsSelectionTile(
           leading: _VariantSwatchPreview(
             variant: variant,
             isDark: Theme.of(context).brightness == Brightness.dark,
           ),
-          trailing: isSelected ? Icon(Icons.check, color: cs.primary) : null,
-          onTap: () => onSelected(variant),
+          title: variant.displayName,
+          subtitle: variant.subtitle,
+          isSelected: isSelected,
+          onSelect: () => onSelected(variant),
         );
       },
     );
@@ -1297,7 +1297,7 @@ class _WallpaperColorSchemesSelectorState
         .toList();
 
     return ThemePaletteShelf(
-      title: 'Top Generated Schemes',
+      title: context.l10n.settingsTopGeneratedSchemes,
       countBadge: '${items.length} Palettes',
       items: items,
       selectedId: widget.currentSeed?.toString(),

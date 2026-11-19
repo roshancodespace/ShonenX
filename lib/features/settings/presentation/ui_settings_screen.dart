@@ -12,8 +12,8 @@ class UiSettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
     final theme = Theme.of(context);
-    final cs = theme.colorScheme;
 
     final prefs = ref.watch(uiPrefsProvider);
     final notifier = ref.read(uiPrefsProvider.notifier);
@@ -21,19 +21,22 @@ class UiSettingsScreen extends ConsumerWidget {
     final themePrefs = ref.watch(themePrefsProvider);
     final themeNotifier = ref.read(themePrefsProvider.notifier);
 
+    final sheetPhysicsLabel = prefs.sheetPhysics
+        ? l10n.uiSettingsSheetPhysicsHammer
+        : l10n.uiSettingsSheetPhysicsSlideUp;
+
     return AppScaffold(
       title: context.l10n.settingsUi,
       body: ListView(
         padding: const EdgeInsets.only(bottom: 50),
         children: [
           SettingsSection(
-            title: 'Experimental',
+            title: l10n.uiSettingsExperimental,
             children: [
               SettingsSwitchTile(
                 icon: Icons.tv_rounded,
-                title: 'Experimental TV / New UI',
-                subtitle:
-                    'A cinematic, spatial interface built for D-pad, remote, and keyboard navigation',
+                title: l10n.uiSettingsExperimentalTvTitle,
+                subtitle: l10n.uiSettingsExperimentalTvSubtitle,
                 value: prefs.useNewUi,
                 onChanged: (val) => notifier.setUseNewUi(val),
               ),
@@ -41,12 +44,13 @@ class UiSettingsScreen extends ConsumerWidget {
           ),
 
           SettingsSection(
-            title: 'Appearance',
+            title: l10n.uiSettingsLayoutMotion,
+            subtitle: l10n.uiSettingsLayoutMotionSubtitle,
             children: [
               SettingsActionTile(
                 icon: Icons.tune_rounded,
-                title: 'Global UI Customization',
-                subtitle: 'Adjust corner radius, widget scale, and text scale',
+                title: l10n.uiSettingsSizingTitle,
+                subtitle: l10n.uiSettingsSizingSubtitle,
                 onTap: () => showAppearanceSheet(
                   context,
                   ref,
@@ -57,27 +61,23 @@ class UiSettingsScreen extends ConsumerWidget {
               ),
               SettingsActionTile(
                 icon: Icons.animation_rounded,
-                title: 'Sheet Physics',
-                subtitle: 'Adjust bottom sheet motion physics',
-                trailing: _Chip(
-                  label: prefs.sheetPhysics ? 'Hammer' : 'Slide Up',
-                  cs: cs,
-                ),
+                title: l10n.uiSettingsSheetPhysicsTitle,
+                subtitle: l10n.uiSettingsSheetPhysicsSubtitle,
+                trailing: SettingsValueChip(label: sheetPhysicsLabel),
                 onTap: () => showSheetPhysicsSheet(context, ref),
               ),
             ],
           ),
 
           SettingsSection(
-            title: 'Home Screen',
+            title: l10n.uiSettingsHomeScreen,
             children: [
               SettingsActionTile(
                 icon: Icons.view_headline_rounded,
-                title: 'Header Style',
-                subtitle: 'Layout and style of the home header area',
-                trailing: _Chip(
+                title: l10n.uiSettingsHeaderStyleTitle,
+                subtitle: l10n.uiSettingsHeaderStyleSubtitle,
+                trailing: SettingsValueChip(
                   label: prefs.homeHeaderStyle.displayName,
-                  cs: cs,
                 ),
                 onTap: () =>
                     showHomeHeaderStyleSheet(context, ref, notifier, theme),
@@ -86,33 +86,33 @@ class UiSettingsScreen extends ConsumerWidget {
           ),
 
           SettingsSection(
-            title: 'Media Cards',
+            title: l10n.uiSettingsMediaCards,
             children: [
               SettingsActionTile(
                 icon: Icons.style_outlined,
-                title: 'Card Style',
-                subtitle: 'Style of media cards on Home & Discover',
-                trailing: _Chip(label: prefs.cardStyle.displayName, cs: cs),
+                title: l10n.uiSettingsCardStyleTitle,
+                subtitle: l10n.uiSettingsCardStyleSubtitle,
+                trailing: SettingsValueChip(
+                  label: prefs.cardStyle.displayName,
+                ),
                 onTap: () => showCardStyleSheet(context, ref, notifier, theme),
               ),
               SettingsActionTile(
                 icon: Icons.play_circle_outline_rounded,
-                title: 'Continue Watching Style',
-                subtitle: 'Style of cards on the Continue Watching row',
-                trailing: _Chip(
+                title: l10n.uiSettingsContinueWatchingTitle,
+                subtitle: l10n.uiSettingsContinueWatchingSubtitle,
+                trailing: SettingsValueChip(
                   label: prefs.continueWatchingStyle.displayName,
-                  cs: cs,
                 ),
                 onTap: () =>
                     showContinueWatchingSheet(context, ref, notifier, theme),
               ),
               SettingsActionTile(
                 icon: Icons.menu_book_rounded,
-                title: 'Continue Reading Style',
-                subtitle: 'Style of cards on the Continue Reading row',
-                trailing: _Chip(
+                title: l10n.uiSettingsContinueReadingTitle,
+                subtitle: l10n.uiSettingsContinueReadingSubtitle,
+                trailing: SettingsValueChip(
                   label: prefs.continueReadingStyle.displayName,
-                  cs: cs,
                 ),
                 onTap: () =>
                     showContinueReadingSheet(context, ref, notifier, theme),
@@ -121,15 +121,14 @@ class UiSettingsScreen extends ConsumerWidget {
           ),
 
           SettingsSection(
-            title: 'Episodes',
+            title: l10n.uiSettingsEpisodes,
             children: [
               SettingsActionTile(
                 icon: Icons.view_list_rounded,
-                title: 'Episode/Chapter View mode',
-                subtitle: 'Default view mode for episode lists',
-                trailing: _Chip(
+                title: l10n.uiSettingsEpisodeViewTitle,
+                subtitle: l10n.uiSettingsEpisodeViewSubtitle,
+                trailing: SettingsValueChip(
                   label: prefs.episodeViewMode.displayName,
-                  cs: cs,
                 ),
                 onTap: () =>
                     showEpisodeModeSheet(context, ref, notifier, theme),
@@ -138,45 +137,21 @@ class UiSettingsScreen extends ConsumerWidget {
           ),
 
           SettingsSection(
-            title: 'Navigation',
+            title: l10n.uiSettingsNavigationBar,
             children: [
               SettingsActionTile(
                 icon: Icons.navigation_rounded,
-                title: 'Navigation Bar Style',
-                subtitle: 'Style of the bottom navigation bar',
-                trailing: _Chip(label: prefs.navBarStyle.displayName, cs: cs),
+                title: l10n.uiSettingsNavBarTitle,
+                subtitle: l10n.uiSettingsNavBarSubtitle,
+                trailing: SettingsValueChip(
+                  label: prefs.navBarStyle.displayName,
+                ),
                 onTap: () =>
                     showNavBarStyleSheet(context, ref, notifier, theme),
               ),
             ],
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _Chip extends StatelessWidget {
-  final String label;
-  final ColorScheme cs;
-
-  const _Chip({required this.label, required this.cs});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: cs.primary.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          color: cs.primary,
-        ),
       ),
     );
   }

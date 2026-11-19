@@ -909,4 +909,157 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get detailsSynonyms => '別名・同義語';
+
+  @override
+  String get settingsSupportDevelopment => '開発を支援する';
+
+  @override
+  String get settingsSupportDevelopmentSubtitle =>
+      'プロジェクトを存続させ、広告なしで保つためにコーヒーを買ってください！';
+
+  @override
+  String get settingsInfo => '情報';
+
+  @override
+  String get settingsCustomize => 'カスタマイズ';
+
+  @override
+  String get settingsAdvancedSettings => '設定';
+
+  @override
+  String get uiSettingsExperimental => '実験的';
+
+  @override
+  String get uiSettingsLayoutMotion => 'レイアウトとモーション';
+
+  @override
+  String get uiSettingsLayoutMotionSubtitle =>
+      '全体のサイズとシートのモーション — テーマカラーは「外観」にあります';
+
+  @override
+  String get uiSettingsHomeScreen => 'ホーム画面';
+
+  @override
+  String get uiSettingsMediaCards => 'メディアカード';
+
+  @override
+  String get uiSettingsEpisodes => 'エピソード';
+
+  @override
+  String get uiSettingsNavigationBar => 'ナビゲーションバー';
+
+  @override
+  String get uiSettingsExperimentalTvTitle => '実験的なTV / 新しいUI';
+
+  @override
+  String get uiSettingsExperimentalTvSubtitle =>
+      'D-pad、リモコン、キーボード操作向けに作られたシネマティックで空間的なインターフェース';
+
+  @override
+  String get uiSettingsSizingTitle => 'サイズと角丸';
+
+  @override
+  String get uiSettingsSizingSubtitle => '角丸半径、ウィジェットの倍率、文字の倍率を調整します';
+
+  @override
+  String get uiSettingsSheetPhysicsTitle => 'シートの物理';
+
+  @override
+  String get uiSettingsSheetPhysicsSubtitle => 'ボトムシートのモーション物理を調整します';
+
+  @override
+  String get uiSettingsSheetPhysicsHammer => 'ハンマー';
+
+  @override
+  String get uiSettingsSheetPhysicsSlideUp => '上にスライド';
+
+  @override
+  String get uiSettingsHeaderStyleTitle => 'ヘッダースタイル';
+
+  @override
+  String get uiSettingsHeaderStyleSubtitle => 'ホームヘッダーのレイアウトを選択';
+
+  @override
+  String get uiSettingsCardStyleTitle => 'カードスタイル';
+
+  @override
+  String get uiSettingsCardStyleSubtitle => 'ホームと発見のメディアカードのスタイル';
+
+  @override
+  String get uiSettingsContinueWatchingTitle => '続きから再生スタイル';
+
+  @override
+  String get uiSettingsContinueWatchingSubtitle => '続きから再生行のカードのスタイル';
+
+  @override
+  String get uiSettingsContinueReadingTitle => '続きから読むスタイル';
+
+  @override
+  String get uiSettingsContinueReadingSubtitle => '続きから読む行のカードのスタイル';
+
+  @override
+  String get uiSettingsEpisodeViewTitle => 'エピソード / 章のレイアウト';
+
+  @override
+  String get uiSettingsEpisodeViewSubtitle => 'エピソード一覧の既定の表示モード';
+
+  @override
+  String get uiSettingsNavBarTitle => 'ナビゲーションバースタイル';
+
+  @override
+  String get uiSettingsNavBarSubtitle => 'ボトムナビゲーションバーのスタイル';
+
+  @override
+  String get settingsColorSource => 'カラーソース';
+
+  @override
+  String get settingsColorSourceDynamicNote => 'カラースキームはダイナミックカラーで管理されています。';
+
+  @override
+  String get settingsColorTweaks => 'カラー調整';
+
+  @override
+  String get settingsDynamicColorSubtitle => '壁紙の色を使用します';
+
+  @override
+  String get settingsAmoledSubtitle => 'OLED画面でバッテリーを節約します';
+
+  @override
+  String get settingsAmoledDisabledWithWallpaper => '背景画像が設定されている間は無効';
+
+  @override
+  String get settingsThemeVariantTitle => 'カラーブレンド';
+
+  @override
+  String get settingsThemeVariantSubtitle => 'システムの色がパレットにどのように混ぜられるか';
+
+  @override
+  String get settingsThemeStyle => 'カラーブレンドスタイル';
+
+  @override
+  String get settingsSwapColors => '色を入れ替え';
+
+  @override
+  String get settingsSwapColorsSubtitle => 'プライマリとセカンダリの色を入れ替えます';
+
+  @override
+  String get settingsPresets => 'プリセット';
+
+  @override
+  String get settingsThemePresetsTitle => 'テーマプリセットとギャラリー';
+
+  @override
+  String get settingsThemePresetsSubtitle => 'テーマを探索し、JSONプリセットをインポート/エクスポート';
+
+  @override
+  String get settingsExclusiveThemes => '限定テーマ';
+
+  @override
+  String get settingsStandardSchemes => '標準カラースキーム';
+
+  @override
+  String get settingsExclusiveSchemes => '限定カラースキーム';
+
+  @override
+  String get settingsTopGeneratedSchemes => 'トップ生成スキーム';
 }

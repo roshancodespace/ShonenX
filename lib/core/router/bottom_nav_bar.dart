@@ -12,6 +12,9 @@ import 'package:shonenx/features/downloads/providers/download_provider.dart';
 import 'package:shonenx/shared/providers/navbar_action_provider.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 
+const double _inactiveOpacity = 0.6;
+const int _downloadsBranch = 3;
+
 class NavBarMetrics {
   final double baseBarHeight;
   final double iconSize;
@@ -31,8 +34,8 @@ class NavBarMetrics {
     return NavBarMetrics(
       baseBarHeight: r.isPhone ? 68.0 : 80.0,
       iconSize: r.isPhone ? 25.0 : 28.0,
-      fontSize: r.isPhone ? 14.5 : 16.0,
-      hPad: r.isPhone ? 6.0 : 10.5,
+      fontSize: r.isPhone ? 14.0 : 15.0,
+      hPad: r.isPhone ? 6.0 : 10.0,
       uiScale: GlobalUI.uiScaleFactor.clamp(0.85, 1.25).toDouble(),
     );
   }
@@ -40,7 +43,7 @@ class NavBarMetrics {
   static const NavBarMetrics preview = NavBarMetrics(
     baseBarHeight: 68.0,
     iconSize: 25.0,
-    fontSize: 14.5,
+    fontSize: 14.0,
     hPad: 6.0,
     uiScale: 1.0,
   );
@@ -70,166 +73,189 @@ class BottomNavBarView extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final scale = metrics.uiScale;
-    final barHeight =
-        (navBarStyle == NavBarStyle.minimal ? 54.0 : metrics.baseBarHeight) *
-        scale;
+    final isMinimal = navBarStyle == NavBarStyle.minimal;
+    final barHeight = (isMinimal ? 54.0 : metrics.baseBarHeight) * scale;
     final iconSize = metrics.iconSize * scale;
-    final fontSize = metrics.fontSize;
-    final hPad = metrics.hPad * scale;
-    final vPad = hPad;
+    final inset = metrics.hPad * scale;
 
     final themeData = NavBarThemeData.resolve(navBarStyle, cs, false);
-    final barRadius = themeData.barRadius(barHeight);
-    final itemRadius = themeData.itemRadius(barHeight - 2 * vPad);
+    final barRadius = BorderRadius.circular(themeData.barRadius(barHeight));
+    final itemRadius = themeData.itemRadius(barHeight - 2 * inset);
     final select = onSelect;
 
-    final contentWidget = Container(
+    final bar = Container(
       height: barHeight,
-      padding: EdgeInsets.symmetric(horizontal: hPad, vertical: vPad),
-      decoration: themeData.barDecoration.copyWith(
-        borderRadius: BorderRadius.circular(barRadius),
-      ),
-      child: _buildItemsRow(
-        destinations: destinations,
-        currentIndex: currentIndex,
-        cs: cs,
-        iconSize: iconSize,
-        fontSize: fontSize,
-        itemRadius: itemRadius,
-        navBarStyle: navBarStyle,
-        onSelect: onSelect,
+      padding: EdgeInsets.all(inset),
+      decoration: themeData.barDecoration.copyWith(borderRadius: barRadius),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (var i = 0; i < destinations.length; i++)
+            _BottomNavItem(
+              icon: destinations[i].icon,
+              label: destinations[i].label,
+              active: currentIndex == i,
+              themeData: themeData,
+              iconSize: iconSize,
+              fontSize: metrics.fontSize,
+              radius: itemRadius,
+              scale: scale,
+              cs: cs,
+              onTap: select == null ? null : () => select(i),
+            ),
+        ],
       ),
     );
-
-    final innerContent = themeData.blurSigma != null
-        ? BackdropFilter(
-            filter: ImageFilter.blur(
-              sigmaX: themeData.blurSigma!,
-              sigmaY: themeData.blurSigma!,
-            ),
-            child: contentWidget,
-          )
-        : contentWidget;
 
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         ClipRRect(
-          borderRadius: BorderRadius.circular(barRadius),
-          child: innerContent,
+          borderRadius: barRadius,
+          child: themeData.blurSigma != null
+              ? BackdropFilter(
+                  filter: ImageFilter.blur(
+                    sigmaX: themeData.blurSigma!,
+                    sigmaY: themeData.blurSigma!,
+                  ),
+                  child: bar,
+                )
+              : bar,
         ),
-        SizedBox(width: hPad + 4),
+        SizedBox(width: inset + 2),
         NavDownloadButton(
           size: barHeight,
           iconSize: iconSize,
-          padding: hPad,
+          padding: inset,
           navBarStyle: navBarStyle,
           colorScheme: cs,
-          active: currentIndex == 3,
+          active: currentIndex == _downloadsBranch,
           activity: download,
           onTap: select == null
               ? null
-              : () => select(3, resetOnReselect: true),
+              : () => select(_downloadsBranch, resetOnReselect: true),
         ),
       ],
     );
   }
+}
 
-  Widget _buildItemsRow({
-    required List<NavBarDestination> destinations,
-    required int currentIndex,
-    required ColorScheme cs,
-    required double iconSize,
-    required double fontSize,
-    required double itemRadius,
-    required NavBarStyle navBarStyle,
-    NavBarSelect? onSelect,
-  }) {
-    final select = onSelect;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.start,
-      children: List.generate(destinations.length, (i) {
-        final active = currentIndex == i;
-        final themeData = NavBarThemeData.resolve(navBarStyle, cs, false);
+class _BottomNavItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool active;
+  final NavBarThemeData themeData;
+  final double iconSize;
+  final double fontSize;
+  final double radius;
+  final double scale;
+  final ColorScheme cs;
+  final VoidCallback? onTap;
 
-        Widget item = InkWell(
-          onTap: select == null ? null : () => select(i),
-          borderRadius: BorderRadius.circular(itemRadius),
-          focusColor: cs.primary.withValues(alpha: 0.2),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOutCubic,
-            height: double.maxFinite,
-            padding: EdgeInsets.symmetric(horizontal: active ? 18 : 14),
-            decoration:
-                (active
-                        ? themeData.activeItemDecoration
-                        : themeData.inactiveItemDecoration)
-                    .copyWith(borderRadius: BorderRadius.circular(itemRadius)),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    AnimatedScale(
-                      scale: active ? themeData.activeScale : 1.0,
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeOutBack,
-                      child: AnimatedOpacity(
-                        opacity: active ? 1.0 : 0.55,
-                        duration: const Duration(milliseconds: 250),
-                        child: Icon(
-                          destinations[i].icon,
-                          color: active
-                              ? themeData.activeIconColor
-                              : themeData.inactiveIconColor,
-                          size: iconSize,
+  const _BottomNavItem({
+    required this.icon,
+    required this.label,
+    required this.active,
+    required this.themeData,
+    required this.iconSize,
+    required this.fontSize,
+    required this.radius,
+    required this.scale,
+    required this.cs,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final borderRadius = BorderRadius.circular(radius);
+    final decoration =
+        (active
+                ? themeData.activeItemDecoration
+                : themeData.inactiveItemDecoration)
+            .copyWith(borderRadius: borderRadius);
+    final iconColor = active
+        ? themeData.activeIconColor
+        : themeData.inactiveIconColor;
+
+    return Semantics(
+      button: true,
+      selected: active,
+      label: label,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutCubic,
+        height: double.maxFinite,
+        decoration: decoration,
+        child: Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: borderRadius,
+            focusColor: cs.primary.withValues(alpha: 0.2),
+            child: AnimatedPadding(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOutCubic,
+              padding: EdgeInsets.symmetric(
+                horizontal: (active ? 18.0 : 14.0) * scale,
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      AnimatedScale(
+                        scale: active ? themeData.activeScale : 1.0,
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeOutBack,
+                        child: AnimatedOpacity(
+                          opacity: active ? 1.0 : _inactiveOpacity,
+                          duration: const Duration(milliseconds: 250),
+                          child: Icon(icon, color: iconColor, size: iconSize),
                         ),
                       ),
-                    ),
-                    ClipRect(
-                      child: AnimatedSize(
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeOutCubic,
-                        child: active
-                            ? Padding(
-                                padding: const EdgeInsets.only(left: 8),
-                                child: Text(
-                                  destinations[i].label,
-                                  style: TextStyle(
-                                    fontSize: fontSize,
-                                    fontWeight: themeData.isMaterial3
-                                        ? FontWeight.w500
-                                        : FontWeight.w600,
-                                    color: themeData.activeTextColor,
+                      ClipRect(
+                        child: AnimatedSize(
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeOutCubic,
+                          child: active
+                              ? Padding(
+                                  padding: const EdgeInsets.only(left: 8),
+                                  child: Text(
+                                    label,
+                                    maxLines: 1,
+                                    style: TextStyle(
+                                      fontSize: fontSize,
+                                      letterSpacing: 0.1,
+                                      fontWeight: themeData.isMaterial3
+                                          ? FontWeight.w500
+                                          : FontWeight.w600,
+                                      color: themeData.activeTextColor,
+                                    ),
                                   ),
-                                ),
-                              )
-                            : const SizedBox.shrink(),
+                                )
+                              : const SizedBox.shrink(),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (themeData.showDotIndicator && active) ...[
+                    const SizedBox(height: 3),
+                    Container(
+                      width: 5,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: iconColor,
+                        shape: BoxShape.circle,
                       ),
                     ),
                   ],
-                ),
-                if (themeData.showDotIndicator && active) ...[
-                  const SizedBox(height: 3),
-                  Container(
-                    width: 5,
-                    height: 5,
-                    decoration: BoxDecoration(
-                      color: themeData.activeIconColor,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
                 ],
-              ],
+              ),
             ),
           ),
-        );
-
-        return item;
-      }),
+        ),
+      ),
     );
   }
 }
@@ -254,23 +280,36 @@ class DockedBottomNavBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final select = onSelect;
-    return NavigationBar(
-      height: 72.0,
-      selectedIndex: currentIndex,
-      onDestinationSelected: select == null
-          ? null
-          : (i) => select(i, resetOnReselect: true),
-      backgroundColor: cs.surfaceContainer,
-      indicatorColor: cs.primaryContainer,
-      destinations: [
-        ...destinations.map(
-          (d) => NavigationDestination(icon: Icon(d.icon), label: d.label),
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(
+            color: cs.outlineVariant.withValues(alpha: 0.5),
+            width: 1,
+          ),
         ),
-        NavigationDestination(
-          icon: DockedDownloadIcon(activity: download),
-          label: downloadLabel,
-        ),
-      ],
+      ),
+      child: NavigationBar(
+        height: 72.0,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        selectedIndex: currentIndex,
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+        onDestinationSelected: select == null
+            ? null
+            : (i) => select(i, resetOnReselect: true),
+        backgroundColor: cs.surfaceContainer,
+        indicatorColor: cs.primaryContainer,
+        destinations: [
+          for (final d in destinations)
+            NavigationDestination(icon: Icon(d.icon), label: d.label),
+          NavigationDestination(
+            icon: DockedDownloadIcon(activity: download),
+            label: downloadLabel,
+          ),
+        ],
+      ),
     );
   }
 }
@@ -284,8 +323,7 @@ class BottomNavBar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final r = context.responsive;
     final navState = ref.watch(navBarProvider);
-    final uiPrefs = ref.watch(uiPrefsProvider);
-    final navBarStyle = uiPrefs.navBarStyle;
+    final navBarStyle = ref.watch(uiPrefsProvider.select((s) => s.navBarStyle));
 
     if (navState.customBar != null) {
       return SafeArea(
@@ -299,43 +337,38 @@ class BottomNavBar extends ConsumerWidget {
       );
     }
 
-    final activeAttachmentWidget = navState.topForBranch(
-      navigationShell.currentIndex,
+    final attachment = navState.topForBranch(navigationShell.currentIndex);
+    final isDocked = navBarStyle == NavBarStyle.docked;
+    final bottomMargin = isDocked
+        ? 0.0
+        : (r.height * 0.018).clamp(8.0, 20.0).toDouble();
+    final activity = DownloadActivity.fromTasks(
+      ref.watch(downloadTasksProvider).value ?? [],
     );
 
-    final isDocked = navBarStyle == NavBarStyle.docked;
-    final bottomMargin = isDocked ? 0.0 : r.height * 0.018;
-
-    void adapter(int i, {bool resetOnReselect = false}) {
+    void select(int i, {bool resetOnReselect = false}) {
       navigationShell.goBranch(
         i,
         initialLocation: resetOnReselect && i == navigationShell.currentIndex,
       );
     }
 
-    final Widget navBarWidget;
-    if (isDocked) {
-      navBarWidget = DockedBottomNavBar(
-        destinations: navBarDestinations(context),
-        currentIndex: navigationShell.currentIndex,
-        onSelect: adapter,
-        download: DownloadActivity.fromTasks(
-          ref.watch(downloadTasksProvider).value ?? [],
-        ),
-        downloadLabel: context.l10n.navDownloads,
-      );
-    } else {
-      navBarWidget = BottomNavBarView(
-        navBarStyle: navBarStyle,
-        currentIndex: navigationShell.currentIndex,
-        destinations: navBarDestinations(context),
-        onSelect: adapter,
-        download: DownloadActivity.fromTasks(
-          ref.watch(downloadTasksProvider).value ?? [],
-        ),
-        metrics: NavBarMetrics.fromResponsive(r),
-      );
-    }
+    final Widget bar = isDocked
+        ? DockedBottomNavBar(
+            destinations: navBarDestinations(context),
+            currentIndex: navigationShell.currentIndex,
+            onSelect: select,
+            download: activity,
+            downloadLabel: context.l10n.navDownloads,
+          )
+        : BottomNavBarView(
+            navBarStyle: navBarStyle,
+            currentIndex: navigationShell.currentIndex,
+            destinations: navBarDestinations(context),
+            onSelect: select,
+            download: activity,
+            metrics: NavBarMetrics.fromResponsive(r),
+          );
 
     return SafeArea(
       bottom: !isDocked,
@@ -351,18 +384,18 @@ class BottomNavBar extends ConsumerWidget {
                 curve: Curves.easeOutCubic,
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 200),
-                  child: activeAttachmentWidget != null
+                  child: attachment != null
                       ? KeyedSubtree(
-                          key: ValueKey(activeAttachmentWidget.hashCode),
+                          key: ValueKey(attachment.hashCode),
                           child: Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: activeAttachmentWidget,
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: attachment,
                           ),
                         )
                       : const SizedBox.shrink(key: ValueKey('empty_nav_att')),
                 ),
               ),
-              navBarWidget,
+              bar,
             ],
           ),
         ),

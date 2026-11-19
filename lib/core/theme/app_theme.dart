@@ -2,7 +2,7 @@ import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
-import 'package:shonenx/core/theme/exclusive_schemes.dart';
+import 'package:shonenx/core/theme/theme_color_resolver.dart';
 
 typedef ThemeModifier =
     ThemeData Function(ThemeData theme, ThemePrefsState prefs);
@@ -51,61 +51,17 @@ class AppTheme {
     required ColorScheme? colorScheme,
   }) {
     final isDark = brightness == Brightness.dark;
-
-    final exclusive = prefs.exclusiveScheme != null
-        ? exclusiveSchemes[prefs.exclusiveScheme]
-        : null;
-
-    ColorScheme? effectiveColorScheme = colorScheme;
-    if (effectiveColorScheme == null &&
-        prefs.useImageColors &&
-        prefs.wallpaperSettings?.imageColorSeed != null) {
-      effectiveColorScheme = ColorScheme.fromSeed(
-        seedColor: Color(prefs.wallpaperSettings!.imageColorSeed!),
-        brightness: brightness,
-      );
-    } else if (effectiveColorScheme == null && prefs.colorSeed != null) {
-      effectiveColorScheme = ColorScheme.fromSeed(
-        seedColor: Color(prefs.colorSeed!),
-        brightness: brightness,
-      );
-    }
-
-    FlexSchemeColor? customColors;
-    if (prefs.primaryColor != null && effectiveColorScheme == null) {
-      final primary = Color(prefs.primaryColor!);
-      final secondary = prefs.secondaryColor != null
-          ? Color(prefs.secondaryColor!)
-          : FlexSchemeColor.from(
-              primary: primary,
-              brightness: brightness,
-            ).secondary;
-      final tertiary = prefs.tertiaryColor != null
-          ? Color(prefs.tertiaryColor!)
-          : FlexSchemeColor.from(
-              primary: primary,
-              brightness: brightness,
-            ).tertiary;
-
-      customColors = FlexSchemeColor(
-        primary: primary,
-        secondary: secondary,
-        tertiary: tertiary,
-      );
-    } else if (effectiveColorScheme == null && exclusive != null) {
-      customColors = isDark ? exclusive.dark : exclusive.light;
-    }
+    final resolved = resolveThemeColors(
+      prefs,
+      brightness: brightness,
+      dynamicColorScheme: colorScheme,
+    );
 
     final baseTheme = isDark
         ? FlexThemeData.dark(
-            scheme:
-                (customColors == null &&
-                    effectiveColorScheme == null &&
-                    exclusive == null)
-                ? prefs.flexScheme
-                : FlexScheme.custom,
-            colors: customColors,
-            colorScheme: effectiveColorScheme,
+            scheme: resolved.usesConfiguredFlexScheme ? prefs.flexScheme : FlexScheme.custom,
+            colors: resolved.customColors,
+            colorScheme: resolved.colorScheme,
             keyColors: prefs.themeVariant == AppThemeVariant.classic
                 ? null
                 : const FlexKeyColors(
@@ -131,14 +87,9 @@ class AppTheme {
             subThemesData: _subThemesData(prefs),
           )
         : FlexThemeData.light(
-            scheme:
-                (customColors == null &&
-                    effectiveColorScheme == null &&
-                    exclusive == null)
-                ? prefs.flexScheme
-                : FlexScheme.custom,
-            colors: customColors,
-            colorScheme: effectiveColorScheme,
+            scheme: resolved.usesConfiguredFlexScheme ? prefs.flexScheme : FlexScheme.custom,
+            colors: resolved.customColors,
+            colorScheme: resolved.colorScheme,
             keyColors: prefs.themeVariant == AppThemeVariant.classic
                 ? null
                 : const FlexKeyColors(useExpressiveOnContainerColors: true),

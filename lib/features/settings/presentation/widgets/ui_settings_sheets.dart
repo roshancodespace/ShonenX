@@ -1,5 +1,7 @@
-import 'dart:ui';
-import 'package:shonenx/core/router/nav_bar_theme.dart';
+import 'package:shonenx/core/localization/l10n_extension.dart';
+import 'package:shonenx/core/router/bottom_nav_bar.dart';
+import 'package:shonenx/core/router/nav_bar_destinations.dart';
+import 'package:shonenx/core/router/nav_download_button.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -549,7 +551,7 @@ void showNavBarStyleSheet(
               Center(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 12),
-                  child: _buildNavBarPreviewWidget(context, current, cs),
+                  child: _buildNavBarPreviewWidget(context, current),
                 ),
               ),
               const SizedBox(height: 14),
@@ -688,174 +690,27 @@ void showHomeHeaderStyleSheet(
   );
 }
 
-Widget _buildNavBarPreviewWidget(
-  BuildContext context,
-  NavBarStyle style,
-  ColorScheme cs,
-) {
+Widget _buildNavBarPreviewWidget(BuildContext context, NavBarStyle style) {
   if (style == NavBarStyle.docked) {
     return SizedBox(
       width: MediaQuery.sizeOf(context).width,
-      child: NavigationBar(
-        height: 72.0,
-        selectedIndex: 0,
-        onDestinationSelected: (_) {},
-        backgroundColor: cs.surfaceContainer,
-        indicatorColor: cs.primaryContainer,
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.home_outlined), label: 'Home'),
-          NavigationDestination(
-            icon: Icon(Icons.search_rounded),
-            label: 'Search',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.library_books_outlined),
-            label: 'Library',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.download_outlined),
-            label: 'Downloads',
-          ),
-        ],
+      child: DockedBottomNavBar(
+        destinations: navBarDestinations(context),
+        currentIndex: 0,
+        onSelect: null,
+        download: DownloadActivity.none,
+        downloadLabel: context.l10n.navDownloads,
       ),
     );
   }
 
-  final double barHeight = style == NavBarStyle.minimal ? 54.0 : 68.0;
-  final double iconSize = 25.0;
-  final double fontSize = 14.5;
-  final double hPad = 6.0;
-  final double vPad = hPad;
-
-  final themeData = NavBarThemeData.resolve(style, cs, false, false);
-  final barRadius = themeData.barRadius(barHeight);
-  final activeItemRadius = themeData.itemRadius(barHeight - 2 * vPad);
-
-  Widget buildPreviewNavItem(String label, IconData icon, bool active) {
-    final tData = NavBarThemeData.resolve(style, cs, active, false);
-    Widget item = Container(
-      height: double.maxFinite,
-      padding: EdgeInsets.symmetric(horizontal: active ? 18 : 14),
-      decoration:
-          (active ? tData.activeItemDecoration : tData.inactiveItemDecoration)
-              .copyWith(borderRadius: BorderRadius.circular(activeItemRadius)),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Transform.scale(
-                scale: active ? tData.activeScale : 1.0,
-                child: Opacity(
-                  opacity: active ? 1.0 : 0.55,
-                  child: Icon(
-                    icon,
-                    color: active
-                        ? tData.activeIconColor
-                        : tData.inactiveIconColor,
-                    size: iconSize,
-                  ),
-                ),
-              ),
-              if (active)
-                Padding(
-                  padding: const EdgeInsets.only(left: 8),
-                  child: Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: fontSize,
-                      fontWeight: tData.isMaterial3
-                          ? FontWeight.w500
-                          : FontWeight.w600,
-                      color: tData.activeTextColor,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          if (tData.showDotIndicator && active) ...[
-            const SizedBox(height: 3),
-            Container(
-              width: 5,
-              height: 5,
-              decoration: BoxDecoration(
-                color: tData.activeIconColor,
-                shape: BoxShape.circle,
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-
-    return item;
-  }
-
-  final contentWidget = Container(
-    height: barHeight,
-    padding: EdgeInsets.symmetric(horizontal: hPad, vertical: vPad),
-    decoration: themeData.barDecoration.copyWith(
-      borderRadius: BorderRadius.circular(barRadius),
-    ),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.start,
-      children: [
-        buildPreviewNavItem('Home', Icons.home_outlined, true),
-        buildPreviewNavItem('Search', Icons.search_rounded, false),
-        buildPreviewNavItem('Library', Icons.library_books_outlined, false),
-      ],
-    ),
-  );
-
-  final innerContent = themeData.blurSigma != null
-      ? BackdropFilter(
-          filter: ImageFilter.blur(
-            sigmaX: themeData.blurSigma!,
-            sigmaY: themeData.blurSigma!,
-          ),
-          child: contentWidget,
-        )
-      : contentWidget;
-
-  final downloadTheme = NavBarThemeData.resolve(style, cs, false, false);
-  final downloadBtn = Container(
-    width: barHeight,
-    height: barHeight,
-    decoration: downloadTheme.downloadButtonDecoration,
-    child: Center(
-      child: Icon(
-        Icons.download_outlined,
-        color: downloadTheme.downloadIconColor,
-        size: iconSize,
-      ),
-    ),
-  );
-
-  final downloadWidget = ClipRRect(
-    borderRadius: BorderRadius.circular(downloadTheme.barRadius(barHeight)),
-    child: downloadTheme.blurSigma != null
-        ? BackdropFilter(
-            filter: ImageFilter.blur(
-              sigmaX: downloadTheme.blurSigma!,
-              sigmaY: downloadTheme.blurSigma!,
-            ),
-            child: downloadBtn,
-          )
-        : downloadBtn,
-  );
-
-  return Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      ClipRRect(
-        borderRadius: BorderRadius.circular(barRadius),
-        child: innerContent,
-      ),
-      SizedBox(width: hPad + 4),
-      downloadWidget,
-    ],
+  return BottomNavBarView(
+    navBarStyle: style,
+    currentIndex: 0,
+    destinations: navBarDestinations(context),
+    onSelect: null,
+    download: DownloadActivity.none,
+    metrics: NavBarMetrics.preview,
   );
 }
 

@@ -922,4 +922,168 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get detailsSynonyms => 'समानार्थी';
+
+  @override
+  String get settingsSupportDevelopment => 'विकास को समर्थन दें';
+
+  @override
+  String get settingsSupportDevelopmentSubtitle =>
+      'परियोजना को जीवित और विज्ञापन-मुक्त रखने के लिए मुझे एक कॉफ़ी खरीदें!';
+
+  @override
+  String get settingsInfo => 'जानकारी';
+
+  @override
+  String get settingsCustomize => 'कस्टमाइज़ करें';
+
+  @override
+  String get settingsAdvancedSettings => 'सेटिंग्स';
+
+  @override
+  String get uiSettingsExperimental => 'प्रयोगात्मक';
+
+  @override
+  String get uiSettingsLayoutMotion => 'लेआउट और गति';
+
+  @override
+  String get uiSettingsLayoutMotionSubtitle =>
+      'वैश्विक आकार और शीट गति — थीम के रंग \'दिखावट\' में हैं';
+
+  @override
+  String get uiSettingsHomeScreen => 'होम स्क्रीन';
+
+  @override
+  String get uiSettingsMediaCards => 'मीडिया कार्ड';
+
+  @override
+  String get uiSettingsEpisodes => 'एपिसोड';
+
+  @override
+  String get uiSettingsNavigationBar => 'नेविगेशन बार';
+
+  @override
+  String get uiSettingsExperimentalTvTitle => 'प्रयोगात्मक टीवी / नया इंटरफ़ेस';
+
+  @override
+  String get uiSettingsExperimentalTvSubtitle =>
+      'D-pad, रिमोट और कीबोर्ड नेविगेशन के लिए बनाया गया एक सिनेमाई, स्थानिक इंटरफ़ेस';
+
+  @override
+  String get uiSettingsSizingTitle => 'आकार और कोने';
+
+  @override
+  String get uiSettingsSizingSubtitle =>
+      'कोने की त्रिज्या, विजेट स्केल और टेक्स्ट स्केल समायोजित करें';
+
+  @override
+  String get uiSettingsSheetPhysicsTitle => 'शीट भौतिकी';
+
+  @override
+  String get uiSettingsSheetPhysicsSubtitle =>
+      'निचली शीट की गति भौतिकी समायोजित करें';
+
+  @override
+  String get uiSettingsSheetPhysicsHammer => 'हथौड़ा';
+
+  @override
+  String get uiSettingsSheetPhysicsSlideUp => 'ऊपर की ओर स्लाइड';
+
+  @override
+  String get uiSettingsHeaderStyleTitle => 'हेडर स्टाइल';
+
+  @override
+  String get uiSettingsHeaderStyleSubtitle => 'होम हेडर का लेआउट चुनें';
+
+  @override
+  String get uiSettingsCardStyleTitle => 'कार्ड स्टाइल';
+
+  @override
+  String get uiSettingsCardStyleSubtitle =>
+      'होम और खोज पर मीडिया कार्डों की शैली';
+
+  @override
+  String get uiSettingsContinueWatchingTitle => 'देखना जारी रखें शैली';
+
+  @override
+  String get uiSettingsContinueWatchingSubtitle =>
+      'देखना जारी रखें पंक्ति के कार्डों की शैली';
+
+  @override
+  String get uiSettingsContinueReadingTitle => 'पढ़ना जारी रखें शैली';
+
+  @override
+  String get uiSettingsContinueReadingSubtitle =>
+      'पढ़ना जारी रखें पंक्ति के कार्डों की शैली';
+
+  @override
+  String get uiSettingsEpisodeViewTitle => 'एपिसोड / अध्याय लेआउट';
+
+  @override
+  String get uiSettingsEpisodeViewSubtitle =>
+      'एपिसोड सूचियों के लिए डिफ़ॉल्ट दृश्य मोड';
+
+  @override
+  String get uiSettingsNavBarTitle => 'नेविगेशन बार स्टाइल';
+
+  @override
+  String get uiSettingsNavBarSubtitle => 'निचली नेविगेशन बार की शैली';
+
+  @override
+  String get settingsColorSource => 'रंग स्रोत';
+
+  @override
+  String get settingsColorSourceDynamicNote =>
+      'रंग योजना डायनामिक रंग द्वारा प्रबंधित है।';
+
+  @override
+  String get settingsColorTweaks => 'रंग समायोजन';
+
+  @override
+  String get settingsDynamicColorSubtitle =>
+      'वॉलपेपर के रंगों का उपयोग करता है';
+
+  @override
+  String get settingsAmoledSubtitle => 'OLED स्क्रीन पर बैटरी बचाता है';
+
+  @override
+  String get settingsAmoledDisabledWithWallpaper =>
+      'बैकग्राउंड छवि सेट होने पर अक्षम';
+
+  @override
+  String get settingsThemeVariantTitle => 'रंग मिश्रण';
+
+  @override
+  String get settingsThemeVariantSubtitle =>
+      'सिस्टम के रंग पैलेट में कैसे मिलाए जाते हैं';
+
+  @override
+  String get settingsThemeStyle => 'रंग मिश्रण शैली';
+
+  @override
+  String get settingsSwapColors => 'रंग बदलें';
+
+  @override
+  String get settingsSwapColorsSubtitle => 'प्राथमिक और द्वितीयक रंग बदलें';
+
+  @override
+  String get settingsPresets => 'प्रिसेट';
+
+  @override
+  String get settingsThemePresetsTitle => 'थीम प्रिसेट और गैलरी';
+
+  @override
+  String get settingsThemePresetsSubtitle =>
+      'थीम देखें और JSON प्रिसेट आयात/निर्यात करें';
+
+  @override
+  String get settingsExclusiveThemes => 'विशेष थीम';
+
+  @override
+  String get settingsStandardSchemes => 'मानक रंग योजनाएँ';
+
+  @override
+  String get settingsExclusiveSchemes => 'विशेष रंग योजनाएँ';
+
+  @override
+  String get settingsTopGeneratedSchemes => 'शीर्ष उत्पन्न योजनाएँ';
 }

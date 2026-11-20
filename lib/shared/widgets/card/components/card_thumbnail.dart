@@ -2,6 +2,7 @@ import 'package:shonenx/shared/widgets/smart_image.dart';
 import 'package:flutter/material.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
+import 'package:shonenx/shared/theme/ui_visual_values.dart';
 
 class CardThumbnail extends StatelessWidget {
   final UnifiedMedia media;
@@ -50,7 +51,7 @@ class CardThumbnail extends StatelessWidget {
             painter: _ProgressBorderPainter(
               progress: progress!.clamp(0.0, 1.0),
               color: cs.primary,
-              trackColor: cs.primary.withValues(alpha: 0.22),
+              trackColor: cs.primary.withValues(alpha: UiAlpha.subtle),
               strokeWidth: strokeW,
               radius: radius,
             ),
@@ -105,7 +106,7 @@ class CardThumbnail extends StatelessWidget {
     return Container(
       width: w,
       height: h,
-      color: cs.surfaceContainerHighest.withValues(alpha: 0.35),
+      color: cs.surfaceContainerHighest.withValues(alpha: UiAlpha.placeholder),
     );
   }
 

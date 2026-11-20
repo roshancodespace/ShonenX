@@ -1,52 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
-import '../components/card_badges.dart';
+import 'package:shonenx/shared/theme/ui_visual_values.dart';
 import '../components/card_metadata.dart';
-import '../components/card_thumbnail.dart';
-import 'package:shonenx/shared/models/unified_media.dart';
+import '../components/card_content.dart';
 
 class CompactCard extends StatelessWidget {
-  final UnifiedMedia media;
-  final double width;
-  final double height;
-  final bool isActive;
-  final bool isWideMode;
-  final bool showRatings;
-  final bool showYear;
-  final bool showGenres;
-  final String? subtitle;
-  final double? progress;
-  final String? progressText;
-  final String? heroTag;
-  final Widget? topLeftBadge;
-  final Widget? topRightBadge;
-  final Widget? bottomLeftBadge;
-  final Widget? bottomRightBadge;
+  final CardContent content;
 
-  const CompactCard({
-    super.key,
-    required this.media,
-    required this.width,
-    required this.height,
-    required this.isActive,
-    required this.isWideMode,
-    required this.showRatings,
-    required this.showYear,
-    required this.showGenres,
-    this.subtitle,
-    this.progress,
-    this.progressText,
-    this.heroTag,
-    this.topLeftBadge,
-    this.topRightBadge,
-    this.bottomLeftBadge,
-    this.bottomRightBadge,
-  });
+  const CompactCard({super.key, required this.content});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    if (isWideMode) {
+    if (content.isWideMode) {
       return _buildWide(theme);
     }
     return _buildPortrait(theme);
@@ -54,20 +20,20 @@ class CompactCard extends StatelessWidget {
 
   Widget _buildPortrait(ThemeData theme) {
     final cs = theme.colorScheme;
-    final imgH = height * 0.75;
+    final imgH = content.height * 0.75;
 
     return AnimatedContainer(
       duration: Durations.short4,
-      width: width,
-      height: height,
+      width: content.width,
+      height: content.height,
       decoration: BoxDecoration(
         color: cs.surfaceContainerLow,
         borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
         border: Border.all(
-          color: isActive
+          color: content.isActive
               ? cs.primary
-              : cs.outlineVariant.withValues(alpha: 0.15),
-          width: isActive ? 2.0 : 1.0,
+              : cs.outlineVariant.withValues(alpha: UiAlpha.faint),
+          width: content.isActive ? 2.0 : 1.0,
           strokeAlign: BorderSide.strokeAlignOutside,
         ),
       ),
@@ -77,27 +43,12 @@ class CompactCard extends StatelessWidget {
         children: [
           Stack(
             children: [
-              CardThumbnail(
-                media: media,
-                isActive: isActive,
-                progress: progress,
-                heroTag: heroTag,
-                width: width,
-                height: imgH,
-                radiusOverride: GlobalUI.uiRoundness * 0.7,
-              ),
-              CardBadgeOverlay(
-                media: media,
+              CardMediaStack(
+                content: content,
                 styleName: 'compact',
-                isWideMode: isWideMode,
-                isActive: isActive,
-                showRatings: showRatings,
-                progress: progress,
-                progressText: progressText,
-                topLeftBadge: topLeftBadge,
-                topRightBadge: topRightBadge,
-                bottomLeftBadge: bottomLeftBadge,
-                bottomRightBadge: bottomRightBadge,
+                thumbWidth: content.width,
+                thumbHeight: imgH,
+                radiusOverride: GlobalUI.uiRoundness * 0.7,
               ),
             ],
           ),
@@ -106,7 +57,7 @@ class CompactCard extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 2),
               child: Text(
-                media.title.getPreferedTitle,
+                content.media.title.getPreferedTitle,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.labelMedium?.copyWith(
@@ -124,20 +75,20 @@ class CompactCard extends StatelessWidget {
 
   Widget _buildWide(ThemeData theme) {
     final cs = theme.colorScheme;
-    final thumbW = height * 1.0;
+    final thumbW = content.height * 1.0;
 
     return AnimatedContainer(
       duration: Durations.short4,
-      width: width,
-      height: height,
+      width: content.width,
+      height: content.height,
       decoration: BoxDecoration(
         color: cs.surfaceContainerLow,
         borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
         border: Border.all(
-          color: isActive
+          color: content.isActive
               ? cs.primary
-              : cs.outlineVariant.withValues(alpha: 0.15),
-          width: isActive ? 2.0 : 1.0,
+              : cs.outlineVariant.withValues(alpha: UiAlpha.faint),
+          width: content.isActive ? 2.0 : 1.0,
           strokeAlign: BorderSide.strokeAlignOutside,
         ),
       ),
@@ -146,27 +97,12 @@ class CompactCard extends StatelessWidget {
         children: [
           Stack(
             children: [
-              CardThumbnail(
-                media: media,
-                isActive: isActive,
-                progress: progress,
-                heroTag: heroTag,
-                width: thumbW,
-                height: height,
-                radiusOverride: GlobalUI.uiRoundness * 0.7,
-              ),
-              CardBadgeOverlay(
-                media: media,
+              CardMediaStack(
+                content: content.copyWith(showRatings: false),
                 styleName: 'compact',
-                isWideMode: isWideMode,
-                isActive: isActive,
-                showRatings: false,
-                progress: progress,
-                progressText: progressText,
-                topLeftBadge: topLeftBadge,
-                topRightBadge: topRightBadge,
-                bottomLeftBadge: bottomLeftBadge,
-                bottomRightBadge: bottomRightBadge,
+                thumbWidth: thumbW,
+                thumbHeight: content.height,
+                radiusOverride: GlobalUI.uiRoundness * 0.7,
               ),
             ],
           ),
@@ -174,15 +110,15 @@ class CompactCard extends StatelessWidget {
           Expanded(
             child: ClipRect(
               child: WideMetadataColumn(
-                media: media,
-                showRatings: showRatings,
-                showYear: showYear,
-                showGenres: showGenres,
-                subtitle: subtitle,
-                height: height,
-                progress: progress,
-                progressText: progressText,
-                topRightBadge: topRightBadge,
+                media: content.media,
+                showRatings: content.showRatings,
+                showYear: content.showYear,
+                showGenres: content.showGenres,
+                subtitle: content.subtitle,
+                height: content.height,
+                progress: content.progress,
+                progressText: content.progressText,
+                topRightBadge: content.topRightBadge,
               ),
             ),
           ),

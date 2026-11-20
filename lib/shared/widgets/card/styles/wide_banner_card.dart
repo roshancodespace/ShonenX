@@ -1,65 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
-import '../components/card_badges.dart';
+import 'package:shonenx/shared/theme/ui_visual_values.dart';
 import '../components/card_metadata.dart';
-import '../components/card_thumbnail.dart';
-import 'package:shonenx/shared/models/unified_media.dart';
+import '../components/card_content.dart';
 
 class WideBannerCard extends StatelessWidget {
-  final UnifiedMedia media;
-  final double width;
-  final double height;
-  final bool isActive;
-  final bool isWideMode;
-  final bool showRatings;
-  final bool showYear;
-  final bool showGenres;
-  final String? subtitle;
-  final double? progress;
-  final String? progressText;
-  final String? heroTag;
-  final Widget? topLeftBadge;
-  final Widget? topRightBadge;
-  final Widget? bottomLeftBadge;
-  final Widget? bottomRightBadge;
+  final CardContent content;
 
-  const WideBannerCard({
-    super.key,
-    required this.media,
-    required this.width,
-    required this.height,
-    required this.isActive,
-    required this.isWideMode,
-    required this.showRatings,
-    required this.showYear,
-    required this.showGenres,
-    this.subtitle,
-    this.progress,
-    this.progressText,
-    this.heroTag,
-    this.topLeftBadge,
-    this.topRightBadge,
-    this.bottomLeftBadge,
-    this.bottomRightBadge,
-  });
+  const WideBannerCard({super.key, required this.content});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final badgeContent = content.copyWith(progress: null, progressText: null);
 
     return AnimatedContainer(
       duration: Durations.short4,
-      width: width,
-      height: height,
+      width: content.width,
+      height: content.height,
       decoration: BoxDecoration(
         color: cs.surfaceContainerLow,
         borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
         border: Border.all(
-          color: isActive
+          color: content.isActive
               ? cs.primary
-              : cs.outlineVariant.withValues(alpha: 0.28),
-          width: isActive ? 2.5 : 1.0,
+              : cs.outlineVariant.withValues(alpha: UiAlpha.outline),
+          width: content.isActive ? 2.5 : 1.0,
           strokeAlign: BorderSide.strokeAlignOutside,
         ),
       ),
@@ -68,32 +35,18 @@ class WideBannerCard extends StatelessWidget {
         child: Row(
           children: [
             SizedBox(
-              width: width * 0.40,
-              height: height,
+              width: content.width * 0.40,
+              height: content.height,
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  CardThumbnail(
-                    media: media,
-                    isActive: isActive,
-                    progress: progress,
-                    heroTag: heroTag,
-                    width: width * 0.40,
-                    height: height,
-                    radiusOverride: 0,
-                  ),
-                  CardBadgeOverlay(
-                    media: media,
+                  CardMediaStack(
+                    content: badgeContent,
                     styleName: 'wideBanner',
-                    isWideMode: isWideMode,
-                    isActive: isActive,
-                    showRatings: showRatings,
-                    progress: null,
-                    progressText: null,
-                    topLeftBadge: topLeftBadge,
-                    topRightBadge: topRightBadge,
-                    bottomLeftBadge: bottomLeftBadge,
-                    bottomRightBadge: bottomRightBadge,
+                    thumbWidth: content.width * 0.40,
+                    thumbHeight: content.height,
+                    radiusOverride: 0,
+                    fit: StackFit.expand,
                   ),
                 ],
               ),
@@ -109,34 +62,34 @@ class WideBannerCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: WideMetadataColumn(
-                        media: media,
-                        showRatings: showRatings,
-                        showYear: showYear,
-                        showGenres: showGenres,
-                        subtitle: subtitle,
-                        height: height,
-                        progress: null, // Custom progress below
+                        media: content.media,
+                        showRatings: content.showRatings,
+                        showYear: content.showYear,
+                        showGenres: content.showGenres,
+                        subtitle: content.subtitle,
+                        height: content.height,
+                        progress: null,
                         progressText: null,
                         topRightBadge: null,
                       ),
                     ),
-                    if (progress != null) ...[
+                    if (content.progress != null) ...[
                       const SizedBox(height: 8),
                       Row(
                         children: [
                           Expanded(
                             child: LinearProgressIndicator(
-                              value: progress!.clamp(0.0, 1.0),
+                              value: content.progress!.clamp(0.0, 1.0),
                               backgroundColor: cs.surfaceContainerHighest,
                               color: cs.primary,
-                              borderRadius: BorderRadius.circular(4),
+                              borderRadius: BorderRadius.circular(UiRadius.sm),
                               minHeight: 6,
                             ),
                           ),
-                          if (progressText != null) ...[
+                          if (content.progressText != null) ...[
                             const SizedBox(width: 8),
                             Text(
-                              progressText!,
+                              content.progressText!,
                               style: theme.textTheme.labelSmall?.copyWith(
                                 color: cs.primary,
                                 fontWeight: FontWeight.bold,

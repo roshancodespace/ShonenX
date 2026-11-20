@@ -941,4 +941,167 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get detailsSynonyms => 'مرادفات';
+
+  @override
+  String get settingsSupportDevelopment => 'دعم التطوير';
+
+  @override
+  String get settingsSupportDevelopmentSubtitle =>
+      'اشترِ لي قهوةً لإبقاء المشروع حيًّا وخالٍ من الإعلانات!';
+
+  @override
+  String get settingsInfo => 'معلومات';
+
+  @override
+  String get settingsCustomize => 'تخصيص';
+
+  @override
+  String get settingsAdvancedSettings => 'الإعدادات';
+
+  @override
+  String get uiSettingsExperimental => 'تجريبي';
+
+  @override
+  String get uiSettingsLayoutMotion => 'التخطيط والحركة';
+
+  @override
+  String get uiSettingsLayoutMotionSubtitle =>
+      'تحجيم عام وحركة الأوراق — ألوان السمات موجودة تحت المظهر';
+
+  @override
+  String get uiSettingsHomeScreen => 'الشاشة الرئيسية';
+
+  @override
+  String get uiSettingsMediaCards => 'بطاقات الوسائط';
+
+  @override
+  String get uiSettingsEpisodes => 'الحلقات';
+
+  @override
+  String get uiSettingsNavigationBar => 'شريط التنقل';
+
+  @override
+  String get uiSettingsExperimentalTvTitle => 'تلفاز تجريبي / واجهة جديدة';
+
+  @override
+  String get uiSettingsExperimentalTvSubtitle =>
+      'واجهة سينمائية مكانية مصممة للتحكم عبر D-pad وجهاز التحكم عن بُعد ولوحة المفاتيح';
+
+  @override
+  String get uiSettingsSizingTitle => 'الحجم والزوايا';
+
+  @override
+  String get uiSettingsSizingSubtitle =>
+      'ضبط نصف قطر الزوايا ومقياس العناصر ومقياس النص';
+
+  @override
+  String get uiSettingsSheetPhysicsTitle => 'فيزياء الأوراق';
+
+  @override
+  String get uiSettingsSheetPhysicsSubtitle =>
+      'ضبط فيزياء حركة الأوراق السفلية';
+
+  @override
+  String get uiSettingsSheetPhysicsHammer => 'مطرقة';
+
+  @override
+  String get uiSettingsSheetPhysicsSlideUp => 'انزلاق للأعلى';
+
+  @override
+  String get uiSettingsHeaderStyleTitle => 'نمط الترويسة';
+
+  @override
+  String get uiSettingsHeaderStyleSubtitle =>
+      'اختر تخطيط ترويسة الشاشة الرئيسية';
+
+  @override
+  String get uiSettingsCardStyleTitle => 'نمط البطاقة';
+
+  @override
+  String get uiSettingsCardStyleSubtitle =>
+      'نمط بطاقات الوسائط في الرئيسية والاستكشاف';
+
+  @override
+  String get uiSettingsContinueWatchingTitle => 'نمط متابعة المشاهدة';
+
+  @override
+  String get uiSettingsContinueWatchingSubtitle =>
+      'نمط البطاقات في صف متابعة المشاهدة';
+
+  @override
+  String get uiSettingsContinueReadingTitle => 'نمط متابعة القراءة';
+
+  @override
+  String get uiSettingsContinueReadingSubtitle =>
+      'نمط البطاقات في صف متابعة القراءة';
+
+  @override
+  String get uiSettingsEpisodeViewTitle => 'تخطيط الحلقات / الفصول';
+
+  @override
+  String get uiSettingsEpisodeViewSubtitle =>
+      'وضع العرض الافتراضي لقوائم الحلقات';
+
+  @override
+  String get uiSettingsNavBarTitle => 'نمط شريط التنقل';
+
+  @override
+  String get uiSettingsNavBarSubtitle => 'نمط شريط التنقل السفلي';
+
+  @override
+  String get settingsColorSource => 'مصدر الألوان';
+
+  @override
+  String get settingsColorSourceDynamicNote =>
+      'يتم إدارة مخطط الألوان بواسطة الألوان الديناميكية.';
+
+  @override
+  String get settingsColorTweaks => 'تعديلات الألوان';
+
+  @override
+  String get settingsDynamicColorSubtitle => 'يستخدم ألوان الخلفية';
+
+  @override
+  String get settingsAmoledSubtitle => 'يوفر البطارية على شاشات OLED';
+
+  @override
+  String get settingsAmoledDisabledWithWallpaper => 'معطل عند تعيين صورة خلفية';
+
+  @override
+  String get settingsThemeVariantTitle => 'مزج الألوان';
+
+  @override
+  String get settingsThemeVariantSubtitle =>
+      'كيفية مزج ألوان النظام في لوحة الألوان';
+
+  @override
+  String get settingsThemeStyle => 'نمط مزج الألوان';
+
+  @override
+  String get settingsSwapColors => 'تبديل الألوان';
+
+  @override
+  String get settingsSwapColorsSubtitle => 'تبديل الألوان الأساسية والثانوية';
+
+  @override
+  String get settingsPresets => 'الإعدادات المسبقة';
+
+  @override
+  String get settingsThemePresetsTitle => 'إعدادات السمة والمعرض';
+
+  @override
+  String get settingsThemePresetsSubtitle =>
+      'استكشف السمات واستورد/صدّر إعدادات JSON';
+
+  @override
+  String get settingsExclusiveThemes => 'السمات الحصرية';
+
+  @override
+  String get settingsStandardSchemes => 'مخططات الألوان القياسية';
+
+  @override
+  String get settingsExclusiveSchemes => 'مخططات الألوان الحصرية';
+
+  @override
+  String get settingsTopGeneratedSchemes => 'أفضل المخططات المولدة';
 }

@@ -26,7 +26,12 @@ import 'package:shonenx/source_engine/models/source_info.dart';
 import 'package:shonenx/source_engine/utils/media_type_extensions.dart';
 import 'package:shonenx/features/comments/presentation/widgets/comments_tab.dart';
 import 'package:shonenx/features/tracking/providers/tracking_prefs_provider.dart';
-import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
+
+bool _isReadable(MediaType type) =>
+    type == MediaType.MANGA || type == MediaType.NOVEL;
+
+String _formatNumber(num value) =>
+    value.toInt() == value ? value.toInt().toString() : value.toString();
 
 class EpisodesTabWidget extends ConsumerStatefulWidget {
   const EpisodesTabWidget({super.key, required this.media});
@@ -41,6 +46,123 @@ class _EpisodesTabWidgetState extends ConsumerState<EpisodesTabWidget>
     with AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true;
+
+  bool get _isReading => _isReadable(widget.media.type);
+
+  String get _unitLabel => _isReading ? 'Chapter' : 'Episode';
+
+  void _onEpisodeTap(UnifiedEpisode episode, SourceInfo sourceInfo) {
+    final entries =
+        ref.read(historyForMediaProvider(widget.media.id)).value ?? [];
+    final entry = entries
+        .where((e) => e.itemNumber == episode.number)
+        .firstOrNull;
+
+    if (_isReading) {
+      final int startPosition;
+      if (entry != null &&
+          entry.progress > 0 &&
+          entry.progress <= entry.total) {
+        startPosition = entry.progress.toInt();
+      } else {
+        startPosition = 1;
+      }
+
+      context.pushReader(
+        ReaderModeOnline(
+          media: widget.media,
+          episode: episode,
+          sourceInfo: sourceInfo,
+          startPosition: startPosition,
+        ),
+      );
+      return;
+    }
+
+    final threshold = ref.read(trackingPrefsProvider).syncThreshold;
+    final isFinished =
+        entry != null &&
+        entry.total > 0 &&
+        entry.progress >= entry.total * threshold;
+
+    final Duration? startPosition;
+    if (entry != null && entry.progress > 0 && !isFinished) {
+      startPosition = Duration(milliseconds: entry.progress.toInt());
+    } else {
+      startPosition = null;
+    }
+
+    context.pushPlayer(
+      PlayerModeOnline(
+        media: widget.media,
+        episode: episode,
+        sourceInfo: sourceInfo,
+        startPosition: startPosition,
+      ),
+    );
+  }
+
+  void _openDiscussion(BuildContext sheetContext, UnifiedEpisode episode) {
+    final epNum = episode.number.toInt();
+    AppBottomSheet.show(
+      context: sheetContext,
+      title: '$_unitLabel $epNum Discussion',
+      contentPadding: EdgeInsets.zero,
+      child: SizedBox(
+        height: MediaQuery.sizeOf(sheetContext).height * 0.78,
+        child: CommentsTabWidget(
+          media: widget.media,
+          initialEpisodeNumber: epNum,
+        ),
+      ),
+    );
+  }
+
+  void _openEpisodeMenu(
+    BuildContext sheetContext,
+    UnifiedEpisode episode,
+    List<SourceInfo> sources,
+  ) {
+    AppBottomSheet.show(
+      context: sheetContext,
+      title: '$_unitLabel ${_formatNumber(episode.number)}',
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            title: const Text('Discussion'),
+            leading: const Icon(Icons.forum_rounded),
+            onTap: () {
+              sheetContext.pop();
+              _openDiscussion(sheetContext, episode);
+            },
+          ),
+          if (widget.media.type == MediaType.ANIME)
+            ListTile(
+              title: const Text('Stream / Download'),
+              leading: const Icon(Icons.tune_rounded),
+              onTap: () {
+                sheetContext.pop();
+                DownloadSheet.show(
+                  context,
+                  episode,
+                  ref
+                          .read(
+                            mediaPreferenceProvider(
+                              MediaArgs.fromMedia(widget.media),
+                            ),
+                          )
+                          .value
+                          ?.sourceInfo ??
+                      sources.first,
+                  widget.media,
+                );
+              },
+            ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -66,7 +188,6 @@ class _EpisodesTabWidgetState extends ConsumerState<EpisodesTabWidget>
             index: 0,
             child: _EpisodesHeader(media: widget.media),
           ),
-
           Container(
             width: double.maxFinite,
             height: 1,
@@ -77,157 +198,32 @@ class _EpisodesTabWidgetState extends ConsumerState<EpisodesTabWidget>
           child: EpisodeListPanel(
             media: widget.media,
             useScrollController: false,
-            onEpisodeTap: (UnifiedEpisode episode, SourceInfo sourceInfo) {
-              if (widget.media.type == MediaType.MANGA ||
-                  widget.media.type == MediaType.NOVEL) {
-                final historyEntries =
-                    ref.read(historyForMediaProvider(widget.media.id)).value ??
-                    [];
-                final historyEntry = historyEntries
-                    .where((e) => e.itemNumber == episode.number)
-                    .firstOrNull;
-
-                final int startPosition;
-                if (historyEntry != null &&
-                    historyEntry.progress > 0 &&
-                    historyEntry.progress <= historyEntry.total) {
-                  startPosition = historyEntry.progress.toInt();
-                } else {
-                  startPosition = 1;
-                }
-
-                context.pushReader(
-                  ReaderModeOnline(
-                    media: widget.media,
-                    episode: episode,
-                    sourceInfo: sourceInfo,
-                    startPosition: startPosition,
-                  ),
-                );
-              } else {
-                final historyEntries =
-                    ref.read(historyForMediaProvider(widget.media.id)).value ??
-                    [];
-                final historyEntry = historyEntries
-                    .where((e) => e.itemNumber == episode.number)
-                    .firstOrNull;
-
-                final threshold = ref.read(trackingPrefsProvider).syncThreshold;
-                final isFinished =
-                    historyEntry != null &&
-                    historyEntry.total > 0 &&
-                    historyEntry.progress >= historyEntry.total * threshold;
-
-                final Duration? startPosition;
-                if (historyEntry != null &&
-                    historyEntry.progress > 0 &&
-                    !isFinished) {
-                  startPosition = Duration(
-                    milliseconds: historyEntry.progress.toInt(),
-                  );
-                } else {
-                  startPosition = null;
-                }
-
-                context.pushPlayer(
-                  PlayerModeOnline(
-                    media: widget.media,
-                    episode: episode,
-                    sourceInfo: sourceInfo,
-                    startPosition: startPosition,
-                  ),
-                );
-              }
-            },
-            episodeActionsBuilder: (episodeActionsContext, episode, isCurrent, isWatched) {
-              final epNum = episode.number.toInt();
-              return [
-                IconButton(
-                  visualDensity: VisualDensity.compact,
-                  tooltip: 'Discussion',
-                  onPressed: () {
-                    AppBottomSheet.show(
-                      context: episodeActionsContext,
-                      title:
-                          '${(widget.media.type == MediaType.MANGA || widget.media.type == MediaType.NOVEL) ? 'Chapter' : 'Episode'} $epNum Discussion',
-                      contentPadding: EdgeInsets.zero,
-                      child: SizedBox(
-                        height:
-                            MediaQuery.of(episodeActionsContext).size.height *
-                            0.78,
-                        child: CommentsTabWidget(
-                          media: widget.media,
-                          initialEpisodeNumber: epNum,
-                        ),
+            onEpisodeTap: _onEpisodeTap,
+            episodeActionsBuilder:
+                (episodeActionsContext, episode, isCurrent, isWatched) {
+                  return [
+                    IconButton(
+                      visualDensity: VisualDensity.compact,
+                      tooltip: 'Discussion',
+                      onPressed: () =>
+                          _openDiscussion(episodeActionsContext, episode),
+                      icon: const Icon(
+                        Icons.chat_bubble_outline_rounded,
+                        size: 18,
                       ),
-                    );
-                  },
-                  icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
-                ),
-                IconButton(
-                  visualDensity: VisualDensity.compact,
-                  onPressed: () {
-                    AppBottomSheet.show(
-                      context: episodeActionsContext,
-                      title:
-                          '${(widget.media.type == MediaType.MANGA || widget.media.type == MediaType.NOVEL) ? 'Chapter' : 'Episode'} ${episode.number.toString().contains('.0') ? episode.number.toInt() : episode.number}',
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          ListTile(
-                            title: const Text('Discussion'),
-                            leading: const Icon(Icons.forum_rounded),
-                            onTap: () {
-                              episodeActionsContext.pop();
-                              AppBottomSheet.show(
-                                context: episodeActionsContext,
-                                title:
-                                    '${widget.media.type == MediaType.MANGA ? 'Chapter' : 'Episode'} $epNum Discussion',
-                                contentPadding: EdgeInsets.zero,
-                                child: SizedBox(
-                                  height:
-                                      MediaQuery.of(
-                                        episodeActionsContext,
-                                      ).size.height *
-                                      0.78,
-                                  child: CommentsTabWidget(
-                                    media: widget.media,
-                                    initialEpisodeNumber: epNum,
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                          if (widget.media.type == MediaType.ANIME)
-                            ListTile(
-                              title: const Text('Stream / Download'),
-                              leading: const Icon(Icons.tune_rounded),
-                              onTap: () {
-                                episodeActionsContext.pop();
-                                DownloadSheet.show(
-                                  context,
-                                  episode,
-                                  ref
-                                          .read(
-                                            mediaPreferenceProvider(
-                                              MediaArgs.fromMedia(widget.media),
-                                            ),
-                                          )
-                                          .value
-                                          ?.sourceInfo ??
-                                      sources.first,
-                                  widget.media,
-                                );
-                              },
-                            ),
-                        ],
+                    ),
+                    IconButton(
+                      visualDensity: VisualDensity.compact,
+                      tooltip: 'More',
+                      onPressed: () => _openEpisodeMenu(
+                        episodeActionsContext,
+                        episode,
+                        sources,
                       ),
-                    );
-                  },
-                  icon: const Icon(Icons.more_horiz),
-                ),
-              ];
-            },
+                      icon: const Icon(Icons.more_horiz_rounded),
+                    ),
+                  ];
+                },
           ),
         ),
       ],
@@ -250,13 +246,10 @@ class _EpisodesHeader extends ConsumerWidget {
     final availableSources =
         ref.watch(media.type.availableSourcesProvider).value ?? [];
 
-    if (availableSources.isEmpty) {
-      return const SizedBox.shrink();
-    }
+    if (availableSources.isEmpty) return const SizedBox.shrink();
 
     final matchArgs = MediaArgs.fromMedia(media);
     final sourceState = ref.watch(mediaPreferenceProvider(matchArgs)).value;
-
     final matchedMediaState = ref.watch(matchedMediaProvider(matchArgs));
 
     final activeSourceInfo =
@@ -268,8 +261,8 @@ class _EpisodesHeader extends ConsumerWidget {
         matchedMediaState.value != null &&
         matchedMediaState.value!.sourceInfo.id != sourceState.sourceInfo.id;
 
-    final String matchedTitle;
     final bool hasError = matchedMediaState.hasError;
+    final String matchedTitle;
 
     if (hasError) {
       matchedTitle = 'Failed to match';
@@ -284,64 +277,56 @@ class _EpisodesHeader extends ConsumerWidget {
 
     final String? sourceIconUrl = activeSourceInfo?.iconUrl;
 
+    Widget fallbackIcon(IconData icon, Color color) =>
+        Icon(icon, size: 18, color: color);
+
     final iconWidget = Container(
       width: 36,
       height: 36,
       decoration: BoxDecoration(
-        shape: BoxShape.circle,
+        borderRadius: BorderRadius.circular(12),
         color: hasError ? cs.errorContainer : cs.secondaryContainer,
       ),
       clipBehavior: Clip.antiAlias,
       child: hasError
-          ? Icon(
-              Icons.error_outline_rounded,
-              size: 18,
-              color: cs.onErrorContainer,
-            )
+          ? fallbackIcon(Icons.error_outline_rounded, cs.onErrorContainer)
           : (sourceIconUrl != null && sourceIconUrl.isNotEmpty)
           ? SmartImage(
               imageUrl: sourceIconUrl,
               fit: BoxFit.cover,
-              errorWidget: (context, url, error) => Icon(
+              errorWidget: (context, url, error) => fallbackIcon(
                 Icons.auto_awesome_rounded,
-                size: 18,
-                color: cs.onSecondaryContainer,
+                cs.onSecondaryContainer,
               ),
             )
-          : Icon(
-              Icons.auto_awesome_rounded,
-              size: 18,
-              color: cs.onSecondaryContainer,
-            ),
+          : fallbackIcon(Icons.auto_awesome_rounded, cs.onSecondaryContainer),
     );
 
     final titleWidget = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              hasError ? 'ERROR' : 'MATCHED',
-              style: textTheme.labelMedium?.copyWith(
-                color: hasError ? cs.error : cs.primary,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.3,
+        Text.rich(
+          TextSpan(
+            children: [
+              TextSpan(
+                text: hasError ? 'Error' : 'Matched',
+                style: TextStyle(
+                  color: hasError ? cs.error : cs.primary,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
-            ),
-            const SizedBox(width: 6),
-            Flexible(
-              child: Text(
-                '· $sourceName',
-                style: textTheme.labelMedium?.copyWith(
-                  color: cs.onSurfaceVariant.withValues(alpha: 0.7),
+              TextSpan(
+                text: ' on $sourceName',
+                style: TextStyle(
+                  color: cs.onSurfaceVariant,
                   fontWeight: FontWeight.w500,
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
               ),
-            ),
-          ],
+            ],
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: textTheme.labelMedium,
         ),
         Text(
           matchedTitle,
@@ -369,9 +354,8 @@ class _EpisodesHeader extends ConsumerWidget {
           _HeaderButton(
             icon: Icons.security_rounded,
             label: 'CF Bypass',
-            onTap: () {
-              CloudflareWebView.open(context, activeSourceInfo!.baseUrl!);
-            },
+            onTap: () =>
+                CloudflareWebView.open(context, activeSourceInfo!.baseUrl!),
           ),
           const SizedBox(width: 8),
         ],
@@ -397,9 +381,7 @@ class _EpisodesHeader extends ConsumerWidget {
       child: LayoutBuilder(
         builder: (context, constraints) {
           if (constraints.maxWidth >= 600) {
-            // Desktop/Tablet layout: single row
             return Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 iconWidget,
                 const SizedBox(width: 12),
@@ -408,27 +390,25 @@ class _EpisodesHeader extends ConsumerWidget {
                 buttonsWidget,
               ],
             );
-          } else {
-            // Mobile layout: two rows
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    iconWidget,
-                    const SizedBox(width: 12),
-                    Expanded(child: titleWidget),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: buttonsWidget,
-                ),
-              ],
-            );
           }
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  iconWidget,
+                  const SizedBox(width: 12),
+                  Expanded(child: titleWidget),
+                ],
+              ),
+              const SizedBox(height: 10),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: buttonsWidget,
+              ),
+            ],
+          );
         },
       ),
     );
@@ -474,7 +454,7 @@ class _EpisodesHeader extends ConsumerWidget {
   }
 }
 
-class _HeaderButton extends ConsumerWidget {
+class _HeaderButton extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
@@ -486,50 +466,38 @@ class _HeaderButton extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-    final r = ref.watch(themePrefsProvider.select((s) => s.uiRoundness));
-    final radius = BorderRadius.circular(r);
 
     return AppFocusHover(
       onTap: onTap,
       scaleFactor: 1.05,
       builder: (context, isFocused, isHovered) {
         final active = isFocused || isHovered;
-        return Material(
-          color: active
-              ? cs.primary
-              : cs.surfaceContainerHighest.withValues(alpha: 0.6),
-          borderRadius: radius,
-          clipBehavior: Clip.antiAlias,
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: radius,
-              border: Border.all(
-                color: active ? Colors.white : Colors.transparent,
-                width: 1.5,
+        final foreground = active ? cs.onPrimary : cs.onSurfaceVariant;
+
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: ShapeDecoration(
+            color: active ? cs.primary : cs.surfaceContainerHighest,
+            shape: const StadiumBorder(),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 16, color: foreground),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: textTheme.labelMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: foreground,
+                ),
               ),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  icon,
-                  size: 16,
-                  color: active ? cs.onPrimary : cs.onSurfaceVariant,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  label,
-                  style: textTheme.labelMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: active ? cs.onPrimary : cs.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
+            ],
           ),
         );
       },
@@ -537,15 +505,14 @@ class _HeaderButton extends ConsumerWidget {
   }
 }
 
-class _NoExtensionsPlaceholder extends ConsumerWidget {
+class _NoExtensionsPlaceholder extends StatelessWidget {
   final MediaType mediaType;
   const _NoExtensionsPlaceholder({required this.mediaType});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    final r = ref.watch(themePrefsProvider.select((s) => s.uiRoundness));
 
     return Center(
       child: Padding(
@@ -557,7 +524,7 @@ class _NoExtensionsPlaceholder extends ConsumerWidget {
               width: 68,
               height: 68,
               decoration: BoxDecoration(
-                shape: BoxShape.circle,
+                borderRadius: BorderRadius.circular(22),
                 color: cs.primaryContainer,
               ),
               child: Icon(
@@ -571,31 +538,29 @@ class _NoExtensionsPlaceholder extends ConsumerWidget {
               'No extensions installed',
               textAlign: TextAlign.center,
               style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              mediaType == MediaType.MANGA
+              _isReadable(mediaType)
                   ? 'Install an extension to start reading chapters.'
                   : 'Install an extension to start streaming episodes.',
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: cs.onSurfaceVariant.withValues(alpha: 0.75),
+                color: cs.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 22),
             FilledButton.icon(
               onPressed: () => context.pushSettingsExtensions(),
               icon: const Icon(Icons.extension_rounded),
-              label: const Text('Get Extensions'),
+              label: const Text('Get extensions'),
               style: FilledButton.styleFrom(
+                shape: const StadiumBorder(),
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 18,
+                  horizontal: 20,
                   vertical: 14,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(r),
                 ),
               ),
             ),

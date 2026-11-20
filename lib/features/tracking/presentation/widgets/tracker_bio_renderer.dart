@@ -59,7 +59,7 @@ class TrackerBioRenderer extends StatelessWidget {
           height: 1.5,
         ),
         blockquoteDecoration: BoxDecoration(
-          color: cs.surfaceContainerHighest.withOpacity(0.5),
+          color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
           border: Border(left: BorderSide(color: cs.primary, width: 4)),
           borderRadius: BorderRadius.circular(4),
         ),
@@ -71,14 +71,14 @@ class TrackerBioRenderer extends StatelessWidget {
           border: Border(
             top: BorderSide(
               width: 2,
-              color: cs.outlineVariant.withOpacity(0.3),
+              color: cs.outlineVariant.withValues(alpha: 0.3),
             ),
           ),
         ),
         a: theme.textTheme.bodyMedium?.copyWith(
           color: cs.primary,
           decoration: TextDecoration.underline,
-          decorationColor: cs.primary.withOpacity(0.5),
+          decorationColor: cs.primary.withValues(alpha: 0.5),
           height: 1.5,
         ),
       ),

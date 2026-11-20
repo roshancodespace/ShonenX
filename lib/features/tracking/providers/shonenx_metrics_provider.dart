@@ -4,6 +4,9 @@ import 'package:shonenx/shared/providers/database_provider.dart';
 import 'package:shonenx/features/history/domain/models/history_entry.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 
+bool isWatchHistoryEntry(HistoryEntry entry) =>
+    entry.mediaType == MediaType.ANIME.id;
+
 class ShonenxLocalMetrics {
   final int streamedSessions;
   final double hoursWatched;
@@ -22,12 +25,8 @@ final shonenxLocalMetricsProvider =
     FutureProvider.autoDispose<ShonenxLocalMetrics>((ref) async {
       final isar = ref.watch(databaseProvider);
       final entries = await isar.historyEntrys.where().findAll();
-      final watchEntries = entries
-          .where((e) => e.mediaType == MediaType.ANIME)
-          .toList();
-      final readCount = entries
-          .where((e) => e.mediaType != MediaType.ANIME)
-          .length;
+      final watchEntries = entries.where(isWatchHistoryEntry).toList();
+      final readCount = entries.where((e) => !isWatchHistoryEntry(e)).length;
 
       final totalMillis = watchEntries.fold<double>(
         0.0,

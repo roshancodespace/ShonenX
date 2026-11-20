@@ -3,6 +3,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:shonenx/core/localization/l10n_extension.dart';
+
+const _tileContentPadding = EdgeInsets.symmetric(horizontal: 10);
+const _tileTitleStyle = TextStyle(fontWeight: FontWeight.w600);
+const _sectionHeaderPadding = EdgeInsets.fromLTRB(10, 10, 10, 6);
+const _chevronSize = 20.0;
+
+TextStyle _subtitleStyle(ColorScheme colors) => TextStyle(
+      fontSize: 12,
+      color: colors.onSurfaceVariant,
+    );
+
+TextStyle _sectionLabelStyle(ColorScheme colors) => TextStyle(
+      fontSize: 12,
+      fontWeight: FontWeight.w700,
+      letterSpacing: 1.1,
+      color: colors.primary,
+    );
+
 class SettingsSection extends StatelessWidget {
   final String title;
   final String? subtitle;
@@ -17,34 +36,28 @@ class SettingsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(10.0, 10.0, 10.0, 6.0),
+          padding: _sectionHeaderPadding,
           child: Text(
             title.toUpperCase(),
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1.1,
-              color: Theme.of(context).colorScheme.primary,
-            ),
+            style: _sectionLabelStyle(colors),
           ),
         ),
         if (subtitle != null)
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10.0),
+            padding: _tileContentPadding,
             child: Text(
               subtitle!,
-              style: TextStyle(
-                fontSize: 12,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+              style: _subtitleStyle(colors),
             ),
           ),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10),
+          padding: _tileContentPadding,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: children,
@@ -78,23 +91,20 @@ class SettingsNavTile extends StatelessWidget {
     final theme = Theme.of(context);
 
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 10.0),
+      contentPadding: _tileContentPadding,
       leading:
           leading ??
           (icon != null ? Icon(icon, color: theme.colorScheme.primary) : null),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
+      title: Text(title, style: _tileTitleStyle),
       subtitle: subtitle != null
           ? Text(
               subtitle!,
-              style: TextStyle(
-                fontSize: 12,
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
+              style: _subtitleStyle(theme.colorScheme),
             )
           : null,
       trailing: Icon(
         Icons.chevron_right,
-        size: 20,
+        size: _chevronSize,
         color: theme.colorScheme.onSurfaceVariant,
       ),
       onTap: onTap,
@@ -128,18 +138,15 @@ class SettingsSwitchTile extends StatelessWidget {
     final theme = Theme.of(context);
 
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 10),
+      contentPadding: _tileContentPadding,
       leading:
           leading ??
           (icon != null ? Icon(icon, color: theme.colorScheme.primary) : null),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
+      title: Text(title, style: _tileTitleStyle),
       subtitle: subtitle != null
           ? Text(
               subtitle!,
-              style: TextStyle(
-                fontSize: 12,
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
+              style: _subtitleStyle(theme.colorScheme),
             )
           : null,
       trailing: Row(
@@ -200,7 +207,7 @@ class SettingsActionTile extends StatelessWidget {
     final color = isDestructive ? theme.colorScheme.error : foregroundColor;
 
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 10.0),
+      contentPadding: _tileContentPadding,
       tileColor: tileColor,
       textColor: color,
       iconColor: color,
@@ -216,17 +223,14 @@ class SettingsActionTile extends StatelessWidget {
         title,
         maxLines: titleMaxLines,
         overflow: titleOverflow,
-        style: TextStyle(fontWeight: FontWeight.w600, color: color),
+        style: _tileTitleStyle.copyWith(color: color),
       ),
       subtitle: subtitle != null
           ? Text(
               subtitle!,
               maxLines: subtitleMaxLines,
               overflow: subtitleOverflow,
-              style: TextStyle(
-                fontSize: 12,
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
+              style: _subtitleStyle(theme.colorScheme),
             )
           : null,
       trailing: trailing,
@@ -263,12 +267,7 @@ class SettingsSegmentedTile<T> extends StatelessWidget {
           if (title != null) ...[
             Text(
               title!,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 1.1,
-                color: theme.colorScheme.primary,
-              ),
+              style: _sectionLabelStyle(theme.colorScheme),
             ),
             const SizedBox(height: 12),
           ],
@@ -303,8 +302,8 @@ class SettingsRadioTile<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return RadioListTile<T>(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 10.0),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
+      contentPadding: _tileContentPadding,
+      title: Text(title, style: _tileTitleStyle),
       value: value,
       groupValue: groupValue,
       onChanged: onChanged,
@@ -417,11 +416,11 @@ class _SettingsSliderTileState extends State<SettingsSliderTile> {
     final theme = Theme.of(context);
 
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 10.0),
+      contentPadding: _tileContentPadding,
       leading: Icon(widget.icon, color: theme.colorScheme.primary),
       title: Text(
         widget.title,
-        style: const TextStyle(fontWeight: FontWeight.w600),
+        style: _tileTitleStyle,
       ),
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -430,10 +429,7 @@ class _SettingsSliderTileState extends State<SettingsSliderTile> {
           if (widget.subtitle != null)
             Text(
               widget.subtitle!,
-              style: TextStyle(
-                fontSize: 12,
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
+              style: _subtitleStyle(theme.colorScheme),
             ),
           Slider.adaptive(
             focusNode: _effectiveFocusNode,
@@ -477,16 +473,13 @@ class SettingsDropdownTile<T> extends StatelessWidget {
     final theme = Theme.of(context);
 
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 10.0),
+      contentPadding: _tileContentPadding,
       leading: Icon(icon, color: theme.colorScheme.primary),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
+      title: Text(title, style: _tileTitleStyle),
       subtitle: subtitle != null
           ? Text(
               subtitle!,
-              style: TextStyle(
-                fontSize: 12,
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
+              style: _subtitleStyle(theme.colorScheme),
             )
           : null,
       trailing: Row(
@@ -497,7 +490,7 @@ class SettingsDropdownTile<T> extends StatelessWidget {
               icon: const Icon(Icons.info_outline, size: 20),
               visualDensity: VisualDensity.compact,
               splashRadius: 20,
-              tooltip: 'Info',
+              tooltip: context.l10n.settingsInfo,
               onPressed: onInfoCallback,
             ),
             const SizedBox(width: 4),
@@ -526,7 +519,7 @@ class SettingsSelectionTile extends StatelessWidget {
   final bool isSelected;
   final VoidCallback? onSelect;
   final VoidCallback? onCustomize;
-  final String customizeLabel;
+  final String? customizeLabel;
   final IconData customizeIcon;
 
   const SettingsSelectionTile({
@@ -537,7 +530,7 @@ class SettingsSelectionTile extends StatelessWidget {
     required this.isSelected,
     this.onSelect,
     this.onCustomize,
-    this.customizeLabel = 'Customize',
+    this.customizeLabel,
     this.customizeIcon = Icons.edit_outlined,
   });
 
@@ -546,7 +539,7 @@ class SettingsSelectionTile extends StatelessWidget {
     final theme = Theme.of(context);
 
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+      contentPadding: _tileContentPadding,
       selected: isSelected,
       selectedTileColor: theme.colorScheme.primaryContainer.withValues(
         alpha: 0.3,
@@ -560,7 +553,7 @@ class SettingsSelectionTile extends StatelessWidget {
                 ? theme.colorScheme.primary
                 : theme.colorScheme.onSurfaceVariant,
           ),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+      title: Text(title, style: _tileTitleStyle),
       subtitle: Text(
         subtitle,
         style: TextStyle(
@@ -577,9 +570,36 @@ class SettingsSelectionTile extends StatelessWidget {
               ),
               onPressed: onCustomize,
               icon: Icon(customizeIcon, size: 18),
-              label: Text(customizeLabel),
+              label: Text(customizeLabel ?? context.l10n.settingsCustomize),
             )
           : null,
+    );
+  }
+}
+
+class SettingsValueChip extends StatelessWidget {
+  final String label;
+
+  const SettingsValueChip({super.key, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: colors.primary.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: colors.primary,
+        ),
+      ),
     );
   }
 }

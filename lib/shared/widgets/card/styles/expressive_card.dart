@@ -1,52 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
-import '../components/card_badges.dart';
+import 'package:shonenx/shared/theme/ui_visual_values.dart';
 import '../components/card_metadata.dart';
-import '../components/card_thumbnail.dart';
-import 'package:shonenx/shared/models/unified_media.dart';
+import '../components/card_content.dart';
 
 class ExpressiveCard extends StatelessWidget {
-  final UnifiedMedia media;
-  final double width;
-  final double height;
-  final bool isActive;
-  final bool isWideMode;
-  final bool showRatings;
-  final bool showYear;
-  final bool showGenres;
-  final String? subtitle;
-  final double? progress;
-  final String? progressText;
-  final String? heroTag;
-  final Widget? topLeftBadge;
-  final Widget? topRightBadge;
-  final Widget? bottomLeftBadge;
-  final Widget? bottomRightBadge;
+  final CardContent content;
 
-  const ExpressiveCard({
-    super.key,
-    required this.media,
-    required this.width,
-    required this.height,
-    required this.isActive,
-    required this.isWideMode,
-    required this.showRatings,
-    required this.showYear,
-    required this.showGenres,
-    this.subtitle,
-    this.progress,
-    this.progressText,
-    this.heroTag,
-    this.topLeftBadge,
-    this.topRightBadge,
-    this.bottomLeftBadge,
-    this.bottomRightBadge,
-  });
+  const ExpressiveCard({super.key, required this.content});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    if (isWideMode) {
+    if (content.isWideMode) {
       return _buildWide(theme);
     }
     return _buildPortrait(theme);
@@ -54,14 +20,14 @@ class ExpressiveCard extends StatelessWidget {
 
   Widget _buildPortrait(ThemeData theme) {
     final cs = theme.colorScheme;
-    final imgH = height * 0.64;
+    final imgH = content.height * 0.64;
 
     return SizedBox(
-      width: width,
+      width: content.width,
       child: AnimatedContainer(
         duration: Durations.short4,
-        width: width,
-        height: height,
+        width: content.width,
+        height: content.height,
         decoration: BoxDecoration(
           color: Color.alphaBlend(
             cs.primary.withValues(alpha: 0.08),
@@ -69,10 +35,10 @@ class ExpressiveCard extends StatelessWidget {
           ),
           borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
           border: Border.all(
-            color: isActive
+            color: content.isActive
                 ? cs.primary
-                : cs.outlineVariant.withValues(alpha: 0.28),
-            width: isActive ? 2.5 : 1.0,
+                : cs.outlineVariant.withValues(alpha: UiAlpha.outline),
+            width: content.isActive ? 2.5 : 1.0,
             strokeAlign: BorderSide.strokeAlignOutside,
           ),
         ),
@@ -82,27 +48,12 @@ class ExpressiveCard extends StatelessWidget {
           children: [
             Stack(
               children: [
-                CardThumbnail(
-                  media: media,
-                  isActive: isActive,
-                  progress: progress,
-                  heroTag: heroTag,
-                  width: double.maxFinite,
-                  height: imgH,
-                  radiusOverride: GlobalUI.uiRoundness * 0.8,
-                ),
-                CardBadgeOverlay(
-                  media: media,
+                CardMediaStack(
+                  content: content,
                   styleName: 'expressive',
-                  isWideMode: isWideMode,
-                  isActive: isActive,
-                  showRatings: showRatings,
-                  progress: progress,
-                  progressText: progressText,
-                  topLeftBadge: topLeftBadge,
-                  topRightBadge: topRightBadge,
-                  bottomLeftBadge: bottomLeftBadge,
-                  bottomRightBadge: bottomRightBadge,
+                  thumbWidth: double.maxFinite,
+                  thumbHeight: imgH,
+                  radiusOverride: GlobalUI.uiRoundness * 0.8,
                 ),
               ],
             ),
@@ -110,8 +61,8 @@ class ExpressiveCard extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4),
               child: Text(
-                media.title.getPreferedTitle,
-                maxLines: progress != null ? 1 : 2,
+                content.media.title.getPreferedTitle,
+                maxLines: content.progress != null ? 1 : 2,
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.labelLarge?.copyWith(
                   fontWeight: FontWeight.w900,
@@ -120,16 +71,16 @@ class ExpressiveCard extends StatelessWidget {
                 ),
               ),
             ),
-            if (_getSubtitle() != null) ...[
+            if (content.resolvedSubtitle != null) ...[
               const Spacer(),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4),
                 child: PortraitMetadataRow(
-                  media: media,
-                  showRatings: showRatings,
-                  showYear: showYear,
-                  showGenres: showGenres,
-                  subtitle: subtitle,
+                  media: content.media,
+                  showRatings: content.showRatings,
+                  showYear: content.showYear,
+                  showGenres: content.showGenres,
+                  subtitle: content.subtitle,
                 ),
               ),
             ],
@@ -141,12 +92,12 @@ class ExpressiveCard extends StatelessWidget {
 
   Widget _buildWide(ThemeData theme) {
     final cs = theme.colorScheme;
-    final thumbW = width * 0.48;
+    final thumbW = content.width * 0.48;
 
     return AnimatedContainer(
       duration: Durations.short4,
-      width: width,
-      height: height,
+      width: content.width,
+      height: content.height,
       decoration: BoxDecoration(
         color: Color.alphaBlend(
           cs.primary.withValues(alpha: 0.08),
@@ -154,10 +105,10 @@ class ExpressiveCard extends StatelessWidget {
         ),
         borderRadius: BorderRadius.circular(GlobalUI.uiRoundness * 1.5),
         border: Border.all(
-          color: isActive
+          color: content.isActive
               ? cs.primary
-              : cs.outlineVariant.withValues(alpha: 0.28),
-          width: isActive ? 2.5 : 1.0,
+              : cs.outlineVariant.withValues(alpha: UiAlpha.outline),
+          width: content.isActive ? 2.5 : 1.0,
           strokeAlign: BorderSide.strokeAlignOutside,
         ),
       ),
@@ -166,27 +117,12 @@ class ExpressiveCard extends StatelessWidget {
         children: [
           Stack(
             children: [
-              CardThumbnail(
-                media: media,
-                isActive: isActive,
-                progress: progress,
-                heroTag: heroTag,
-                width: thumbW,
-                height: height,
-                radiusOverride: GlobalUI.uiRoundness * 1.2,
-              ),
-              CardBadgeOverlay(
-                media: media,
+              CardMediaStack(
+                content: content,
                 styleName: 'expressive',
-                isWideMode: isWideMode,
-                isActive: isActive,
-                showRatings: showRatings,
-                progress: progress,
-                progressText: progressText,
-                topLeftBadge: topLeftBadge,
-                topRightBadge: topRightBadge,
-                bottomLeftBadge: bottomLeftBadge,
-                bottomRightBadge: bottomRightBadge,
+                thumbWidth: thumbW,
+                thumbHeight: content.height,
+                radiusOverride: GlobalUI.uiRoundness * 1.2,
               ),
             ],
           ),
@@ -195,34 +131,20 @@ class ExpressiveCard extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
               child: WideMetadataColumn(
-                media: media,
-                showRatings: showRatings,
-                showYear: showYear,
-                showGenres: showGenres,
-                subtitle: subtitle,
-                height: height,
-                progress: progress,
-                progressText: progressText,
-                topRightBadge: topRightBadge,
+                media: content.media,
+                showRatings: content.showRatings,
+                showYear: content.showYear,
+                showGenres: content.showGenres,
+                subtitle: content.subtitle,
+                height: content.height,
+                progress: content.progress,
+                progressText: content.progressText,
+                topRightBadge: content.topRightBadge,
               ),
             ),
           ),
         ],
       ),
     );
-  }
-
-  String? _getSubtitle() {
-    if (subtitle != null && subtitle!.isNotEmpty) return subtitle;
-    final items = <String>[];
-    if (showYear && media.year != null) items.add(media.year.toString());
-    if (media.status != null && media.status!.isNotEmpty) {
-      items.add(media.status!);
-    }
-    if (showGenres && media.genres != null && media.genres!.isNotEmpty) {
-      items.add(media.genres!.first);
-    }
-    if (items.isEmpty) return null;
-    return items.join(' • ');
   }
 }

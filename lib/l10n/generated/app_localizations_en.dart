@@ -924,4 +924,167 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get detailsSynonyms => 'Synonyms';
+
+  @override
+  String get settingsSupportDevelopment => 'Support Development';
+
+  @override
+  String get settingsSupportDevelopmentSubtitle =>
+      'Buy me a coffee to keep the project alive and ad-free!';
+
+  @override
+  String get settingsInfo => 'Info';
+
+  @override
+  String get settingsCustomize => 'Customize';
+
+  @override
+  String get settingsAdvancedSettings => 'Settings';
+
+  @override
+  String get uiSettingsExperimental => 'Experimental';
+
+  @override
+  String get uiSettingsLayoutMotion => 'Layout & Motion';
+
+  @override
+  String get uiSettingsLayoutMotionSubtitle =>
+      'Global sizing and sheet motion — theme colors live under Appearance';
+
+  @override
+  String get uiSettingsHomeScreen => 'Home Screen';
+
+  @override
+  String get uiSettingsMediaCards => 'Media Cards';
+
+  @override
+  String get uiSettingsEpisodes => 'Episodes';
+
+  @override
+  String get uiSettingsNavigationBar => 'Navigation Bar';
+
+  @override
+  String get uiSettingsExperimentalTvTitle => 'Experimental TV / New UI';
+
+  @override
+  String get uiSettingsExperimentalTvSubtitle =>
+      'A cinematic, spatial interface built for D-pad, remote, and keyboard navigation';
+
+  @override
+  String get uiSettingsSizingTitle => 'Sizing & Corners';
+
+  @override
+  String get uiSettingsSizingSubtitle =>
+      'Adjust corner radius, widget scale, and text scale';
+
+  @override
+  String get uiSettingsSheetPhysicsTitle => 'Sheet Physics';
+
+  @override
+  String get uiSettingsSheetPhysicsSubtitle =>
+      'Adjust bottom sheet motion physics';
+
+  @override
+  String get uiSettingsSheetPhysicsHammer => 'Hammer';
+
+  @override
+  String get uiSettingsSheetPhysicsSlideUp => 'Slide Up';
+
+  @override
+  String get uiSettingsHeaderStyleTitle => 'Header Style';
+
+  @override
+  String get uiSettingsHeaderStyleSubtitle => 'Choose the home header layout';
+
+  @override
+  String get uiSettingsCardStyleTitle => 'Card Style';
+
+  @override
+  String get uiSettingsCardStyleSubtitle =>
+      'Style of media cards on Home & Discover';
+
+  @override
+  String get uiSettingsContinueWatchingTitle => 'Continue Watching Style';
+
+  @override
+  String get uiSettingsContinueWatchingSubtitle =>
+      'Style of cards on the Continue Watching row';
+
+  @override
+  String get uiSettingsContinueReadingTitle => 'Continue Reading Style';
+
+  @override
+  String get uiSettingsContinueReadingSubtitle =>
+      'Style of cards on the Continue Reading row';
+
+  @override
+  String get uiSettingsEpisodeViewTitle => 'Episode / Chapter Layout';
+
+  @override
+  String get uiSettingsEpisodeViewSubtitle =>
+      'Default view mode for episode lists';
+
+  @override
+  String get uiSettingsNavBarTitle => 'Navigation Bar Style';
+
+  @override
+  String get uiSettingsNavBarSubtitle => 'Style of the bottom navigation bar';
+
+  @override
+  String get settingsColorSource => 'Color Source';
+
+  @override
+  String get settingsColorSourceDynamicNote =>
+      'Color scheme is managed by Dynamic Color.';
+
+  @override
+  String get settingsColorTweaks => 'Color Tweaks';
+
+  @override
+  String get settingsDynamicColorSubtitle => 'Uses wallpaper colors';
+
+  @override
+  String get settingsAmoledSubtitle => 'Saves battery on OLED screens';
+
+  @override
+  String get settingsAmoledDisabledWithWallpaper =>
+      'Disabled while background image is set';
+
+  @override
+  String get settingsThemeVariantTitle => 'Color Blend';
+
+  @override
+  String get settingsThemeVariantSubtitle =>
+      'How system colors are blended into the palette';
+
+  @override
+  String get settingsThemeStyle => 'Color Blend Style';
+
+  @override
+  String get settingsSwapColors => 'Swap Colors';
+
+  @override
+  String get settingsSwapColorsSubtitle => 'Swap primary and secondary colors';
+
+  @override
+  String get settingsPresets => 'Presets';
+
+  @override
+  String get settingsThemePresetsTitle => 'Theme Presets & Gallery';
+
+  @override
+  String get settingsThemePresetsSubtitle =>
+      'Explore themes & import/export JSON presets';
+
+  @override
+  String get settingsExclusiveThemes => 'Exclusive Themes';
+
+  @override
+  String get settingsStandardSchemes => 'Standard Color Schemes';
+
+  @override
+  String get settingsExclusiveSchemes => 'Exclusive Color Schemes';
+
+  @override
+  String get settingsTopGeneratedSchemes => 'Top Generated Schemes';
 }

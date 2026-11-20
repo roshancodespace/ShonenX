@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:shonenx/shared/models/unified_media.dart';
+import 'package:shonenx/shared/theme/ui_visual_values.dart';
 import 'package:shonenx/shared/widgets/marquee_text.dart';
 
 class PortraitMetadataRow extends StatelessWidget {
@@ -83,8 +84,8 @@ class PortraitMetadataRow extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1.5),
               decoration: BoxDecoration(
-                color: cs.primary.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(4),
+                color: cs.primary.withValues(alpha: UiAlpha.chip),
+                borderRadius: BorderRadius.circular(UiRadius.sm),
               ),
               child: Text(
                 genres.first,
@@ -211,9 +212,11 @@ class WideMetadataColumn extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFFFB703).withValues(alpha: 0.18),
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(UiRadius.sm),
                     border: Border.all(
-                      color: const Color(0xFFFFB703).withValues(alpha: 0.4),
+                      color: const Color(0xFFFFB703).withValues(
+                        alpha: UiAlpha.border,
+                      ),
                       width: 1.0,
                     ),
                   ),
@@ -266,8 +269,8 @@ class WideMetadataColumn extends StatelessWidget {
                   vertical: 1.5,
                 ),
                 decoration: BoxDecoration(
-                  color: cs.primary.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(4),
+                  color: cs.primary.withValues(alpha: UiAlpha.chip),
+                  borderRadius: BorderRadius.circular(UiRadius.sm),
                 ),
                 child: Text(
                   g,
@@ -297,7 +300,7 @@ class WideMetadataColumn extends StatelessWidget {
             const SizedBox(height: 6),
           if (progress != null)
             ClipRRect(
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(UiRadius.sm),
               child: LinearProgressIndicator(
                 value: progress!.clamp(0.0, 1.0),
                 minHeight: 4,

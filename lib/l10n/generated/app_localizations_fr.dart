@@ -939,4 +939,174 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get detailsSynonyms => 'Synonymes';
+
+  @override
+  String get settingsSupportDevelopment => 'Soutenir le développement';
+
+  @override
+  String get settingsSupportDevelopmentSubtitle =>
+      'Achetez-moi un café pour garder le projet en vie et sans publicité !';
+
+  @override
+  String get settingsInfo => 'Informations';
+
+  @override
+  String get settingsCustomize => 'Personnaliser';
+
+  @override
+  String get settingsAdvancedSettings => 'Paramètres';
+
+  @override
+  String get uiSettingsExperimental => 'Expérimental';
+
+  @override
+  String get uiSettingsLayoutMotion => 'Disposition et mouvement';
+
+  @override
+  String get uiSettingsLayoutMotionSubtitle =>
+      'Taille globale et mouvement des feuilles — les couleurs du thème se trouvent dans Apparence';
+
+  @override
+  String get uiSettingsHomeScreen => 'Écran d\'accueil';
+
+  @override
+  String get uiSettingsMediaCards => 'Cartes multimédias';
+
+  @override
+  String get uiSettingsEpisodes => 'Épisodes';
+
+  @override
+  String get uiSettingsNavigationBar => 'Barre de navigation';
+
+  @override
+  String get uiSettingsExperimentalTvTitle =>
+      'TV expérimentale / Nouvelle interface';
+
+  @override
+  String get uiSettingsExperimentalTvSubtitle =>
+      'Une interface cinématographique et spatiale conçue pour la navigation avec D-pad, télécommande et clavier';
+
+  @override
+  String get uiSettingsSizingTitle => 'Taille et coins';
+
+  @override
+  String get uiSettingsSizingSubtitle =>
+      'Ajustez le rayon des coins, l\'échelle des widgets et l\'échelle du texte';
+
+  @override
+  String get uiSettingsSheetPhysicsTitle => 'Physique des feuilles';
+
+  @override
+  String get uiSettingsSheetPhysicsSubtitle =>
+      'Ajustez la physique du mouvement des feuilles inférieures';
+
+  @override
+  String get uiSettingsSheetPhysicsHammer => 'Marteau';
+
+  @override
+  String get uiSettingsSheetPhysicsSlideUp => 'Glisser vers le haut';
+
+  @override
+  String get uiSettingsHeaderStyleTitle => 'Style d\'en-tête';
+
+  @override
+  String get uiSettingsHeaderStyleSubtitle =>
+      'Choisissez la disposition de l\'en-tête d\'accueil';
+
+  @override
+  String get uiSettingsCardStyleTitle => 'Style de carte';
+
+  @override
+  String get uiSettingsCardStyleSubtitle =>
+      'Style des cartes multimédias sur Accueil et Découvrir';
+
+  @override
+  String get uiSettingsContinueWatchingTitle => 'Style de Reprendre la lecture';
+
+  @override
+  String get uiSettingsContinueWatchingSubtitle =>
+      'Style des cartes de la rangée Reprendre la lecture';
+
+  @override
+  String get uiSettingsContinueReadingTitle => 'Style de lecture en cours';
+
+  @override
+  String get uiSettingsContinueReadingSubtitle =>
+      'Style des cartes de la rangée de lecture en cours';
+
+  @override
+  String get uiSettingsEpisodeViewTitle =>
+      'Disposition des épisodes / chapitres';
+
+  @override
+  String get uiSettingsEpisodeViewSubtitle =>
+      'Mode d\'affichage par défaut des listes d\'épisodes';
+
+  @override
+  String get uiSettingsNavBarTitle => 'Style de la barre de navigation';
+
+  @override
+  String get uiSettingsNavBarSubtitle =>
+      'Style de la barre de navigation inférieure';
+
+  @override
+  String get settingsColorSource => 'Source des couleurs';
+
+  @override
+  String get settingsColorSourceDynamicNote =>
+      'Le schéma de couleurs est géré par Couleurs dynamiques.';
+
+  @override
+  String get settingsColorTweaks => 'Ajustements des couleurs';
+
+  @override
+  String get settingsDynamicColorSubtitle =>
+      'Utilise les couleurs du fond d’écran';
+
+  @override
+  String get settingsAmoledSubtitle =>
+      'Économise la batterie sur les écrans OLED';
+
+  @override
+  String get settingsAmoledDisabledWithWallpaper =>
+      'Désactivé lorsqu’une image de fond est définie';
+
+  @override
+  String get settingsThemeVariantTitle => 'Mélange des couleurs';
+
+  @override
+  String get settingsThemeVariantSubtitle =>
+      'Comment les couleurs du système sont mélangées dans la palette';
+
+  @override
+  String get settingsThemeStyle => 'Style de mélange des couleurs';
+
+  @override
+  String get settingsSwapColors => 'Inverser les couleurs';
+
+  @override
+  String get settingsSwapColorsSubtitle =>
+      'Inverser les couleurs primaire et secondaire';
+
+  @override
+  String get settingsPresets => 'Préréglages';
+
+  @override
+  String get settingsThemePresetsTitle => 'Préréglages de thème et galerie';
+
+  @override
+  String get settingsThemePresetsSubtitle =>
+      'Explorez les thèmes et importez/exportez des préréglages JSON';
+
+  @override
+  String get settingsExclusiveThemes => 'Thèmes exclusifs';
+
+  @override
+  String get settingsStandardSchemes => 'Schémas de couleurs standard';
+
+  @override
+  String get settingsExclusiveSchemes => 'Schémas de couleurs exclusifs';
+
+  @override
+  String get settingsTopGeneratedSchemes => 'Meilleurs schémas générés';
 }

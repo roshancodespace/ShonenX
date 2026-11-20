@@ -12,6 +12,7 @@ import 'package:shonenx/features/reader/providers/preferred_scanlator_provider.d
 import 'package:shonenx/shared/models/unified_episode.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
+import 'package:shonenx/shared/widgets/app_focus_hover.dart';
 import 'package:shonenx/shared/widgets/staggered_fade_in.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
 
@@ -102,7 +103,7 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
     super.dispose();
   }
 
-  void _triggerRetry(MediaArgs matchArgs) async {
+  Future<void> _triggerRetry(MediaArgs matchArgs) async {
     if (_isRetrying) return;
     setState(() {
       _isRetrying = true;
@@ -127,6 +128,155 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
         type: widget.media.type,
         matchArgs: matchArgs,
       ),
+    );
+  }
+
+  Widget _buildStatusView(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    String? subtitle,
+    bool isError = false,
+    List<Widget> actions = const [],
+  }) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 360),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: isError ? cs.errorContainer : cs.surfaceContainerHigh,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Icon(
+                  icon,
+                  size: 30,
+                  color: isError ? cs.onErrorContainer : cs.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: cs.onSurface,
+                ),
+              ),
+              if (subtitle != null && subtitle.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Text(
+                  subtitle,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: cs.onSurfaceVariant,
+                    height: 1.35,
+                  ),
+                ),
+              ],
+              if (actions.isNotEmpty) ...[
+                const SizedBox(height: 20),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 8,
+                  alignment: WrapAlignment.center,
+                  children: actions,
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoadingView(BuildContext context, {String? message}) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: cs.surfaceContainerHigh,
+                shape: BoxShape.circle,
+              ),
+              padding: const EdgeInsets.all(14),
+              child: CircularProgressIndicator(
+                strokeWidth: 3,
+                strokeCap: StrokeCap.round,
+                color: cs.primary,
+              ),
+            ),
+            if (message != null && message.isNotEmpty) ...[
+              const SizedBox(height: 14),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: cs.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRetryButton({
+    required bool isBusy,
+    required VoidCallback onPressed,
+    required String label,
+    required String busyLabel,
+  }) {
+    return FilledButton.tonalIcon(
+      onPressed: isBusy ? null : onPressed,
+      style: FilledButton.styleFrom(
+        elevation: 0,
+        shadowColor: Colors.transparent,
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+        shape: const StadiumBorder(),
+      ),
+      icon: isBusy
+          ? const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : const Icon(Icons.refresh_rounded, size: 18),
+      label: Text(isBusy ? busyLabel : label),
+    );
+  }
+
+  Widget _buildManualMatchButton(BuildContext context, MediaArgs matchArgs) {
+    return FilledButton.icon(
+      onPressed: () => _openManualMatch(context, matchArgs),
+      style: FilledButton.styleFrom(
+        elevation: 0,
+        shadowColor: Colors.transparent,
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+        shape: const StadiumBorder(),
+      ),
+      icon: const Icon(Icons.tune_rounded, size: 18),
+      label: const Text('Manual Match'),
     );
   }
 
@@ -197,71 +347,37 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
 
     if (matchedMediaState.hasError) {
       final error = matchedMediaState.error;
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.error_outline_rounded,
-                size: 48,
-                color: Theme.of(context).colorScheme.error,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                error.toString().contains('Cloudflare')
-                    ? 'Cloudflare verification failed. Please try turning off "In-app Cloudflare Bypass" in settings to use the proxy, or perform a manual match.'
-                    : 'Failed to match media: $error',
-                textAlign: TextAlign.center,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton.icon(
-                onPressed: isBusy ? null : () => _triggerRetry(matchArgs),
-                icon: isBusy
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.refresh_rounded),
-                label: Text(isBusy ? 'Fetching...' : 'Retry Search'),
-              ),
-            ],
+      return _buildStatusView(
+        context,
+        icon: Icons.error_outline_rounded,
+        isError: true,
+        title: 'Match Failed',
+        subtitle: error.toString().contains('Cloudflare')
+            ? 'Cloudflare verification failed. Try turning off "In-app Cloudflare Bypass" in settings to use the proxy, or perform a manual match.'
+            : 'Failed to match media: $error',
+        actions: [
+          _buildRetryButton(
+            isBusy: isBusy,
+            onPressed: () => _triggerRetry(matchArgs),
+            label: 'Retry Search',
+            busyLabel: 'Fetching...',
           ),
-        ),
+          _buildManualMatchButton(context, matchArgs),
+        ],
       );
     }
 
     if (isMatching || isSourceMismatch) {
       final sourceName = matchedMediaState.value?.sourceInfo.name;
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const CircularProgressIndicator(),
-            const SizedBox(height: 16),
-            Text(
-              isMatching
-                  ? (sourceName != null
-                        ? 'Searching match on $sourceName...'
-                        : 'Searching match...')
-                  : (sourceName != null
-                        ? 'Fetching episodes from $sourceName...'
-                        : 'Fetching episodes...'),
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 13,
-                color: Colors.white70,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
+      return _buildLoadingView(
+        context,
+        message: isMatching
+            ? (sourceName != null
+                  ? 'Searching match on $sourceName...'
+                  : 'Searching match...')
+            : (sourceName != null
+                  ? 'Fetching episodes from $sourceName...'
+                  : 'Fetching episodes...'),
       );
     }
 
@@ -269,59 +385,21 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
         matchedMediaState.value != null &&
         matchedMediaState.value!.matchedMedia == null) {
       final sourceName = matchedMediaState.value!.sourceInfo.name;
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.folder_open_rounded,
-                size: 48,
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'No match found on $sourceName',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Try performing a manual match for "${widget.media.title.getPreferedTitle}"',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(height: 20),
-              Wrap(
-                spacing: 12,
-                runSpacing: 8,
-                alignment: WrapAlignment.center,
-                children: [
-                  OutlinedButton.icon(
-                    onPressed: isBusy ? null : () => _triggerRetry(matchArgs),
-                    icon: isBusy
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.refresh_rounded),
-                    label: Text(isBusy ? 'Retrying...' : 'Retry Search'),
-                  ),
-                  FilledButton.icon(
-                    onPressed: () => _openManualMatch(context, matchArgs),
-                    icon: const Icon(Icons.tune_rounded),
-                    label: const Text('Manual Match'),
-                  ),
-                ],
-              ),
-            ],
+      return _buildStatusView(
+        context,
+        icon: Icons.folder_open_rounded,
+        title: 'No match found on $sourceName',
+        subtitle:
+            'Try performing a manual match for "${widget.media.title.getPreferedTitle}"',
+        actions: [
+          _buildRetryButton(
+            isBusy: isBusy,
+            onPressed: () => _triggerRetry(matchArgs),
+            label: 'Retry Search',
+            busyLabel: 'Retrying...',
           ),
-        ),
+          _buildManualMatchButton(context, matchArgs),
+        ],
       );
     }
 
@@ -329,159 +407,71 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
       skipLoadingOnReload: false,
       loading: () {
         final progressMsg = ref.watch(episodeMetadataProgressProvider).value;
-        return Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const CircularProgressIndicator(),
-              if (progressMsg != null && progressMsg.isNotEmpty) ...[
-                const SizedBox(height: 16),
-                Text(
-                  progressMsg,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: Colors.white70,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ],
-          ),
-        );
+        return _buildLoadingView(context, message: progressMsg);
       },
-      error: (e, _) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.error_outline_rounded,
-                size: 48,
-                color: Theme.of(context).colorScheme.error,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                e.toString().contains('Cloudflare')
-                    ? 'Cloudflare verification failed. Please try turning off "In-app Cloudflare Bypass" in settings to use the proxy, or perform a manual match.'
-                    : 'Failed to fetch episodes: $e',
-                textAlign: TextAlign.center,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton.icon(
-                onPressed: isBusy ? null : () => _triggerRetry(matchArgs),
-                icon: isBusy
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.refresh_rounded),
-                label: Text(isBusy ? 'Fetching...' : 'Retry Search'),
-              ),
-            ],
+      error: (e, _) => _buildStatusView(
+        context,
+        icon: Icons.error_outline_rounded,
+        isError: true,
+        title: 'Unable to Load Episodes',
+        subtitle: e.toString().contains('Cloudflare')
+            ? 'Cloudflare verification failed. Try turning off "In-app Cloudflare Bypass" in settings to use the proxy, or perform a manual match.'
+            : 'Failed to fetch episodes: $e',
+        actions: [
+          _buildRetryButton(
+            isBusy: isBusy,
+            onPressed: () => _triggerRetry(matchArgs),
+            label: 'Retry Search',
+            busyLabel: 'Fetching...',
           ),
-        ),
+          _buildManualMatchButton(context, matchArgs),
+        ],
       ),
       data: (state) {
         if (state.episodes.isEmpty) {
           if (isBusy) {
-            return const Center(child: CircularProgressIndicator());
+            return _buildLoadingView(context);
           }
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.folder_open_rounded,
-                    size: 48,
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    widget.media.type == MediaType.MANGA
-                        ? 'No chapters found for this source.'
-                        : 'No episodes found for this source.',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'The provider may still be indexing, or the match might need to be retried.',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 20),
-                  Wrap(
-                    spacing: 12,
-                    runSpacing: 8,
-                    alignment: WrapAlignment.center,
-                    children: [
-                      OutlinedButton.icon(
-                        onPressed: isBusy
-                            ? null
-                            : () => _triggerRetry(matchArgs),
-                        icon: isBusy
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Icon(Icons.refresh_rounded),
-                        label: Text(isBusy ? 'Fetching...' : 'Retry Fetching'),
-                      ),
-                      FilledButton.icon(
-                        onPressed: () => _openManualMatch(context, matchArgs),
-                        icon: const Icon(Icons.tune_rounded),
-                        label: const Text('Manual Match'),
-                      ),
-                    ],
-                  ),
-                ],
+          return _buildStatusView(
+            context,
+            icon: Icons.folder_open_rounded,
+            title: widget.media.type == MediaType.MANGA
+                ? 'No chapters found'
+                : 'No episodes found',
+            subtitle:
+                'The provider may still be indexing, or the match might need to be retried.',
+            actions: [
+              _buildRetryButton(
+                isBusy: isBusy,
+                onPressed: () => _triggerRetry(matchArgs),
+                label: 'Retry Fetching',
+                busyLabel: 'Fetching...',
               ),
-            ),
+              _buildManualMatchButton(context, matchArgs),
+            ],
           );
         }
 
-        // 1. Extract and Sort Unique Seasons
         final uniqueSeasons = state.episodes
             .map((e) => e.season)
             .toSet()
             .toList();
         uniqueSeasons.sort((a, b) {
           if (a == null && b == null) return 0;
-          if (a == null) return 1; // Put nulls (specials/extras) at the end
+          if (a == null) return 1;
           if (b == null) return -1;
           return a.compareTo(b);
         });
 
-        // 2. Resolve Active Season (Fallback to the first available season if not set)
         int? activeSeason = _selectedSeason;
         if (!uniqueSeasons.contains(activeSeason)) {
           activeSeason = uniqueSeasons.firstOrNull;
         }
 
-        // 3. Filter episodes strictly by the active season
         final seasonEpisodes = state.episodes
             .where((e) => e.season == activeSeason)
             .toList();
 
-        // 4. Generate Chunks for the current season
         final uniqueNums = seasonEpisodes.map((e) => e.number).toSet().toList()
           ..sort();
 
@@ -535,7 +525,6 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
           preferredScanlatorProvider(widget.media.id),
         );
 
-        // 5. Single-pass Deduplication & Chunk Filtering
         final dedupedMap = <double, UnifiedEpisode>{};
 
         for (final ep in seasonEpisodes) {
@@ -558,93 +547,6 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
 
         int staggerIndex = 2;
         final cs = Theme.of(context).colorScheme;
-        final radius = BorderRadius.circular(GlobalUI.uiRoundness);
-
-        // Helper for building minimalist dropdown capsules
-        Widget buildFilterCapsule<T>({
-          required T current,
-          required List<T> items,
-          required String Function(T) labelBuilder,
-          required void Function(T) onSelected,
-          required IconData icon,
-        }) {
-          return Theme(
-            data: Theme.of(context).copyWith(
-              hoverColor: Colors.transparent,
-              highlightColor: Colors.transparent,
-              splashColor: Colors.transparent,
-            ),
-            child: PopupMenuButton<T>(
-              initialValue: current,
-              onSelected: onSelected,
-              tooltip: '',
-              shape: RoundedRectangleBorder(borderRadius: radius),
-              color: cs.surfaceContainerHigh,
-              position: PopupMenuPosition.under,
-              itemBuilder: (context) {
-                return items.map((item) {
-                  final isSelected = item == current;
-                  return PopupMenuItem<T>(
-                    value: item,
-                    child: Row(
-                      children: [
-                        Text(
-                          labelBuilder(item),
-                          style: TextStyle(
-                            color: isSelected ? cs.primary : cs.onSurface,
-                            fontWeight: isSelected
-                                ? FontWeight.w700
-                                : FontWeight.w500,
-                            fontSize: 14,
-                          ),
-                        ),
-                        if (isSelected) ...[
-                          const Spacer(),
-                          Icon(
-                            Icons.check_rounded,
-                            size: 18,
-                            color: cs.primary,
-                          ),
-                        ],
-                      ],
-                    ),
-                  );
-                }).toList();
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
-                  borderRadius: radius,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(icon, size: 15, color: cs.primary),
-                    const SizedBox(width: 6),
-                    Text(
-                      labelBuilder(current),
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: cs.onSurface,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Icon(
-                      Icons.expand_more_rounded,
-                      size: 16,
-                      color: cs.onSurfaceVariant,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        }
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -652,22 +554,24 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
             StaggeredFadeIn(
               index: staggerIndex++,
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 5, 16, 5),
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
                 child: Row(
                   children: [
                     Expanded(
                       child: SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
+                        clipBehavior: Clip.none,
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             if (uniqueSeasons.length > 1) ...[
-                              buildFilterCapsule<int?>(
+                              _FilterMenuButton<int?>(
                                 current: activeSeason,
                                 items: uniqueSeasons,
                                 labelBuilder: (s) =>
                                     s == null ? 'Specials' : 'S$s',
                                 icon: Icons.layers_rounded,
+                                highlighted: activeSeason != null,
                                 onSelected: (s) => setState(() {
                                   _selectedSeason = s;
                                   _chunkIndex = 0;
@@ -676,20 +580,35 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
                               const SizedBox(width: 8),
                             ],
                             if (chunks.length > 1) ...[
-                              buildFilterCapsule<int>(
+                              _FilterMenuButton<int>(
                                 current: safeIdx,
                                 items: List.generate(chunks.length, (i) => i),
                                 labelBuilder: (i) => chunks[i].label,
                                 icon: Icons.tag_rounded,
+                                highlighted: safeIdx > 0,
                                 onSelected: (i) =>
                                     setState(() => _chunkIndex = i),
                               ),
                               const SizedBox(width: 8),
                             ],
-                            Text(
-                              '${finalEpisodes.length} ${widget.media.type == MediaType.MANGA ? 'ch' : 'ep'}',
-                              style: Theme.of(context).textTheme.labelLarge
-                                  ?.copyWith(color: cs.onSurfaceVariant),
+                            Container(
+                              height: 34,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                              ),
+                              alignment: Alignment.center,
+                              decoration: ShapeDecoration(
+                                color: cs.surfaceContainer,
+                                shape: const StadiumBorder(),
+                              ),
+                              child: Text(
+                                '${finalEpisodes.length} ${widget.media.type == MediaType.MANGA ? 'ch' : 'ep'}',
+                                style: Theme.of(context).textTheme.labelMedium
+                                    ?.copyWith(
+                                      color: cs.onSurfaceVariant,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                              ),
                             ),
                           ],
                         ),
@@ -701,9 +620,11 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
                       children: [
                         if (!widget.isTv) ...[
                           if (widget.media.type == MediaType.ANIME &&
-                              finalEpisodes.isNotEmpty)
-                            IconButton(
-                              onPressed: () => BatchDownloadSheet.show(
+                              finalEpisodes.isNotEmpty) ...[
+                            _ToolbarButton(
+                              icon: Icons.download_for_offline_outlined,
+                              tooltip: 'Batch Download',
+                              onTap: () => BatchDownloadSheet.show(
                                 context,
                                 finalEpisodes,
                                 effectiveWatchedProgress,
@@ -711,43 +632,37 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
                                 widget.media,
                                 watchedEpisodeNumbers: historyWatchedSet,
                               ),
-                              icon: const Icon(
-                                Icons.download_for_offline_outlined,
-                              ),
-                              iconSize: 20,
-                              color: cs.primary,
-                              tooltip: 'Batch Download',
                             ),
-                          IconButton(
-                            onPressed: () => _triggerRetry(matchArgs),
-                            icon: const Icon(Icons.refresh_rounded),
-                            iconSize: 20,
-                            color: cs.primary,
+                            const SizedBox(width: 6),
+                          ],
+                          _ToolbarButton(
+                            icon: Icons.refresh_rounded,
                             tooltip: 'Refresh Episodes',
+                            onTap: () => _triggerRetry(matchArgs),
                           ),
+                          const SizedBox(width: 6),
                           _ViewModeToggle(
                             current: viewMode,
                             onChanged: (m) => ref
                                 .read(uiPrefsProvider.notifier)
                                 .updateEpisodeViewMode(m),
                           ),
+                          const SizedBox(width: 6),
                         ],
-                        IconButton(
-                          onPressed: () {
+                        _ToolbarButton(
+                          icon: _descending
+                              ? Icons.arrow_downward_rounded
+                              : Icons.arrow_upward_rounded,
+                          tooltip: _descending
+                              ? 'Sorted Newest First'
+                              : 'Sorted Oldest First',
+                          selected: _descending,
+                          onTap: () {
                             setState(() {
                               _descending = !_descending;
                               _chunkIndex = 0;
                             });
                           },
-                          icon: Icon(
-                            _descending
-                                ? Icons.arrow_downward
-                                : Icons.arrow_upward,
-                          ),
-                          iconSize: 18,
-                          tooltip: _descending
-                              ? 'Sorted Newest First'
-                              : 'Sorted Oldest First',
                         ),
                       ],
                     ),
@@ -755,19 +670,23 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
                 ),
               ),
             ),
-
             StaggeredFadeIn(
               index: staggerIndex++,
-              child: Divider(height: 1, color: cs.surfaceContainerHighest),
+              child: Divider(
+                height: 1,
+                thickness: 1,
+                color: cs.surfaceContainerHighest,
+              ),
             ),
-
             Expanded(
               child: StaggeredFadeIn(
                 index: staggerIndex++,
                 child: RefreshIndicator(
-                  onRefresh: () async {
-                    _triggerRetry(MediaArgs.fromMedia(widget.media));
-                  },
+                  elevation: 0,
+                  backgroundColor: cs.surfaceContainerHigh,
+                  color: cs.primary,
+                  onRefresh: () =>
+                      _triggerRetry(MediaArgs.fromMedia(widget.media)),
                   child: _buildEpisodeView(
                     context,
                     episodes: finalEpisodes,
@@ -848,7 +767,7 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
               case EpisodeViewMode.classic:
                 offset = currentIndex * 72.0;
               case EpisodeViewMode.compact:
-                offset = currentIndex * 52.0;
+                offset = 8.0 + currentIndex * 60.0;
               case EpisodeViewMode.cover:
                 final cols = panelTier.pick(
                   compact: 1,
@@ -858,7 +777,7 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
                   ultraLarge: 3,
                 );
                 final pad = panelTier.pickOrFold(
-                  compact: 8.0,
+                  compact: 10.0,
                   medium: 12.0,
                   large: 16.0,
                 );
@@ -868,7 +787,7 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
                   large: 12.0,
                 );
                 final row = currentIndex ~/ cols;
-                offset = pad + row * (90.0 + spacing);
+                offset = pad + row * (94.0 + spacing);
               case EpisodeViewMode.grid:
                 final cols = panelTier.pick(
                   compact: 2,
@@ -878,7 +797,7 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
                   ultraLarge: 6,
                 );
                 final pad = panelTier.pickOrFold(
-                  compact: 8.0,
+                  compact: 10.0,
                   medium: 12.0,
                   large: 16.0,
                 );
@@ -894,12 +813,12 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
                 offset = pad + row * (cellH + spacing);
               case EpisodeViewMode.box:
                 final boxSize = panelTier.pickOrFold(
-                  compact: 46.0,
-                  medium: 50.0,
+                  compact: 48.0,
+                  medium: 52.0,
                   large: 58.0,
                 );
                 final boxPad = panelTier.pickOrFold(
-                  compact: 8.0,
+                  compact: 10.0,
                   medium: 12.0,
                   large: 16.0,
                 );
@@ -1015,10 +934,18 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
 
         switch (viewMode) {
           case EpisodeViewMode.classic:
-          case EpisodeViewMode.compact:
             return ListView.builder(
               controller: widget.useScrollController ? _scrollController : null,
               itemCount: episodes.length,
+              itemBuilder: buildItem,
+            );
+
+          case EpisodeViewMode.compact:
+            return ListView.separated(
+              controller: widget.useScrollController ? _scrollController : null,
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
+              itemCount: episodes.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 6),
               itemBuilder: buildItem,
             );
 
@@ -1031,7 +958,7 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
               ultraLarge: 3,
             );
             final coverPad = panelTier.pickOrFold(
-              compact: 8.0,
+              compact: 10.0,
               medium: 12.0,
               large: 16.0,
             );
@@ -1048,7 +975,7 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
                 crossAxisCount: coverColumns,
                 crossAxisSpacing: coverSpacing,
                 mainAxisSpacing: coverSpacing,
-                mainAxisExtent: 90.0,
+                mainAxisExtent: 94.0,
               ),
               itemCount: episodes.length,
               itemBuilder: buildItem,
@@ -1063,7 +990,7 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
               ultraLarge: 6,
             );
             final gridPad = panelTier.pickOrFold(
-              compact: 8.0,
+              compact: 10.0,
               medium: 12.0,
               large: 16.0,
             );
@@ -1088,12 +1015,12 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
 
           case EpisodeViewMode.box:
             final boxSize = panelTier.pickOrFold(
-              compact: 46.0,
-              medium: 50.0,
+              compact: 48.0,
+              medium: 52.0,
               large: 58.0,
             );
             final boxPad = panelTier.pickOrFold(
-              compact: 8.0,
+              compact: 10.0,
               medium: 12.0,
               large: 16.0,
             );
@@ -1121,6 +1048,189 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
   }
 }
 
+class _FilterMenuButton<T> extends StatefulWidget {
+  final T current;
+  final List<T> items;
+  final String Function(T) labelBuilder;
+  final void Function(T) onSelected;
+  final IconData icon;
+  final bool highlighted;
+
+  const _FilterMenuButton({
+    required this.current,
+    required this.items,
+    required this.labelBuilder,
+    required this.onSelected,
+    required this.icon,
+    this.highlighted = false,
+  });
+
+  @override
+  State<_FilterMenuButton<T>> createState() => _FilterMenuButtonState<T>();
+}
+
+class _FilterMenuButtonState<T> extends State<_FilterMenuButton<T>> {
+  final GlobalKey<PopupMenuButtonState<T>> _menuKey = GlobalKey();
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final radius = BorderRadius.circular(GlobalUI.uiRoundness);
+
+    return Theme(
+      data: Theme.of(context).copyWith(
+        hoverColor: Colors.transparent,
+        highlightColor: Colors.transparent,
+        splashColor: Colors.transparent,
+      ),
+      child: PopupMenuButton<T>(
+        key: _menuKey,
+        initialValue: widget.current,
+        onSelected: widget.onSelected,
+        tooltip: '',
+        elevation: 0,
+        shadowColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: radius,
+          side: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.45)),
+        ),
+        color: cs.surfaceContainerHigh,
+        position: PopupMenuPosition.under,
+        itemBuilder: (context) {
+          return widget.items.map((item) {
+            final isSelected = item == widget.current;
+            return PopupMenuItem<T>(
+              value: item,
+              child: Row(
+                children: [
+                  Text(
+                    widget.labelBuilder(item),
+                    style: TextStyle(
+                      color: isSelected ? cs.primary : cs.onSurface,
+                      fontWeight: isSelected
+                          ? FontWeight.w700
+                          : FontWeight.w500,
+                      fontSize: 13.5,
+                    ),
+                  ),
+                  if (isSelected) ...[
+                    const Spacer(),
+                    Icon(Icons.check_rounded, size: 18, color: cs.primary),
+                  ],
+                ],
+              ),
+            );
+          }).toList();
+        },
+        child: AppFocusHover(
+          onTap: () => _menuKey.currentState?.showButtonMenu(),
+          scaleFactor: 1.05,
+          builder: (context, isFocused, isHovered) {
+            final active = isFocused || isHovered;
+            final bg = active
+                ? cs.primary
+                : widget.highlighted
+                ? cs.secondaryContainer
+                : cs.surfaceContainerHighest;
+            final fg = active
+                ? cs.onPrimary
+                : widget.highlighted
+                ? cs.onSecondaryContainer
+                : cs.onSurfaceVariant;
+            final iconFg = active
+                ? cs.onPrimary
+                : widget.highlighted
+                ? cs.onSecondaryContainer
+                : cs.primary;
+
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              curve: Curves.easeOutCubic,
+              height: 34,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: ShapeDecoration(
+                color: bg,
+                shape: const StadiumBorder(),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(widget.icon, size: 15, color: iconFg),
+                  const SizedBox(width: 6),
+                  Text(
+                    widget.labelBuilder(widget.current),
+                    style: textTheme.labelMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: fg,
+                    ),
+                  ),
+                  const SizedBox(width: 2),
+                  Icon(Icons.keyboard_arrow_down_rounded, size: 17, color: fg),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _ToolbarButton extends StatelessWidget {
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onTap;
+  final bool selected;
+  final Color? iconColor;
+
+  const _ToolbarButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+    this.selected = false,
+    this.iconColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return Tooltip(
+      message: tooltip,
+      child: AppFocusHover(
+        onTap: onTap,
+        scaleFactor: 1.05,
+        builder: (context, isFocused, isHovered) {
+          final active = isFocused || isHovered;
+          final bg = active
+              ? cs.primary
+              : selected
+              ? cs.primaryContainer
+              : cs.surfaceContainerHighest;
+          final fg = active
+              ? cs.onPrimary
+              : selected
+              ? cs.onPrimaryContainer
+              : (iconColor ?? cs.onSurfaceVariant);
+
+          return AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            curve: Curves.easeOutCubic,
+            width: 34,
+            height: 34,
+            decoration: ShapeDecoration(
+              color: bg,
+              shape: const StadiumBorder(),
+            ),
+            child: Icon(icon, size: 18, color: fg),
+          );
+        },
+      ),
+    );
+  }
+}
+
 class _ViewModeToggle extends ConsumerWidget {
   final EpisodeViewMode current;
   final ValueChanged<EpisodeViewMode> onChanged;
@@ -1139,16 +1249,15 @@ class _ViewModeToggle extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final cs = Theme.of(context).colorScheme;
 
-    return IconButton(
-      onPressed: () {
+    return _ToolbarButton(
+      icon: _iconForMode(current),
+      tooltip: 'View: ${current.displayName}',
+      iconColor: cs.primary,
+      onTap: () {
         final values = EpisodeViewMode.values;
         final nextIndex = (values.indexOf(current) + 1) % values.length;
         onChanged(values[nextIndex]);
       },
-      tooltip: 'Episode View Mode',
-      icon: Icon(_iconForMode(current)),
-      iconSize: 20,
-      color: cs.primary,
     );
   }
 }

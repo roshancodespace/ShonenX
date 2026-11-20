@@ -226,9 +226,9 @@ class SettingsScreen extends ConsumerWidget {
                   color: ColorScheme.of(context).primary,
                   size: 24,
                 ),
-                title: 'Support Development',
-                subtitle:
-                    'Buy me a coffee to keep the project alive and ad-free!',
+                title: l10n.settingsSupportDevelopment,
+                subtitle: l10n.settingsSupportDevelopmentSubtitle,
+                trailing: const Icon(Icons.chevron_right, size: 20),
                 onTap: () => launchUrl(
                   Uri.parse('https://buymeacoffee.com/roshan.codespace'),
                   mode: LaunchMode.externalApplication,

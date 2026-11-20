@@ -925,4 +925,169 @@ class AppLocalizationsBn extends AppLocalizations {
 
   @override
   String get detailsSynonyms => 'প্রতিশব্দ';
+
+  @override
+  String get settingsSupportDevelopment => 'উন্নয়নে সহায়তা';
+
+  @override
+  String get settingsSupportDevelopmentSubtitle =>
+      'প্রকল্পটিকে জীবিত ও বিজ্ঞাপনমুক্ত রাখতে আমাকে একটি কফি কিনুন!';
+
+  @override
+  String get settingsInfo => 'তথ্য';
+
+  @override
+  String get settingsCustomize => 'কাস্টমাইজ';
+
+  @override
+  String get settingsAdvancedSettings => 'সেটিংস';
+
+  @override
+  String get uiSettingsExperimental => 'পরীক্ষামূলক';
+
+  @override
+  String get uiSettingsLayoutMotion => 'লেআউট ও গতি';
+
+  @override
+  String get uiSettingsLayoutMotionSubtitle =>
+      'সামগ্রিক আকার ও শিটের গতি — থিমের রঙ \'উপস্থিতি\'-তে আছে';
+
+  @override
+  String get uiSettingsHomeScreen => 'হোম স্ক্রিন';
+
+  @override
+  String get uiSettingsMediaCards => 'মিডিয়া কার্ড';
+
+  @override
+  String get uiSettingsEpisodes => 'পর্বসমূহ';
+
+  @override
+  String get uiSettingsNavigationBar => 'নেভিগেশন বার';
+
+  @override
+  String get uiSettingsExperimentalTvTitle =>
+      'পরীক্ষামূলক টিভি / নতুন ইন্টারফেস';
+
+  @override
+  String get uiSettingsExperimentalTvSubtitle =>
+      'D-pad, রিমোট ও কীবোর্ড নেভিগেশনের জন্য তৈরি একটি সিনেমাটিক, স্থানিক ইন্টারফেস';
+
+  @override
+  String get uiSettingsSizingTitle => 'আকার ও কোণ';
+
+  @override
+  String get uiSettingsSizingSubtitle =>
+      'কোণের ব্যাসার্ধ, উইজেট স্কেল এবং টেক্সট স্কেল সামঞ্জস্য করুন';
+
+  @override
+  String get uiSettingsSheetPhysicsTitle => 'শিট ফিজিক্স';
+
+  @override
+  String get uiSettingsSheetPhysicsSubtitle =>
+      'নিচের শিটের গতির ধর্ম সামঞ্জস্য করুন';
+
+  @override
+  String get uiSettingsSheetPhysicsHammer => 'হাতুড়ি';
+
+  @override
+  String get uiSettingsSheetPhysicsSlideUp => 'উপরে স্লাইড';
+
+  @override
+  String get uiSettingsHeaderStyleTitle => 'হেডার স্টাইল';
+
+  @override
+  String get uiSettingsHeaderStyleSubtitle => 'হোম হেডারের লেআউট বেছে নিন';
+
+  @override
+  String get uiSettingsCardStyleTitle => 'কার্ড স্টাইল';
+
+  @override
+  String get uiSettingsCardStyleSubtitle =>
+      'হোম ও আবিষ্কারে মিডিয়া কার্ডের স্টাইল';
+
+  @override
+  String get uiSettingsContinueWatchingTitle => 'দেখা চালিয়ে যান স্টাইল';
+
+  @override
+  String get uiSettingsContinueWatchingSubtitle =>
+      'দেখা চালিয়ে যান সারির কার্ডের স্টাইল';
+
+  @override
+  String get uiSettingsContinueReadingTitle => 'পড়া চালিয়ে যান স্টাইল';
+
+  @override
+  String get uiSettingsContinueReadingSubtitle =>
+      'পড়া চালিয়ে যান সারির কার্ডের স্টাইল';
+
+  @override
+  String get uiSettingsEpisodeViewTitle => 'পর্ব / অধ্যায় বিন্যাস';
+
+  @override
+  String get uiSettingsEpisodeViewSubtitle =>
+      'পর্ব তালিকার জন্য ডিফল্ট ভিউ মোড';
+
+  @override
+  String get uiSettingsNavBarTitle => 'নেভিগেশন বার স্টাইল';
+
+  @override
+  String get uiSettingsNavBarSubtitle => 'নিচের নেভিগেশন বারের স্টাইল';
+
+  @override
+  String get settingsColorSource => 'রঙের উৎস';
+
+  @override
+  String get settingsColorSourceDynamicNote =>
+      'রঙের স্কিম ডাইনামিক রঙ দ্বারা পরিচালিত হয়।';
+
+  @override
+  String get settingsColorTweaks => 'রঙের সমন্বয়';
+
+  @override
+  String get settingsDynamicColorSubtitle => 'ওয়ালপেপারের রঙ ব্যবহার করে';
+
+  @override
+  String get settingsAmoledSubtitle => 'OLED স্ক্রিনে ব্যাটারি বাঁচায়';
+
+  @override
+  String get settingsAmoledDisabledWithWallpaper =>
+      'ব্যাকগ্রাউন্ড ইমেজ সেট থাকলে নিষ্ক্রিয়';
+
+  @override
+  String get settingsThemeVariantTitle => 'রঙের মিশ্রণ';
+
+  @override
+  String get settingsThemeVariantSubtitle =>
+      'সিস্টেমের রঙ কীভাবে প্যালেটে মেশানো হয়';
+
+  @override
+  String get settingsThemeStyle => 'রঙের মিশ্রণের শৈলী';
+
+  @override
+  String get settingsSwapColors => 'রঙ বিনিময়';
+
+  @override
+  String get settingsSwapColorsSubtitle =>
+      'প্রাথমিক ও মাধ্যমিক রঙ বিনিময় করুন';
+
+  @override
+  String get settingsPresets => 'প্রিসেট';
+
+  @override
+  String get settingsThemePresetsTitle => 'থিম প্রিসেট ও গ্যালারি';
+
+  @override
+  String get settingsThemePresetsSubtitle =>
+      'থিম অন্বেষণ করুন এবং JSON প্রিসেট আমদানি/রপ্তানি করুন';
+
+  @override
+  String get settingsExclusiveThemes => 'এক্সক্লুসিভ থিম';
+
+  @override
+  String get settingsStandardSchemes => 'স্ট্যান্ডার্ড রঙের স্কিম';
+
+  @override
+  String get settingsExclusiveSchemes => 'এক্সক্লুসিভ রঙের স্কিম';
+
+  @override
+  String get settingsTopGeneratedSchemes => 'শীর্ষ উত্পন্ন স্কিম';
 }

@@ -1,9 +1,9 @@
 import 'dart:io';
 
-import 'package:shonenx/core/localization/l10n_extension.dart';
-import 'package:shonenx/shared/widgets/smart_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/core/localization/l10n_extension.dart';
+import 'package:shonenx/shared/widgets/smart_image.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:shonenx/core/router/app_navigator.dart';
@@ -18,6 +18,64 @@ import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/shared/widgets/staggered_fade_in.dart';
 import 'package:shonenx/source_engine/source_engine_provider.dart';
+
+abstract final class _Space {
+  static const double xs = 4;
+  static const double sm = 8;
+  static const double md = 12;
+  static const double lg = 16;
+  static const double xl = 24;
+  static const double xxl = 32;
+}
+
+const double _innerRadius = 6;
+const double _segmentGap = 2;
+const double _characterImageWidth = 56;
+const double _characterImageHeight = 92;
+const double _characterCardPadding = 6;
+const double _characterCardWidth = 208;
+
+const StadiumBorder _stadium = StadiumBorder();
+
+double _largeRadius(double uiRoundness) =>
+    uiRoundness.clamp(16.0, 28.0).toDouble();
+
+bool _hasText(String? value) => value != null && value.isNotEmpty;
+
+String _sentenceCase(String value) {
+  final text = value.replaceAll('_', ' ').trim().toLowerCase();
+  if (text.isEmpty) return text;
+  return text[0].toUpperCase() + text.substring(1);
+}
+
+String _compactNumber(int number) {
+  String trim(double value) {
+    final fixed = value.toStringAsFixed(1);
+    return fixed.endsWith('.0') ? fixed.substring(0, fixed.length - 2) : fixed;
+  }
+
+  if (number >= 1000000) return '${trim(number / 1000000)}M';
+  if (number >= 1000) return '${trim(number / 1000)}k';
+  return number.toString();
+}
+
+List<_DetailPair> _detailPairs(BuildContext context, UnifiedMedia media) {
+  final l10n = context.l10n;
+  return [
+    if (media.studios != null && media.studios!.isNotEmpty)
+      _DetailPair(l10n.detailsStudio, media.studios!.join(', ')),
+    if (_hasText(media.source))
+      _DetailPair('Source', _sentenceCase(media.source!)),
+    if ((media.duration ?? 0) > 0)
+      _DetailPair(l10n.detailsDuration, l10n.detailsMinutes(media.duration!)),
+    if ((media.volumes ?? 0) > 0)
+      _DetailPair(l10n.detailsVolumes, '${media.volumes}'),
+    if ((media.favourites ?? 0) > 0)
+      _DetailPair(l10n.detailsFavorites, _compactNumber(media.favourites!)),
+    if ((media.popularity ?? 0) > 0)
+      _DetailPair(l10n.detailsPopularity, '#${media.popularity}'),
+  ];
+}
 
 class AboutTabWidget extends ConsumerStatefulWidget {
   final UnifiedMedia media;
@@ -44,181 +102,73 @@ class _AboutTabWidgetState extends ConsumerState<AboutTabWidget>
   Widget build(BuildContext context) {
     super.build(context);
 
-    final theme = Theme.of(context);
-    final textTheme = theme.textTheme;
+    final media = widget.media;
+    final radius = _largeRadius(widget.uiRoundness);
 
-    final hasTags = widget.media.tags != null && widget.media.tags!.isNotEmpty;
-    final hasGenres =
-        widget.media.genres != null && widget.media.genres!.isNotEmpty;
-    final hasRelations =
-        widget.media.relations != null && widget.media.relations!.isNotEmpty;
+    final hasTags = media.tags != null && media.tags!.isNotEmpty;
+    final hasGenres = media.genres != null && media.genres!.isNotEmpty;
+    final hasRelations = media.relations != null && media.relations!.isNotEmpty;
     final hasRecommendations =
-        widget.media.recommendations != null &&
-        widget.media.recommendations!.isNotEmpty;
+        media.recommendations != null && media.recommendations!.isNotEmpty;
     final hasCharacters =
-        (widget.media.characters != null &&
-            widget.media.characters!.isNotEmpty) ||
-        widget.media.id.isNotEmpty;
+        (media.characters != null && media.characters!.isNotEmpty) ||
+        media.id.isNotEmpty;
     final hasLinks =
-        widget.media.externalLinks != null &&
-        widget.media.externalLinks!.isNotEmpty;
+        media.externalLinks != null && media.externalLinks!.isNotEmpty;
+    final hasAlternativeTitles =
+        _hasText(media.title.english) ||
+        _hasText(media.title.romaji) ||
+        _hasText(media.title.native) ||
+        (media.synonyms != null && media.synonyms!.isNotEmpty);
+    final details = _detailPairs(context, media);
 
-    final items = <Widget>[];
-
-    // Airing Banner
-    if (widget.media.airingAt != null) {
-      items.add(
-        Padding(
-          padding: const EdgeInsets.only(bottom: 16),
-          child: _AiringBanner(
-            media: widget.media,
-            onEpisodesTabRequested: widget.onEpisodesTabRequested,
-            uiRoundness: widget.uiRoundness,
-          ),
+    final items = <Widget>[
+      if (media.airingAt != null)
+        _AiringBanner(
+          media: media,
+          onEpisodesTabRequested: widget.onEpisodesTabRequested,
+          radius: radius,
         ),
-      );
-    }
-
-    // Synopsis Section
-    items.add(Synopsis(description: widget.media.description ?? ''));
-
-    // Information & Details Key-Value List
-    items.add(
-      Padding(
-        padding: const EdgeInsets.only(top: 20),
-        child: _MediaDetailsSection(
-          media: widget.media,
-          uiRoundness: widget.uiRoundness,
+      if (_hasText(media.description))
+        Synopsis(description: media.description!),
+      if (details.isNotEmpty)
+        _MediaDetailsSection(details: details, radius: radius),
+      if (hasAlternativeTitles)
+        _AlternativeTitlesTile(
+          title: media.title,
+          synonyms: media.synonyms ?? [],
+          radius: radius,
         ),
+      if (hasGenres || hasTags)
+        _GenresAndTagsSection(
+          genres: media.genres ?? [],
+          tags: media.tags ?? [],
+          mediaType: media.type,
+        ),
+      if (hasCharacters)
+        _CharactersList(
+          mediaId: media.id,
+          mediaType: media.type,
+          mediaTitle: media.title.getPreferedTitle,
+          characters: media.characters ?? [],
+          radius: radius,
+        ),
+      if (hasLinks) _ExternalLinksList(links: media.externalLinks!),
+      if (hasRelations)
+        _RelationsList(relations: media.relations!, parentType: media.type),
+      if (hasRecommendations)
+        _RecommendationsList(recommendations: media.recommendations!),
+    ];
+
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(
+        _Space.lg,
+        _Space.md,
+        _Space.lg,
+        _Space.xxl,
       ),
-    );
-
-    // Alternative Titles Tile
-    if (widget.media.title.english != null ||
-        widget.media.title.romaji != null ||
-        widget.media.title.native != null ||
-        (widget.media.synonyms != null && widget.media.synonyms!.isNotEmpty)) {
-      items.add(
-        Padding(
-          padding: const EdgeInsets.only(top: 16),
-          child: _AlternativeTitlesTile(
-            title: widget.media.title,
-            synonyms: widget.media.synonyms ?? [],
-            uiRoundness: widget.uiRoundness,
-          ),
-        ),
-      );
-    }
-
-    // Genres & Tags Section
-    if (hasGenres || hasTags) {
-      items.add(
-        Padding(
-          padding: const EdgeInsets.only(top: 20),
-          child: _GenresAndTagsSection(
-            genres: widget.media.genres ?? [],
-            tags: widget.media.tags ?? [],
-            mediaType: widget.media.type,
-            uiRoundness: widget.uiRoundness,
-            textTheme: textTheme,
-          ),
-        ),
-      );
-    }
-
-    // Characters & Cast Section
-    if (hasCharacters) {
-      items.add(
-        Padding(
-          padding: const EdgeInsets.only(top: 24),
-          child: _CharactersList(
-            mediaId: widget.media.id,
-            mediaType: widget.media.type,
-            mediaTitle: widget.media.title.getPreferedTitle,
-            characters: widget.media.characters ?? [],
-            uiRoundness: widget.uiRoundness,
-          ),
-        ),
-      );
-    }
-
-    // External Streaming & Links Section
-    if (hasLinks) {
-      items.add(
-        Padding(
-          padding: const EdgeInsets.only(top: 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                context.l10n.detailsExternalLinks,
-                style: textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 10),
-              _ExternalLinksList(
-                links: widget.media.externalLinks!,
-                uiRoundness: widget.uiRoundness,
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    // Relations Section
-    if (hasRelations) {
-      items.add(
-        Padding(
-          padding: const EdgeInsets.only(top: 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                context.l10n.detailsRelations,
-                style: textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 12),
-              _RelationsList(
-                relations: widget.media.relations!,
-                parentType: widget.media.type,
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    // Recommendations Section
-    if (hasRecommendations) {
-      items.add(
-        Padding(
-          padding: const EdgeInsets.only(top: 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                context.l10n.detailsRecommendations,
-                style: textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 12),
-              _RecommendationsList(
-                recommendations: widget.media.recommendations!,
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       itemCount: items.length,
+      separatorBuilder: (_, __) => const SizedBox(height: _Space.xxl),
       itemBuilder: (context, index) {
         return StaggeredFadeIn(index: index, child: items[index]);
       },
@@ -226,92 +176,78 @@ class _AboutTabWidgetState extends ConsumerState<AboutTabWidget>
   }
 }
 
-class _MediaDetailsSection extends StatelessWidget {
-  final UnifiedMedia media;
-  final double uiRoundness;
+class _SectionHeader extends StatelessWidget {
+  final String title;
+  final VoidCallback? onTap;
+  final Widget? trailing;
 
-  const _MediaDetailsSection({required this.media, required this.uiRoundness});
+  const _SectionHeader({required this.title, this.onTap, this.trailing});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-    final l10n = context.l10n;
 
-    final details = <_DetailPair>[];
-
-    if (media.studios != null && media.studios!.isNotEmpty) {
-      details.add(_DetailPair(l10n.detailsStudio, media.studios!.join(', ')));
-    }
-    if (media.source != null && media.source!.isNotEmpty) {
-      details.add(
-        _DetailPair('Source', media.source!.toUpperCase().replaceAll('_', ' ')),
-      );
-    }
-    if (media.duration != null && media.duration! > 0) {
-      details.add(_DetailPair(l10n.detailsDuration, l10n.detailsMinutes(media.duration!)));
-    }
-    if (media.volumes != null && media.volumes! > 0) {
-      details.add(_DetailPair(l10n.detailsVolumes, '${media.volumes}'));
-    }
-    if (media.favourites != null && media.favourites! > 0) {
-      details.add(
-        _DetailPair(l10n.detailsFavorites, _formatCompactNumber(media.favourites!)),
-      );
-    }
-    if (media.popularity != null && media.popularity! > 0) {
-      details.add(_DetailPair(l10n.detailsPopularity, '#${media.popularity}'));
-    }
-
-    if (details.isEmpty) return const SizedBox.shrink();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          l10n.detailsInformation,
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        const SizedBox(height: 10),
-        ...details.map((d) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 6),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(
-                  width: 90,
-                  child: Text(
-                    d.label,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: cs.onSurfaceVariant,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: Text(
-                    d.value,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: cs.onSurface,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ],
+    final row = ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 36),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.3,
+              ),
             ),
-          );
-        }),
-      ],
+          ),
+          if (trailing != null) trailing!,
+        ],
+      ),
+    );
+
+    if (onTap == null) return row;
+
+    return InkWell(onTap: onTap, customBorder: _stadium, child: row);
+  }
+}
+
+class _SubLabel extends StatelessWidget {
+  final String text;
+
+  const _SubLabel(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Text(
+      text,
+      style: theme.textTheme.titleSmall?.copyWith(
+        color: theme.colorScheme.onSurfaceVariant,
+        fontWeight: FontWeight.w600,
+      ),
     );
   }
+}
 
-  String _formatCompactNumber(int number) {
-    if (number >= 1000000) return '${(number / 1000000).toStringAsFixed(1)}M';
-    if (number >= 1000) return '${(number / 1000).toStringAsFixed(1)}k';
-    return number.toString();
+class _TonalCircle extends StatelessWidget {
+  final Widget child;
+
+  const _TonalCircle({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 36,
+      height: 36,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHigh,
+        shape: BoxShape.circle,
+      ),
+      child: child,
+    );
   }
 }
 
@@ -321,15 +257,97 @@ class _DetailPair {
   const _DetailPair(this.label, this.value);
 }
 
+class _SegmentedRows extends StatelessWidget {
+  final List<_DetailPair> rows;
+  final double radius;
+
+  const _SegmentedRows({required this.rows, required this.radius});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    return Column(
+      children: [
+        for (var i = 0; i < rows.length; i++)
+          Padding(
+            padding: EdgeInsets.only(top: i == 0 ? 0 : _segmentGap),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(
+                horizontal: _Space.lg,
+                vertical: _Space.md + 2,
+              ),
+              decoration: BoxDecoration(
+                color: cs.surfaceContainer,
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(i == 0 ? radius : _innerRadius),
+                  bottom: Radius.circular(
+                    i == rows.length - 1 ? radius : _innerRadius,
+                  ),
+                ),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    width: 104,
+                    child: Text(
+                      rows[i].label,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: cs.onSurfaceVariant,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: Text(
+                      rows[i].value,
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        color: cs.onSurface,
+                        fontWeight: FontWeight.w600,
+                        height: 1.3,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _MediaDetailsSection extends StatelessWidget {
+  final List<_DetailPair> details;
+  final double radius;
+
+  const _MediaDetailsSection({required this.details, required this.radius});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SectionHeader(title: context.l10n.detailsInformation),
+        const SizedBox(height: _Space.md),
+        _SegmentedRows(rows: details, radius: radius),
+      ],
+    );
+  }
+}
+
 class _AlternativeTitlesTile extends StatefulWidget {
   final MediaTitle title;
   final List<String> synonyms;
-  final double uiRoundness;
+  final double radius;
 
   const _AlternativeTitlesTile({
     required this.title,
     required this.synonyms,
-    required this.uiRoundness,
+    required this.radius,
   });
 
   @override
@@ -341,99 +359,97 @@ class _AlternativeTitlesTileState extends State<_AlternativeTitlesTile> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
+    final cs = Theme.of(context).colorScheme;
     final l10n = context.l10n;
+    final title = widget.title;
+    final hasSynonyms = widget.synonyms.isNotEmpty;
 
-    final rows = <Widget>[];
-
-    if (widget.title.english != null && widget.title.english!.isNotEmpty) {
-      rows.add(_buildTitleRow(l10n.detailsEnglish, widget.title.english!, cs, theme));
-    }
-    if (widget.title.romaji != null && widget.title.romaji!.isNotEmpty) {
-      rows.add(_buildTitleRow(l10n.detailsRomaji, widget.title.romaji!, cs, theme));
-    }
-    if (widget.title.native != null && widget.title.native!.isNotEmpty) {
-      rows.add(_buildTitleRow(l10n.detailsNative, widget.title.native!, cs, theme));
-    }
-
-    if (_expanded && widget.synonyms.isNotEmpty) {
-      rows.add(
-        _buildTitleRow(l10n.detailsSynonyms, widget.synonyms.join(', '), cs, theme),
-      );
-    }
-
-    if (rows.isEmpty) return const SizedBox.shrink();
+    final rows = <_DetailPair>[
+      if (_hasText(title.english))
+        _DetailPair(l10n.detailsEnglish, title.english!),
+      if (_hasText(title.romaji))
+        _DetailPair(l10n.detailsRomaji, title.romaji!),
+      if (_hasText(title.native))
+        _DetailPair(l10n.detailsNative, title.native!),
+      if (_expanded && hasSynonyms)
+        _DetailPair(l10n.detailsSynonyms, widget.synonyms.join(', ')),
+    ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        InkWell(
-          onTap: widget.synonyms.isNotEmpty
+        _SectionHeader(
+          title: l10n.detailsAlternativeTitles,
+          onTap: hasSynonyms
               ? () => setState(() => _expanded = !_expanded)
               : null,
-          borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  context.l10n.detailsAlternativeTitles,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
+          trailing: hasSynonyms
+              ? _TonalCircle(
+                  child: AnimatedRotation(
+                    turns: _expanded ? 0.5 : 0,
+                    duration: const Duration(milliseconds: 250),
+                    curve: Curves.easeOutCubic,
+                    child: Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      size: 22,
+                      color: cs.onSurfaceVariant,
+                    ),
                   ),
-                ),
-                if (widget.synonyms.isNotEmpty)
-                  Icon(
-                    _expanded
-                        ? Icons.keyboard_arrow_up_rounded
-                        : Icons.keyboard_arrow_down_rounded,
-                    size: 20,
-                    color: cs.onSurfaceVariant,
-                  ),
-              ],
-            ),
-          ),
+                )
+              : null,
         ),
-        const SizedBox(height: 6),
-        ...rows,
+        AnimatedSize(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOutCubic,
+          alignment: Alignment.topCenter,
+          child: rows.isEmpty
+              ? const SizedBox(width: double.infinity)
+              : Padding(
+                  padding: const EdgeInsets.only(top: _Space.md),
+                  child: _SegmentedRows(rows: rows, radius: widget.radius),
+                ),
+        ),
       ],
     );
   }
+}
 
-  Widget _buildTitleRow(
-    String label,
-    String value,
-    ColorScheme cs,
-    ThemeData theme,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 90,
-            child: Text(
-              label,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: cs.onSurfaceVariant,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: cs.onSurface,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
+class _MediaChip extends StatelessWidget {
+  final String label;
+  final VoidCallback onPressed;
+  final Color background;
+  final Color foreground;
+  final FontWeight weight;
+  final IconData? icon;
+
+  const _MediaChip({
+    required this.label,
+    required this.onPressed,
+    required this.background,
+    required this.foreground,
+    this.weight = FontWeight.w600,
+    this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ActionChip(
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      elevation: 0,
+      pressElevation: 0,
+      shadowColor: Colors.transparent,
+      surfaceTintColor: Colors.transparent,
+      shape: _stadium,
+      side: BorderSide.none,
+      padding: const EdgeInsets.symmetric(horizontal: _Space.sm),
+      labelPadding: const EdgeInsets.symmetric(horizontal: _Space.xs),
+      backgroundColor: background,
+      avatar: icon == null ? null : Icon(icon, size: 16, color: foreground),
+      label: Text(
+        label,
+        style: TextStyle(fontSize: 13, fontWeight: weight, color: foreground),
       ),
+      onPressed: onPressed,
     );
   }
 }
@@ -442,14 +458,10 @@ class _GenresAndTagsSection extends StatelessWidget {
   final List<String> genres;
   final List<MediaTag> tags;
   final MediaType? mediaType;
-  final double uiRoundness;
-  final TextTheme textTheme;
 
   const _GenresAndTagsSection({
     required this.genres,
     required this.tags,
-    required this.uiRoundness,
-    required this.textTheme,
     this.mediaType,
   });
 
@@ -461,58 +473,42 @@ class _GenresAndTagsSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (genres.isNotEmpty) ...[
-          Text(
-            'Genres',
-            style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 8),
+          const _SectionHeader(title: 'Genres'),
+          const SizedBox(height: _Space.md),
           Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: genres.map((genre) {
-              return ActionChip(
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                labelPadding: EdgeInsets.zero,
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(uiRoundness),
+            spacing: _Space.sm,
+            runSpacing: _Space.sm,
+            children: [
+              for (final genre in genres)
+                _MediaChip(
+                  label: genre,
+                  background: cs.secondaryContainer,
+                  foreground: cs.onSecondaryContainer,
+                  onPressed: () =>
+                      context.goDiscover(genres: [genre], type: mediaType),
                 ),
-                side: BorderSide.none,
-                backgroundColor: cs.primaryContainer.withValues(alpha: 0.6),
-                label: Text(
-                  genre,
-                  style: TextStyle(
-                    color: cs.onPrimaryContainer,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 11.5,
-                  ),
-                ),
-                onPressed: () {
-                  context.goDiscover(genres: [genre], type: mediaType);
-                },
-              );
-            }).toList(),
+            ],
           ),
-          const SizedBox(height: 14),
         ],
+        if (genres.isNotEmpty && tags.isNotEmpty)
+          const SizedBox(height: _Space.xl),
         if (tags.isNotEmpty) ...[
-          Text(
-            'Tags',
-            style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 8),
+          const _SubLabel('Tags'),
+          const SizedBox(height: _Space.sm),
           Wrap(
-            spacing: 4,
-            runSpacing: 4,
-            children: tags
-                .map(
-                  (tag) => _TagChip(
-                    label: tag.name,
-                    uiRoundness: uiRoundness,
-                    mediaType: mediaType,
-                  ),
-                )
-                .toList(),
+            spacing: _Space.sm,
+            runSpacing: _Space.sm,
+            children: [
+              for (final tag in tags)
+                _MediaChip(
+                  label: tag.name,
+                  background: cs.surfaceContainerHigh,
+                  foreground: cs.onSurfaceVariant,
+                  weight: FontWeight.w500,
+                  onPressed: () =>
+                      context.goDiscover(tags: [tag.name], type: mediaType),
+                ),
+            ],
           ),
         ],
       ],
@@ -525,14 +521,14 @@ class _CharactersList extends ConsumerStatefulWidget {
   final MediaType mediaType;
   final String mediaTitle;
   final List<MediaCharacter> characters;
-  final double uiRoundness;
+  final double radius;
 
   const _CharactersList({
     required this.mediaId,
     required this.mediaType,
     required this.mediaTitle,
     required this.characters,
-    required this.uiRoundness,
+    required this.radius,
   });
 
   @override
@@ -569,458 +565,464 @@ class _CharactersListState extends ConsumerState<_CharactersList> {
         });
       }
     } catch (_) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  void _openAll() {
+    CharactersSheet.show(
+      context,
+      mediaId: widget.mediaId,
+      mediaType: widget.mediaType,
+      mediaTitle: widget.mediaTitle,
+      initialCharacters: widget.characters,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_list.isEmpty && !_isLoading) return const SizedBox.shrink();
+
     final cs = Theme.of(context).colorScheme;
-
-    if (_list.isEmpty && !_isLoading) {
-      return const SizedBox.shrink();
-    }
-
-    final header = Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          'Characters & Cast',
-          style: Theme.of(
-            context,
-          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
-        ),
-        IconButton(
-          visualDensity: VisualDensity.compact,
-          icon: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
-          onPressed: () {
-            CharactersSheet.show(
-              context,
-              mediaId: widget.mediaId,
-              mediaType: widget.mediaType,
-              mediaTitle: widget.mediaTitle,
-              initialCharacters: widget.characters,
-            );
-          },
-        ),
-      ],
-    );
-
-    Widget content;
-    if (_isLoading) {
-      content = SizedBox(
-        height: 102,
-        child: ListView.separated(
-          scrollDirection: Axis.horizontal,
-          itemCount: 4,
-          separatorBuilder: (_, __) => const SizedBox(width: 10),
-          itemBuilder: (context, index) {
-            return Container(
-              width: 195,
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: cs.surfaceContainerHigh.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(widget.uiRoundness),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 52,
-                    height: 90,
-                    decoration: BoxDecoration(
-                      color: cs.surfaceContainerHigh,
-                      borderRadius: BorderRadius.circular(
-                        widget.uiRoundness * 0.7,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: 80,
-                          height: 12,
-                          color: cs.surfaceContainerHigh,
-                        ),
-                        const SizedBox(height: 6),
-                        Container(
-                          width: 50,
-                          height: 10,
-                          color: cs.surfaceContainerHigh,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
-      );
-    } else {
-      content = SizedBox(
-        height: 102,
-        child: ListView.separated(
-          scrollDirection: Axis.horizontal,
-          itemCount: _list.length,
-          separatorBuilder: (_, __) => const SizedBox(width: 10),
-          itemBuilder: (context, index) {
-            final c = _list[index];
-            return InkWell(
-              onTap: () {
-                CharactersSheet.showDetails(context, c);
-              },
-              borderRadius: BorderRadius.circular(widget.uiRoundness),
-              child: Container(
-                width: 195,
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: cs.surfaceContainerHigh.withValues(alpha: 0.4),
-                  borderRadius: BorderRadius.circular(widget.uiRoundness),
-                ),
-                child: Row(
-                  children: [
-                    if (c.image != null && c.image!.isNotEmpty)
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(
-                          widget.uiRoundness * 0.7,
-                        ),
-                        child: SmartImage(
-                          imageUrl: c.image!,
-                          width: 52,
-                          height: 90,
-                          fit: BoxFit.cover,
-                          errorWidget: (_, __, ___) => Container(
-                            width: 52,
-                            height: 90,
-                            color: cs.surfaceContainerHigh,
-                            child: const Icon(Icons.person_rounded, size: 22),
-                          ),
-                        ),
-                      )
-                    else
-                      Container(
-                        width: 52,
-                        height: 90,
-                        decoration: BoxDecoration(
-                          color: cs.surfaceContainerHigh,
-                          borderRadius: BorderRadius.circular(
-                            widget.uiRoundness * 0.7,
-                          ),
-                        ),
-                        child: const Icon(Icons.person_rounded, size: 22),
-                      ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            c.name,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                          if (c.role != null && c.role!.isNotEmpty) ...[
-                            const SizedBox(height: 2),
-                            Text(
-                              c.role!.toUpperCase(),
-                              style: TextStyle(
-                                fontSize: 8.5,
-                                fontWeight: FontWeight.w800,
-                                color: cs.primary,
-                              ),
-                            ),
-                          ],
-                          if (c.voiceActorName != null &&
-                              c.voiceActorName!.isNotEmpty) ...[
-                            const SizedBox(height: 3),
-                            Text(
-                              c.voiceActorName!,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 9.5,
-                                color: cs.onSurfaceVariant,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        ),
-      );
-    }
+    const height = _characterImageHeight + _characterCardPadding * 2;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [header, const SizedBox(height: 12), content],
+      children: [
+        _SectionHeader(
+          title: 'Characters & cast',
+          onTap: _openAll,
+          trailing: _TonalCircle(
+            child: Icon(
+              Icons.arrow_forward_rounded,
+              size: 20,
+              color: cs.onSurfaceVariant,
+            ),
+          ),
+        ),
+        const SizedBox(height: _Space.md),
+        SizedBox(
+          height: height,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: _isLoading ? 4 : _list.length,
+            separatorBuilder: (_, __) => const SizedBox(width: _Space.sm),
+            itemBuilder: (context, index) {
+              if (_isLoading) {
+                return _CharacterSkeleton(radius: widget.radius);
+              }
+              return _CharacterCard(
+                character: _list[index],
+                radius: widget.radius,
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }
 
-class _ExternalLinksList extends StatelessWidget {
-  final List<MediaExternalLink> links;
-  final double uiRoundness;
+class _CharacterImage extends StatelessWidget {
+  final String? url;
+  final double radius;
 
-  const _ExternalLinksList({required this.links, required this.uiRoundness});
+  const _CharacterImage({required this.url, required this.radius});
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final borderRadius = BorderRadius.circular(radius);
 
-    return Wrap(
-      spacing: 6,
-      runSpacing: 6,
-      children: links.map((link) {
-        return ActionChip(
-          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          labelPadding: EdgeInsets.zero,
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(uiRoundness),
-          ),
-          avatar: const Icon(Icons.open_in_new_rounded, size: 13),
-          side: BorderSide.none,
-          backgroundColor: cs.surfaceContainerHigh.withValues(alpha: 0.5),
-          label: Text(
-            link.site,
-            style: TextStyle(
-              color: cs.onSurface,
-              fontWeight: FontWeight.w600,
-              fontSize: 11.5,
-            ),
-          ),
-          onPressed: () async {
-            final uri = Uri.tryParse(link.url);
-            if (uri != null && await canLaunchUrl(uri)) {
-              await launchUrl(uri, mode: LaunchMode.externalApplication);
-            }
-          },
-        );
-      }).toList(),
+    Widget placeholder() => Container(
+      width: _characterImageWidth,
+      height: _characterImageHeight,
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest,
+        borderRadius: borderRadius,
+      ),
+      child: Icon(Icons.person_rounded, size: 24, color: cs.onSurfaceVariant),
+    );
+
+    if (url == null || url!.isEmpty) return placeholder();
+
+    return ClipRRect(
+      borderRadius: borderRadius,
+      child: SmartImage(
+        imageUrl: url!,
+        width: _characterImageWidth,
+        height: _characterImageHeight,
+        fit: BoxFit.cover,
+        errorWidget: (_, __, ___) => placeholder(),
+      ),
     );
   }
 }
 
-class _AiringBanner extends ConsumerWidget {
-  final UnifiedMedia media;
-  final double uiRoundness;
-  final VoidCallback? onEpisodesTabRequested;
+class _CharacterCard extends StatelessWidget {
+  final MediaCharacter character;
+  final double radius;
 
-  const _AiringBanner({
-    required this.media,
-    this.onEpisodesTabRequested,
-    required this.uiRoundness,
-  });
+  const _CharacterCard({required this.character, required this.radius});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final airingAt = media.airingAt!;
-    final nextEpisode = media.nextEpisode;
-    final episodeNum = nextEpisode is int ? nextEpisode : (1);
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final imageRadius = (radius - _characterCardPadding)
+        .clamp(8.0, 28.0)
+        .toDouble();
 
-    final subType = media.type == MediaType.MANGA
-        ? SubscriptionType.mangaChapter
-        : SubscriptionType.animeAiring;
-
-    final map = ref.watch(notificationSubscriptionsProvider);
-    final subscription = map['${subType.name}_${media.id}'];
-
-    final bool isMissed =
-        subscription != null &&
-        subscription.isEnabled &&
-        subscription.upcomingTime != null &&
-        subscription.upcomingTime!.isBefore(DateTime.now());
-
-    final isManga = media.type == MediaType.MANGA;
-    final itemText = isManga ? 'Chapter' : 'Episode';
-    final tabText = isManga ? 'Chapters' : 'Episodes';
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(uiRoundness),
-        border: Border.all(
-          color: theme.colorScheme.primary.withValues(alpha: 0.2),
-        ),
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            backgroundColor: theme.colorScheme.primary,
-            child: Icon(
-              Icons.timer_outlined,
-              color: theme.colorScheme.onPrimary,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    return Material(
+      color: cs.surfaceContainer,
+      borderRadius: BorderRadius.circular(radius),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => CharactersSheet.showDetails(context, character),
+        child: SizedBox(
+          width: _characterCardWidth,
+          child: Padding(
+            padding: const EdgeInsets.all(_characterCardPadding),
+            child: Row(
               children: [
-                Text(
-                  '${itemText.toUpperCase()} $episodeNum',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.primary,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-                if (isMissed) ...[
-                  Text(
-                    'You missed the notification for $itemText $episodeNum',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.error,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  InkWell(
-                    onTap: () {
-                      if (onEpisodesTabRequested != null) {
-                        onEpisodesTabRequested!();
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              'Please check the $tabText tab for the latest release.',
-                            ),
+                _CharacterImage(url: character.image, radius: imageRadius),
+                const SizedBox(width: _Space.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        character.name,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          height: 1.25,
+                        ),
+                      ),
+                      if (_hasText(character.role)) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          _sentenceCase(character.role!),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            color: cs.primary,
+                            fontWeight: FontWeight.w600,
                           ),
-                        );
-                      }
-                    },
-                    child: Text(
-                      'Open $tabText tab →',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.primary,
-                        decoration: TextDecoration.underline,
-                      ),
-                    ),
-                  ),
-                ] else ...[
-                  RichText(
-                    text: TextSpan(
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurface,
-                      ),
-                      children: [
-                        const TextSpan(text: 'Airing in '),
-                        TextSpan(
-                          text: formatCountdown(airingAt),
-                          style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ],
-                    ),
+                      if (_hasText(character.voiceActorName)) ...[
+                        const SizedBox(height: _Space.xs),
+                        Text(
+                          character.voiceActorName!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: cs.onSurfaceVariant,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
-                ],
+                ),
               ],
             ),
           ),
-          if (Platform.isAndroid || Platform.isIOS || Platform.isMacOS)
-            InkWell(
-              customBorder: const CircleBorder(),
-              onTap: () async {
-                final notifier = ref.read(
-                  notificationSubscriptionsProvider.notifier,
-                );
-                await notifier.toggleSubscription(media);
-                final sub = notifier.getSubscription(subType, media.id);
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).clearSnackBars();
-                  if (sub != null && sub.isEnabled) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          'Subscribed to $itemText $episodeNum. You will be notified when it drops.',
-                        ),
-                      ),
-                    );
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Notifications disabled.')),
-                    );
-                  }
-                }
-              },
-              onLongPress: () {
-                showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  backgroundColor: Colors.transparent,
-                  builder: (context) =>
-                      NotificationSubscriptionSheet(media: media),
-                );
-              },
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Icon(
-                  subscription?.isEnabled == true
-                      ? (subscription!.mode == SubscriptionMode.entireSeason
-                            ? Icons.notifications_active
-                            : Icons.notifications)
-                      : Icons.notifications_outlined,
-                  color: subscription?.isEnabled == true
-                      ? theme.colorScheme.primary
-                      : theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CharacterSkeleton extends StatelessWidget {
+  final double radius;
+
+  const _CharacterSkeleton({required this.radius});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final block = cs.surfaceContainerHighest.withValues(alpha: 0.6);
+    final imageRadius = (radius - _characterCardPadding)
+        .clamp(8.0, 28.0)
+        .toDouble();
+
+    Widget line(double width, double height) => Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: block,
+        borderRadius: BorderRadius.circular(height / 2),
+      ),
+    );
+
+    return Container(
+      width: _characterCardWidth,
+      padding: const EdgeInsets.all(_characterCardPadding),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainer,
+        borderRadius: BorderRadius.circular(radius),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: _characterImageWidth,
+            height: _characterImageHeight,
+            decoration: BoxDecoration(
+              color: block,
+              borderRadius: BorderRadius.circular(imageRadius),
             ),
+          ),
+          const SizedBox(width: _Space.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                line(84, 12),
+                const SizedBox(height: _Space.sm),
+                line(52, 10),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-class _TagChip extends StatelessWidget {
-  final String label;
-  final double uiRoundness;
-  final MediaType? mediaType;
+class _ExternalLinksList extends StatelessWidget {
+  final List<MediaExternalLink> links;
 
-  const _TagChip({
-    required this.label,
-    required this.uiRoundness,
-    this.mediaType,
-  });
+  const _ExternalLinksList({required this.links});
+
+  Future<void> _open(String url) async {
+    final uri = Uri.tryParse(url);
+    if (uri != null && await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return ActionChip(
-      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      labelPadding: EdgeInsets.zero,
-      padding: const EdgeInsets.symmetric(horizontal: 10),
-      backgroundColor: theme.colorScheme.surfaceContainerLow,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(uiRoundness),
-      ),
-      side: BorderSide.none,
-      label: Text(
-        label,
-        style: theme.textTheme.bodySmall?.copyWith(
-          color: theme.colorScheme.onSurfaceVariant,
+    final cs = Theme.of(context).colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SectionHeader(title: context.l10n.detailsExternalLinks),
+        const SizedBox(height: _Space.md),
+        Wrap(
+          spacing: _Space.sm,
+          runSpacing: _Space.sm,
+          children: [
+            for (final link in links)
+              _MediaChip(
+                label: link.site,
+                background: cs.surfaceContainerHigh,
+                foreground: cs.onSurface,
+                icon: Icons.open_in_new_rounded,
+                onPressed: () => _open(link.url),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _AiringBanner extends ConsumerWidget {
+  final UnifiedMedia media;
+  final double radius;
+  final VoidCallback? onEpisodesTabRequested;
+
+  const _AiringBanner({
+    required this.media,
+    this.onEpisodesTabRequested,
+    required this.radius,
+  });
+
+  Future<void> _toggle(
+    BuildContext context,
+    WidgetRef ref,
+    SubscriptionType subType,
+    String itemText,
+    int number,
+  ) async {
+    final notifier = ref.read(notificationSubscriptionsProvider.notifier);
+    await notifier.toggleSubscription(media);
+    final sub = notifier.getSubscription(subType, media.id);
+    if (!context.mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.clearSnackBars();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          sub != null && sub.isEnabled
+              ? 'Subscribed to $itemText $number. You will be notified when it drops.'
+              : 'Notifications disabled.',
         ),
       ),
-      onPressed: () {
-        context.goDiscover(tags: [label], type: mediaType);
-      },
+    );
+  }
+
+  void _openTab(BuildContext context, String tabText) {
+    if (onEpisodesTabRequested != null) {
+      onEpisodesTabRequested!();
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Please check the $tabText tab for the latest release.'),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final airingAt = media.airingAt!;
+    final nextEpisode = media.nextEpisode;
+    final number = nextEpisode is int ? nextEpisode : 1;
+    final isManga = media.type == MediaType.MANGA;
+    final itemText = isManga ? 'Chapter' : 'Episode';
+    final tabText = isManga ? 'Chapters' : 'Episodes';
+    final subType = isManga
+        ? SubscriptionType.mangaChapter
+        : SubscriptionType.animeAiring;
+
+    final subscription = ref.watch(
+      notificationSubscriptionsProvider,
+    )['${subType.name}_${media.id}'];
+    final isSubscribed = subscription?.isEnabled == true;
+    final isMissed =
+        subscription != null &&
+        subscription.isEnabled &&
+        subscription.upcomingTime != null &&
+        subscription.upcomingTime!.isBefore(DateTime.now());
+    final supportsNotifications =
+        Platform.isAndroid || Platform.isIOS || Platform.isMacOS;
+
+    final background = isMissed ? cs.errorContainer : cs.primaryContainer;
+    final foreground = isMissed ? cs.onErrorContainer : cs.onPrimaryContainer;
+    final accent = isMissed ? cs.error : cs.primary;
+    final onAccent = isMissed ? cs.onError : cs.onPrimary;
+
+    return Container(
+      padding: const EdgeInsets.all(_Space.md),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(radius),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
+            child: Icon(
+              isMissed ? Icons.history_rounded : Icons.timer_outlined,
+              size: 24,
+              color: onAccent,
+            ),
+          ),
+          const SizedBox(width: _Space.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '$itemText $number',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: foreground,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                if (isMissed) ...[
+                  Text(
+                    'You missed the notification for $itemText $number',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: foreground,
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () => _openTab(context, tabText),
+                    style: TextButton.styleFrom(
+                      foregroundColor: foreground,
+                      padding: EdgeInsets.zero,
+                      minimumSize: const Size(0, 32),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      alignment: Alignment.centerLeft,
+                      textStyle: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                    child: Text('Open $tabText tab'),
+                  ),
+                ] else
+                  Text.rich(
+                    TextSpan(
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: foreground,
+                      ),
+                      children: [
+                        const TextSpan(text: 'Airing in '),
+                        TextSpan(
+                          text: formatCountdown(airingAt),
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          if (supportsNotifications) ...[
+            const SizedBox(width: _Space.sm),
+            Semantics(
+              button: true,
+              label: isSubscribed
+                  ? 'Notifications enabled'
+                  : 'Enable notifications',
+              child: Material(
+                color: isSubscribed
+                    ? accent
+                    : foreground.withValues(alpha: 0.1),
+                shape: const CircleBorder(),
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
+                  onTap: () => _toggle(context, ref, subType, itemText, number),
+                  onLongPress: () {
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (context) =>
+                          NotificationSubscriptionSheet(media: media),
+                    );
+                  },
+                  child: SizedBox(
+                    width: 44,
+                    height: 44,
+                    child: Icon(
+                      isSubscribed
+                          ? (subscription!.mode == SubscriptionMode.entireSeason
+                                ? Icons.notifications_active
+                                : Icons.notifications)
+                          : Icons.notifications_outlined,
+                      color: isSubscribed ? onAccent : foreground,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }
@@ -1039,44 +1041,29 @@ class _RelationsList extends ConsumerWidget {
     );
     final cardHeight = style.getLayout(isWideMode: isWide).height;
 
-    final Map<String, List<UnifiedMedia>> grouped = {};
+    final grouped = <String, List<UnifiedMedia>>{};
     for (final relation in relations) {
       if (relation.type != parentType) continue;
-
-      final type = relation.relationType ?? 'Other';
-      final formattedType = type
-          .replaceAll('_', ' ')
-          .split(' ')
-          .map(
-            (s) => s.isEmpty
-                ? ''
-                : s[0].toUpperCase() + s.substring(1).toLowerCase(),
-          )
-          .join(' ');
-
-      grouped.putIfAbsent(formattedType, () => []).add(relation);
+      final label = _sentenceCase(relation.relationType ?? 'Other');
+      grouped.putIfAbsent(label, () => []).add(relation);
     }
 
-    if (grouped.isEmpty) return const SizedBox();
+    if (grouped.isEmpty) return const SizedBox.shrink();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: grouped.entries.map((entry) {
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 16.0),
-          child: HorizontalSection<UnifiedMedia>(
-            titleWidget: Text(
-              entry.key,
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-            ),
-            headerPadding: const EdgeInsets.only(bottom: 8),
+      children: [
+        _SectionHeader(title: context.l10n.detailsRelations),
+        const SizedBox(height: _Space.sm),
+        for (final entry in grouped.entries) ...[
+          _SubLabel(entry.key),
+          const SizedBox(height: _Space.sm),
+          HorizontalSection<UnifiedMedia>(
+            headerPadding: EdgeInsets.zero,
             listPadding: EdgeInsets.zero,
             data: AsyncValue.data(entry.value),
             height: cardHeight,
-            gap: 12,
+            gap: _Space.md,
             itemBuilder: (context, relation) {
               return MediaCard(
                 media: relation,
@@ -1090,8 +1077,9 @@ class _RelationsList extends ConsumerWidget {
               );
             },
           ),
-        );
-      }).toList(),
+          if (entry.key != grouped.keys.last) const SizedBox(height: _Space.xl),
+        ],
+      ],
     );
   }
 }
@@ -1109,23 +1097,30 @@ class _RecommendationsList extends ConsumerWidget {
     );
     final cardHeight = style.getLayout(isWideMode: isWide).height;
 
-    return HorizontalSection<UnifiedMedia>(
-      data: AsyncValue.data(recommendations),
-      height: cardHeight,
-      gap: 12,
-      listPadding: EdgeInsets.zero,
-      itemBuilder: (context, rec) {
-        return MediaCard(
-          media: rec,
-          tag: 'details-rec-${rec.id}',
-          onTap: () => context.pushReplacementDetails(
-            mediaType: rec.type,
-            media: rec,
-            tag: 'details-rec-${rec.id}',
-          ),
-          style: style,
-        );
-      },
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SectionHeader(title: context.l10n.detailsRecommendations),
+        const SizedBox(height: _Space.md),
+        HorizontalSection<UnifiedMedia>(
+          data: AsyncValue.data(recommendations),
+          height: cardHeight,
+          gap: _Space.md,
+          listPadding: EdgeInsets.zero,
+          itemBuilder: (context, rec) {
+            return MediaCard(
+              media: rec,
+              tag: 'details-rec-${rec.id}',
+              onTap: () => context.pushReplacementDetails(
+                mediaType: rec.type,
+                media: rec,
+                tag: 'details-rec-${rec.id}',
+              ),
+              style: style,
+            );
+          },
+        ),
+      ],
     );
   }
 }
@@ -1146,110 +1141,144 @@ class Synopsis extends StatefulWidget {
   State<Synopsis> createState() => _SynopsisState();
 }
 
-class _SynopsisState extends State<Synopsis>
-    with SingleTickerProviderStateMixin {
+class _SynopsisState extends State<Synopsis> {
   bool _isExpanded = false;
 
-  static final _brRegex = RegExp(r'<\s*br\s*/?\s*>', caseSensitive: false);
-  static final _bOpenRegex = RegExp(r'<\s*b\s*>', caseSensitive: false);
-  static final _bCloseRegex = RegExp(r'<\s*/\s*b\s*>', caseSensitive: false);
-  static final _boldTagRegex = RegExp(r'<b>(.*?)</b>', dotAll: true);
+  static final _lineBreak = RegExp(r'<\s*br\s*/?\s*>', caseSensitive: false);
+  static final _openTag = RegExp(r'<\s*(b|i)\s*>', caseSensitive: false);
+  static final _closeTag = RegExp(r'<\s*/\s*(b|i)\s*>', caseSensitive: false);
+  static final _styled = RegExp(r'<(b|i)>(.*?)</\1>', dotAll: true);
+  static final _otherTags = RegExp(r'<[^>]+>');
+
+  String _plain(String value) => value.replaceAll(_otherTags, '');
+
+  List<InlineSpan> _spans(String text) {
+    final normalized = text
+        .replaceAll(_lineBreak, '\n')
+        .replaceAllMapped(_openTag, (m) => '<${m[1]!.toLowerCase()}>')
+        .replaceAllMapped(_closeTag, (m) => '</${m[1]!.toLowerCase()}>');
+
+    final spans = <InlineSpan>[];
+    var last = 0;
+
+    for (final match in _styled.allMatches(normalized)) {
+      if (match.start > last) {
+        spans.add(
+          TextSpan(text: _plain(normalized.substring(last, match.start))),
+        );
+      }
+      final isBold = match[1] == 'b';
+      spans.add(
+        TextSpan(
+          text: _plain(match[2]!),
+          style: isBold
+              ? const TextStyle(fontWeight: FontWeight.w700)
+              : const TextStyle(fontStyle: FontStyle.italic),
+        ),
+      );
+      last = match.end;
+    }
+
+    if (last < normalized.length) {
+      spans.add(TextSpan(text: _plain(normalized.substring(last))));
+    }
+
+    return spans;
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final textStyle = theme.textTheme.bodyLarge?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+      height: 1.55,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Synopsis',
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        const SizedBox(height: 10),
+        const _SectionHeader(title: 'Synopsis'),
+        const SizedBox(height: _Space.sm),
         if (widget.isLoading)
           const _SynopsisSkeleton()
-        else ...[
-          AnimatedSize(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-            alignment: Alignment.topCenter,
-            child: ShaderMask(
-              shaderCallback: (bounds) => LinearGradient(
-                begin: Alignment.bottomCenter,
-                end: Alignment.topCenter,
-                colors: [
-                  _isExpanded
-                      ? Colors.transparent
-                      : theme.scaffoldBackgroundColor,
-                  Colors.transparent,
-                ],
-                stops: const [0.0, 0.5],
-              ).createShader(bounds),
-              blendMode: BlendMode.dstOut,
-              child: ConstrainedBox(
-                constraints: _isExpanded
-                    ? const BoxConstraints()
-                    : BoxConstraints(maxHeight: widget.collapsedHeight),
-                child: RichText(
-                  text: TextSpan(
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                      height: 1.5,
-                      overflow: TextOverflow.fade,
-                    ),
-                    children: _descriptionSpans(widget.description, context),
+        else
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final span = TextSpan(
+                style: textStyle,
+                children: _spans(widget.description),
+              );
+              final painter = TextPainter(
+                text: span,
+                textDirection: Directionality.of(context),
+                textScaler: MediaQuery.textScalerOf(context),
+              )..layout(maxWidth: constraints.maxWidth);
+              final collapsible = painter.height > widget.collapsedHeight;
+              painter.dispose();
+              final collapsed = collapsible && !_isExpanded;
+
+              Widget body = ConstrainedBox(
+                constraints: collapsed
+                    ? BoxConstraints(maxHeight: widget.collapsedHeight)
+                    : const BoxConstraints(),
+                child: Text.rich(span),
+              );
+
+              if (collapsed) {
+                body = ShaderMask(
+                  blendMode: BlendMode.dstOut,
+                  shaderCallback: (bounds) => const LinearGradient(
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                    colors: [Colors.white, Colors.transparent],
+                    stops: [0.0, 0.4],
+                  ).createShader(bounds),
+                  child: body,
+                );
+              }
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AnimatedSize(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                    alignment: Alignment.topCenter,
+                    child: body,
                   ),
-                ),
-              ),
-            ),
+                  if (collapsible) ...[
+                    const SizedBox(height: _Space.sm),
+                    FilledButton.tonalIcon(
+                      onPressed: () =>
+                          setState(() => _isExpanded = !_isExpanded),
+                      style: FilledButton.styleFrom(
+                        shape: _stadium,
+                        visualDensity: VisualDensity.compact,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: _Space.lg,
+                          vertical: _Space.sm,
+                        ),
+                      ),
+                      icon: AnimatedRotation(
+                        turns: _isExpanded ? 0.5 : 0,
+                        duration: const Duration(milliseconds: 250),
+                        curve: Curves.easeOutCubic,
+                        child: const Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          size: 20,
+                        ),
+                      ),
+                      iconAlignment: IconAlignment.end,
+                      label: Text(_isExpanded ? 'Show less' : 'Read more'),
+                    ),
+                  ],
+                ],
+              );
+            },
           ),
-          if (widget.description.length > 200)
-            TextButton(
-              onPressed: () => setState(() => _isExpanded = !_isExpanded),
-              child: Text(_isExpanded ? 'Show Less' : 'Read More'),
-            ),
-        ],
       ],
     );
-  }
-
-  List<TextSpan> _descriptionSpans(String text, BuildContext context) {
-    final baseStyle = Theme.of(context).textTheme.bodyMedium!;
-    final boldStyle = baseStyle.copyWith(fontWeight: FontWeight.bold);
-
-    final spans = <TextSpan>[];
-
-    String cleanText = text
-        .replaceAll(_brRegex, '\n')
-        .replaceAll(_bOpenRegex, '<b>')
-        .replaceAll(_bCloseRegex, '</b>');
-
-    int lastIndex = 0;
-
-    for (final match in _boldTagRegex.allMatches(cleanText)) {
-      if (match.start > lastIndex) {
-        spans.add(
-          TextSpan(
-            text: cleanText.substring(lastIndex, match.start),
-            style: baseStyle,
-          ),
-        );
-      }
-
-      spans.add(TextSpan(text: match.group(1), style: boldStyle));
-      lastIndex = match.end;
-    }
-
-    if (lastIndex < cleanText.length) {
-      spans.add(
-        TextSpan(text: cleanText.substring(lastIndex), style: baseStyle),
-      );
-    }
-
-    return spans;
   }
 }
 
@@ -1258,28 +1287,27 @@ class _SynopsisSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final skeletonColor = colorScheme.surfaceContainerHigh.withValues(
-      alpha: 0.5,
-    );
+    final color = Theme.of(
+      context,
+    ).colorScheme.surfaceContainerHigh.withValues(alpha: 0.5);
 
-    Widget buildLine(double width) => Container(
+    Widget line(double width) => Container(
       width: width,
       height: 14,
       decoration: BoxDecoration(
-        color: skeletonColor,
-        borderRadius: BorderRadius.circular(4),
+        color: color,
+        borderRadius: BorderRadius.circular(7),
       ),
     );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        buildLine(double.infinity),
-        const SizedBox(height: 8),
-        buildLine(double.infinity),
-        const SizedBox(height: 8),
-        buildLine(MediaQuery.sizeOf(context).width * 0.6),
+        line(double.infinity),
+        const SizedBox(height: _Space.sm),
+        line(double.infinity),
+        const SizedBox(height: _Space.sm),
+        line(MediaQuery.sizeOf(context).width * 0.6),
       ],
     );
   }

@@ -1,52 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
-import '../components/card_badges.dart';
+import 'package:shonenx/shared/theme/ui_visual_values.dart';
 import '../components/card_metadata.dart';
-import '../components/card_thumbnail.dart';
-import 'package:shonenx/shared/models/unified_media.dart';
+import '../components/card_content.dart';
 
 class EditorialCard extends StatelessWidget {
-  final UnifiedMedia media;
-  final double width;
-  final double height;
-  final bool isActive;
-  final bool isWideMode;
-  final bool showRatings;
-  final bool showYear;
-  final bool showGenres;
-  final String? subtitle;
-  final double? progress;
-  final String? progressText;
-  final String? heroTag;
-  final Widget? topLeftBadge;
-  final Widget? topRightBadge;
-  final Widget? bottomLeftBadge;
-  final Widget? bottomRightBadge;
+  final CardContent content;
 
-  const EditorialCard({
-    super.key,
-    required this.media,
-    required this.width,
-    required this.height,
-    required this.isActive,
-    required this.isWideMode,
-    required this.showRatings,
-    required this.showYear,
-    required this.showGenres,
-    this.subtitle,
-    this.progress,
-    this.progressText,
-    this.heroTag,
-    this.topLeftBadge,
-    this.topRightBadge,
-    this.bottomLeftBadge,
-    this.bottomRightBadge,
-  });
+  const EditorialCard({super.key, required this.content});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    if (isWideMode) {
+    if (content.isWideMode) {
       return _buildWide(theme);
     }
     return _buildPortrait(theme);
@@ -54,17 +20,17 @@ class EditorialCard extends StatelessWidget {
 
   Widget _buildPortrait(ThemeData theme) {
     final cs = theme.colorScheme;
-    final imgH = height * (progress != null ? 0.58 : 0.65);
+    final imgH = content.height * (content.progress != null ? 0.58 : 0.65);
 
     return AnimatedContainer(
       duration: Durations.short4,
-      width: width,
-      height: height,
+      width: content.width,
+      height: content.height,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
         border: Border.all(
-          color: isActive ? cs.primary : Colors.transparent,
-          width: isActive ? 2.5 : 1.0,
+          color: content.isActive ? cs.primary : Colors.transparent,
+          width: content.isActive ? 2.5 : 1.0,
           strokeAlign: BorderSide.strokeAlignOutside,
         ),
       ),
@@ -73,27 +39,12 @@ class EditorialCard extends StatelessWidget {
         children: [
           Stack(
             children: [
-              CardThumbnail(
-                media: media,
-                isActive: isActive,
-                progress: progress,
-                heroTag: heroTag,
-                width: width,
-                height: imgH,
-                radiusOverride: GlobalUI.uiRoundness,
-              ),
-              CardBadgeOverlay(
-                media: media,
+              CardMediaStack(
+                content: content,
                 styleName: 'editorial',
-                isWideMode: isWideMode,
-                isActive: isActive,
-                showRatings: showRatings,
-                progress: progress,
-                progressText: progressText,
-                topLeftBadge: topLeftBadge,
-                topRightBadge: topRightBadge,
-                bottomLeftBadge: bottomLeftBadge,
-                bottomRightBadge: bottomRightBadge,
+                thumbWidth: content.width,
+                thumbHeight: imgH,
+                radiusOverride: GlobalUI.uiRoundness,
               ),
             ],
           ),
@@ -104,7 +55,7 @@ class EditorialCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  media.title.getPreferedTitle,
+                  content.media.title.getPreferedTitle,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.titleMedium?.copyWith(
@@ -113,16 +64,16 @@ class EditorialCard extends StatelessWidget {
                     height: 1.15,
                   ),
                 ),
-                if (_getSubtitle() != null) ...[
+                if (content.resolvedSubtitle != null) ...[
                   const SizedBox(height: 6),
                   Container(width: 24, height: 1.5, color: cs.primary),
                   const SizedBox(height: 6),
                   PortraitMetadataRow(
-                    media: media,
-                    showRatings: showRatings,
-                    showYear: showYear,
-                    showGenres: showGenres,
-                    subtitle: subtitle,
+                    media: content.media,
+                    showRatings: content.showRatings,
+                    showYear: content.showYear,
+                    showGenres: content.showGenres,
+                    subtitle: content.subtitle,
                   ),
                 ],
               ],
@@ -135,18 +86,18 @@ class EditorialCard extends StatelessWidget {
 
   Widget _buildWide(ThemeData theme) {
     final cs = theme.colorScheme;
-    final thumbW = width * 0.45;
+    final thumbW = content.width * 0.45;
 
     return AnimatedContainer(
       duration: Durations.short4,
-      width: width,
-      height: height,
+      width: content.width,
+      height: content.height,
       decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
+        color: cs.surfaceContainerHighest.withValues(alpha: UiAlpha.half),
         borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
         border: Border.all(
-          color: isActive ? cs.primary : Colors.transparent,
-          width: isActive ? 2.5 : 1.0,
+          color: content.isActive ? cs.primary : Colors.transparent,
+          width: content.isActive ? 2.5 : 1.0,
           strokeAlign: BorderSide.strokeAlignOutside,
         ),
       ),
@@ -156,27 +107,12 @@ class EditorialCard extends StatelessWidget {
           children: [
             Stack(
               children: [
-                CardThumbnail(
-                  media: media,
-                  isActive: isActive,
-                  progress: progress,
-                  heroTag: heroTag,
-                  width: thumbW,
-                  height: height,
-                  radiusOverride: 0,
-                ),
-                CardBadgeOverlay(
-                  media: media,
+                CardMediaStack(
+                  content: content,
                   styleName: 'editorial',
-                  isWideMode: isWideMode,
-                  isActive: isActive,
-                  showRatings: showRatings,
-                  progress: progress,
-                  progressText: progressText,
-                  topLeftBadge: topLeftBadge,
-                  topRightBadge: topRightBadge,
-                  bottomLeftBadge: bottomLeftBadge,
-                  bottomRightBadge: bottomRightBadge,
+                  thumbWidth: thumbW,
+                  thumbHeight: content.height,
+                  radiusOverride: 0,
                 ),
               ],
             ),
@@ -190,7 +126,7 @@ class EditorialCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      media.title.getPreferedTitle,
+                      content.media.title.getPreferedTitle,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.titleMedium?.copyWith(
@@ -199,16 +135,16 @@ class EditorialCard extends StatelessWidget {
                         height: 1.15,
                       ),
                     ),
-                    if (_getSubtitle() != null) ...[
+                    if (content.resolvedSubtitle != null) ...[
                       const SizedBox(height: 6),
                       Container(width: 24, height: 1.5, color: cs.primary),
                       const SizedBox(height: 6),
                       PortraitMetadataRow(
-                        media: media,
-                        showRatings: showRatings,
-                        showYear: showYear,
-                        showGenres: showGenres,
-                        subtitle: subtitle,
+                        media: content.media,
+                        showRatings: content.showRatings,
+                        showYear: content.showYear,
+                        showGenres: content.showGenres,
+                        subtitle: content.subtitle,
                       ),
                     ],
                   ],
@@ -219,19 +155,5 @@ class EditorialCard extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String? _getSubtitle() {
-    if (subtitle != null && subtitle!.isNotEmpty) return subtitle;
-    final items = <String>[];
-    if (showYear && media.year != null) items.add(media.year.toString());
-    if (media.status != null && media.status!.isNotEmpty) {
-      items.add(media.status!);
-    }
-    if (showGenres && media.genres != null && media.genres!.isNotEmpty) {
-      items.add(media.genres!.first);
-    }
-    if (items.isEmpty) return null;
-    return items.join(' • ');
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
+import 'package:shonenx/shared/theme/ui_visual_values.dart';
 
 class CardBadgeOverlay extends StatelessWidget {
   final UnifiedMedia media;
@@ -131,8 +132,8 @@ class CardBadgeOverlay extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
       decoration: BoxDecoration(
-        color: cs.primaryContainer.withValues(alpha: 0.92),
-        borderRadius: BorderRadius.circular(6),
+        color: cs.primaryContainer.withValues(alpha: UiAlpha.solidMid),
+        borderRadius: BorderRadius.circular(UiRadius.md),
       ),
       child: Text(
         media.format!.toUpperCase(),
@@ -164,14 +165,8 @@ class CardBadgeOverlay extends StatelessWidget {
     switch (styleName) {
       case 'expressive':
         decoration = BoxDecoration(
-          color: cs.primaryContainer.withValues(alpha: 0.95),
-          borderRadius: BorderRadius.circular(10),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.3),
-              blurRadius: 4,
-            ),
-          ],
+          color: cs.primaryContainer.withValues(alpha: UiAlpha.strong),
+          borderRadius: BorderRadius.circular(UiRadius.wide),
         );
         textColor = cs.onPrimaryContainer;
         iconColor = cs.onPrimaryContainer;
@@ -179,18 +174,12 @@ class CardBadgeOverlay extends StatelessWidget {
 
       case 'material':
         decoration = BoxDecoration(
-          color: cs.secondaryContainer.withValues(alpha: 0.95),
-          borderRadius: BorderRadius.circular(6),
+          color: cs.secondaryContainer.withValues(alpha: UiAlpha.strong),
+          borderRadius: BorderRadius.circular(UiRadius.md),
           border: Border.all(
-            color: cs.outlineVariant.withValues(alpha: 0.3),
+            color: cs.outlineVariant.withValues(alpha: UiAlpha.medium),
             width: 1.0,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.3),
-              blurRadius: 4,
-            ),
-          ],
         );
         textColor = cs.onSecondaryContainer;
         iconColor = cs.primary;
@@ -198,11 +187,14 @@ class CardBadgeOverlay extends StatelessWidget {
 
       case 'neon':
         decoration = BoxDecoration(
-          color: cs.surface.withValues(alpha: 0.88),
-          borderRadius: BorderRadius.circular(6),
+          color: cs.surface.withValues(alpha: UiAlpha.solid),
+          borderRadius: BorderRadius.circular(UiRadius.md),
           border: Border.all(color: cs.primary, width: 1.2),
           boxShadow: [
-            BoxShadow(color: cs.primary.withValues(alpha: 0.45), blurRadius: 6),
+            BoxShadow(
+              color: cs.primary.withValues(alpha: UiAlpha.glowBorder),
+              blurRadius: UiBlur.glow,
+            ),
           ],
         );
         textColor = cs.primary;
@@ -211,8 +203,8 @@ class CardBadgeOverlay extends StatelessWidget {
 
       case 'editorial':
         decoration = BoxDecoration(
-          color: cs.surface.withValues(alpha: 0.95),
-          borderRadius: BorderRadius.circular(4),
+          color: cs.surface.withValues(alpha: UiAlpha.strong),
+          borderRadius: BorderRadius.circular(UiRadius.sm),
           border: Border.all(
             color: cs.onSurface.withValues(alpha: 0.2),
             width: 1.0,
@@ -224,18 +216,12 @@ class CardBadgeOverlay extends StatelessWidget {
 
       case 'cinematic':
         decoration = BoxDecoration(
-          color: Colors.black.withValues(alpha: 0.85),
+          color: Colors.black.withValues(alpha: UiAlpha.solidSoft),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: cs.primary.withValues(alpha: 0.5),
+            color: cs.primary.withValues(alpha: UiAlpha.half),
             width: 1.0,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.4),
-              blurRadius: 4,
-            ),
-          ],
         );
         textColor = Colors.white;
         iconColor = cs.primary;
@@ -244,19 +230,12 @@ class CardBadgeOverlay extends StatelessWidget {
       case 'classic':
       default:
         decoration = BoxDecoration(
-          color: Colors.black.withValues(alpha: 0.78),
-          borderRadius: BorderRadius.circular(6),
+          color: Colors.black.withValues(alpha: UiAlpha.scrim),
+          borderRadius: BorderRadius.circular(UiRadius.md),
           border: Border.all(
             color: cs.primary.withValues(alpha: 0.55),
             width: 1.0,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.4),
-              blurRadius: 4,
-              offset: const Offset(0, 1),
-            ),
-          ],
         );
         textColor = Colors.white;
         iconColor = cs.primary;
@@ -305,7 +284,7 @@ class CardBadgeOverlay extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
           decoration: BoxDecoration(
             color: cs.primaryContainer,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(UiRadius.wide),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -328,10 +307,10 @@ class CardBadgeOverlay extends StatelessWidget {
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
           decoration: BoxDecoration(
-            color: cs.secondaryContainer.withValues(alpha: 0.95),
-            borderRadius: BorderRadius.circular(6),
+            color: cs.secondaryContainer.withValues(alpha: UiAlpha.strong),
+            borderRadius: BorderRadius.circular(UiRadius.md),
             border: Border.all(
-              color: cs.outlineVariant.withValues(alpha: 0.3),
+              color: cs.outlineVariant.withValues(alpha: UiAlpha.medium),
               width: 1.0,
             ),
           ),
@@ -356,8 +335,8 @@ class CardBadgeOverlay extends StatelessWidget {
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
           decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.65),
-            borderRadius: BorderRadius.circular(6),
+            color: Colors.black.withValues(alpha: UiAlpha.scrimSoft),
+            borderRadius: BorderRadius.circular(UiRadius.md),
             border: Border.all(
               color: Colors.white.withValues(alpha: 0.2),
               width: 1.0,
@@ -388,13 +367,13 @@ class CardBadgeOverlay extends StatelessWidget {
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
           decoration: BoxDecoration(
-            color: cs.surface.withValues(alpha: 0.85),
-            borderRadius: BorderRadius.circular(6),
+            color: cs.surface.withValues(alpha: UiAlpha.solidSoft),
+            borderRadius: BorderRadius.circular(UiRadius.md),
             border: Border.all(color: cs.primary, width: 1.2),
             boxShadow: [
               BoxShadow(
-                color: cs.primary.withValues(alpha: 0.4),
-                blurRadius: 6,
+                color: cs.primary.withValues(alpha: UiAlpha.border),
+                blurRadius: UiBlur.glow,
               ),
             ],
           ),
@@ -420,7 +399,7 @@ class CardBadgeOverlay extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
           decoration: BoxDecoration(
             color: cs.surface,
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(UiRadius.sm),
             border: Border.all(
               color: cs.onSurface.withValues(alpha: 0.2),
               width: 1.0,
@@ -441,10 +420,10 @@ class CardBadgeOverlay extends StatelessWidget {
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
           decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.82),
+            color: Colors.black.withValues(alpha: UiAlpha.scrimStrong),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: const Color(0xFFFFB703).withValues(alpha: 0.4),
+              color: const Color(0xFFFFB703).withValues(alpha: UiAlpha.border),
               width: 1.0,
             ),
           ),
@@ -475,9 +454,9 @@ class CardBadgeOverlay extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
           decoration: BoxDecoration(
             color: Colors.black.withValues(alpha: 0.75),
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(UiRadius.md),
             border: Border.all(
-              color: const Color(0xFFFFB703).withValues(alpha: 0.5),
+              color: const Color(0xFFFFB703).withValues(alpha: UiAlpha.half),
               width: 1.0,
             ),
           ),

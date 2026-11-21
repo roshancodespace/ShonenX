@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -37,9 +38,13 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   late final FocusNode _focusNode;
   late final MediaArgs _matchArgs;
   late PageController _pageController;
+  GlobalKey<ReaderPageViewState> _pageViewKey = GlobalKey();
   GlobalKey<ReaderWebtoonViewState> _webtoonKey = GlobalKey();
 
   Offset? _pointerDownPos;
+  Timer? _singleTapTimer;
+  Offset? _lastTapPos;
+  DateTime? _lastTapTime;
 
   @override
   void initState() {
@@ -63,6 +68,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.mode.episode.id != widget.mode.episode.id) {
       _webtoonKey = GlobalKey<ReaderWebtoonViewState>();
+      _pageViewKey = GlobalKey<ReaderPageViewState>();
       final startPage = widget.mode.startPosition == -1
           ? 0
           : (widget.mode.startPosition > 0 ? widget.mode.startPosition - 1 : 0);
@@ -73,6 +79,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
 
   @override
   void dispose() {
+    _singleTapTimer?.cancel();
     HardwareKeyboard.instance.removeHandler(_onKeyEvent);
     _focusNode.dispose();
     _pageController.dispose();
@@ -408,6 +415,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
         initialPage: state.currentPage,
         scaleType: prefs.scaleType,
         textColor: themeInfo.textColor,
+        doubleTapToZoom: prefs.doubleTapToZoom,
         onPageChanged: (page) =>
             ref.read(readerProvider(widget.mode).notifier).setPage(page),
       );
@@ -421,12 +429,13 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     });
 
     return ReaderPageView(
-      key: ValueKey('${widget.mode.episode.id}_${prefs.direction.name}'),
+      key: _pageViewKey,
       pages: pages,
       controller: _pageController,
       direction: prefs.direction,
       scaleType: prefs.scaleType,
       textColor: themeInfo.textColor,
+      doubleTapToZoom: prefs.doubleTapToZoom,
       onPageChanged: (page) =>
           ref.read(readerProvider(widget.mode).notifier).setPage(page),
     );
@@ -465,16 +474,56 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     final distance = (event.position - _pointerDownPos!).distance;
     if (distance >= 10) return;
 
+    final tapPos = event.position;
+
+    if (prefs.doubleTapToZoom) {
+      final now = DateTime.now();
+      if (_lastTapTime != null &&
+          now.difference(_lastTapTime!).inMilliseconds < 300 &&
+          _lastTapPos != null &&
+          (tapPos - _lastTapPos!).distance < 40) {
+        _singleTapTimer?.cancel();
+        _singleTapTimer = null;
+        _lastTapTime = null;
+        _lastTapPos = null;
+
+        if (state.showOverlay) {
+          ref.read(readerProvider(widget.mode).notifier).setOverlay(false);
+          _enableImmersiveMode();
+        }
+        _handleDoubleTap(tapPos, prefs);
+        return;
+      }
+
+      _lastTapTime = now;
+      _lastTapPos = tapPos;
+      _singleTapTimer?.cancel();
+      _singleTapTimer = Timer(const Duration(milliseconds: 300), () {
+        if (!mounted) return;
+        _lastTapTime = null;
+        _lastTapPos = null;
+        _executeSingleTap(tapPos, prefs, state);
+      });
+    } else {
+      _executeSingleTap(tapPos, prefs, state);
+    }
+  }
+
+  void _executeSingleTap(
+    Offset position,
+    ReaderPrefState prefs,
+    ReaderState state,
+  ) {
     final width = MediaQuery.of(context).size.width;
 
     if (prefs.tapToTurnPage && !state.showOverlay) {
-      if (event.position.dx < width * 0.3) {
+      if (position.dx < width * 0.3) {
         if (state.currentPage > 0) {
           _goToPage(state.currentPage - 1, prefs.direction);
         } else {
           _skipToChapter(next: false);
         }
-      } else if (event.position.dx > width * 0.7) {
+      } else if (position.dx > width * 0.7) {
         if (state.currentPage < state.totalPages - 1) {
           _goToPage(state.currentPage + 1, prefs.direction);
         } else {
@@ -485,6 +534,14 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       }
     } else {
       _toggleOverlay();
+    }
+  }
+
+  void _handleDoubleTap(Offset position, ReaderPrefState prefs) {
+    if (prefs.direction == ReaderDirection.webtoon) {
+      _webtoonKey.currentState?.handleDoubleTap(position);
+    } else {
+      _pageViewKey.currentState?.handleDoubleTap(position);
     }
   }
 }

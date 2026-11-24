@@ -10,7 +10,6 @@ list(APPEND FLUTTER_PLUGIN_LIST
   flutter_timezone
   isar_community_flutter_libs
   anymex_extension_runtime_bridge
-  media_kit_libs_linux
   open_file_linux
   screen_retriever_linux
   url_launcher_linux

@@ -17,7 +17,6 @@ import flutter_timezone
 import isar_community_flutter_libs
 import anymex_extension_runtime_bridge
 import local_auth_darwin
-import media_kit_libs_macos_video
 import open_file_mac
 import package_info_plus
 import screen_brightness_macos
@@ -47,7 +46,6 @@ func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
   IsarFlutterLibsPlugin.register(with: registry.registrar(forPlugin: "IsarFlutterLibsPlugin"))
   AnymexExtensionRuntimeBridgePlugin.register(with: registry.registrar(forPlugin: "AnymexExtensionRuntimeBridgePlugin"))
   LocalAuthPlugin.register(with: registry.registrar(forPlugin: "LocalAuthPlugin"))
-  MediaKitLibsMacosVideoPlugin.register(with: registry.registrar(forPlugin: "MediaKitLibsMacosVideoPlugin"))
   OpenFilePlugin.register(with: registry.registrar(forPlugin: "OpenFilePlugin"))
   FPPPackageInfoPlusPlugin.register(with: registry.registrar(forPlugin: "FPPPackageInfoPlusPlugin"))
   ScreenBrightnessMacosPlugin.register(with: registry.registrar(forPlugin: "ScreenBrightnessMacosPlugin"))

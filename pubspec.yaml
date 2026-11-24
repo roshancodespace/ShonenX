@@ -27,18 +27,13 @@ dependencies:
   media_kit:
     git:
         url: https://github.com/Predidit/media-kit.git
-        ref: 78d4cce7b49d5b6b918f78b18ec1fbb7c400b9da
+        ref: 484639aca5ffc754a65876c22f01dbb070225732
         path: ./media_kit
   media_kit_video:
     git:
       url: https://github.com/Predidit/media-kit.git
-      ref: 78d4cce7b49d5b6b918f78b18ec1fbb7c400b9da
+      ref: 484639aca5ffc754a65876c22f01dbb070225732
       path: ./media_kit_video
-  media_kit_libs_video:
-    git:
-      url: https://github.com/Predidit/media-kit.git
-      ref: 78d4cce7b49d5b6b918f78b18ec1fbb7c400b9da
-      path: ./libs/universal/media_kit_libs_video
   get: ^4.7.3
   google_fonts: ^9.0.0
   shared_preferences: ^2.5.5
@@ -102,39 +97,11 @@ dependency_overrides:
       url: https://github.com/EchoEllet/flutter_secure_storage.git
       path: flutter_secure_storage_linux
       ref: feat/linux-rewrite
-  # flutter_inappwebview:
-  #   git:
-  #     url: https://github.com/roshancodespace/flutter_inappwebview.git
-  #     path: flutter_inappwebview
-  # flutter_inappwebview_linux:
-  #   git:
-  #     url: https://github.com/roshancodespace/flutter_inappwebview.git
-  #     path: flutter_inappwebview_linux
-  media_kit_libs_linux:
-    git:
-      url: https://github.com/Predidit/media-kit.git
-      ref: 78d4cce7b49d5b6b918f78b18ec1fbb7c400b9da
-      path: ./libs/linux/media_kit_libs_linux
-  media_kit_libs_ios_video:
-    git:
-      url: https://github.com/Predidit/media-kit.git
-      ref: 78d4cce7b49d5b6b918f78b18ec1fbb7c400b9da
-      path: ./libs/ios/media_kit_libs_ios_video
   media_kit_libs_android_video:
     git:
       url: https://github.com/media-kit/media-kit.git
       ref: main
       path: ./libs/android/media_kit_libs_android_video
-  media_kit_libs_windows_video:
-    git:
-      url: https://github.com/Predidit/media-kit.git
-      ref: 78d4cce7b49d5b6b918f78b18ec1fbb7c400b9da
-      path: ./libs/windows/media_kit_libs_windows_video
-  media_kit_libs_macos_video:
-    git:
-      url: https://github.com/Predidit/media-kit.git
-      ref: 78d4cce7b49d5b6b918f78b18ec1fbb7c400b9da
-      path: ./libs/macos/media_kit_libs_macos_video
 
 dev_dependencies:
   flutter_test:

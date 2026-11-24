@@ -1,8 +1,8 @@
-import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/localization/l10n_extension.dart';
 import 'package:shonenx/core/theme/exclusive_schemes.dart';
+import 'package:shonenx/core/theme/standard_schemes.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
 import 'package:shonenx/features/settings/presentation/widgets/theme_palette_showcase.dart';
 import 'package:shonenx/features/settings/presentation/widgets/theme_variant_swatch_preview.dart';
@@ -11,8 +11,8 @@ import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 
 void showStandardSchemePicker(
   BuildContext context,
-  FlexScheme currentScheme,
-  void Function(FlexScheme) onSchemeSelected,
+  AppScheme currentScheme,
+  void Function(AppScheme) onSchemeSelected,
   bool isDark,
 ) {
   AppBottomSheet.show(
@@ -76,16 +76,16 @@ class _SchemePicker extends ConsumerWidget {
     required this.onSelected,
   });
 
-  final FlexScheme currentScheme;
+  final AppScheme currentScheme;
   final bool isDark;
-  final void Function(FlexScheme) onSelected;
+  final void Function(AppScheme) onSelected;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final items = FlexColor.schemes.entries
-        .where((e) => e.key != FlexScheme.custom)
+    final items = standardSchemes.entries
+        .where((e) => e.key != AppScheme.custom)
         .map(
-          (e) => ThemePaletteItem.fromFlexScheme(
+          (e) => ThemePaletteItem.fromAppScheme(
             scheme: e.key,
             data: e.value,
             isDark: isDark,
@@ -103,7 +103,7 @@ class _SchemePicker extends ConsumerWidget {
         return ThemePaletteTile(
           item: item,
           isSelected: currentScheme.name == item.id,
-          onTap: () => onSelected(FlexScheme.values.byName(item.id)),
+          onTap: () => onSelected(AppScheme.values.byName(item.id)),
         );
       },
     );

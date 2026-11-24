@@ -14,6 +14,7 @@ import 'package:shonenx/features/discovery/providers/discovery_tracker_error_pro
 import 'package:shonenx/features/discovery/providers/home_feed_provider.dart';
 import 'package:shonenx/features/library/providers/cloud_library_provider.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
+import 'package:shonenx/shared/widgets/github_star_banner.dart';
 import 'package:shonenx/source_engine/source_engine_provider.dart';
 import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/header/home_header.dart';
@@ -84,7 +85,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           }
         },
         child: CustomScrollView(
-          cacheExtent: 500,
+          scrollCacheExtent: ScrollCacheExtent.pixels(500),
           physics: const AlwaysScrollableScrollPhysics(
             parent: BouncingScrollPhysics(),
           ),
@@ -109,6 +110,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 );
               },
             ),
+
+            const GithubStarBanner.sliver(),
 
             // Tracker Outage Alert Banner
             Consumer(
@@ -135,9 +138,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 40),
-                  child: Center(
-                    child: Text(context.l10n.homeNoActiveSections),
-                  ),
+                  child: Center(child: Text(context.l10n.homeNoActiveSections)),
                 ),
               )
             else

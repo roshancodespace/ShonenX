@@ -1,7 +1,7 @@
 import 'dart:ui' as ui;
-import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:shonenx/core/theme/exclusive_schemes.dart';
+import 'package:shonenx/core/theme/standard_schemes.dart';
 import 'package:shonenx/shared/models/ui_style_enums.dart';
 
 class ThemePaletteItem {
@@ -25,9 +25,9 @@ class ThemePaletteItem {
     this.surface,
   });
 
-  factory ThemePaletteItem.fromFlexScheme({
-    required FlexScheme scheme,
-    required FlexSchemeData data,
+  factory ThemePaletteItem.fromAppScheme({
+    required AppScheme scheme,
+    required AppSchemeData data,
     required bool isDark,
   }) {
     final colors = isDark ? data.dark : data.light;

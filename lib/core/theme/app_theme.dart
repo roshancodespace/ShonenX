@@ -1,4 +1,3 @@
-import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
@@ -29,7 +28,7 @@ class AppTheme {
     );
   }
 
-  static ThemeData light(ThemePrefsState prefs, ColorScheme? colorScheme) {
+  static ThemeData light(ThemePrefsState prefs, dynamic colorScheme) {
     return _buildTheme(
       brightness: Brightness.light,
       prefs: prefs,
@@ -37,7 +36,7 @@ class AppTheme {
     );
   }
 
-  static ThemeData dark(ThemePrefsState prefs, ColorScheme? colorScheme) {
+  static ThemeData dark(ThemePrefsState prefs, dynamic colorScheme) {
     return _buildTheme(
       brightness: Brightness.dark,
       prefs: prefs,
@@ -48,7 +47,7 @@ class AppTheme {
   static ThemeData _buildTheme({
     required Brightness brightness,
     required ThemePrefsState prefs,
-    required ColorScheme? colorScheme,
+    required dynamic colorScheme,
   }) {
     final isDark = brightness == Brightness.dark;
     final resolved = resolveThemeColors(
@@ -57,76 +56,43 @@ class AppTheme {
       dynamicColorScheme: colorScheme,
     );
 
-    final baseTheme = isDark
-        ? FlexThemeData.dark(
-            scheme: resolved.usesConfiguredFlexScheme ? prefs.flexScheme : FlexScheme.custom,
-            colors: resolved.customColors,
-            colorScheme: resolved.colorScheme,
-            keyColors: prefs.themeVariant == AppThemeVariant.classic
-                ? null
-                : const FlexKeyColors(
-                    useKeyColors: true,
-                    keepPrimary: true,
-                    keepSecondary: true,
-                    keepTertiary: true,
-                    keepError: true,
-                  ),
-            variant: prefs.themeVariant.flexVariant,
-            surfaceMode: FlexSurfaceMode.highScaffoldLowSurface,
-            blendLevel: prefs.blendLevel,
-            swapColors: prefs.swapColors,
-            appBarStyle: FlexAppBarStyle.surface,
-            appBarOpacity: prefs.useAmoled ? 1.0 : 0.90,
-            transparentStatusBar: true,
-            darkIsTrueBlack: prefs.useAmoled,
-            textTheme: _applyFontFallback(GoogleFonts.montserratTextTheme()),
-            useMaterial3: true,
-            swapLegacyOnMaterial3: true,
-            visualDensity: FlexColorScheme.comfortablePlatformDensity,
-            pageTransitionsTheme: _pageTransitionsTheme,
-            subThemesData: _subThemesData(prefs),
-          )
-        : FlexThemeData.light(
-            scheme: resolved.usesConfiguredFlexScheme ? prefs.flexScheme : FlexScheme.custom,
-            colors: resolved.customColors,
-            colorScheme: resolved.colorScheme,
-            keyColors: prefs.themeVariant == AppThemeVariant.classic
-                ? null
-                : const FlexKeyColors(useExpressiveOnContainerColors: true),
-            variant: prefs.themeVariant.flexVariant,
-            surfaceMode: FlexSurfaceMode.highScaffoldLowSurface,
-            blendLevel: prefs.blendLevel,
-            swapColors: prefs.swapColors,
-            appBarStyle: FlexAppBarStyle.surface,
-            appBarOpacity: 0.95,
-            transparentStatusBar: true,
-            textTheme: _applyFontFallback(GoogleFonts.montserratTextTheme()),
-            useMaterial3: true,
-            swapLegacyOnMaterial3: true,
-            visualDensity: FlexColorScheme.comfortablePlatformDensity,
-            pageTransitionsTheme: _pageTransitionsTheme,
-            subThemesData: _subThemesData(prefs),
-          );
-
-    ThemeData result = baseTheme;
+    var cs = resolved.colorScheme;
     if (isDark && prefs.useAmoled) {
-      result = result.copyWith(
-        scaffoldBackgroundColor: const Color(0xFF000000),
-        colorScheme: result.colorScheme.copyWith(
-          surface: const Color(0xFF000000),
-        ),
+      cs = cs.copyWith(
+        surface: const Color(0xFF000000),
       );
     } else if (prefs.surfaceColor != null) {
       final sCol = Color(prefs.surfaceColor!);
-      result = result.copyWith(
-        scaffoldBackgroundColor: sCol,
-        colorScheme: result.colorScheme.copyWith(surface: sCol),
-      );
+      cs = cs.copyWith(surface: sCol);
     }
 
+    final textTheme = _applyFontFallback(
+      GoogleFonts.montserratTextTheme(
+        ThemeData(brightness: brightness).textTheme,
+      ),
+    );
+
+    final scaffoldBg = isDark
+        ? (prefs.useAmoled
+            ? const Color(0xFF000000)
+            : (prefs.surfaceColor != null
+                ? Color(prefs.surfaceColor!)
+                : cs.surface))
+        : (prefs.surfaceColor != null ? Color(prefs.surfaceColor!) : cs.surface);
+
+    ThemeData theme = ThemeData(
+      useMaterial3: true,
+      brightness: brightness,
+      colorScheme: cs,
+      textTheme: textTheme,
+      scaffoldBackgroundColor: scaffoldBg,
+      pageTransitionsTheme: _pageTransitionsTheme,
+      visualDensity: VisualDensity.adaptivePlatformDensity,
+    );
+
     return _themeModifiers.fold(
-      result,
-      (theme, modifier) => modifier(theme, prefs),
+      theme,
+      (t, modifier) => modifier(t, prefs),
     );
   }
 
@@ -136,6 +102,12 @@ class AppTheme {
     final cs = theme.colorScheme;
 
     return theme.copyWith(
+      appBarTheme: const AppBarTheme(
+        centerTitle: false,
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+      ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
         elevation: 0,
@@ -179,32 +151,31 @@ class AppTheme {
           const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         ),
       ),
-      inputDecorationTheme: InputDecorationTheme(
+      inputDecorationTheme: const InputDecorationTheme(
         border: InputBorder.none,
         filled: true,
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          minimumSize: _buttonMinSize,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(prefs.uiRoundness),
+          ),
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          minimumSize: _buttonMinSize,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(prefs.uiRoundness),
+          ),
+        ),
       ),
     );
   }
 
   static ThemeData _shadows(ThemeData theme, ThemePrefsState prefs) {
     return theme.copyWith(shadowColor: Colors.transparent);
-  }
-
-  static FlexSubThemesData _subThemesData(ThemePrefsState prefs) {
-    return FlexSubThemesData(
-      blendOnLevel: prefs.blendLevel,
-      defaultRadius: prefs.uiRoundness,
-      blendOnColors: true,
-      useMaterial3Typography: true,
-      buttonMinSize: _buttonMinSize,
-      fabUseShape: true,
-      fabAlwaysCircular: false,
-      interactionEffects: true,
-      tintedDisabledControls: true,
-      unselectedToggleIsColored: true,
-      sliderValueTinted: true,
-      switchThumbFixedSize: true,
-    );
   }
 
   static const _pageTransitionsTheme = PageTransitionsTheme(

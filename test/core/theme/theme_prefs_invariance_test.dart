@@ -1,9 +1,9 @@
 import 'dart:io';
 
-import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shonenx/core/theme/standard_schemes.dart';
 import 'package:shonenx/shared/providers/storage_provider.dart';
 import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
 
@@ -132,7 +132,7 @@ void main() {
       final restored = ThemePrefsState.fromJson(defaults.toJson());
 
       expect(restored, defaults);
-      expect(restored.flexScheme, FlexScheme.deepBlue);
+      expect(restored.flexScheme, AppScheme.deepBlue);
       expect(restored.themeVariant, AppThemeVariant.classic);
       expect(restored.blendLevel, 10);
       expect(restored.gradientIntensity, 0.35);

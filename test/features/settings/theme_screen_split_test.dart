@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shonenx/core/localization/cantonese_localizations_delegate.dart';
 import 'package:shonenx/core/theme/app_theme.dart';
 import 'package:shonenx/core/theme/exclusive_schemes.dart';
+import 'package:shonenx/core/theme/standard_schemes.dart';
 import 'package:shonenx/features/settings/presentation/theme_settings_screen.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
 import 'package:shonenx/features/settings/presentation/widgets/theme_mode_colors_tab.dart';
@@ -211,7 +211,7 @@ void main() {
     expect(readout.child, isNot(isA<SettingsActionTile>()));
     expect(
       readoutText(tester, 2),
-      '${l10n.settingsColorSource}: ${FlexColor.schemes[FlexScheme.deepBlue]!.name}',
+      '${l10n.settingsColorSource}: ${AppScheme.deepBlue.displayName}',
     );
     expect(sourceChildren[1], isA<SettingsSwitchTile>());
     expect(

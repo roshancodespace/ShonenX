@@ -1,4 +1,3 @@
-import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/theme/theme_color_resolver.dart';
@@ -23,26 +22,9 @@ class ThemeVariantSwatchPreview extends ConsumerWidget {
       dynamicColorScheme: prefs.useDynamic ? Theme.of(context).colorScheme : null,
     );
 
-    final Color previewPrimary;
-    final Color previewSecondary;
-    final Color previewTertiary;
-
-    if (variant == AppThemeVariant.classic) {
-      previewPrimary = resolved.primaryKey;
-      previewSecondary = resolved.secondaryKey;
-      previewTertiary = resolved.tertiaryKey;
-    } else {
-      final seededScheme = SeedColorScheme.fromSeeds(
-        brightness: activeIsDark ? Brightness.dark : Brightness.light,
-        primaryKey: resolved.primaryKey,
-        secondaryKey: resolved.secondaryKey,
-        tertiaryKey: resolved.tertiaryKey,
-        variant: variant.flexVariant,
-      );
-      previewPrimary = seededScheme.primary;
-      previewSecondary = seededScheme.secondary;
-      previewTertiary = seededScheme.tertiary;
-    }
+    final Color previewPrimary = resolved.primaryKey;
+    final Color previewSecondary = resolved.secondaryKey;
+    final Color previewTertiary = resolved.tertiaryKey;
 
     return CircleAvatar(
       radius: 18,

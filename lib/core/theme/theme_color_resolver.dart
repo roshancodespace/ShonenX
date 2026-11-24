@@ -1,6 +1,6 @@
-import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:shonenx/core/theme/exclusive_schemes.dart';
+import 'package:shonenx/core/theme/standard_schemes.dart';
 import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
 
 enum ThemeColorSource {
@@ -9,7 +9,7 @@ enum ThemeColorSource {
   customSeed,
   customPrimary,
   exclusive,
-  flexScheme,
+  appScheme,
 }
 
 class ResolvedThemeColors {
@@ -17,104 +17,144 @@ class ResolvedThemeColors {
     required this.source,
     required this.prefs,
     required this.brightness,
-    this.colorScheme,
-    this.customColors,
+    required this.colorScheme,
+    required this.primaryKey,
+    required this.secondaryKey,
+    required this.tertiaryKey,
     this.exclusive,
   });
 
   final ThemeColorSource source;
   final ThemePrefsState prefs;
   final Brightness brightness;
-  final ColorScheme? colorScheme;
-  final FlexSchemeColor? customColors;
+  final ColorScheme colorScheme;
+  final Color primaryKey;
+  final Color secondaryKey;
+  final Color tertiaryKey;
   final ExclusiveSchemeData? exclusive;
-
-  Color get primaryKey => _keyColors.primary;
-  Color get secondaryKey => _keyColors.secondary;
-  Color get tertiaryKey => _keyColors.tertiary;
-
-  bool get usesConfiguredFlexScheme =>
-      colorScheme == null && customColors == null && exclusive == null;
-
-  FlexSchemeColor get _keyColors {
-    final scheme = colorScheme;
-    if (scheme != null) {
-      return FlexSchemeColor(
-        primary: scheme.primary,
-        secondary: scheme.secondary,
-        tertiary: scheme.tertiary,
-      );
-    }
-    final custom = customColors;
-    if (custom != null) return custom;
-    final flex = FlexColor.schemes[prefs.flexScheme] ??
-        FlexColor.schemes[FlexScheme.material]!;
-    return brightness == Brightness.dark ? flex.dark : flex.light;
-  }
 }
 
 ResolvedThemeColors resolveThemeColors(
   ThemePrefsState prefs, {
   required Brightness brightness,
-  ColorScheme? dynamicColorScheme,
+  dynamic dynamicColorScheme,
 }) {
   final isDark = brightness == Brightness.dark;
   final exclusive = prefs.exclusiveScheme != null
       ? exclusiveSchemes[prefs.exclusiveScheme]
       : null;
 
-  var source = ThemeColorSource.flexScheme;
-  ColorScheme? effectiveColorScheme = dynamicColorScheme;
-  if (effectiveColorScheme != null) {
-    source = ThemeColorSource.dynamic;
+  var source = ThemeColorSource.appScheme;
+  Color primaryKey;
+  Color? secondaryKey;
+  Color? tertiaryKey;
+  ColorScheme? effectiveColorScheme;
+
+  if (dynamicColorScheme != null) {
+    try {
+      final dynamic dyn = dynamicColorScheme;
+      primaryKey = dyn.primary as Color;
+      secondaryKey = dyn.secondary as Color?;
+      tertiaryKey = dyn.tertiary as Color?;
+      if (dynamicColorScheme is ColorScheme) {
+        effectiveColorScheme = dynamicColorScheme;
+      } else {
+        effectiveColorScheme = ColorScheme.fromSeed(
+          seedColor: primaryKey,
+          brightness: brightness,
+        );
+      }
+      source = ThemeColorSource.dynamic;
+    } catch (_) {
+      primaryKey = prefs.flexScheme.seedColor;
+    }
   } else if (prefs.useImageColors &&
       prefs.wallpaperSettings?.imageColorSeed != null) {
+    final seed = Color(prefs.wallpaperSettings!.imageColorSeed!);
     effectiveColorScheme = ColorScheme.fromSeed(
-      seedColor: Color(prefs.wallpaperSettings!.imageColorSeed!),
+      seedColor: seed,
       brightness: brightness,
     );
+    primaryKey = effectiveColorScheme.primary;
+    secondaryKey = effectiveColorScheme.secondary;
+    tertiaryKey = effectiveColorScheme.tertiary;
     source = ThemeColorSource.wallpaperImageSeed;
   } else if (prefs.colorSeed != null) {
+    final seed = Color(prefs.colorSeed!);
     effectiveColorScheme = ColorScheme.fromSeed(
-      seedColor: Color(prefs.colorSeed!),
+      seedColor: seed,
       brightness: brightness,
     );
+    primaryKey = effectiveColorScheme.primary;
+    secondaryKey = effectiveColorScheme.secondary;
+    tertiaryKey = effectiveColorScheme.tertiary;
     source = ThemeColorSource.customSeed;
-  }
-
-  FlexSchemeColor? customColors;
-  if (effectiveColorScheme == null && prefs.primaryColor != null) {
-    final primary = Color(prefs.primaryColor!);
-    final secondary = prefs.secondaryColor != null
+  } else if (prefs.primaryColor != null) {
+    primaryKey = Color(prefs.primaryColor!);
+    secondaryKey = prefs.secondaryColor != null
         ? Color(prefs.secondaryColor!)
-        : FlexSchemeColor.from(
-            primary: primary,
-            brightness: brightness,
-          ).secondary;
-    final tertiary = prefs.tertiaryColor != null
+        : null;
+    tertiaryKey = prefs.tertiaryColor != null
         ? Color(prefs.tertiaryColor!)
-        : FlexSchemeColor.from(
-            primary: primary,
-            brightness: brightness,
-          ).tertiary;
-
-    customColors = FlexSchemeColor(
-      primary: primary,
-      secondary: secondary,
-      tertiary: tertiary,
+        : null;
+    effectiveColorScheme = ColorScheme.fromSeed(
+      seedColor: primaryKey,
+      brightness: brightness,
+      primary: primaryKey,
+      secondary: secondaryKey,
+      tertiary: tertiaryKey,
     );
     source = ThemeColorSource.customPrimary;
-  } else if (effectiveColorScheme == null && exclusive != null) {
-    customColors = isDark ? exclusive.dark : exclusive.light;
+  } else if (exclusive != null) {
+    final colors = isDark ? exclusive.dark : exclusive.light;
+    primaryKey = colors.primary;
+    secondaryKey = colors.secondary;
+    tertiaryKey = colors.tertiary;
+    effectiveColorScheme = ColorScheme.fromSeed(
+      seedColor: primaryKey,
+      brightness: brightness,
+      primary: colors.primary,
+      primaryContainer: colors.primaryContainer,
+      secondary: colors.secondary,
+      secondaryContainer: colors.secondaryContainer,
+      tertiary: colors.tertiary,
+      tertiaryContainer: colors.tertiaryContainer,
+    );
     source = ThemeColorSource.exclusive;
+  } else {
+    final schemeData = standardSchemes[prefs.flexScheme] ??
+        standardSchemes[AppScheme.deepBlue]!;
+    final colors = isDark ? schemeData.dark : schemeData.light;
+    primaryKey = colors.primary;
+    secondaryKey = colors.secondary;
+    tertiaryKey = colors.tertiary;
+    effectiveColorScheme = ColorScheme.fromSeed(
+      seedColor: primaryKey,
+      brightness: brightness,
+      primary: colors.primary,
+      primaryContainer: colors.primaryContainer,
+      secondary: colors.secondary,
+      secondaryContainer: colors.secondaryContainer,
+      tertiary: colors.tertiary,
+      tertiaryContainer: colors.tertiaryContainer,
+    );
+    source = ThemeColorSource.appScheme;
   }
+
+  final finalScheme = effectiveColorScheme ??
+      ColorScheme.fromSeed(
+        seedColor: primaryKey,
+        brightness: brightness,
+      );
 
   return ResolvedThemeColors(
     source: source,
     prefs: prefs,
     brightness: brightness,
-    colorScheme: effectiveColorScheme,
-    customColors: customColors,
+    colorScheme: finalScheme,
+    primaryKey: primaryKey,
+    secondaryKey: secondaryKey ?? finalScheme.secondary,
+    tertiaryKey: tertiaryKey ?? finalScheme.tertiary,
     exclusive: exclusive,
   );
 }

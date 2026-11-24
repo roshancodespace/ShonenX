@@ -12,7 +12,6 @@ dependencies:
     sdk: flutter
   go_router: ^17.2.1
   flutter_riverpod: ^3.3.1
-  flex_color_scheme: ^8.4.0
   logger: ^2.8.0
   path: ^1.9.1
   path_provider: ^2.1.5
@@ -56,7 +55,7 @@ dependencies:
   url_launcher: ^6.3.0
   html: ^0.15.7
   flutter_svg: ^2.2.4
-  dynamic_color: 1.8.1
+  dynamic_color: ^2.1.0
   permission_handler: 12.0.3
   file_picker: ^8.1.4
   encrypt: ^5.0.3
@@ -85,6 +84,9 @@ dependencies:
   flutter_device_apps: ^2.1.0
   better_player_plus: ^1.0.8
   webview_all: ^1.4.4
+  
+  material_ui: ^1.11.1
+  cupertino_ui: ^1.1.7
 
 dependency_overrides:
   flutter_inappwebview: 6.2.0-beta.2

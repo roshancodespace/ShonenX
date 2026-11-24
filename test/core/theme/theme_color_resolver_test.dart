@@ -1,10 +1,10 @@
-import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shonenx/core/theme/app_theme.dart';
 import 'package:shonenx/core/theme/exclusive_schemes.dart';
+import 'package:shonenx/core/theme/standard_schemes.dart';
 import 'package:shonenx/core/theme/theme_color_resolver.dart';
 import 'package:shonenx/features/settings/presentation/widgets/theme_variant_swatch_preview.dart';
 import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
@@ -47,8 +47,9 @@ void main() {
   group('resolveThemeColors source branches', () {
     for (final brightness in Brightness.values) {
       final tag = brightness == Brightness.dark ? 'dark' : 'light';
-      final flex = FlexColor.schemes[FlexScheme.deepBlue]!;
-      final flexColors = brightness == Brightness.dark ? flex.dark : flex.light;
+      final schemeData = standardSchemes[AppScheme.deepBlue]!;
+      final schemeColors =
+          brightness == Brightness.dark ? schemeData.dark : schemeData.light;
       final netflix = exclusiveSchemes['netflix']!;
       final netflixColors =
           brightness == Brightness.dark ? netflix.dark : netflix.light;
@@ -65,10 +66,8 @@ void main() {
         );
         expect(result.source, ThemeColorSource.dynamic);
         expect(result.colorScheme, scheme);
-        expect(result.customColors, isNull);
         expect(result.exclusive, isNull);
         expectKeys(result, scheme.primary, scheme.secondary, scheme.tertiary);
-        expect(result.usesConfiguredFlexScheme, isFalse);
       });
 
       test('wallpaper image seed at $tag brightness', () {
@@ -86,10 +85,8 @@ void main() {
         final result = resolveFor(state, brightness: brightness);
         expect(result.source, ThemeColorSource.wallpaperImageSeed);
         expect(result.colorScheme, scheme);
-        expect(result.customColors, isNull);
         expect(result.exclusive, isNull);
         expectKeys(result, scheme.primary, scheme.secondary, scheme.tertiary);
-        expect(result.usesConfiguredFlexScheme, isFalse);
       });
 
       test('custom seed at $tag brightness', () {
@@ -101,28 +98,23 @@ void main() {
         final result = resolveFor(state, brightness: brightness);
         expect(result.source, ThemeColorSource.customSeed);
         expect(result.colorScheme, scheme);
-        expect(result.customColors, isNull);
         expectKeys(result, scheme.primary, scheme.secondary, scheme.tertiary);
-        expect(result.usesConfiguredFlexScheme, isFalse);
       });
 
       test('custom primary with generated fallbacks at $tag brightness', () {
         const state = ThemePrefsState(primaryColor: 0xFFAABBCC);
         final result = resolveFor(state, brightness: brightness);
-        final fallback = FlexSchemeColor.from(
-          primary: const Color(0xFFAABBCC),
+        final fallback = ColorScheme.fromSeed(
+          seedColor: const Color(0xFFAABBCC),
           brightness: brightness,
         );
         expect(result.source, ThemeColorSource.customPrimary);
-        expect(result.colorScheme, isNull);
-        expect(result.customColors, isNotNull);
         expectKeys(
           result,
           const Color(0xFFAABBCC),
           fallback.secondary,
           fallback.tertiary,
         );
-        expect(result.usesConfiguredFlexScheme, isFalse);
       });
 
       test('custom primary with explicit secondary and tertiary at $tag brightness', () {
@@ -139,15 +131,12 @@ void main() {
           const Color(0xFFDDEEFF),
           const Color(0xFF102030),
         );
-        expect(result.usesConfiguredFlexScheme, isFalse);
       });
 
       test('exclusive scheme at $tag brightness', () {
         const state = ThemePrefsState(exclusiveScheme: 'netflix');
         final result = resolveFor(state, brightness: brightness);
         expect(result.source, ThemeColorSource.exclusive);
-        expect(result.colorScheme, isNull);
-        expect(result.customColors, netflixColors);
         expect(result.exclusive, netflix);
         expectKeys(
           result,
@@ -155,23 +144,19 @@ void main() {
           netflixColors.secondary,
           netflixColors.tertiary,
         );
-        expect(result.usesConfiguredFlexScheme, isFalse);
       });
 
       test('flex fallback at $tag brightness', () {
         const state = ThemePrefsState();
         final result = resolveFor(state, brightness: brightness);
-        expect(result.source, ThemeColorSource.flexScheme);
-        expect(result.colorScheme, isNull);
-        expect(result.customColors, isNull);
+        expect(result.source, ThemeColorSource.appScheme);
         expect(result.exclusive, isNull);
         expectKeys(
           result,
-          flexColors.primary,
-          flexColors.secondary,
-          flexColors.tertiary,
+          schemeColors.primary,
+          schemeColors.secondary,
+          schemeColors.tertiary,
         );
-        expect(result.usesConfiguredFlexScheme, isTrue);
       });
     }
 
@@ -209,7 +194,7 @@ void main() {
         resolveFor(const ThemePrefsState(exclusiveScheme: 'netflix')).source,
         ThemeColorSource.exclusive,
       );
-      expect(resolveFor(const ThemePrefsState()).source, ThemeColorSource.flexScheme);
+      expect(resolveFor(const ThemePrefsState()).source, ThemeColorSource.appScheme);
     });
 
     test('useDynamic without a supplied scheme falls through', () {

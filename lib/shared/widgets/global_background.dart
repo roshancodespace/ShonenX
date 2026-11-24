@@ -150,16 +150,34 @@ class _GlobalBackgroundSurface extends ConsumerWidget {
 
     switch (style) {
       case BackgroundGradientStyle.radial:
+        final glowColor = colors.last;
+        final midGlow = Color.lerp(base, glowColor, 0.40)!;
+        final softGlow = Color.lerp(base, glowColor, 0.10)!;
         return RadialGradient(
           center: Alignment.center,
-          radius: 1.2,
-          colors: colors.reversed.toList(),
+          radius: 1.6,
+          colors: [
+            glowColor,
+            midGlow,
+            softGlow,
+            base,
+          ],
+          stops: const [0.0, 0.35, 0.70, 1.0],
         );
       case BackgroundGradientStyle.topGlow:
+        final glowColor = colors.last;
+        final midGlow = Color.lerp(base, glowColor, 0.40)!;
+        final softGlow = Color.lerp(base, glowColor, 0.10)!;
         return RadialGradient(
-          center: const Alignment(0.0, -1.3),
-          radius: 1.5,
-          colors: colors.reversed.toList(),
+          center: const Alignment(0.0, -1.0),
+          radius: 2.2,
+          colors: [
+            glowColor,
+            midGlow,
+            softGlow,
+            base,
+          ],
+          stops: const [0.0, 0.35, 0.70, 1.0],
         );
       case BackgroundGradientStyle.sweep:
         return SweepGradient(

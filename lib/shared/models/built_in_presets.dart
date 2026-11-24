@@ -1,5 +1,5 @@
-import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
+import 'package:shonenx/core/theme/standard_schemes.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/episodes_panel/episode_list_panel.dart';
 import 'package:shonenx/shared/models/app_theme_preset.dart';
 import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
@@ -19,7 +19,7 @@ class BuiltInPresets {
       version: 2,
       previewColors: [0xFF7e1e1e, 0xFF651616, 0xFF5e1616],
       themeMode: ThemeMode.system,
-      flexScheme: FlexScheme.shadRed,
+      flexScheme: AppScheme.shadRed,
       themeVariant: AppThemeVariant.classic,
       blendLevel: 0,
       useGradients: true,
@@ -49,7 +49,7 @@ class BuiltInPresets {
       version: 2,
       previewColors: [0xFF10B981, 0xFF06B6D4, 0xFF047857],
       themeMode: ThemeMode.dark,
-      flexScheme: FlexScheme.custom,
+      flexScheme: AppScheme.custom,
       themeVariant: AppThemeVariant.tonalSpot,
       colorSeed: 0xFF10B981,
       blendLevel: 16,
@@ -74,7 +74,7 @@ class BuiltInPresets {
       version: 2,
       previewColors: [0xFF8B5CF6, 0xFFEC4899, 0xFF090A0F],
       themeMode: ThemeMode.dark,
-      flexScheme: FlexScheme.custom,
+      flexScheme: AppScheme.custom,
       themeVariant: AppThemeVariant.vibrant,
       colorSeed: 0xFF8B5CF6,
       useAmoled: true,
@@ -100,7 +100,7 @@ class BuiltInPresets {
       version: 1,
       previewColors: [0xFFDB2777, 0xFFF472B6, 0xFFFAF3F5],
       themeMode: ThemeMode.light,
-      flexScheme: FlexScheme.custom,
+      flexScheme: AppScheme.custom,
       themeVariant: AppThemeVariant.tonalSpot,
       colorSeed: 0xFFDB2777,
       blendLevel: 15,
@@ -124,7 +124,7 @@ class BuiltInPresets {
       version: 2,
       previewColors: [0xFFA3E635, 0xFF3F6212, 0xFF111827],
       themeMode: ThemeMode.dark,
-      flexScheme: FlexScheme.custom,
+      flexScheme: AppScheme.custom,
       themeVariant: AppThemeVariant.classic,
       colorSeed: 0xFFA3E635,
       blendLevel: 10,

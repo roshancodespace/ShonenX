@@ -1,8 +1,8 @@
-import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/localization/l10n_extension.dart';
 import 'package:shonenx/core/theme/exclusive_schemes.dart';
+import 'package:shonenx/core/theme/standard_schemes.dart';
 import 'package:shonenx/core/theme/theme_color_resolver.dart';
 import 'package:shonenx/features/settings/presentation/widgets/preset_gallery_sheet.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
@@ -32,8 +32,8 @@ class ThemeModeColorsTab extends ConsumerWidget {
       ThemeColorSource.dynamic => context.l10n.settingsDynamicColor,
       ThemeColorSource.exclusive =>
         exclusiveSchemes[themePrefs.exclusiveScheme]!.name,
-      ThemeColorSource.flexScheme =>
-        FlexColor.schemes[themePrefs.flexScheme]!.name,
+      ThemeColorSource.appScheme =>
+        themePrefs.flexScheme.displayName,
       ThemeColorSource.wallpaperImageSeed ||
       ThemeColorSource.customSeed ||
       ThemeColorSource.customPrimary =>
@@ -165,11 +165,11 @@ class ThemeModeColorsTab extends ConsumerWidget {
           const SizedBox(height: 4),
           ThemePaletteShelf(
             title: context.l10n.settingsStandardSchemes,
-            countBadge: '${FlexColor.schemes.length - 1} Themes',
-            items: FlexColor.schemes.entries
-                .where((e) => e.key != FlexScheme.custom)
+            countBadge: '${standardSchemes.length} Themes',
+            items: standardSchemes.entries
+                .where((e) => e.key != AppScheme.custom)
                 .map(
-                  (e) => ThemePaletteItem.fromFlexScheme(
+                  (e) => ThemePaletteItem.fromAppScheme(
                     scheme: e.key,
                     data: e.value,
                     isDark: isDark,
@@ -183,7 +183,7 @@ class ThemeModeColorsTab extends ConsumerWidget {
                 ? themePrefs.flexScheme.name
                 : null,
             onSelect: (item) =>
-                notifier.setStandardScheme(FlexScheme.values.byName(item.id)),
+                notifier.setStandardScheme(AppScheme.values.byName(item.id)),
             onViewAll: () => showStandardSchemePicker(
               context,
               themePrefs.flexScheme,

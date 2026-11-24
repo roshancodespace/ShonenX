@@ -94,7 +94,7 @@ class GoogleTranslateProvider implements BaseTranslationProvider {
         _log.w(
           'Delimiter mismatch (${parts.length} vs ${chunk.length}), translating individually',
         );
-        return _translateIndividually(
+        return await _translateIndividually(
           chunk,
           targetLanguage: targetLanguage,
           sourceLanguage: sourceLanguage,

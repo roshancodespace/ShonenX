@@ -1,6 +1,6 @@
 import 'dart:convert';
-import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
+import 'package:shonenx/core/theme/standard_schemes.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/episodes_panel/episode_list_panel.dart';
 import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
@@ -14,7 +14,7 @@ class AppThemePreset {
   final List<int> previewColors;
 
   final ThemeMode themeMode;
-  final FlexScheme flexScheme;
+  final AppScheme flexScheme;
   final AppThemeVariant themeVariant;
   final bool useAmoled;
   final bool useDynamic;
@@ -56,7 +56,7 @@ class AppThemePreset {
     this.version = 1,
     required this.previewColors,
     this.themeMode = ThemeMode.system,
-    this.flexScheme = FlexScheme.deepBlue,
+    this.flexScheme = AppScheme.deepBlue,
     this.themeVariant = AppThemeVariant.classic,
     this.useAmoled = false,
     this.useDynamic = false,
@@ -273,9 +273,9 @@ class AppThemePreset {
                 ThemeMode.values.length - 1,
               ) ??
               ThemeMode.system.index],
-      flexScheme: FlexScheme.values.firstWhere(
+      flexScheme: AppScheme.values.firstWhere(
         (e) => e.name == map['flexScheme'] || e.index == map['flexScheme'],
-        orElse: () => FlexScheme.custom,
+        orElse: () => AppScheme.custom,
       ),
       themeVariant: () {
         final val = map['themeVariant'];

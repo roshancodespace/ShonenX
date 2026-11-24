@@ -4,9 +4,9 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/core/theme/standard_schemes.dart';
 import 'package:shonenx/core/utils/wallpaper_processor.dart';
 
 import 'package:shonenx/shared/providers/storage_provider.dart';
@@ -32,15 +32,6 @@ enum AppThemeVariant {
     AppThemeVariant.fidelity => 'Preserves source color character',
     AppThemeVariant.vibrant => 'Strong colorful accents',
     AppThemeVariant.vivid => 'Highly saturated color palette',
-  };
-
-  FlexSchemeVariant get flexVariant => switch (this) {
-    AppThemeVariant.classic =>
-      FlexSchemeVariant.tonalSpot, // Fallback/default when not classic
-    AppThemeVariant.tonalSpot => FlexSchemeVariant.tonalSpot,
-    AppThemeVariant.fidelity => FlexSchemeVariant.fidelity,
-    AppThemeVariant.vibrant => FlexSchemeVariant.vibrant,
-    AppThemeVariant.vivid => FlexSchemeVariant.vivid,
   };
 }
 
@@ -187,7 +178,7 @@ class WallpaperSettings {
 
 class ThemePrefsState {
   final ThemeMode themeMode;
-  final FlexScheme flexScheme;
+  final AppScheme flexScheme;
   final AppThemeVariant themeVariant;
   final bool useAmoled;
   final bool useDynamic;
@@ -217,7 +208,7 @@ class ThemePrefsState {
 
   const ThemePrefsState({
     this.themeMode = ThemeMode.system,
-    this.flexScheme = FlexScheme.deepBlue,
+    this.flexScheme = AppScheme.deepBlue,
     this.themeVariant = AppThemeVariant.classic,
     this.useAmoled = false,
     this.useDynamic = false,
@@ -245,7 +236,7 @@ class ThemePrefsState {
 
   ThemePrefsState copyWith({
     ThemeMode? themeMode,
-    FlexScheme? flexScheme,
+    AppScheme? flexScheme,
     AppThemeVariant? themeVariant,
     bool? useAmoled,
     bool? useDynamic,
@@ -400,10 +391,22 @@ class ThemePrefsState {
       resolvedWallpaper = null;
     }
 
+    final schemeVal = map['flexScheme'] ?? map['appScheme'];
+    final AppScheme resolvedScheme;
+    if (schemeVal is int && schemeVal >= 0 && schemeVal < AppScheme.values.length) {
+      resolvedScheme = AppScheme.values[schemeVal];
+    } else if (schemeVal is String) {
+      resolvedScheme = AppScheme.values.firstWhere(
+        (s) => s.name.toLowerCase() == schemeVal.toLowerCase(),
+        orElse: () => AppScheme.deepBlue,
+      );
+    } else {
+      resolvedScheme = AppScheme.deepBlue;
+    }
+
     return ThemePrefsState(
       themeMode: ThemeMode.values[map['themeMode'] ?? ThemeMode.system.index],
-      flexScheme:
-          FlexScheme.values[map['flexScheme'] ?? FlexScheme.deepBlue.index],
+      flexScheme: resolvedScheme,
       themeVariant: resolvedVariant,
       useAmoled: map['useAmoled'] ?? false,
       useDynamic: map['useDynamic'] ?? false,
@@ -593,7 +596,7 @@ class ThemePrefsNotifier extends Notifier<ThemePrefsState> {
     );
   }
 
-  void setStandardScheme(FlexScheme scheme) {
+  void setStandardScheme(AppScheme scheme) {
     updateTheme(
       (p) => p.copyWith(
         flexScheme: scheme,

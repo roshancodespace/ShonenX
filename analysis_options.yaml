@@ -2,6 +2,7 @@
 analyzer:
   errors:
     experimental_member_use: ignore
+    deprecated_member_use: ignore
   exclude:
     - build/**
     - android/**

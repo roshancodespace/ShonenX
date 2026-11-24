@@ -132,7 +132,7 @@ class ShonenXApp extends ConsumerWidget {
     log.d('Theme changed: ${themePrefs.themeMode}, Locale: $appLocale');
 
     return DynamicColorBuilder(
-      builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
+      builder: (lightDynamic, darkDynamic) {
         final lightTheme = AppTheme.light(
           themePrefs,
           themePrefs.useDynamic ? lightDynamic : null,
@@ -142,55 +142,55 @@ class ShonenXApp extends ConsumerWidget {
           themePrefs.useDynamic ? darkDynamic : null,
         );
 
-        return MaterialApp.router(
-          debugShowCheckedModeBanner: false,
-          title: 'ShonenX',
-          locale: appLocale,
-          localizationsDelegates: const [
-            AppLocalizations.delegate,
-            CantoneseMaterialLocalizationsDelegate(),
-            CantoneseCupertinoLocalizationsDelegate(),
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          supportedLocales: AppLocalizations.supportedLocales,
-          themeMode: themePrefs.themeMode,
-          theme: lightTheme,
-          darkTheme: darkTheme,
-          scrollBehavior: const MaterialScrollBehavior().copyWith(
-            scrollbars: false,
-            dragDevices: {
-              PointerDeviceKind.touch,
-              PointerDeviceKind.mouse,
-              PointerDeviceKind.trackpad,
-              PointerDeviceKind.stylus,
-              PointerDeviceKind.unknown,
+          return MaterialApp.router(
+            debugShowCheckedModeBanner: false,
+            title: 'ShonenX',
+            locale: appLocale,
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              CantoneseMaterialLocalizationsDelegate(),
+              CantoneseCupertinoLocalizationsDelegate(),
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            themeMode: themePrefs.themeMode,
+            theme: lightTheme,
+            darkTheme: darkTheme,
+            scrollBehavior: const MaterialScrollBehavior().copyWith(
+              scrollbars: false,
+              dragDevices: {
+                PointerDeviceKind.touch,
+                PointerDeviceKind.mouse,
+                PointerDeviceKind.trackpad,
+                PointerDeviceKind.stylus,
+                PointerDeviceKind.unknown,
+              },
+            ),
+            routerConfig: ref.watch(routerProvider),
+            builder: (context, child) {
+              if (child == null) return const SizedBox.shrink();
+
+              GlobalUI.uiScaleFactor = themePrefs.uiScaleFactor;
+              GlobalUI.uiRoundness = themePrefs.uiRoundness;
+
+              final textScaledChild = MediaQuery(
+                data: MediaQuery.of(context).copyWith(
+                  textScaler: TextScaler.linear(themePrefs.fontScaleFactor),
+                ),
+                child: child,
+              );
+
+              return RemoteConfigListener(
+                child: GlobalBackground(
+                  child: SecurityGateWrapper(child: textScaledChild),
+                ),
+              );
             },
-          ),
-          routerConfig: ref.watch(routerProvider),
-          builder: (context, child) {
-            if (child == null) return const SizedBox.shrink();
-
-            GlobalUI.uiScaleFactor = themePrefs.uiScaleFactor;
-            GlobalUI.uiRoundness = themePrefs.uiRoundness;
-
-            final textScaledChild = MediaQuery(
-              data: MediaQuery.of(context).copyWith(
-                textScaler: TextScaler.linear(themePrefs.fontScaleFactor),
-              ),
-              child: child,
-            );
-
-            return RemoteConfigListener(
-              child: GlobalBackground(
-                child: SecurityGateWrapper(child: textScaledChild),
-              ),
-            );
-          },
-        );
-      },
-    );
+          );
+        },
+      );
   }
 }
 

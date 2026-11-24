@@ -24,7 +24,7 @@ import 'package:shonenx/shared/widgets/permission_sheet.dart';
 import 'package:shonenx/shared/widgets/svg_icon.dart';
 import 'package:anymex_extension_runtime_bridge/anymex_extension_runtime_bridge.dart'
     as bridge;
-import 'package:flex_color_scheme/flex_color_scheme.dart';
+import 'package:shonenx/core/theme/standard_schemes.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/cards/media_card.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/continue/continue_card_layout.dart';
 import 'package:shonenx/features/discord/presentation/discord_login_page.dart';
@@ -385,12 +385,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             MediaQuery.platformBrightnessOf(context) == Brightness.dark);
 
     final curatedSchemes = [
-      (FlexScheme.deepBlue, 'Deep Blue', const Color(0xFF1565C0)),
-      (FlexScheme.redM3, 'Crimson', const Color(0xFFB3261E)),
-      (FlexScheme.sakura, 'Sakura', const Color(0xFFCE5B78)),
-      (FlexScheme.greenM3, 'Emerald', const Color(0xFF2E6C38)),
-      (FlexScheme.deepPurple, 'Purple', const Color(0xFF6750A4)),
-      (FlexScheme.mandyRed, 'Sunset', const Color(0xFFCD5758)),
+      (AppScheme.deepBlue, 'Deep Blue', const Color(0xFF1565C0)),
+      (AppScheme.redM3, 'Crimson', const Color(0xFFB3261E)),
+      (AppScheme.sakura, 'Sakura', const Color(0xFFCE5B78)),
+      (AppScheme.greenM3, 'Emerald', const Color(0xFF2E6C38)),
+      (AppScheme.deepPurple, 'Purple', const Color(0xFF6750A4)),
+      (AppScheme.mandyRed, 'Sunset', const Color(0xFFCD5758)),
     ];
 
     return _buildPageLayout(

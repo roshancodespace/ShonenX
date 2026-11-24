@@ -442,7 +442,7 @@ class SearchNotifier extends AsyncNotifier<PaginatedResult<UnifiedMedia>?> {
           hasNextPage: hasNext,
         ),
       );
-    } catch (e, _) {
+    } catch (e) {
       if (!ref.mounted) return;
       _currentPage--;
       state = AsyncData(

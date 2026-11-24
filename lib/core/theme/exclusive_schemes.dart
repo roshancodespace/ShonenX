@@ -1,11 +1,28 @@
-import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
+
+class AppSchemeColors {
+  final Color primary;
+  final Color primaryContainer;
+  final Color secondary;
+  final Color secondaryContainer;
+  final Color tertiary;
+  final Color tertiaryContainer;
+
+  const AppSchemeColors({
+    required this.primary,
+    required this.primaryContainer,
+    required this.secondary,
+    required this.secondaryContainer,
+    required this.tertiary,
+    required this.tertiaryContainer,
+  });
+}
 
 class ExclusiveSchemeData {
   final String name;
   final String description;
-  final FlexSchemeColor light;
-  final FlexSchemeColor dark;
+  final AppSchemeColors light;
+  final AppSchemeColors dark;
 
   const ExclusiveSchemeData({
     required this.name,
@@ -19,7 +36,7 @@ const Map<String, ExclusiveSchemeData> exclusiveSchemes = {
   'netflix': ExclusiveSchemeData(
     name: 'Netflix',
     description: 'Iconic cinematic red and pitch-black elegance',
-    light: FlexSchemeColor(
+    light: AppSchemeColors(
       primary: Color(0xFFE50914),
       primaryContainer: Color(0xFFFFD9D9),
       secondary: Color(0xFF221F1F),
@@ -27,7 +44,7 @@ const Map<String, ExclusiveSchemeData> exclusiveSchemes = {
       tertiary: Color(0xFFB81D24),
       tertiaryContainer: Color(0xFFFFCDD2),
     ),
-    dark: FlexSchemeColor(
+    dark: AppSchemeColors(
       primary: Color(0xFFE50914),
       primaryContainer: Color(0xFF4D0005),
       secondary: Color(0xFFF5F5F1),
@@ -40,7 +57,7 @@ const Map<String, ExclusiveSchemeData> exclusiveSchemes = {
   'crunchyroll': ExclusiveSchemeData(
     name: 'Crunchyroll',
     description: 'Signature anime orange with sleek obsidian tones',
-    light: FlexSchemeColor(
+    light: AppSchemeColors(
       primary: Color(0xFFF47521),
       primaryContainer: Color(0xFFFFE8D6),
       secondary: Color(0xFF23252B),
@@ -48,7 +65,7 @@ const Map<String, ExclusiveSchemeData> exclusiveSchemes = {
       tertiary: Color(0xFFFAB818),
       tertiaryContainer: Color(0xFFFFF3CD),
     ),
-    dark: FlexSchemeColor(
+    dark: AppSchemeColors(
       primary: Color(0xFFFF640A),
       primaryContainer: Color(0xFF5A2000),
       secondary: Color(0xFFFAB818),
@@ -61,7 +78,7 @@ const Map<String, ExclusiveSchemeData> exclusiveSchemes = {
   'midnight_tokyo': ExclusiveSchemeData(
     name: 'Midnight Tokyo',
     description: 'Neon-lit streets at night',
-    light: FlexSchemeColor(
+    light: AppSchemeColors(
       primary: Color(0xFF6C3CE1),
       primaryContainer: Color(0xFFE8DEFF),
       secondary: Color(0xFFE91E8C),
@@ -69,7 +86,7 @@ const Map<String, ExclusiveSchemeData> exclusiveSchemes = {
       tertiary: Color(0xFF00BCD4),
       tertiaryContainer: Color(0xFFB2EBF2),
     ),
-    dark: FlexSchemeColor(
+    dark: AppSchemeColors(
       primary: Color(0xFFB794F6),
       primaryContainer: Color(0xFF4A1DB8),
       secondary: Color(0xFFFF6EC7),
@@ -82,7 +99,7 @@ const Map<String, ExclusiveSchemeData> exclusiveSchemes = {
   'arctic_aurora': ExclusiveSchemeData(
     name: 'Arctic Aurora',
     description: 'Northern lights over ice',
-    light: FlexSchemeColor(
+    light: AppSchemeColors(
       primary: Color(0xFF0D7C5F),
       primaryContainer: Color(0xFFA7F3D0),
       secondary: Color(0xFF2563EB),
@@ -90,7 +107,7 @@ const Map<String, ExclusiveSchemeData> exclusiveSchemes = {
       tertiary: Color(0xFF7C3AED),
       tertiaryContainer: Color(0xFFDDD6FE),
     ),
-    dark: FlexSchemeColor(
+    dark: AppSchemeColors(
       primary: Color(0xFF34D399),
       primaryContainer: Color(0xFF065F46),
       secondary: Color(0xFF60A5FA),
@@ -103,7 +120,7 @@ const Map<String, ExclusiveSchemeData> exclusiveSchemes = {
   'sakura_bloom': ExclusiveSchemeData(
     name: 'Sakura Bloom',
     description: 'Cherry blossoms in spring',
-    light: FlexSchemeColor(
+    light: AppSchemeColors(
       primary: Color(0xFFDB2777),
       primaryContainer: Color(0xFFFCE7F3),
       secondary: Color(0xFFF472B6),
@@ -111,7 +128,7 @@ const Map<String, ExclusiveSchemeData> exclusiveSchemes = {
       tertiary: Color(0xFFBE185D),
       tertiaryContainer: Color(0xFFFDA4AF),
     ),
-    dark: FlexSchemeColor(
+    dark: AppSchemeColors(
       primary: Color(0xFFF9A8D4),
       primaryContainer: Color(0xFF9D174D),
       secondary: Color(0xFFFBCFE8),
@@ -124,7 +141,7 @@ const Map<String, ExclusiveSchemeData> exclusiveSchemes = {
   'volcanic_ember': ExclusiveSchemeData(
     name: 'Volcanic Ember',
     description: 'Lava flowing through obsidian',
-    light: FlexSchemeColor(
+    light: AppSchemeColors(
       primary: Color(0xFFDC2626),
       primaryContainer: Color(0xFFFEE2E2),
       secondary: Color(0xFFEA580C),
@@ -132,7 +149,7 @@ const Map<String, ExclusiveSchemeData> exclusiveSchemes = {
       tertiary: Color(0xFFCA8A04),
       tertiaryContainer: Color(0xFFFEF9C3),
     ),
-    dark: FlexSchemeColor(
+    dark: AppSchemeColors(
       primary: Color(0xFFFCA5A5),
       primaryContainer: Color(0xFF991B1B),
       secondary: Color(0xFFFDBA74),
@@ -145,7 +162,7 @@ const Map<String, ExclusiveSchemeData> exclusiveSchemes = {
   'deep_ocean': ExclusiveSchemeData(
     name: 'Deep Ocean',
     description: 'Abyssal depths and bioluminescence',
-    light: FlexSchemeColor(
+    light: AppSchemeColors(
       primary: Color(0xFF1E3A5F),
       primaryContainer: Color(0xFFD1E5F7),
       secondary: Color(0xFF0891B2),
@@ -153,7 +170,7 @@ const Map<String, ExclusiveSchemeData> exclusiveSchemes = {
       tertiary: Color(0xFF0E7490),
       tertiaryContainer: Color(0xFFA5F3FC),
     ),
-    dark: FlexSchemeColor(
+    dark: AppSchemeColors(
       primary: Color(0xFF7DD3FC),
       primaryContainer: Color(0xFF0C4A6E),
       secondary: Color(0xFF22D3EE),
@@ -166,7 +183,7 @@ const Map<String, ExclusiveSchemeData> exclusiveSchemes = {
   'golden_hour': ExclusiveSchemeData(
     name: 'Golden Hour',
     description: 'Warm sunset over the horizon',
-    light: FlexSchemeColor(
+    light: AppSchemeColors(
       primary: Color(0xFFB45309),
       primaryContainer: Color(0xFFFDE68A),
       secondary: Color(0xFFD97706),
@@ -174,7 +191,7 @@ const Map<String, ExclusiveSchemeData> exclusiveSchemes = {
       tertiary: Color(0xFF92400E),
       tertiaryContainer: Color(0xFFFCD34D),
     ),
-    dark: FlexSchemeColor(
+    dark: AppSchemeColors(
       primary: Color(0xFFFBBF24),
       primaryContainer: Color(0xFF78350F),
       secondary: Color(0xFFFCD34D),
@@ -187,7 +204,7 @@ const Map<String, ExclusiveSchemeData> exclusiveSchemes = {
   'cyber_mint': ExclusiveSchemeData(
     name: 'Cyber Mint',
     description: 'Futuristic mint-green interface',
-    light: FlexSchemeColor(
+    light: AppSchemeColors(
       primary: Color(0xFF059669),
       primaryContainer: Color(0xFFD1FAE5),
       secondary: Color(0xFF0D9488),
@@ -195,7 +212,7 @@ const Map<String, ExclusiveSchemeData> exclusiveSchemes = {
       tertiary: Color(0xFF14B8A6),
       tertiaryContainer: Color(0xFF99F6E4),
     ),
-    dark: FlexSchemeColor(
+    dark: AppSchemeColors(
       primary: Color(0xFF6EE7B7),
       primaryContainer: Color(0xFF065F46),
       secondary: Color(0xFF5EEAD4),
@@ -208,7 +225,7 @@ const Map<String, ExclusiveSchemeData> exclusiveSchemes = {
   'lavender_dusk': ExclusiveSchemeData(
     name: 'Lavender Dusk',
     description: 'Twilight purple haze',
-    light: FlexSchemeColor(
+    light: AppSchemeColors(
       primary: Color(0xFF7C3AED),
       primaryContainer: Color(0xFFEDE9FE),
       secondary: Color(0xFFA855F7),
@@ -216,7 +233,7 @@ const Map<String, ExclusiveSchemeData> exclusiveSchemes = {
       tertiary: Color(0xFF6366F1),
       tertiaryContainer: Color(0xFFE0E7FF),
     ),
-    dark: FlexSchemeColor(
+    dark: AppSchemeColors(
       primary: Color(0xFFC4B5FD),
       primaryContainer: Color(0xFF5B21B6),
       secondary: Color(0xFFD8B4FE),
@@ -230,7 +247,7 @@ const Map<String, ExclusiveSchemeData> exclusiveSchemes = {
     name: 'Animestream',
     description:
         'Minimal lime-accent theme from Animestream\n ~ by @frostnova721',
-    light: FlexSchemeColor(
+    light: AppSchemeColors(
       primary: Color(0xFFCAF979),
       primaryContainer: Color(0xFFEAFCC8),
       secondary: Color(0xFFB8E85F),
@@ -238,7 +255,7 @@ const Map<String, ExclusiveSchemeData> exclusiveSchemes = {
       tertiary: Color(0xFF94C93D),
       tertiaryContainer: Color(0xFFE4F7BE),
     ),
-    dark: FlexSchemeColor(
+    dark: AppSchemeColors(
       primary: Color(0xFFCAF979),
       primaryContainer: Color(0xFF3D4D18),
       secondary: Color(0xFFB8E85F),
@@ -252,7 +269,7 @@ const Map<String, ExclusiveSchemeData> exclusiveSchemes = {
     name: 'Metallic Black',
     description:
         'Metallic blacks with stark, high-contrast silver/neon accents.',
-    light: FlexSchemeColor(
+    light: AppSchemeColors(
       primary: Color(0xFF1E1E1E),
       primaryContainer: Color(0xFFE0E0E0),
       secondary: Color(0xFF424242),
@@ -260,7 +277,7 @@ const Map<String, ExclusiveSchemeData> exclusiveSchemes = {
       tertiary: Color(0xFF00E5FF),
       tertiaryContainer: Color(0xFFB2EBF2),
     ),
-    dark: FlexSchemeColor(
+    dark: AppSchemeColors(
       primary: Color(0xFFE0E0E0),
       primaryContainer: Color(0xFF121212),
       secondary: Color(0xFF9E9E9E),
@@ -273,7 +290,7 @@ const Map<String, ExclusiveSchemeData> exclusiveSchemes = {
   'crimson_forge': ExclusiveSchemeData(
     name: 'Crimson Forge',
     description: 'Rich reds and deep crimsons forged in fire.',
-    light: FlexSchemeColor(
+    light: AppSchemeColors(
       primary: Color(0xFFB71C1C),
       primaryContainer: Color(0xFFFFCDD2),
       secondary: Color(0xFFD32F2F),
@@ -281,7 +298,7 @@ const Map<String, ExclusiveSchemeData> exclusiveSchemes = {
       tertiary: Color(0xFFFF8F00),
       tertiaryContainer: Color(0xFFFFECB3),
     ),
-    dark: FlexSchemeColor(
+    dark: AppSchemeColors(
       primary: Color(0xFFFF5252),
       primaryContainer: Color(0xFF4A0000),
       secondary: Color(0xFFFF8A80),
@@ -294,7 +311,7 @@ const Map<String, ExclusiveSchemeData> exclusiveSchemes = {
   'void_walker': ExclusiveSchemeData(
     name: 'Void Walker',
     description: 'Electric light cutting through deep space',
-    light: FlexSchemeColor(
+    light: AppSchemeColors(
       primary: Color(0xFF1B2A6B),
       primaryContainer: Color(0xFFD4DCFF),
       secondary: Color(0xFF0097A7),
@@ -302,7 +319,7 @@ const Map<String, ExclusiveSchemeData> exclusiveSchemes = {
       tertiary: Color(0xFF6200EA),
       tertiaryContainer: Color(0xFFEAD5FF),
     ),
-    dark: FlexSchemeColor(
+    dark: AppSchemeColors(
       primary: Color(0xFF82B4FF),
       primaryContainer: Color(0xFF0D1854),
       secondary: Color(0xFF00E5FF),
@@ -315,7 +332,7 @@ const Map<String, ExclusiveSchemeData> exclusiveSchemes = {
   'blood_moon': ExclusiveSchemeData(
     name: 'Blood Moon',
     description: 'A crimson moon rises over a silent world',
-    light: FlexSchemeColor(
+    light: AppSchemeColors(
       primary: Color(0xFF8B0000),
       primaryContainer: Color(0xFFFFD6D6),
       secondary: Color(0xFF6D1515),
@@ -323,7 +340,7 @@ const Map<String, ExclusiveSchemeData> exclusiveSchemes = {
       tertiary: Color(0xFFC0392B),
       tertiaryContainer: Color(0xFFFDECEA),
     ),
-    dark: FlexSchemeColor(
+    dark: AppSchemeColors(
       primary: Color(0xFFFF5252),
       primaryContainer: Color(0xFF5C0000),
       secondary: Color(0xFFFF8A80),
@@ -336,7 +353,7 @@ const Map<String, ExclusiveSchemeData> exclusiveSchemes = {
   'synthwave': ExclusiveSchemeData(
     name: 'Synthwave',
     description: 'Retro neon highways and endless night drives',
-    light: FlexSchemeColor(
+    light: AppSchemeColors(
       primary: Color(0xFFC2185B),
       primaryContainer: Color(0xFFFCE4EC),
       secondary: Color(0xFF7B1FA2),
@@ -344,7 +361,7 @@ const Map<String, ExclusiveSchemeData> exclusiveSchemes = {
       tertiary: Color(0xFF0097A7),
       tertiaryContainer: Color(0xFFE0F7FA),
     ),
-    dark: FlexSchemeColor(
+    dark: AppSchemeColors(
       primary: Color(0xFFFF80AB),
       primaryContainer: Color(0xFF880E4F),
       secondary: Color(0xFFCE93D8),
@@ -357,7 +374,7 @@ const Map<String, ExclusiveSchemeData> exclusiveSchemes = {
   'phantom': ExclusiveSchemeData(
     name: 'Phantom',
     description: 'Ghost light bleeding through a dark veil',
-    light: FlexSchemeColor(
+    light: AppSchemeColors(
       primary: Color(0xFF4527A0),
       primaryContainer: Color(0xFFEDE7F6),
       secondary: Color(0xFF37474F),
@@ -365,7 +382,7 @@ const Map<String, ExclusiveSchemeData> exclusiveSchemes = {
       tertiary: Color(0xFF6A1B9A),
       tertiaryContainer: Color(0xFFF3E5F5),
     ),
-    dark: FlexSchemeColor(
+    dark: AppSchemeColors(
       primary: Color(0xFFB39DDB),
       primaryContainer: Color(0xFF1A0533),
       secondary: Color(0xFF90A4AE),
@@ -378,7 +395,7 @@ const Map<String, ExclusiveSchemeData> exclusiveSchemes = {
   'toxic': ExclusiveSchemeData(
     name: 'Toxic',
     description: 'Acid green burning through the dark',
-    light: FlexSchemeColor(
+    light: AppSchemeColors(
       primary: Color(0xFF33691E),
       primaryContainer: Color(0xFFCCFF90),
       secondary: Color(0xFF558B2F),
@@ -386,7 +403,7 @@ const Map<String, ExclusiveSchemeData> exclusiveSchemes = {
       tertiary: Color(0xFFF57F17),
       tertiaryContainer: Color(0xFFFFF8E1),
     ),
-    dark: FlexSchemeColor(
+    dark: AppSchemeColors(
       primary: Color(0xFFB2FF59),
       primaryContainer: Color(0xFF1B5E20),
       secondary: Color(0xFFCCFF90),
@@ -399,7 +416,7 @@ const Map<String, ExclusiveSchemeData> exclusiveSchemes = {
   'rose_ash': ExclusiveSchemeData(
     name: 'Rose Ash',
     description: 'Faded roses pressed between old pages',
-    light: FlexSchemeColor(
+    light: AppSchemeColors(
       primary: Color(0xFFA1616A),
       primaryContainer: Color(0xFFF7DDE0),
       secondary: Color(0xFF8D6E63),
@@ -407,7 +424,7 @@ const Map<String, ExclusiveSchemeData> exclusiveSchemes = {
       tertiary: Color(0xFFC48B9F),
       tertiaryContainer: Color(0xFFFCE4EC),
     ),
-    dark: FlexSchemeColor(
+    dark: AppSchemeColors(
       primary: Color(0xFFFFADB6),
       primaryContainer: Color(0xFF5C1E27),
       secondary: Color(0xFFBCAAA4),
@@ -420,7 +437,7 @@ const Map<String, ExclusiveSchemeData> exclusiveSchemes = {
   'cobalt_rush': ExclusiveSchemeData(
     name: 'Cobalt Rush',
     description: 'Pure saturated blue at maximum velocity',
-    light: FlexSchemeColor(
+    light: AppSchemeColors(
       primary: Color(0xFF1565C0),
       primaryContainer: Color(0xFFBBDEFB),
       secondary: Color(0xFF0277BD),
@@ -428,7 +445,7 @@ const Map<String, ExclusiveSchemeData> exclusiveSchemes = {
       tertiary: Color(0xFF00695C),
       tertiaryContainer: Color(0xFFE0F2F1),
     ),
-    dark: FlexSchemeColor(
+    dark: AppSchemeColors(
       primary: Color(0xFF64B5F6),
       primaryContainer: Color(0xFF0D3B7A),
       secondary: Color(0xFF4FC3F7),
@@ -441,7 +458,7 @@ const Map<String, ExclusiveSchemeData> exclusiveSchemes = {
   'jade_palace': ExclusiveSchemeData(
     name: 'Jade Palace',
     description: 'Imperial jade and ancient gold',
-    light: FlexSchemeColor(
+    light: AppSchemeColors(
       primary: Color(0xFF00695C),
       primaryContainer: Color(0xFFA7FFEB),
       secondary: Color(0xFFB8860B),
@@ -449,7 +466,7 @@ const Map<String, ExclusiveSchemeData> exclusiveSchemes = {
       tertiary: Color(0xFF2E7D32),
       tertiaryContainer: Color(0xFFC8E6C9),
     ),
-    dark: FlexSchemeColor(
+    dark: AppSchemeColors(
       primary: Color(0xFF1DE9B6),
       primaryContainer: Color(0xFF003D33),
       secondary: Color(0xFFFFD54F),
@@ -462,7 +479,7 @@ const Map<String, ExclusiveSchemeData> exclusiveSchemes = {
   'solar_punk': ExclusiveSchemeData(
     name: 'Solar Punk',
     description: 'Green cities and amber skies of tomorrow',
-    light: FlexSchemeColor(
+    light: AppSchemeColors(
       primary: Color(0xFF558B2F),
       primaryContainer: Color(0xFFDCEDC8),
       secondary: Color(0xFFF9A825),
@@ -470,7 +487,7 @@ const Map<String, ExclusiveSchemeData> exclusiveSchemes = {
       tertiary: Color(0xFF00838F),
       tertiaryContainer: Color(0xFFE0F7FA),
     ),
-    dark: FlexSchemeColor(
+    dark: AppSchemeColors(
       primary: Color(0xFFAED581),
       primaryContainer: Color(0xFF1B3A0E),
       secondary: Color(0xFFFFD54F),
@@ -483,7 +500,7 @@ const Map<String, ExclusiveSchemeData> exclusiveSchemes = {
   'abyss': ExclusiveSchemeData(
     name: 'Abyss',
     description: 'The deepest dark, barely a colour remains',
-    light: FlexSchemeColor(
+    light: AppSchemeColors(
       primary: Color(0xFF1A237E),
       primaryContainer: Color(0xFFC5CAE9),
       secondary: Color(0xFF283593),
@@ -491,7 +508,7 @@ const Map<String, ExclusiveSchemeData> exclusiveSchemes = {
       tertiary: Color(0xFF4527A0),
       tertiaryContainer: Color(0xFFEDE7F6),
     ),
-    dark: FlexSchemeColor(
+    dark: AppSchemeColors(
       primary: Color(0xFF9FA8DA),
       primaryContainer: Color(0xFF0D0D1A),
       secondary: Color(0xFF7986CB),

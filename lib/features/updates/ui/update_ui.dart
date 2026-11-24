@@ -1,7 +1,8 @@
 import 'dart:io';
 
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:flutter/material.dart' as flutter;
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -110,7 +111,7 @@ class UpdateUI {
                       );
                     }
                   },
-                  styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context))
+                  styleSheet: MarkdownStyleSheet.fromTheme(flutter.Theme.of(context))
                       .copyWith(
                         p: TextStyle(
                           fontSize: 14,

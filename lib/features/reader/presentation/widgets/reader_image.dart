@@ -1,5 +1,5 @@
 import 'package:shonenx/shared/widgets/smart_image.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:shonenx/features/reader/providers/reader_prefs_provider.dart';
 
 class ReaderImage extends StatelessWidget {

@@ -1,5 +1,5 @@
 import 'package:shonenx/shared/widgets/smart_image.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:shonenx/features/discord/models/discord_rpc_custom_settings.dart';
 import 'package:shonenx/features/discord/models/discord_user.dart';
 

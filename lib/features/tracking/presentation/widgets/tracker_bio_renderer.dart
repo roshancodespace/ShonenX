@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:shonenx/features/tracking/utils/tracker_bio_parser.dart';
 import 'package:shonenx/shared/widgets/smart_image.dart';

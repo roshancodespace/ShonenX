@@ -1,6 +1,6 @@
 import 'dart:ui';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shonenx/core/localization/l10n_extension.dart';
@@ -390,13 +390,15 @@ class _PillContent extends StatelessWidget {
       tight: 21.0,
       cramped: 20.0,
     );
-    final labelSize = heightTier.pick(
-      spacious: 13.0,
-      normal: 13.0,
-      compact: 12.0,
-      tight: 11.0,
-      cramped: 10.0,
-    );
+    final labelSize =
+        heightTier.pick(
+          spacious: 13.0,
+          normal: 13.0,
+          compact: 12.0,
+          tight: 11.0,
+          cramped: 10.0,
+        ) +
+        2;
     final labelSpacing = heightTier.pick(
       spacious: 0.6,
       normal: 0.6,

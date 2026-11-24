@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
 import 'package:webview_all/webview_all.dart';
 

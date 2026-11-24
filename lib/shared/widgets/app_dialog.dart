@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:shonenx/shared/models/ui_style_enums.dart';
 
 class AppDialog extends StatelessWidget {

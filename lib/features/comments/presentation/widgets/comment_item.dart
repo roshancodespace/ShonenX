@@ -1,5 +1,5 @@
 import 'package:commentum_client/commentum_client.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class CommentItem extends StatelessWidget {
   final Comment comment;

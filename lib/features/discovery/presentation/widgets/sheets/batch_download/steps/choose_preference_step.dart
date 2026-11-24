@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:shonenx/core/services/one_dm_service.dart';
 import 'package:shonenx/core/utils/subtitle_extractor.dart';
 import 'package:shonenx/shared/models/video_stream.dart';

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:shonenx/core/theme/exclusive_schemes.dart';
 
 enum AppScheme {

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
 import 'package:shonenx/core/theme/theme_color_resolver.dart';
@@ -23,9 +23,7 @@ class AppTheme {
   ];
 
   static TextTheme _applyFontFallback(TextTheme textTheme) {
-    return textTheme.apply(
-      fontFamilyFallback: _fontFamilyFallback,
-    );
+    return textTheme.apply(fontFamilyFallback: _fontFamilyFallback);
   }
 
   static ThemeData light(ThemePrefsState prefs, dynamic colorScheme) {
@@ -58,9 +56,7 @@ class AppTheme {
 
     var cs = resolved.colorScheme;
     if (isDark && prefs.useAmoled) {
-      cs = cs.copyWith(
-        surface: const Color(0xFF000000),
-      );
+      cs = cs.copyWith(surface: const Color(0xFF000000));
     } else if (prefs.surfaceColor != null) {
       final sCol = Color(prefs.surfaceColor!);
       cs = cs.copyWith(surface: sCol);
@@ -74,11 +70,13 @@ class AppTheme {
 
     final scaffoldBg = isDark
         ? (prefs.useAmoled
-            ? const Color(0xFF000000)
-            : (prefs.surfaceColor != null
-                ? Color(prefs.surfaceColor!)
-                : cs.surface))
-        : (prefs.surfaceColor != null ? Color(prefs.surfaceColor!) : cs.surface);
+              ? const Color(0xFF000000)
+              : (prefs.surfaceColor != null
+                    ? Color(prefs.surfaceColor!)
+                    : cs.surface))
+        : (prefs.surfaceColor != null
+              ? Color(prefs.surfaceColor!)
+              : cs.surface);
 
     ThemeData theme = ThemeData(
       useMaterial3: true,
@@ -90,10 +88,7 @@ class AppTheme {
       visualDensity: VisualDensity.adaptivePlatformDensity,
     );
 
-    return _themeModifiers.fold(
-      theme,
-      (t, modifier) => modifier(t, prefs),
-    );
+    return _themeModifiers.fold(theme, (t, modifier) => modifier(t, prefs));
   }
 
   static final List<ThemeModifier> _themeModifiers = [_widgets, _shadows];
@@ -183,12 +178,21 @@ class AppTheme {
       TargetPlatform.android: AppPageTransition(),
       TargetPlatform.linux: AppPageTransition(),
       TargetPlatform.windows: AppPageTransition(),
+      TargetPlatform.iOS: AppPageTransition(),
+      TargetPlatform.macOS: AppPageTransition(),
+      TargetPlatform.fuchsia: AppPageTransition(),
     },
   );
 }
 
 class AppPageTransition extends PageTransitionsBuilder {
   const AppPageTransition();
+
+  @override
+  Duration get transitionDuration => const Duration(milliseconds: 300);
+
+  @override
+  Duration get reverseTransitionDuration => const Duration(milliseconds: 300);
 
   @override
   Widget buildTransitions<T>(

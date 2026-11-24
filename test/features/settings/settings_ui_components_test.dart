@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart' as mui;
+import 'package:material_ui/material_ui.dart' hide GlobalMaterialLocalizations;
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shonenx/core/localization/cantonese_localizations_delegate.dart';
@@ -6,13 +7,12 @@ import 'package:shonenx/features/settings/presentation/widgets/settings_ui_compo
 import 'package:shonenx/l10n/generated/app_localizations.dart';
 
 void main() {
-  const delegates = <LocalizationsDelegate<dynamic>>[
+  final delegates = <LocalizationsDelegate<dynamic>>[
     AppLocalizations.delegate,
-    CantoneseMaterialLocalizationsDelegate(),
-    CantoneseCupertinoLocalizationsDelegate(),
-    GlobalMaterialLocalizations.delegate,
-    GlobalWidgetsLocalizations.delegate,
-    GlobalCupertinoLocalizations.delegate,
+    const CantoneseMaterialLocalizationsDelegate(),
+    const CantoneseCupertinoLocalizationsDelegate(),
+    ...mui.GlobalMaterialLocalizations.delegates,
+    ...GlobalMaterialLocalizations.delegates,
   ];
 
   Widget appFor(Widget child, {Locale locale = const Locale('en')}) {

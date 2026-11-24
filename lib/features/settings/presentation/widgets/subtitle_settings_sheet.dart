@@ -1,5 +1,5 @@
 import 'package:shonenx/shared/widgets/smart_image.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/utils/responsive.dart';
 import 'package:shonenx/features/player/domain/subtitle_prefs.dart';

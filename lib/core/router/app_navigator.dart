@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shonenx/features/discovery/domain/models/search_filter_options.dart';
 import 'package:shonenx/shared/models/unified_media.dart';

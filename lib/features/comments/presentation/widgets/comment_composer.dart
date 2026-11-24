@@ -1,5 +1,5 @@
 import 'package:commentum_client/commentum_client.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 
 class CommentComposer extends StatelessWidget {

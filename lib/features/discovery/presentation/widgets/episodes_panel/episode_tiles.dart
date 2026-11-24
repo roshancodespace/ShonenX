@@ -1,7 +1,7 @@
 import 'dart:ui';
 
 import 'package:shonenx/shared/widgets/smart_image.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:shonenx/core/utils/formatting.dart';
 import 'package:shonenx/core/utils/image_headers.dart';
 import 'package:shonenx/shared/models/unified_episode.dart';

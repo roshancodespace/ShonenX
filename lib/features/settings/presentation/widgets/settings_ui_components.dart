@@ -1,6 +1,4 @@
-// ignore_for_file: deprecated_member_use
-
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 
 import 'package:shonenx/core/localization/l10n_extension.dart';
@@ -10,17 +8,15 @@ const _tileTitleStyle = TextStyle(fontWeight: FontWeight.w600);
 const _sectionHeaderPadding = EdgeInsets.fromLTRB(10, 10, 10, 6);
 const _chevronSize = 20.0;
 
-TextStyle _subtitleStyle(ColorScheme colors) => TextStyle(
-      fontSize: 12,
-      color: colors.onSurfaceVariant,
-    );
+TextStyle _subtitleStyle(ColorScheme colors) =>
+    TextStyle(fontSize: 12, color: colors.onSurfaceVariant);
 
 TextStyle _sectionLabelStyle(ColorScheme colors) => TextStyle(
-      fontSize: 12,
-      fontWeight: FontWeight.w700,
-      letterSpacing: 1.1,
-      color: colors.primary,
-    );
+  fontSize: 12,
+  fontWeight: FontWeight.w700,
+  letterSpacing: 1.1,
+  color: colors.primary,
+);
 
 class SettingsSection extends StatelessWidget {
   final String title;
@@ -43,18 +39,12 @@ class SettingsSection extends StatelessWidget {
       children: [
         Padding(
           padding: _sectionHeaderPadding,
-          child: Text(
-            title.toUpperCase(),
-            style: _sectionLabelStyle(colors),
-          ),
+          child: Text(title.toUpperCase(), style: _sectionLabelStyle(colors)),
         ),
         if (subtitle != null)
           Padding(
             padding: _tileContentPadding,
-            child: Text(
-              subtitle!,
-              style: _subtitleStyle(colors),
-            ),
+            child: Text(subtitle!, style: _subtitleStyle(colors)),
           ),
         Padding(
           padding: _tileContentPadding,
@@ -63,6 +53,7 @@ class SettingsSection extends StatelessWidget {
             children: children,
           ),
         ),
+        const SizedBox(height: 12),
       ],
     );
   }
@@ -97,10 +88,7 @@ class SettingsNavTile extends StatelessWidget {
           (icon != null ? Icon(icon, color: theme.colorScheme.primary) : null),
       title: Text(title, style: _tileTitleStyle),
       subtitle: subtitle != null
-          ? Text(
-              subtitle!,
-              style: _subtitleStyle(theme.colorScheme),
-            )
+          ? Text(subtitle!, style: _subtitleStyle(theme.colorScheme))
           : null,
       trailing: Icon(
         Icons.chevron_right,
@@ -144,10 +132,7 @@ class SettingsSwitchTile extends StatelessWidget {
           (icon != null ? Icon(icon, color: theme.colorScheme.primary) : null),
       title: Text(title, style: _tileTitleStyle),
       subtitle: subtitle != null
-          ? Text(
-              subtitle!,
-              style: _subtitleStyle(theme.colorScheme),
-            )
+          ? Text(subtitle!, style: _subtitleStyle(theme.colorScheme))
           : null,
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
@@ -265,10 +250,7 @@ class SettingsSegmentedTile<T> extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (title != null) ...[
-            Text(
-              title!,
-              style: _sectionLabelStyle(theme.colorScheme),
-            ),
+            Text(title!, style: _sectionLabelStyle(theme.colorScheme)),
             const SizedBox(height: 12),
           ],
           SegmentedButton<T>(
@@ -301,12 +283,15 @@ class SettingsRadioTile<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return RadioListTile<T>(
+    return ListTile(
       contentPadding: _tileContentPadding,
+      leading: Radio<T>(
+        value: value,
+        groupValue: groupValue,
+        onChanged: onChanged,
+      ),
       title: Text(title, style: _tileTitleStyle),
-      value: value,
-      groupValue: groupValue,
-      onChanged: onChanged,
+      onTap: onChanged != null ? () => onChanged!(value) : null,
     );
   }
 }
@@ -418,19 +403,13 @@ class _SettingsSliderTileState extends State<SettingsSliderTile> {
     return ListTile(
       contentPadding: _tileContentPadding,
       leading: Icon(widget.icon, color: theme.colorScheme.primary),
-      title: Text(
-        widget.title,
-        style: _tileTitleStyle,
-      ),
+      title: Text(widget.title, style: _tileTitleStyle),
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 2),
           if (widget.subtitle != null)
-            Text(
-              widget.subtitle!,
-              style: _subtitleStyle(theme.colorScheme),
-            ),
+            Text(widget.subtitle!, style: _subtitleStyle(theme.colorScheme)),
           Slider.adaptive(
             focusNode: _effectiveFocusNode,
             value: widget.value,
@@ -477,10 +456,7 @@ class SettingsDropdownTile<T> extends StatelessWidget {
       leading: Icon(icon, color: theme.colorScheme.primary),
       title: Text(title, style: _tileTitleStyle),
       subtitle: subtitle != null
-          ? Text(
-              subtitle!,
-              style: _subtitleStyle(theme.colorScheme),
-            )
+          ? Text(subtitle!, style: _subtitleStyle(theme.colorScheme))
           : null,
       trailing: Row(
         mainAxisSize: MainAxisSize.min,

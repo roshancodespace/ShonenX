@@ -2,7 +2,7 @@ import 'dart:io';
 import 'dart:ui';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart' hide GlobalMaterialLocalizations;
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shonenx/l10n/generated/app_localizations.dart';
 import 'package:shonenx/core/localization/cantonese_localizations_delegate.dart';
@@ -142,55 +142,55 @@ class ShonenXApp extends ConsumerWidget {
           themePrefs.useDynamic ? darkDynamic : null,
         );
 
-          return MaterialApp.router(
-            debugShowCheckedModeBanner: false,
-            title: 'ShonenX',
-            locale: appLocale,
-            localizationsDelegates: const [
-              AppLocalizations.delegate,
-              CantoneseMaterialLocalizationsDelegate(),
-              CantoneseCupertinoLocalizationsDelegate(),
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
-            supportedLocales: AppLocalizations.supportedLocales,
-            themeMode: themePrefs.themeMode,
-            theme: lightTheme,
-            darkTheme: darkTheme,
-            scrollBehavior: const MaterialScrollBehavior().copyWith(
-              scrollbars: false,
-              dragDevices: {
-                PointerDeviceKind.touch,
-                PointerDeviceKind.mouse,
-                PointerDeviceKind.trackpad,
-                PointerDeviceKind.stylus,
-                PointerDeviceKind.unknown,
-              },
-            ),
-            routerConfig: ref.watch(routerProvider),
-            builder: (context, child) {
-              if (child == null) return const SizedBox.shrink();
-
-              GlobalUI.uiScaleFactor = themePrefs.uiScaleFactor;
-              GlobalUI.uiRoundness = themePrefs.uiRoundness;
-
-              final textScaledChild = MediaQuery(
-                data: MediaQuery.of(context).copyWith(
-                  textScaler: TextScaler.linear(themePrefs.fontScaleFactor),
-                ),
-                child: child,
-              );
-
-              return RemoteConfigListener(
-                child: GlobalBackground(
-                  child: SecurityGateWrapper(child: textScaledChild),
-                ),
-              );
+        return MaterialApp.router(
+          debugShowCheckedModeBanner: false,
+          title: 'ShonenX',
+          locale: appLocale,
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            CantoneseMaterialLocalizationsDelegate(),
+            CantoneseCupertinoLocalizationsDelegate(),
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          themeMode: themePrefs.themeMode,
+          theme: lightTheme,
+          darkTheme: darkTheme,
+          scrollBehavior: const MaterialScrollBehavior().copyWith(
+            scrollbars: false,
+            dragDevices: {
+              PointerDeviceKind.touch,
+              PointerDeviceKind.mouse,
+              PointerDeviceKind.trackpad,
+              PointerDeviceKind.stylus,
+              PointerDeviceKind.unknown,
             },
-          );
-        },
-      );
+          ),
+          routerConfig: ref.watch(routerProvider),
+          builder: (context, child) {
+            if (child == null) return const SizedBox.shrink();
+
+            GlobalUI.uiScaleFactor = themePrefs.uiScaleFactor;
+            GlobalUI.uiRoundness = themePrefs.uiRoundness;
+
+            final textScaledChild = MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                textScaler: TextScaler.linear(themePrefs.fontScaleFactor),
+              ),
+              child: child,
+            );
+
+            return RemoteConfigListener(
+              child: GlobalBackground(
+                child: SecurityGateWrapper(child: textScaledChild),
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 }
 

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:shonenx/core/network/auth/authenticator.dart';
 import 'package:shonenx/core/network/http_client.dart';
 import 'package:shonenx/core/router/app_router.dart';

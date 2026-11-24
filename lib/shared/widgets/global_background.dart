@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:shonenx/shared/widgets/smart_image.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
@@ -148,36 +148,25 @@ class _GlobalBackgroundSurface extends ConsumerWidget {
         colors = [base, surfaceBlend];
     }
 
+    final glowColor = colors.last;
+    final midGlow = Color.lerp(base, glowColor, 0.45)!;
+    final softGlow = Color.lerp(base, glowColor, 0.15)!;
+    final faintGlow = Color.lerp(base, glowColor, 0.03)!;
+
     switch (style) {
       case BackgroundGradientStyle.radial:
-        final glowColor = colors.last;
-        final midGlow = Color.lerp(base, glowColor, 0.40)!;
-        final softGlow = Color.lerp(base, glowColor, 0.10)!;
         return RadialGradient(
           center: Alignment.center,
-          radius: 1.6,
-          colors: [
-            glowColor,
-            midGlow,
-            softGlow,
-            base,
-          ],
-          stops: const [0.0, 0.35, 0.70, 1.0],
+          radius: 1.4,
+          colors: [glowColor, midGlow, softGlow, faintGlow, base],
+          stops: const [0.0, 0.30, 0.60, 0.88, 1.0],
         );
       case BackgroundGradientStyle.topGlow:
-        final glowColor = colors.last;
-        final midGlow = Color.lerp(base, glowColor, 0.40)!;
-        final softGlow = Color.lerp(base, glowColor, 0.10)!;
         return RadialGradient(
           center: const Alignment(0.0, -1.0),
           radius: 2.2,
-          colors: [
-            glowColor,
-            midGlow,
-            softGlow,
-            base,
-          ],
-          stops: const [0.0, 0.35, 0.70, 1.0],
+          colors: [glowColor, midGlow, softGlow, faintGlow, base],
+          stops: const [0.0, 0.25, 0.55, 0.85, 1.0],
         );
       case BackgroundGradientStyle.sweep:
         return SweepGradient(

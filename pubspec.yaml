@@ -10,7 +10,7 @@ dependencies:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
-  go_router: ^17.2.1
+  go_router: ^18.1.4
   flutter_riverpod: ^3.3.1
   logger: ^2.8.0
   path: ^1.9.1
@@ -40,7 +40,7 @@ dependencies:
       ref: 78d4cce7b49d5b6b918f78b18ec1fbb7c400b9da
       path: ./libs/universal/media_kit_libs_video
   get: ^4.7.3
-  google_fonts: ^8.0.2
+  google_fonts: ^9.0.0
   shared_preferences: ^2.5.5
   cached_network_image: ^3.4.1
   volume_controller: ^3.4.4
@@ -87,6 +87,7 @@ dependencies:
   
   material_ui: ^1.11.1
   cupertino_ui: ^1.1.7
+  material_3_expressive: ^1.2.3
 
 dependency_overrides:
   flutter_inappwebview: 6.2.0-beta.2

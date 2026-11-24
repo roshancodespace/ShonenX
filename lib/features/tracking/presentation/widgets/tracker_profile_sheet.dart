@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:shonenx/shared/widgets/smart_image.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';

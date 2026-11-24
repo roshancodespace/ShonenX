@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:shonenx/features/player/domain/subtitle_translation_models.dart';
 import 'package:shonenx/features/player/providers/subtitle_translation_provider.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';

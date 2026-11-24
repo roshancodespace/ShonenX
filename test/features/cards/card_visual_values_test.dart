@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shonenx/shared/theme/ui_visual_values.dart';
 import 'package:shonenx/shared/widgets/card/components/card_badges.dart';

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:shonenx/core/localization/l10n_extension.dart';
 import 'package:shonenx/core/utils/wallpaper_processor.dart';
 import 'package:shonenx/features/settings/presentation/widgets/theme_palette_showcase.dart';

@@ -3,7 +3,7 @@ import 'package:shonenx/shared/widgets/smart_image.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/router/app_navigator.dart';
 import 'package:permission_handler/permission_handler.dart';

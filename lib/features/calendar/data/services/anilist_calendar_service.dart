@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:shonenx/core/network/http_client.dart';
 import 'package:shonenx/features/calendar/domain/models/calendar_entry.dart';
 import 'package:shonenx/features/calendar/domain/models/calendar_source.dart';

@@ -21,24 +21,9 @@ public final class GeneratedPluginRegistrant {
       Log.e(TAG, "Error registering plugin android_intent_plus, dev.fluttercommunity.plus.androidintent.AndroidIntentPlugin", e);
     }
     try {
-      flutterEngine.getPlugins().add(new com.ryan.runtimebridge.AnymexExtensionRuntimeBridgePlugin());
-    } catch (Exception e) {
-      Log.e(TAG, "Error registering plugin anymex_extension_runtime_bridge, com.ryan.runtimebridge.AnymexExtensionRuntimeBridgePlugin", e);
-    }
-    try {
       flutterEngine.getPlugins().add(new com.llfbandit.app_links.AppLinksPlugin());
     } catch (Exception e) {
       Log.e(TAG, "Error registering plugin app_links, com.llfbandit.app_links.AppLinksPlugin", e);
-    }
-    try {
-      flutterEngine.getPlugins().add(new uz.shs.better_player_plus.BetterPlayerPlugin());
-    } catch (Exception e) {
-      Log.e(TAG, "Error registering plugin better_player_plus, uz.shs.better_player_plus.BetterPlayerPlugin", e);
-    }
-    try {
-      flutterEngine.getPlugins().add(new fr.g123k.deviceapps.DeviceAppsPlugin());
-    } catch (Exception e) {
-      Log.e(TAG, "Error registering plugin device_apps, fr.g123k.deviceapps.DeviceAppsPlugin", e);
     }
     try {
       flutterEngine.getPlugins().add(new dev.fluttercommunity.plus.device_info.DeviceInfoPlusPlugin());
@@ -49,11 +34,6 @@ public final class GeneratedPluginRegistrant {
       flutterEngine.getPlugins().add(new io.material.plugins.dynamic_color.DynamicColorPlugin());
     } catch (Exception e) {
       Log.e(TAG, "Error registering plugin dynamic_color, io.material.plugins.dynamic_color.DynamicColorPlugin", e);
-    }
-    try {
-      flutterEngine.getPlugins().add(new com.mr.flutter.plugin.filepicker.FilePickerPlugin());
-    } catch (Exception e) {
-      Log.e(TAG, "Error registering plugin file_picker, com.mr.flutter.plugin.filepicker.FilePickerPlugin", e);
     }
     try {
       flutterEngine.getPlugins().add(new com.okmsbun.flutter_device_apps_android.FlutterDeviceAppsAndroidPlugin());
@@ -69,6 +49,11 @@ public final class GeneratedPluginRegistrant {
       flutterEngine.getPlugins().add(new io.flutter.plugins.flutter_plugin_android_lifecycle.FlutterAndroidLifecyclePlugin());
     } catch (Exception e) {
       Log.e(TAG, "Error registering plugin flutter_plugin_android_lifecycle, io.flutter.plugins.flutter_plugin_android_lifecycle.FlutterAndroidLifecyclePlugin", e);
+    }
+    try {
+      flutterEngine.getPlugins().add(new com.mr.flutter.plugin.filepicker.FilePickerPlugin());
+    } catch (Exception e) {
+      Log.e(TAG, "Error registering plugin file_picker, com.mr.flutter.plugin.filepicker.FilePickerPlugin", e);
     }
     try {
       flutterEngine.getPlugins().add(new soko.ekibun.flutter_qjs.FlutterQjsPlugin());
@@ -101,6 +86,11 @@ public final class GeneratedPluginRegistrant {
       Log.e(TAG, "Error registering plugin isar_community_flutter_libs, dev.isar.isar_flutter_libs.IsarFlutterLibsPlugin", e);
     }
     try {
+      flutterEngine.getPlugins().add(new com.ryan.runtimebridge.AnymexExtensionRuntimeBridgePlugin());
+    } catch (Exception e) {
+      Log.e(TAG, "Error registering plugin anymex_extension_runtime_bridge, com.ryan.runtimebridge.AnymexExtensionRuntimeBridgePlugin", e);
+    }
+    try {
       flutterEngine.getPlugins().add(new com.github.dart_lang.jni.JniPlugin());
     } catch (Exception e) {
       Log.e(TAG, "Error registering plugin jni, com.github.dart_lang.jni.JniPlugin", e);
@@ -119,11 +109,6 @@ public final class GeneratedPluginRegistrant {
       flutterEngine.getPlugins().add(new com.alexmercerind.media_kit_libs_android_video.MediaKitLibsAndroidVideoPlugin());
     } catch (Exception e) {
       Log.e(TAG, "Error registering plugin media_kit_libs_android_video, com.alexmercerind.media_kit_libs_android_video.MediaKitLibsAndroidVideoPlugin", e);
-    }
-    try {
-      flutterEngine.getPlugins().add(new com.alexmercerind.media_kit_video.MediaKitVideoPlugin());
-    } catch (Exception e) {
-      Log.e(TAG, "Error registering plugin media_kit_video, com.alexmercerind.media_kit_video.MediaKitVideoPlugin", e);
     }
     try {
       flutterEngine.getPlugins().add(new com.crazecoder.openfile.OpenFilePlugin());
@@ -179,6 +164,16 @@ public final class GeneratedPluginRegistrant {
       flutterEngine.getPlugins().add(new dev.fluttercommunity.plus.wakelock.WakelockPlusPlugin());
     } catch (Exception e) {
       Log.e(TAG, "Error registering plugin wakelock_plus, dev.fluttercommunity.plus.wakelock.WakelockPlusPlugin", e);
+    }
+    try {
+      flutterEngine.getPlugins().add(new uz.shs.better_player_plus.BetterPlayerPlugin());
+    } catch (Exception e) {
+      Log.e(TAG, "Error registering plugin better_player_plus, uz.shs.better_player_plus.BetterPlayerPlugin", e);
+    }
+    try {
+      flutterEngine.getPlugins().add(new com.alexmercerind.media_kit_video.MediaKitVideoPlugin());
+    } catch (Exception e) {
+      Log.e(TAG, "Error registering plugin media_kit_video, com.alexmercerind.media_kit_video.MediaKitVideoPlugin", e);
     }
     try {
       flutterEngine.getPlugins().add(new com.abandoft.webview_all_android.WebviewAllAndroidPlugin());

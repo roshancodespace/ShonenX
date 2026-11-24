@@ -160,7 +160,7 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: 3.41.9
+          flutter-version: 3.50.1 
           cache: true
 
       - name: Decode keystore
@@ -249,7 +249,7 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: 3.41.9
+          flutter-version: 3.50.1 
           cache: true
 
       - name: Create env file
@@ -383,7 +383,7 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: 3.41.9
+          flutter-version: 3.50.1 
           cache: true
 
       - name: Enable Windows config
@@ -476,7 +476,7 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: 3.41.9
+          flutter-version: 3.50.1 
           cache: true
 
       - name: Enable macOS config
@@ -552,7 +552,7 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: 3.41.9
+          flutter-version: 3.50.1 
           cache: true
 
       - name: Create env file

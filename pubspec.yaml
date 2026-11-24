@@ -82,7 +82,7 @@ dependencies:
   intl: ^0.20.2
   local_auth: ^3.0.1
   crypto: ^3.0.3
-  flutter_device_apps: ^0.8.1
+  flutter_device_apps: ^2.1.0
   better_player_plus: ^1.0.8
   webview_all: ^1.4.4
 

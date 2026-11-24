@@ -3,18 +3,19 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
-  anymex_extension_runtime_bridge
+  app_links_linux
   dynamic_color
+  flutter_device_apps_linux
   flutter_qjs
   flutter_timezone
-  gtk
   isar_community_flutter_libs
+  anymex_extension_runtime_bridge
   media_kit_libs_linux
-  media_kit_video
   open_file_linux
   screen_retriever_linux
   url_launcher_linux
   volume_controller
+  media_kit_video
   webview_all_linux
   window_manager
   window_to_front

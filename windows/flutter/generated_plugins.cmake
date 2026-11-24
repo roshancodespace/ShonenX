@@ -3,22 +3,22 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
-  anymex_extension_runtime_bridge
   app_links
   dynamic_color
   flutter_qjs
   flutter_secure_storage_windows
   flutter_timezone
   isar_community_flutter_libs
+  anymex_extension_runtime_bridge
   local_auth_windows
   media_kit_libs_windows_video
-  media_kit_video
   permission_handler_windows
   screen_brightness_windows
   screen_retriever_windows
-  share_plus
   url_launcher_windows
+  share_plus
   volume_controller
+  media_kit_video
   webview_all_windows
   window_manager
   window_to_front

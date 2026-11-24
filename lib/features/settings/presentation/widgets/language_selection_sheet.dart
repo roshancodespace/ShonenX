@@ -24,7 +24,6 @@ class LanguageSelectionSheet extends ConsumerWidget {
 
     return ListView(
       shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
       children: [
         // System Default Option
         _LanguageTile(
@@ -82,19 +81,13 @@ class _LanguageTile extends StatelessWidget {
       ),
       subtitle: Text(
         subtitle,
-        style: TextStyle(
-          fontSize: 12,
-          color: colorScheme.onSurfaceVariant,
-        ),
+        style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
       ),
       trailing: isSelected
           ? Icon(Icons.check_circle_rounded, color: colorScheme.primary)
           : null,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       onTap: onTap,
     );
   }
 }
-

@@ -65,6 +65,7 @@ expressions.txt
 # keystore
 android/key.properties
 android/app/keystore/*.jks
+android/app/upload-keystore.jks
 
 # upload temp
 scripts/upload_temp.dart

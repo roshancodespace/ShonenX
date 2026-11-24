@@ -229,6 +229,27 @@ void main() {
       );
     });
 
+    test('swapColors swaps primary and secondary in AppTheme', () {
+      const stateNormal = ThemePrefsState(colorSeed: 0xFF123456, swapColors: false, blendLevel: 0);
+      const stateSwapped = ThemePrefsState(colorSeed: 0xFF123456, swapColors: true, blendLevel: 0);
+      final normal = AppTheme.light(stateNormal, null);
+      final swapped = AppTheme.light(stateSwapped, null);
+      expect(swapped.colorScheme.primary, normal.colorScheme.secondary);
+      expect(swapped.colorScheme.secondary, normal.colorScheme.primary);
+      expect(swapped.colorScheme.primaryContainer, normal.colorScheme.secondaryContainer);
+      expect(swapped.colorScheme.secondaryContainer, normal.colorScheme.primaryContainer);
+    });
+
+    test('blendLevel tints surfaces in AppTheme', () {
+      const stateZero = ThemePrefsState(colorSeed: 0xFF123456, blendLevel: 0);
+      const stateBlended = ThemePrefsState(colorSeed: 0xFF123456, blendLevel: 30);
+      final unblended = AppTheme.light(stateZero, null);
+      final blended = AppTheme.light(stateBlended, null);
+      expect(blended.colorScheme.surface, isNot(equals(unblended.colorScheme.surface)));
+      expect(blended.colorScheme.surfaceContainer, isNot(equals(unblended.colorScheme.surfaceContainer)));
+      expect(blended.scaffoldBackgroundColor, isNot(equals(unblended.scaffoldBackgroundColor)));
+    });
+
     test('stored app_theme_data round-trips without changing resolution', () {
       const state = ThemePrefsState(
         useAmoled: true,

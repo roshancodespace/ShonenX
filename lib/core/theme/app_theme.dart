@@ -55,6 +55,46 @@ class AppTheme {
     );
 
     var cs = resolved.colorScheme;
+    if (prefs.swapColors) {
+      cs = cs.copyWith(
+        primary: cs.secondary,
+        onPrimary: cs.onSecondary,
+        primaryContainer: cs.secondaryContainer,
+        onPrimaryContainer: cs.onSecondaryContainer,
+        secondary: cs.primary,
+        onSecondary: cs.onPrimary,
+        secondaryContainer: cs.primaryContainer,
+        onSecondaryContainer: cs.onPrimaryContainer,
+        primaryFixed: cs.secondaryFixed,
+        primaryFixedDim: cs.secondaryFixedDim,
+        onPrimaryFixed: cs.onSecondaryFixed,
+        onPrimaryFixedVariant: cs.onSecondaryFixedVariant,
+        secondaryFixed: cs.primaryFixed,
+        secondaryFixedDim: cs.primaryFixedDim,
+        onSecondaryFixed: cs.onPrimaryFixed,
+        onSecondaryFixedVariant: cs.onPrimaryFixedVariant,
+      );
+    }
+
+    final blendLevel = prefs.blendLevel.clamp(0, 40);
+    if (blendLevel > 0) {
+      final blendFactor = (blendLevel / 40.0) * (isDark ? 0.20 : 0.12);
+      final tint = cs.primary;
+      Color blend(Color surface) =>
+          Color.alphaBlend(tint.withValues(alpha: blendFactor), surface);
+
+      cs = cs.copyWith(
+        surface: blend(cs.surface),
+        surfaceDim: blend(cs.surfaceDim),
+        surfaceBright: blend(cs.surfaceBright),
+        surfaceContainerLowest: blend(cs.surfaceContainerLowest),
+        surfaceContainerLow: blend(cs.surfaceContainerLow),
+        surfaceContainer: blend(cs.surfaceContainer),
+        surfaceContainerHigh: blend(cs.surfaceContainerHigh),
+        surfaceContainerHighest: blend(cs.surfaceContainerHighest),
+      );
+    }
+
     if (isDark && prefs.useAmoled) {
       cs = cs.copyWith(surface: const Color(0xFF000000));
     } else if (prefs.surfaceColor != null) {

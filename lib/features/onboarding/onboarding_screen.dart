@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:shonenx/core/utils/device_info.dart';
 import 'package:shonenx/shared/widgets/smart_image.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
@@ -48,16 +49,41 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   int _currentIndex = 0;
   int _selectedContentFocus = 2;
   _CardTarget _selectedCardTarget = _CardTarget.browse;
+  bool _isAndroidTv = false;
 
   bool get _isMobile => !kIsWeb && (Platform.isAndroid || Platform.isIOS);
-  int get _totalPages => _isMobile ? 9 : 8;
+  bool get _isDesktop =>
+      !kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS);
+
+  bool _isTablet(BuildContext context) =>
+      MediaQuery.sizeOf(context).shortestSide >= 600;
+
+  bool _shouldShowExperimentalUiStep(BuildContext context) =>
+      _isDesktop || _isAndroidTv || _isTablet(context);
+
+  int _totalPagesFor(BuildContext context) =>
+      8 + (_shouldShowExperimentalUiStep(context) ? 1 : 0) + (_isMobile ? 1 : 0);
+
+  @override
+  void initState() {
+    super.initState();
+    _detectAndroidTv();
+  }
+
+  Future<void> _detectAndroidTv() async {
+    final isTv = await DeviceInfo.isAndroidTv();
+    if (mounted && isTv) {
+      setState(() => _isAndroidTv = true);
+    }
+  }
 
   void _nextPage() {
     if (_pageController.hasClients) {
+      final totalPages = _totalPagesFor(context);
       final int targetPage =
           (_pageController.page?.round() ?? _currentIndex) + 1;
 
-      if (targetPage < _totalPages) {
+      if (targetPage < totalPages) {
         _pageController.animateToPage(
           targetPage,
           duration: const Duration(milliseconds: 500),
@@ -80,6 +106,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final showExperimentalUiStep = _shouldShowExperimentalUiStep(context);
+    final totalPages = _totalPagesFor(context);
 
     return Scaffold(
       body: Stack(
@@ -104,7 +132,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       AnimatedOpacity(
                         opacity:
                             (_currentIndex > 0 &&
-                                _currentIndex < _totalPages - 1)
+                                _currentIndex < totalPages - 1)
                             ? 1.0
                             : 0.0,
                         duration: const Duration(milliseconds: 250),
@@ -112,7 +140,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         child: IgnorePointer(
                           ignoring:
                               !(_currentIndex > 0 &&
-                                  _currentIndex < _totalPages - 1),
+                                  _currentIndex < totalPages - 1),
                           child: TextButton(
                             onPressed: _finishOnboarding,
                             style: TextButton.styleFrom(
@@ -143,6 +171,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       _buildContentFocusPage(theme, cs),
                       _buildThemePage(theme, cs),
                       _buildCardStylePage(theme, cs),
+                      if (showExperimentalUiStep)
+                        _buildExperimentalUiPage(theme, cs),
                       _buildDiscoveryGuidePage(theme, cs),
                       _buildTrackersPage(theme, cs),
                       _buildExtensionsPage(theme, cs),
@@ -151,7 +181,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     ],
                   ),
                 ),
-                _buildBottomControls(theme, cs),
+                _buildBottomControls(theme, cs, totalPages),
               ],
             ),
           ),
@@ -160,7 +190,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     );
   }
 
-  Widget _buildBottomControls(ThemeData theme, ColorScheme cs) {
+  Widget _buildBottomControls(
+    ThemeData theme,
+    ColorScheme cs,
+    int totalPages,
+  ) {
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 600),
@@ -170,7 +204,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Row(
-                children: List.generate(_totalPages, (index) {
+                children: List.generate(totalPages, (index) {
                   return AnimatedContainer(
                     duration: const Duration(milliseconds: 300),
                     margin: const EdgeInsets.only(right: 8),
@@ -200,8 +234,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 300),
                   child: Text(
-                    _currentIndex == _totalPages - 1 ? 'Get Started' : 'Next',
-                    key: ValueKey(_currentIndex == _totalPages - 1),
+                    _currentIndex == totalPages - 1 ? 'Get Started' : 'Next',
+                    key: ValueKey(_currentIndex == totalPages - 1),
                     style: const TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 16,
@@ -1145,9 +1179,147 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     );
   }
 
+  Widget _buildExperimentalUiPage(ThemeData theme, ColorScheme cs) {
+    final useNewUi = ref.watch(uiPrefsProvider.select((s) => s.useNewUi));
+    final radius = GlobalUI.uiRoundness.clamp(12.0, 24.0);
+
+    return _buildPageLayout(
+      title: 'Experimental TV UI',
+      description:
+          'We detected a larger or TV display. Try our new layout built specifically for Android TV—it also works great on PC and tablets without a TV.',
+      icon: Icons.tv_rounded,
+      theme: theme,
+      cs: cs,
+      customWidget: Padding(
+        padding: const EdgeInsets.only(top: 24),
+        child: Column(
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                color: useNewUi
+                    ? cs.primaryContainer.withValues(alpha: 0.45)
+                    : cs.surfaceContainerHigh,
+                borderRadius: BorderRadius.circular(radius),
+                border: Border.all(
+                  color: useNewUi
+                      ? cs.primary.withValues(alpha: 0.5)
+                      : cs.outlineVariant.withValues(alpha: 0.25),
+                ),
+              ),
+              child: SwitchListTile(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(radius),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 6,
+                ),
+                secondary: Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: useNewUi
+                        ? cs.primaryContainer
+                        : cs.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(
+                      (radius * 0.7).clamp(8.0, 16.0),
+                    ),
+                  ),
+                  alignment: Alignment.center,
+                  child: Icon(
+                    Icons.space_dashboard_rounded,
+                    color: useNewUi ? cs.onPrimaryContainer : cs.onSurfaceVariant,
+                  ),
+                ),
+                title: const Text(
+                  'Try Experimental UI',
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                ),
+                subtitle: Text(
+                  useNewUi
+                      ? 'Enabled — best on wide screens'
+                      : 'Standard mobile-first UI is active',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: useNewUi ? cs.primary : cs.onSurfaceVariant,
+                  ),
+                ),
+                value: useNewUi,
+                onChanged: (val) {
+                  ref.read(uiPrefsProvider.notifier).setUseNewUi(val);
+                },
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: cs.surfaceContainerLow,
+                borderRadius: BorderRadius.circular(radius),
+                border: Border.all(
+                  color: cs.outlineVariant.withValues(alpha: 0.25),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.construction_rounded,
+                        size: 18,
+                        color: cs.primary,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Actively in development — some features from the normal UI may still be missing.',
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            color: cs.onSurfaceVariant,
+                            height: 1.35,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.tune_rounded,
+                        size: 18,
+                        color: cs.primary,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'You can turn it on or off anytime in Settings > UI.',
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            color: cs.onSurfaceVariant,
+                            height: 1.35,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildTrackersPage(ThemeData theme, ColorScheme cs) {
     final authTokens = ref.watch(authTokensProvider).value ?? {};
     final allTrackers = ref.watch(availableTrackersProvider);
+    final radius = GlobalUI.uiRoundness.clamp(12.0, 24.0);
+    final badgeRadius = (radius * 0.7).clamp(8.0, 16.0);
 
     return _buildPageLayout(
       title: 'Sync Your Progress',
@@ -1157,76 +1329,145 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       theme: theme,
       cs: cs,
       customWidget: Padding(
-        padding: const EdgeInsets.only(top: 20),
+        padding: const EdgeInsets.only(top: 24),
         child: Column(
           children: allTrackers.whereType<RemoteTracker>().map((tracker) {
             final isLoggedIn = authTokens.containsKey(tracker.type);
-            final profileName = tracker.type.getProfile(ref)?.username;
+            final profile = tracker.type.getProfile(ref);
+            final profileName = profile?.username;
 
-            return ListTile(
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 6,
-              ),
-              leading: isLoggedIn
-                  ? Container(
-                      width: 44,
-                      height: 44,
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: isLoggedIn
+                      ? cs.primaryContainer.withValues(alpha: 0.35)
+                      : cs.surfaceContainerHigh,
+                  borderRadius: BorderRadius.circular(radius),
+                  border: Border.all(
+                    color: isLoggedIn
+                        ? cs.primary.withValues(alpha: 0.45)
+                        : cs.outlineVariant.withValues(alpha: 0.25),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 48,
+                      height: 48,
                       decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: cs.primary, width: 2),
+                        color: isLoggedIn
+                            ? cs.primaryContainer
+                            : cs.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(badgeRadius),
                       ),
-                      child: ClipOval(
-                        child: SmartImage(
-                          imageUrl:
-                              tracker.type.getProfile(ref)?.avatarUrl ?? '',
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) =>
-                              const CircularProgressIndicator(strokeWidth: 2),
-                          errorWidget: (context, url, error) =>
-                              const Icon(Icons.person_outline),
-                        ),
-                      ),
-                    )
-                  : Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: tracker.type.getIconWidget(
-                        color: cs.onSurface,
-                        size: 32,
+                      clipBehavior: Clip.antiAlias,
+                      alignment: Alignment.center,
+                      child: isLoggedIn
+                          ? SmartImage(
+                              imageUrl: profile?.avatarUrl ?? '',
+                              width: 48,
+                              height: 48,
+                              fit: BoxFit.cover,
+                              placeholder: (context, url) => const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                              errorWidget: (context, url, error) => Icon(
+                                Icons.person_rounded,
+                                color: cs.onPrimaryContainer,
+                              ),
+                            )
+                          : tracker.type.getIconWidget(
+                              color: cs.onSurface,
+                              size: 26,
+                            ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            tracker.type.displayName,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 15,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Row(
+                            children: [
+                              if (isLoggedIn) ...[
+                                Icon(
+                                  Icons.check_circle_rounded,
+                                  size: 14,
+                                  color: cs.primary,
+                                ),
+                                const SizedBox(width: 4),
+                              ],
+                              Flexible(
+                                child: Text(
+                                  isLoggedIn
+                                      ? 'Connected as ${profileName ?? 'User'}'
+                                      : 'Not connected',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 12.5,
+                                    color: isLoggedIn
+                                        ? cs.primary
+                                        : cs.onSurfaceVariant,
+                                    fontWeight: isLoggedIn
+                                        ? FontWeight.w600
+                                        : FontWeight.normal,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
-              title: Text(
-                tracker.type.displayName,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
+                    const SizedBox(width: 10),
+                    FilledButton.tonalIcon(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: isLoggedIn
+                            ? cs.errorContainer
+                            : cs.primary,
+                        foregroundColor: isLoggedIn
+                            ? cs.onErrorContainer
+                            : cs.onPrimary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(badgeRadius),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 10,
+                        ),
+                      ),
+                      onPressed: () {
+                        if (isLoggedIn) {
+                          ref.read(authTokensProvider.notifier).logout(tracker);
+                        } else {
+                          ref.read(authTokensProvider.notifier).login(tracker);
+                        }
+                      },
+                      icon: Icon(
+                        isLoggedIn ? Icons.logout_rounded : Icons.login_rounded,
+                        size: 17,
+                      ),
+                      label: Text(
+                        isLoggedIn ? 'Unlink' : 'Link',
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              subtitle: Text(
-                isLoggedIn ? 'Logged in as $profileName' : 'Not linked',
-                style: TextStyle(
-                  color: isLoggedIn ? cs.primary : cs.onSurfaceVariant,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              trailing: FilledButton.tonalIcon(
-                style: FilledButton.styleFrom(
-                  backgroundColor: isLoggedIn
-                      ? cs.errorContainer
-                      : cs.primaryContainer,
-                  foregroundColor: isLoggedIn
-                      ? cs.onErrorContainer
-                      : cs.onPrimaryContainer,
-                ),
-                onPressed: () {
-                  if (isLoggedIn) {
-                    ref.read(authTokensProvider.notifier).logout(tracker);
-                  } else {
-                    ref.read(authTokensProvider.notifier).login(tracker);
-                  }
-                },
-                icon: Icon(isLoggedIn ? Icons.logout : Icons.login, size: 18),
-                label: Text(isLoggedIn ? 'Unlink' : 'Link'),
               ),
             );
           }).toList(),

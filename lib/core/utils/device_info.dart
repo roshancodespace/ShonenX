@@ -26,4 +26,11 @@ class DeviceInfo {
     final info = await _info();
     return info.version.sdkInt >= 30;
   }
+
+  static Future<bool> isAndroidTv() async {
+    if (!Platform.isAndroid) return false;
+    final info = await _info();
+    return info.systemFeatures.contains('android.software.leanback') ||
+        info.systemFeatures.contains('android.hardware.type.television');
+  }
 }

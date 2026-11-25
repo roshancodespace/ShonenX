@@ -54,52 +54,19 @@ class WideBannerCard extends StatelessWidget {
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
+                  horizontal: 14,
+                  vertical: 10,
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: WideMetadataColumn(
-                        media: content.media,
-                        showRatings: content.showRatings,
-                        showYear: content.showYear,
-                        showGenres: content.showGenres,
-                        subtitle: content.subtitle,
-                        height: content.height,
-                        progress: null,
-                        progressText: null,
-                        topRightBadge: null,
-                      ),
-                    ),
-                    if (content.progress != null) ...[
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: LinearProgressIndicator(
-                              value: content.progress!.clamp(0.0, 1.0),
-                              backgroundColor: cs.surfaceContainerHighest,
-                              color: cs.primary,
-                              borderRadius: BorderRadius.circular(UiRadius.sm),
-                              minHeight: 6,
-                            ),
-                          ),
-                          if (content.progressText != null) ...[
-                            const SizedBox(width: 8),
-                            Text(
-                              content.progressText!,
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: cs.primary,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ],
-                  ],
+                child: WideMetadataColumn(
+                  media: content.media,
+                  showRatings: content.showRatings,
+                  showYear: content.showYear,
+                  showGenres: content.showGenres,
+                  subtitle: content.subtitle,
+                  height: content.height,
+                  progress: content.progress,
+                  progressText: content.progressText,
+                  topRightBadge: content.topRightBadge,
                 ),
               ),
             ),

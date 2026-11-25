@@ -72,15 +72,17 @@ class MinimalCard extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.labelLarge?.copyWith(
+                      fontSize: 13,
+                      letterSpacing: -0.15,
                       color: Colors.white,
                       fontWeight: FontWeight.w700,
-                      height: 1.2,
+                      height: 1.18,
                     ),
                   ),
                   if (content.resolvedSubtitle != null ||
                       content.progress != null ||
                       content.progressText != null) ...[
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 3),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -92,18 +94,22 @@ class MinimalCard extends StatelessWidget {
                               showYear: content.showYear,
                               showGenres: content.showGenres,
                               subtitle: content.subtitle,
+                              textColor: Colors.white70,
                             ),
                           ),
                         if (content.progressText != null ||
-                            content.progress != null)
+                            content.progress != null) ...[
+                          const SizedBox(width: 6),
                           Text(
                             content.progressText ??
                                 '${(content.progress!.clamp(0.0, 1.0) * 100).toInt()}%',
                             style: theme.textTheme.labelSmall?.copyWith(
+                              fontSize: 10.5,
                               color: cs.primaryContainer,
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.w800,
                             ),
                           ),
+                        ],
                       ],
                     ),
                   ],

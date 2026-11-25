@@ -20,7 +20,6 @@ class ClassicCard extends StatelessWidget {
 
   Widget _buildPortrait(ThemeData theme) {
     final cs = theme.colorScheme;
-    final imgH = content.height * (content.progress != null ? 0.65 : 0.74);
 
     return AnimatedContainer(
       duration: Durations.short4,
@@ -37,34 +36,37 @@ class ClassicCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Stack(
-            children: [
-              CardMediaStack(
+          Expanded(
+            child: LayoutBuilder(
+              builder: (context, constraints) => CardMediaStack(
                 content: content,
                 styleName: 'classic',
-                thumbWidth: content.width,
-                thumbHeight: imgH,
+                thumbWidth: constraints.maxWidth,
+                thumbHeight: constraints.maxHeight,
               ),
-            ],
+            ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 7),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: UiSpace.xs),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   content.media.title.getPreferedTitle,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.labelLarge?.copyWith(
+                    fontSize: 13,
                     fontWeight: FontWeight.w700,
+                    letterSpacing: -0.15,
                     color: cs.onSurface,
                     height: 1.2,
                   ),
                 ),
                 if (content.resolvedSubtitle != null) ...[
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 3),
                   PortraitMetadataRow(
                     media: content.media,
                     showRatings: content.showRatings,
@@ -83,7 +85,7 @@ class ClassicCard extends StatelessWidget {
 
   Widget _buildWide(ThemeData theme) {
     final cs = theme.colorScheme;
-    final thumbW = content.width * 0.48;
+    final thumbW = content.width * 0.44;
 
     return AnimatedContainer(
       duration: Durations.short4,
@@ -99,17 +101,13 @@ class ClassicCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Stack(
-            children: [
-              CardMediaStack(
-                content: content,
-                styleName: 'classic',
-                thumbWidth: thumbW,
-                thumbHeight: content.height,
-              ),
-            ],
+          CardMediaStack(
+            content: content,
+            styleName: 'classic',
+            thumbWidth: thumbW,
+            thumbHeight: content.height,
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 12),
           Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(

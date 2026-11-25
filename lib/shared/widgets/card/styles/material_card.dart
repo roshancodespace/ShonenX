@@ -19,7 +19,6 @@ class MaterialCard extends StatelessWidget {
 
   Widget _buildPortrait(ThemeData theme) {
     final cs = theme.colorScheme;
-    final imgH = content.height * 0.62;
 
     return SizedBox(
       width: content.width,
@@ -31,8 +30,10 @@ class MaterialCard extends StatelessWidget {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(UiRadius.card),
           side: BorderSide(
-            color: content.isActive ? cs.primary : Colors.transparent,
-            width: content.isActive ? 2 : 0,
+            color: content.isActive
+                ? cs.primary
+                : cs.outlineVariant.withValues(alpha: UiAlpha.faint),
+            width: content.isActive ? 2 : 0.8,
           ),
         ),
         color: cs.surfaceContainerLow,
@@ -41,54 +42,47 @@ class MaterialCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SizedBox(
-              height: imgH,
-              width: double.infinity,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  CardMediaStack(
-                    content: content,
-                    styleName: 'material',
-                    thumbWidth: double.maxFinite,
-                    thumbHeight: imgH,
-                    radiusOverride: 0,
-                    fit: StackFit.expand,
-                  ),
-                ],
+            Expanded(
+              child: LayoutBuilder(
+                builder: (context, constraints) => CardMediaStack(
+                  content: content,
+                  styleName: 'material',
+                  thumbWidth: constraints.maxWidth,
+                  thumbHeight: constraints.maxHeight,
+                  radiusOverride: 0,
+                  fit: StackFit.expand,
+                ),
               ),
             ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      content.media.title.getPreferedTitle,
-                      maxLines: content.progress != null ? 1 : 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: cs.onSurface,
-                        height: 1.2,
-                      ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 8, 10, 9),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    content.media.title.getPreferedTitle,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.15,
+                      color: cs.onSurface,
+                      height: 1.2,
                     ),
-                    if (content.resolvedSubtitle != null) ...[
-                      const Spacer(),
-                      PortraitMetadataRow(
-                        media: content.media,
-                        showRatings: content.showRatings,
-                        showYear: content.showYear,
-                        showGenres: content.showGenres,
-                        subtitle: content.subtitle,
-                      ),
-                    ],
+                  ),
+                  if (content.resolvedSubtitle != null) ...[
+                    const SizedBox(height: 4),
+                    PortraitMetadataRow(
+                      media: content.media,
+                      showRatings: content.showRatings,
+                      showYear: content.showYear,
+                      showGenres: content.showGenres,
+                      subtitle: content.subtitle,
+                    ),
                   ],
-                ),
+                ],
               ),
             ),
           ],
@@ -99,7 +93,7 @@ class MaterialCard extends StatelessWidget {
 
   Widget _buildWide(ThemeData theme) {
     final cs = theme.colorScheme;
-    final thumbW = content.width * 0.45;
+    final thumbW = content.width * 0.42;
 
     return SizedBox(
       width: content.width,

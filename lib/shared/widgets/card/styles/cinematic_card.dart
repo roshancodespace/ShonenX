@@ -13,7 +13,7 @@ class CinematicCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    final thumbWidth = content.width * 0.44;
+    final thumbWidth = content.width * 0.41;
 
     return AnimatedContainer(
       duration: Durations.short4,
@@ -34,20 +34,19 @@ class CinematicCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
         child: Row(
           children: [
-            Stack(
-              children: [
-                CardMediaStack(
-                  content: content,
-                  styleName: 'cinematic',
-                  thumbWidth: thumbWidth,
-                  thumbHeight: content.height,
-                  radiusOverride: GlobalUI.uiRoundness * 0.6,
-                ),
-              ],
+            CardMediaStack(
+              content: content,
+              styleName: 'cinematic',
+              thumbWidth: thumbWidth,
+              thumbHeight: content.height,
+              radiusOverride: 0,
             ),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.all(10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
                 child: WideMetadataColumn(
                   media: content.media,
                   showRatings: content.showRatings,

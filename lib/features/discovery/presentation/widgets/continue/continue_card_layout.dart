@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 
 import 'package:shonenx/shared/models/ui_style_enums.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
+import 'package:shonenx/shared/theme/ui_visual_values.dart';
 import 'package:shonenx/shared/widgets/card/card_renderer.dart';
 
 class ContinueCardLayout extends StatelessWidget {
@@ -40,10 +41,34 @@ class ContinueCardLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
     final style = MediaCardStyle.values.firstWhere(
       (s) => s.name == variant,
       orElse: () => MediaCardStyle.classic,
     );
+
+    final topLeftPill = badgeText.isNotEmpty
+        ? Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
+            decoration: BoxDecoration(
+              color: cs.primaryContainer.withValues(alpha: UiAlpha.solidMid),
+              borderRadius: BorderRadius.circular(
+                style == MediaCardStyle.expressive ? UiRadius.wide : UiRadius.sm,
+              ),
+            ),
+            child: Text(
+              badgeText.toUpperCase(),
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: cs.onPrimaryContainer,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.4,
+                fontSize: 9.5,
+                height: 1.1,
+              ),
+            ),
+          )
+        : null;
 
     final card = CardRenderer(
       style: style,
@@ -63,6 +88,7 @@ class ContinueCardLayout extends StatelessWidget {
       subtitle: subtitle,
       progress: progress,
       progressText: progressText,
+      topLeftBadge: topLeftPill,
     );
 
     if (!isLoading) return card;

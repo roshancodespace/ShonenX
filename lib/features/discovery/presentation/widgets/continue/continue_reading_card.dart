@@ -97,13 +97,15 @@ class _ContinueReadingItemState extends ConsumerState<ContinueReadingItem>
   ) {
     final epNum = widget.entry.itemNumber;
     final cleanNum = epNum.toString().contains('.0') ? epNum.toInt() : epNum;
-    final epTitle = widget.entry.itemTitle;
-    final subtitleText = 'CH $cleanNum${epTitle != null ? ' • $epTitle' : ''}';
+    final epTitle = widget.entry.itemTitle?.trim();
+    final subtitleText = (epTitle != null && epTitle.isNotEmpty)
+        ? epTitle
+        : 'Chapter $cleanNum';
 
     final isWideMode = ref.watch(
       uiPrefsProvider.select((s) => s.isContinueReadingWide(style.name)),
     );
-    final scale = ref.watch(themePrefsProvider).uiScaleFactor;
+    final scale = ref.watch(themePrefsProvider.select((s) => s.uiScaleFactor));
     final baseLayout = style.getBaseLayout(
       isContinueReading: true,
       isWideMode: isWideMode,
@@ -122,12 +124,10 @@ class _ContinueReadingItemState extends ConsumerState<ContinueReadingItem>
       isLoading: isLoading,
       isWideMode: isWideMode,
       title: widget.entry.mediaTitle,
-      subtitle: style == ContinueReadingStyle.wideBanner
-          ? (widget.entry.itemTitle ?? 'Continue reading')
-          : subtitleText,
+      subtitle: subtitleText,
       progress: widget.progress,
       progressText: '${(widget.progress * 100).toInt()}% read',
-      badgeText: 'CH ${widget.entry.itemNumber.toInt()}',
+      badgeText: 'CH $cleanNum',
       imageUrl: widget.entry.banner ?? widget.entry.cover,
       fallbackIcon: Icons.menu_book_rounded,
       badgeType: 'READING',

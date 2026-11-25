@@ -6,6 +6,7 @@ class CardBadgeOverlay extends StatelessWidget {
   final UnifiedMedia media;
   final String styleName;
   final bool isWideMode;
+  final bool isHorizontalLayout;
   final bool isActive;
   final bool showRatings;
   final double? progress;
@@ -20,6 +21,7 @@ class CardBadgeOverlay extends StatelessWidget {
     required this.media,
     required this.styleName,
     required this.isWideMode,
+    this.isHorizontalLayout = false,
     required this.isActive,
     required this.showRatings,
     this.progress,
@@ -34,15 +36,19 @@ class CardBadgeOverlay extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    final isHorizontalLayout = isWideMode || (100 > 100 * 1.2);
+    final horizontal =
+        isWideMode ||
+        isHorizontalLayout ||
+        styleName == 'cinematic' ||
+        styleName == 'wideBanner';
     final hasScore =
         showRatings &&
         media.score != null &&
         (media.score ?? 0) > 0 &&
-        !isHorizontalLayout;
+        !horizontal;
     final formattedScore = _getFormattedScore();
 
-    final showFormatBadge = media.format != null;
+    final showFormatBadge = media.format != null && media.format!.isNotEmpty;
     final topLBadge =
         topLeftBadge ?? (showFormatBadge ? _buildFormatBadge(theme, cs) : null);
     final topRBadge =
@@ -57,7 +63,7 @@ class CardBadgeOverlay extends StatelessWidget {
             ? '${(progress!.clamp(0.0, 1.0) * 100).toInt()}%'
             : null);
     final showBottomProgress =
-        !isHorizontalLayout &&
+        !horizontal &&
         styleName != 'minimal' &&
         styleName != 'wideBanner' &&
         effectiveProgressText != null &&
@@ -85,9 +91,9 @@ class CardBadgeOverlay extends StatelessWidget {
         children: [
           if (topLBadge != null || topRBadge != null)
             Positioned(
-              top: 8,
-              left: 8,
-              right: 8,
+              top: 7,
+              left: 7,
+              right: 7,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -105,9 +111,9 @@ class CardBadgeOverlay extends StatelessWidget {
             ),
           if (bottomLBadge != null || bottomRBadge != null)
             Positioned(
-              bottom: 6,
-              left: 6,
-              right: 6,
+              bottom: 7,
+              left: 7,
+              right: 7,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.end,
@@ -129,19 +135,21 @@ class CardBadgeOverlay extends StatelessWidget {
   }
 
   Widget _buildFormatBadge(ThemeData theme, ColorScheme cs) {
+    final radius = styleName == 'expressive' ? UiRadius.wide : UiRadius.sm;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
       decoration: BoxDecoration(
         color: cs.primaryContainer.withValues(alpha: UiAlpha.solidMid),
-        borderRadius: BorderRadius.circular(UiRadius.md),
+        borderRadius: BorderRadius.circular(radius),
       ),
       child: Text(
         media.format!.toUpperCase(),
         style: theme.textTheme.labelSmall?.copyWith(
           color: cs.onPrimaryContainer,
           fontWeight: FontWeight.w800,
-          letterSpacing: 0.3,
+          letterSpacing: 0.4,
           fontSize: 9.5,
+          height: 1.1,
         ),
       ),
     );
@@ -242,18 +250,15 @@ class CardBadgeOverlay extends StatelessWidget {
         break;
     }
 
-    final cardW = 76.0;
-
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 5.5, vertical: 2.5),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
       decoration: decoration,
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 10.5, color: iconColor),
+          Icon(icon, size: 11, color: iconColor),
           const SizedBox(width: 3),
-          ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: cardW),
+          Flexible(
             child: Text(
               text,
               maxLines: 1,
@@ -262,7 +267,8 @@ class CardBadgeOverlay extends StatelessWidget {
                 color: textColor,
                 fontWeight: FontWeight.w800,
                 fontSize: 9.5,
-                letterSpacing: 0.2,
+                letterSpacing: 0.25,
+                height: 1.1,
               ),
             ),
           ),

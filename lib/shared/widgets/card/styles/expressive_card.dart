@@ -20,79 +20,80 @@ class ExpressiveCard extends StatelessWidget {
 
   Widget _buildPortrait(ThemeData theme) {
     final cs = theme.colorScheme;
-    final imgH = content.height * 0.64;
 
-    return SizedBox(
+    return AnimatedContainer(
+      duration: Durations.short4,
       width: content.width,
-      child: AnimatedContainer(
-        duration: Durations.short4,
-        width: content.width,
-        height: content.height,
-        decoration: BoxDecoration(
-          color: Color.alphaBlend(
-            cs.primary.withValues(alpha: 0.08),
-            cs.surfaceContainerHigh,
-          ),
-          borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
-          border: Border.all(
-            color: content.isActive
-                ? cs.primary
-                : cs.outlineVariant.withValues(alpha: UiAlpha.outline),
-            width: content.isActive ? 2.5 : 1.0,
-            strokeAlign: BorderSide.strokeAlignOutside,
-          ),
+      height: content.height,
+      decoration: BoxDecoration(
+        color: Color.alphaBlend(
+          cs.primary.withValues(alpha: 0.06),
+          cs.surfaceContainerHigh,
         ),
-        padding: const EdgeInsets.all(6),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Stack(
+        borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
+        border: Border.all(
+          color: content.isActive
+              ? cs.primary
+              : cs.outlineVariant.withValues(alpha: UiAlpha.outline),
+          width: content.isActive ? 2.5 : 1.0,
+          strokeAlign: BorderSide.strokeAlignOutside,
+        ),
+      ),
+      padding: const EdgeInsets.all(6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: LayoutBuilder(
+              builder: (context, constraints) => CardMediaStack(
+                content: content,
+                styleName: 'expressive',
+                thumbWidth: constraints.maxWidth,
+                thumbHeight: constraints.maxHeight,
+                radiusOverride: (GlobalUI.uiRoundness - 2).clamp(2.0, 24.0),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 0, 4, 2),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                CardMediaStack(
-                  content: content,
-                  styleName: 'expressive',
-                  thumbWidth: double.maxFinite,
-                  thumbHeight: imgH,
-                  radiusOverride: GlobalUI.uiRoundness * 0.8,
+                Text(
+                  content.media.title.getPreferedTitle,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.2,
+                    color: cs.onSurface,
+                    height: 1.18,
+                  ),
                 ),
+                if (content.resolvedSubtitle != null) ...[
+                  const SizedBox(height: 4),
+                  PortraitMetadataRow(
+                    media: content.media,
+                    showRatings: content.showRatings,
+                    showYear: content.showYear,
+                    showGenres: content.showGenres,
+                    subtitle: content.subtitle,
+                  ),
+                ],
               ],
             ),
-            const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: Text(
-                content.media.title.getPreferedTitle,
-                maxLines: content.progress != null ? 1 : 2,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.w900,
-                  color: cs.onSurface,
-                  height: 1.2,
-                ),
-              ),
-            ),
-            if (content.resolvedSubtitle != null) ...[
-              const Spacer(),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: PortraitMetadataRow(
-                  media: content.media,
-                  showRatings: content.showRatings,
-                  showYear: content.showYear,
-                  showGenres: content.showGenres,
-                  subtitle: content.subtitle,
-                ),
-              ),
-            ],
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildWide(ThemeData theme) {
     final cs = theme.colorScheme;
-    final thumbW = content.width * 0.48;
+    final thumbW = content.width * 0.43;
 
     return AnimatedContainer(
       duration: Durations.short4,

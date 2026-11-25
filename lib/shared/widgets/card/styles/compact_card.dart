@@ -20,7 +20,6 @@ class CompactCard extends StatelessWidget {
 
   Widget _buildPortrait(ThemeData theme) {
     final cs = theme.colorScheme;
-    final imgH = content.height * 0.75;
 
     return AnimatedContainer(
       duration: Durations.short4,
@@ -41,30 +40,30 @@ class CompactCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Stack(
-            children: [
-              CardMediaStack(
+          Expanded(
+            child: LayoutBuilder(
+              builder: (context, constraints) => CardMediaStack(
                 content: content,
                 styleName: 'compact',
-                thumbWidth: content.width,
-                thumbHeight: imgH,
-                radiusOverride: GlobalUI.uiRoundness * 0.7,
+                thumbWidth: constraints.maxWidth,
+                thumbHeight: constraints.maxHeight,
+                radiusOverride: (GlobalUI.uiRoundness * 0.7).clamp(2.0, 16.0),
               ),
-            ],
+            ),
           ),
-          const SizedBox(height: 4),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 2),
-              child: Text(
-                content.media.title.getPreferedTitle,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.labelMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: cs.onSurface,
-                  height: 1.15,
-                ),
+          const SizedBox(height: 5),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(3, 0, 3, 2),
+            child: Text(
+              content.media.title.getPreferedTitle,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.labelMedium?.copyWith(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.1,
+                color: cs.onSurface,
+                height: 1.15,
               ),
             ),
           ),
@@ -75,7 +74,7 @@ class CompactCard extends StatelessWidget {
 
   Widget _buildWide(ThemeData theme) {
     final cs = theme.colorScheme;
-    final thumbW = content.height * 1.0;
+    final thumbW = (content.height - 8) * 1.15;
 
     return AnimatedContainer(
       duration: Durations.short4,
@@ -95,20 +94,17 @@ class CompactCard extends StatelessWidget {
       padding: const EdgeInsets.all(4),
       child: Row(
         children: [
-          Stack(
-            children: [
-              CardMediaStack(
-                content: content.copyWith(showRatings: false),
-                styleName: 'compact',
-                thumbWidth: thumbW,
-                thumbHeight: content.height,
-                radiusOverride: GlobalUI.uiRoundness * 0.7,
-              ),
-            ],
+          CardMediaStack(
+            content: content.copyWith(showRatings: false),
+            styleName: 'compact',
+            thumbWidth: thumbW,
+            thumbHeight: content.height - 8,
+            radiusOverride: (GlobalUI.uiRoundness * 0.7).clamp(2.0, 16.0),
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 8),
           Expanded(
-            child: ClipRect(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 2),
               child: WideMetadataColumn(
                 media: content.media,
                 showRatings: content.showRatings,

@@ -8,6 +8,7 @@ import 'package:shonenx/features/history/domain/models/history_entry.dart';
 import 'package:shonenx/features/history/providers/continue_history_resolver.dart';
 import 'package:shonenx/features/history/providers/history_provider.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
+import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/shared/widgets/app_focus_hover.dart';
 import 'package:shonenx/source_engine/source_registry.dart';
@@ -99,17 +100,21 @@ class _ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem>
   ) {
     final epNum = widget.entry.itemNumber;
     final cleanNum = epNum.toString().contains('.0') ? epNum.toInt() : epNum;
-    final epTitle = widget.entry.itemTitle;
-    final subtitleText = 'EP $cleanNum${epTitle != null ? ' • $epTitle' : ''}';
+    final epTitle = widget.entry.itemTitle?.trim();
+    final subtitleText = (epTitle != null && epTitle.isNotEmpty)
+        ? epTitle
+        : 'Episode $cleanNum';
 
     final isWideMode = ref.watch(
       uiPrefsProvider.select((s) => s.isContinueWatchingWide(style.name)),
     );
+    final scale = ref.watch(themePrefsProvider.select((s) => s.uiScaleFactor));
     final baseLayout = style.getBaseLayout(
       isContinueWatching: true,
       isWideMode: isWideMode,
     );
-    final layout = style.getLayout(
+    final layout = style.getScaledLayout(
+      scale,
       isContinueWatching: true,
       isWideMode: isWideMode,
     );
@@ -122,14 +127,12 @@ class _ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem>
       isLoading: isLoading,
       isWideMode: isWideMode,
       title: widget.entry.mediaTitle,
-      subtitle: style == ContinueWatchingStyle.wideBanner
-          ? (widget.entry.itemTitle ?? 'Continue watching')
-          : subtitleText,
+      subtitle: subtitleText,
       progress: widget.progress,
       progressText: formatTimeRemaining(
         widget.entry.total.toInt() - widget.entry.progress.toInt(),
       ),
-      badgeText: 'EP ${widget.entry.itemNumber.toInt()}',
+      badgeText: 'EP $cleanNum',
       imageUrl: widget.entry.thumbnailUrl,
       fallbackIcon: Icons.play_circle_outline_rounded,
       badgeType: 'WATCHING',

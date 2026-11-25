@@ -20,7 +20,6 @@ class EditorialCard extends StatelessWidget {
 
   Widget _buildPortrait(ThemeData theme) {
     final cs = theme.colorScheme;
-    final imgH = content.height * (content.progress != null ? 0.58 : 0.65);
 
     return AnimatedContainer(
       duration: Durations.short4,
@@ -37,37 +36,47 @@ class EditorialCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Stack(
-            children: [
-              CardMediaStack(
+          Expanded(
+            child: LayoutBuilder(
+              builder: (context, constraints) => CardMediaStack(
                 content: content,
                 styleName: 'editorial',
-                thumbWidth: content.width,
-                thumbHeight: imgH,
+                thumbWidth: constraints.maxWidth,
+                thumbHeight: constraints.maxHeight,
                 radiusOverride: GlobalUI.uiRoundness,
               ),
-            ],
+            ),
           ),
           const SizedBox(height: 8),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 3),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   content.media.title.getPreferedTitle,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w900,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.25,
                     color: cs.onSurface,
-                    height: 1.15,
+                    height: 1.16,
                   ),
                 ),
                 if (content.resolvedSubtitle != null) ...[
-                  const SizedBox(height: 6),
-                  Container(width: 24, height: 1.5, color: cs.primary),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 5),
+                  Container(
+                    width: 22,
+                    height: 2,
+                    decoration: BoxDecoration(
+                      color: cs.primary,
+                      borderRadius: BorderRadius.circular(1),
+                    ),
+                  ),
+                  const SizedBox(height: 5),
                   PortraitMetadataRow(
                     media: content.media,
                     showRatings: content.showRatings,
@@ -86,7 +95,7 @@ class EditorialCard extends StatelessWidget {
 
   Widget _buildWide(ThemeData theme) {
     final cs = theme.colorScheme;
-    final thumbW = content.width * 0.45;
+    final thumbW = content.width * 0.42;
 
     return AnimatedContainer(
       duration: Durations.short4,
@@ -105,40 +114,47 @@ class EditorialCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
         child: Row(
           children: [
-            Stack(
-              children: [
-                CardMediaStack(
-                  content: content,
-                  styleName: 'editorial',
-                  thumbWidth: thumbW,
-                  thumbHeight: content.height,
-                  radiusOverride: 0,
-                ),
-              ],
+            CardMediaStack(
+              content: content,
+              styleName: 'editorial',
+              thumbWidth: thumbW,
+              thumbHeight: content.height,
+              radiusOverride: 0,
             ),
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(
-                  vertical: 12,
-                  horizontal: 10,
+                  vertical: 10,
+                  horizontal: 12,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       content.media.title.getPreferedTitle,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w900,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.25,
                         color: cs.onSurface,
-                        height: 1.15,
+                        height: 1.16,
                       ),
                     ),
                     if (content.resolvedSubtitle != null) ...[
-                      const SizedBox(height: 6),
-                      Container(width: 24, height: 1.5, color: cs.primary),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 5),
+                      Container(
+                        width: 22,
+                        height: 2,
+                        decoration: BoxDecoration(
+                          color: cs.primary,
+                          borderRadius: BorderRadius.circular(1),
+                        ),
+                      ),
+                      const SizedBox(height: 5),
                       PortraitMetadataRow(
                         media: content.media,
                         showRatings: content.showRatings,

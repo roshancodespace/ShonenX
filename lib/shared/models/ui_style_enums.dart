@@ -25,9 +25,9 @@ class LayoutVariants {
     ComponentLayout? wideContinue,
     required this.continueWatching,
     required this.continueReading,
-  }) : wide = wide ?? const ComponentLayout(width: 340, height: 115),
+  }) : wide = wide ?? const ComponentLayout(width: 340, height: 114),
        wideContinue =
-           wideContinue ?? const ComponentLayout(width: 360, height: 120);
+           wideContinue ?? const ComponentLayout(width: 360, height: 118);
 
   ComponentLayout resolve({
     bool isContinueWatching = false,
@@ -48,89 +48,89 @@ enum MediaCardStyle {
   classic(
     'Classic',
     LayoutVariants(
-      normal: ComponentLayout(width: 140, height: 230),
-      continueWatching: ComponentLayout(width: 180, height: 180),
-      continueReading: ComponentLayout(width: 140, height: 210),
+      normal: ComponentLayout(width: 142, height: 244),
+      continueWatching: ComponentLayout(width: 210, height: 178),
+      continueReading: ComponentLayout(width: 142, height: 238),
     ),
   ),
 
   minimal(
     'Minimal',
     LayoutVariants(
-      normal: ComponentLayout(width: 120, height: 180),
-      continueWatching: ComponentLayout(width: 180, height: 180),
-      continueReading: ComponentLayout(width: 140, height: 210),
+      normal: ComponentLayout(width: 134, height: 204),
+      continueWatching: ComponentLayout(width: 210, height: 138),
+      continueReading: ComponentLayout(width: 136, height: 204),
     ),
   ),
 
   expressive(
     'Expressive',
     LayoutVariants(
-      normal: ComponentLayout(width: 140, height: 230),
-      wideContinue: ComponentLayout(width: 370, height: 125),
-      continueWatching: ComponentLayout(width: 200, height: 200),
-      continueReading: ComponentLayout(width: 160, height: 230),
+      normal: ComponentLayout(width: 146, height: 248),
+      wideContinue: ComponentLayout(width: 368, height: 122),
+      continueWatching: ComponentLayout(width: 216, height: 184),
+      continueReading: ComponentLayout(width: 146, height: 244),
     ),
   ),
 
   material(
     'Material',
     LayoutVariants(
-      normal: ComponentLayout(width: 135, height: 210),
-      continueWatching: ComponentLayout(width: 190, height: 190),
-      continueReading: ComponentLayout(width: 150, height: 220),
+      normal: ComponentLayout(width: 142, height: 240),
+      continueWatching: ComponentLayout(width: 210, height: 178),
+      continueReading: ComponentLayout(width: 142, height: 236),
     ),
   ),
 
   cinematic(
     'Cinematic',
     LayoutVariants(
-      normal: ComponentLayout(width: 320, height: 120),
-      wide: ComponentLayout(width: 360, height: 125),
-      wideContinue: ComponentLayout(width: 380, height: 125),
-      continueWatching: ComponentLayout(width: 320, height: 120),
-      continueReading: ComponentLayout(width: 320, height: 120),
+      normal: ComponentLayout(width: 320, height: 118),
+      wide: ComponentLayout(width: 356, height: 120),
+      wideContinue: ComponentLayout(width: 372, height: 122),
+      continueWatching: ComponentLayout(width: 320, height: 118),
+      continueReading: ComponentLayout(width: 320, height: 118),
     ),
   ),
 
   neon(
     'Neon',
     LayoutVariants(
-      normal: ComponentLayout(width: 130, height: 200),
-      continueWatching: ComponentLayout(width: 180, height: 180),
-      continueReading: ComponentLayout(width: 130, height: 200),
+      normal: ComponentLayout(width: 140, height: 236),
+      continueWatching: ComponentLayout(width: 210, height: 178),
+      continueReading: ComponentLayout(width: 140, height: 232),
     ),
   ),
 
   compact(
     'Compact',
     LayoutVariants(
-      normal: ComponentLayout(width: 110, height: 160),
-      wide: ComponentLayout(width: 320, height: 95),
-      wideContinue: ComponentLayout(width: 340, height: 100),
-      continueWatching: ComponentLayout(width: 280, height: 90),
-      continueReading: ComponentLayout(width: 280, height: 90),
+      normal: ComponentLayout(width: 118, height: 186),
+      wide: ComponentLayout(width: 316, height: 96),
+      wideContinue: ComponentLayout(width: 336, height: 100),
+      continueWatching: ComponentLayout(width: 288, height: 94),
+      continueReading: ComponentLayout(width: 288, height: 94),
     ),
   ),
 
   editorial(
     'Editorial',
     LayoutVariants(
-      normal: ComponentLayout(width: 140, height: 220),
-      wideContinue: ComponentLayout(width: 370, height: 125),
-      continueWatching: ComponentLayout(width: 200, height: 250),
-      continueReading: ComponentLayout(width: 170, height: 250),
+      normal: ComponentLayout(width: 144, height: 246),
+      wideContinue: ComponentLayout(width: 368, height: 122),
+      continueWatching: ComponentLayout(width: 214, height: 186),
+      continueReading: ComponentLayout(width: 144, height: 242),
     ),
   ),
 
   wideBanner(
     'Wide Banner',
     LayoutVariants(
-      normal: ComponentLayout(width: 390, height: 125),
-      wide: ComponentLayout(width: 430, height: 135),
-      wideContinue: ComponentLayout(width: 440, height: 135),
-      continueWatching: ComponentLayout(width: 390, height: 125),
-      continueReading: ComponentLayout(width: 390, height: 125),
+      normal: ComponentLayout(width: 380, height: 122),
+      wide: ComponentLayout(width: 416, height: 128),
+      wideContinue: ComponentLayout(width: 424, height: 130),
+      continueWatching: ComponentLayout(width: 380, height: 122),
+      continueReading: ComponentLayout(width: 380, height: 122),
     ),
   );
 

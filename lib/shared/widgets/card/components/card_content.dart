@@ -155,6 +155,7 @@ class CardMediaStack extends StatelessWidget {
           media: content.media,
           styleName: styleName,
           isWideMode: content.isWideMode,
+          isHorizontalLayout: thumbWidth > thumbHeight * 1.35,
           isActive: content.isActive,
           showRatings: content.showRatings,
           progress: content.progress,

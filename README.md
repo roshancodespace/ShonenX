@@ -18,7 +18,7 @@
 
 Created and maintained by [Roshan Kumar](https://github.com/roshancodespace) with the help of community contributors. ShonenX is an open-source, ad-free, and tracker-free anime and manga client. Tracks progress across AniList, MyAnimeList, and Kitsu.
 
-[Features](#features) • [Screenshots](#screenshots) • [Installation](#installation) • [Contributing](#contributing) • [Contributors](#contributors)
+[Features](#features) • [Screenshots](#screenshots) • [Installation](#installation) • [Privacy Policy](docs/privacy-policy.md) • [Contributing](#contributing) • [Contributors](#contributors)
 
 </div>
 
@@ -31,6 +31,13 @@ Created and maintained by [Roshan Kumar](https://github.com/roshancodespace) wit
 > **02. APIs & Metadata:** The covers, synopses, and schedules are pulled directly from public APIs like AniList, MyAnimeList, and Kitsu. ShonenX merely displays the metadata they provide.
 > 
 > **03. User Extensions & Content:** Any "extensions" or third-party sources you decide to install are entirely on you. ShonenX doesn't distribute copyrighted material or endorse piracy. Ensure you follow your local laws; we are not your lawyers. If you're a copyright holder looking to DMCA someone, please contact the extension developers or the host of the video files.
+
+> [!NOTE]
+> ### Trakt API & Third-Party Attribution
+>
+> ShonenX integrates with the [Trakt](https://trakt.tv) API (as well as AniList, MyAnimeList, Kitsu, and Simkl) for optional user-authorized watch progress synchronization and list management. **This product uses the Trakt API but is not endorsed or certified by Trakt.**
+>
+> For details on how ShonenX handles OAuth tokens and user data, please read our [Privacy Policy](docs/privacy-policy.md).
 
 
 ## Supporters

@@ -30,41 +30,83 @@ class LibraryGridWidget extends ConsumerWidget {
     return dynamicLibrary.when(
       loading: () => Skeletonizer(
         enabled: true,
-        child: Padding(
-          padding: const EdgeInsets.all(10.0),
-          child: GridView.builder(
-            padding: const EdgeInsets.only(bottom: 200),
-            gridDelegate: SliverGridDelegateWithMinCrossAxisExtent(
-              minCrossAxisExtent: layout.width,
-              childAspectRatio: layout.aspectRatio,
-              mainAxisSpacing: 10,
-              crossAxisSpacing: 10,
-            ),
-            itemCount: 12,
-            itemBuilder: (context, index) {
-              return MediaCard(
-                media: UnifiedMedia(
-                  id: 'skeleton-lib-$index',
-                  type: MediaType.ANIME,
-                  title: const MediaTitle(english: 'Placeholder Title'),
-                  cover: '',
-                  format: 'TV',
-                  score: 8.5,
-                  year: 2026,
-                ),
-                tag: 'skeleton-lib-$index',
-                style: cardStyle,
-                onTap: () {},
-              );
-            },
+        child: GridView.builder(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 136),
+          gridDelegate: SliverGridDelegateWithMinCrossAxisExtent(
+            minCrossAxisExtent: layout.width,
+            childAspectRatio: layout.aspectRatio,
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
           ),
+          itemCount: 12,
+          itemBuilder: (context, index) {
+            return MediaCard(
+              media: UnifiedMedia(
+                id: 'skeleton-lib-$index',
+                type: MediaType.ANIME,
+                title: const MediaTitle(english: 'Placeholder Title'),
+                cover: '',
+                format: 'TV',
+                score: 8.5,
+                year: 2026,
+              ),
+              tag: 'skeleton-lib-$index',
+              style: cardStyle,
+              onTap: () {},
+            );
+          },
         ),
       ),
 
-      error: (err, stack) => Center(child: Text('ERR: $err')),
+      error: (err, stack) {
+        final cs = Theme.of(context).colorScheme;
+        return Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.error_outline_rounded, size: 42, color: cs.error),
+                const SizedBox(height: 12),
+                Text(
+                  '$err',
+                  textAlign: TextAlign.center,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
       data: (entries) {
         if (entries.isEmpty) {
-          return Center(child: Text(context.l10n.libraryEmptyList));
+          final cs = Theme.of(context).colorScheme;
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.collections_bookmark_outlined,
+                    size: 46,
+                    color: cs.onSurfaceVariant.withValues(alpha: 0.45),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    context.l10n.libraryEmptyList,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      color: cs.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
         }
 
         return NotificationListener<ScrollNotification>(
@@ -125,58 +167,55 @@ class LibraryGridWidget extends ConsumerWidget {
                 );
               }
             },
-            child: Padding(
-              padding: const EdgeInsets.all(10.0),
-              child: GridView.builder(
-                padding: const EdgeInsets.only(bottom: 200),
-                gridDelegate: SliverGridDelegateWithMinCrossAxisExtent(
-                  minCrossAxisExtent: layout.width,
-                  childAspectRatio: layout.aspectRatio,
-                  mainAxisSpacing: 10,
-                  crossAxisSpacing: 10,
-                ),
-                itemCount: entries.length,
-                itemBuilder: (context, index) {
-                  final entry = entries[index];
-                  final mediaType = entry.type != null
-                      ? MediaType.fromId(entry.type!)
-                      : viewState.mediaType;
-                  final isAnime = mediaType == MediaType.ANIME;
-                  final unit = isAnime ? 'Ep' : 'Ch';
-                  final watched = entry.episodesWatched;
-                  final total = entry.episodes;
-
-                  double? progress;
-                  String? progressText;
-
-                  if (watched > 0) {
-                    if (total != null && total > 0) {
-                      progress = (watched / total).clamp(0.0, 1.0);
-                      progressText = '$unit $watched/$total';
-                    } else {
-                      progressText = '$unit $watched';
-                    }
-                  }
-
-                  final cardTag =
-                      'library__${viewState.status.id}_${entry.providerId}_$index';
-
-                  return MediaCard(
-                    media: entry.toUnifiedMedia(),
-                    tag: cardTag,
-                    style: cardStyle,
-                    progress: progress,
-                    progressText: progressText,
-                    onTap: () {
-                      context.pushDetails(
-                        mediaType: mediaType,
-                        media: entry.toUnifiedMedia(),
-                        tag: cardTag,
-                      );
-                    },
-                  );
-                },
+            child: GridView.builder(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 136),
+              gridDelegate: SliverGridDelegateWithMinCrossAxisExtent(
+                minCrossAxisExtent: layout.width,
+                childAspectRatio: layout.aspectRatio,
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
               ),
+              itemCount: entries.length,
+              itemBuilder: (context, index) {
+                final entry = entries[index];
+                final mediaType = entry.type != null
+                    ? MediaType.fromId(entry.type!)
+                    : viewState.mediaType;
+                final isAnime = mediaType == MediaType.ANIME;
+                final unit = isAnime ? 'Ep' : 'Ch';
+                final watched = entry.episodesWatched;
+                final total = entry.episodes;
+
+                double? progress;
+                String? progressText;
+
+                if (watched > 0) {
+                  if (total != null && total > 0) {
+                    progress = (watched / total).clamp(0.0, 1.0);
+                    progressText = '$unit $watched/$total';
+                  } else {
+                    progressText = '$unit $watched';
+                  }
+                }
+
+                final cardTag =
+                    'library__${viewState.status.id}_${entry.providerId}_$index';
+
+                return MediaCard(
+                  media: entry.toUnifiedMedia(),
+                  tag: cardTag,
+                  style: cardStyle,
+                  progress: progress,
+                  progressText: progressText,
+                  onTap: () {
+                    context.pushDetails(
+                      mediaType: mediaType,
+                      media: entry.toUnifiedMedia(),
+                      tag: cardTag,
+                    );
+                  },
+                );
+              },
             ),
           ),
         );

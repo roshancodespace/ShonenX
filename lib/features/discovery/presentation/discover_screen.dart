@@ -75,63 +75,41 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
 
   List<MediaType> _supportedMediaTypes = [];
   bool _isLoadingMore = false;
+  bool? _wasBranchActive;
 
   int _selectedQuickTileSection = 0;
 
-  static const List<List<Color>> _tileGradients = [
-    [Color(0xFFE53935), Color(0xFFFF7043)],
-    [Color(0xFF8E24AA), Color(0xFFBA68C8)],
-    [Color(0xFF1E88E5), Color(0xFF42A5F5)],
-    [Color(0xFF00897B), Color(0xFF4DB6AC)],
-    [Color(0xFFF4511E), Color(0xFFFF8A65)],
-    [Color(0xFF3949AB), Color(0xFF5C6BC0)],
-    [Color(0xFF00ACC1), Color(0xFF26C6DA)],
-    [Color(0xFFD81B60), Color(0xFFFF4081)],
-    [Color(0xFF43A047), Color(0xFF66BB6A)],
-    [Color(0xFF5E35B1), Color(0xFF7E57C2)],
-    [Color(0xFFFB8C00), Color(0xFFFFB74D)],
-    [Color(0xFF546E7A), Color(0xFF78909C)],
-  ];
-
-  static const _genreIconMap = <(List<String>, IconData)>[
-    (['action'], Icons.bolt_rounded),
-    (['advent'], Icons.explore_rounded),
-    (['comed'], Icons.sentiment_very_satisfied_rounded),
-    (['drama'], Icons.masks_rounded),
-    (['fant'], Icons.auto_awesome_rounded),
-    (['roman'], Icons.favorite_rounded),
-    (['sci', 'space', 'cyber'], Icons.rocket_launch_rounded),
-    (['supernatural', 'magic', 'demon'], Icons.visibility_rounded),
-    (['myster'], Icons.search_rounded),
-    (['slice', 'life'], Icons.coffee_rounded),
-    (['sport'], Icons.sports_basketball_rounded),
-    (['horror', 'gore', 'thrill'], Icons.dark_mode_rounded),
-    (['psych'], Icons.psychology_rounded),
-    (['music'], Icons.music_note_rounded),
-    (['mecha', 'robot'], Icons.precision_manufacturing_rounded),
-    (['isekai'], Icons.swap_horiz_rounded),
-    (['shounen', 'shonen'], Icons.local_fire_department_rounded),
-    (['shoujo', 'shojo'], Icons.spa_rounded),
-    (['military', 'war'], Icons.shield_rounded),
-    (['game', 'gaming'], Icons.sports_esports_rounded),
-    (['school'], Icons.school_rounded),
-    (['history', 'historical'], Icons.history_edu_rounded),
-    (['ecchi'], Icons.whatshot_rounded),
-    (['martial'], Icons.sports_martial_arts_rounded),
-    (['police', 'crime'], Icons.local_police_rounded),
-  ];
-
-  List<Color> _gradientForText(String text) {
-    final hash = text.codeUnits.fold<int>(0, (prev, elem) => prev + elem);
-    return _tileGradients[hash % _tileGradients.length];
+  void _requestSearchFocus() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (TickerMode.valuesOf(context).enabled &&
+          (ModalRoute.of(context)?.isCurrent ?? true)) {
+        _searchFocusNode.requestFocus();
+      }
+    });
   }
 
-  IconData _iconForGenreOrTag(String name) {
-    final lower = name.toLowerCase();
-    for (final (keywords, icon) in _genreIconMap) {
-      if (keywords.any(lower.contains)) return icon;
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final isBranchActive = TickerMode.valuesOf(context).enabled;
+    if (_wasBranchActive == null) {
+      _wasBranchActive = isBranchActive;
+      if (isBranchActive &&
+          widget.initialQuery == null &&
+          widget.initialGenres.isEmpty &&
+          widget.initialTags.isEmpty &&
+          widget.category == null) {
+        _requestSearchFocus();
+      }
+    } else if (_wasBranchActive != isBranchActive) {
+      _wasBranchActive = isBranchActive;
+      if (isBranchActive) {
+        _requestSearchFocus();
+      } else {
+        _searchFocusNode.unfocus();
+      }
     }
-    return Icons.category_rounded;
   }
 
   @override
@@ -544,75 +522,72 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
       child: AppScaffold(
         showBackButton: false,
         bottomNavigationBar: null,
-        body: SafeArea(
-          bottom: false,
-          child: Column(
-            children: [
+        body: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: UnifiedSearchBar(
+                controller: _searchController,
+                focusNode: _searchFocusNode,
+                autofocus: false,
+                leading: showBack ? null : const Icon(Icons.search_rounded),
+                hintText: widget.customTitle != null
+                    ? 'Search in ${widget.customTitle}...'
+                    : 'Search ${_selectedType.displayName.toLowerCase()}...',
+                hasFilters: _hasActiveFilters,
+                onBackPressed: _handleBack,
+                onClearPressed: _clearSearch,
+                onSubmitted: _onSearchSubmitted,
+                onFilterPressed: _openAdvancedSearch,
+                margin: EdgeInsets.zero,
+              ),
+            ),
+            if (!isTrackerMode)
               Padding(
-                padding: const EdgeInsets.fromLTRB(8, 8, 8, 2),
-                child: UnifiedSearchBar(
-                  controller: _searchController,
-                  focusNode: _searchFocusNode,
-                  autofocus: false,
-                  leading: showBack ? null : const Icon(Icons.search_rounded),
-                  hintText: widget.customTitle != null
-                      ? 'Search in ${widget.customTitle}...'
-                      : 'Search ${_selectedType.displayName.toLowerCase()}...',
-                  hasFilters: _hasActiveFilters,
-                  onBackPressed: _handleBack,
-                  onClearPressed: _clearSearch,
-                  onSubmitted: _onSearchSubmitted,
-                  onFilterPressed: _openAdvancedSearch,
-                  margin: EdgeInsets.zero,
+                padding: const EdgeInsets.only(bottom: 8),
+                child: _buildSourceFilterTiles(
+                  context,
+                  prefs,
+                  colorScheme,
+                  uiRoundness,
                 ),
               ),
-              if (!isTrackerMode)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: _buildSourceFilterTiles(
-                    context,
-                    prefs,
-                    colorScheme,
-                    uiRoundness,
-                  ),
-                ),
-              if (_hasActiveNonTileFilters)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: _buildActiveFilterChips(colorScheme, uiRoundness),
-                ),
-              Expanded(
-                child: searchState == null
-                    ? (isTrackerMode
-                          ? _buildGenreGridView(
-                              context,
-                              colorScheme,
-                              uiRoundness,
-                              filtersAsync!,
-                            )
-                          : _buildSourceGridView(
-                              context,
-                              prefs,
-                              colorScheme,
-                              uiRoundness,
-                            ))
-                    : searchState.when(
-                        loading: () => _buildSkeletonGrid(),
-                        error: (e, _) => _buildErrorState(colorScheme, e),
-                        data: (result) {
-                          final items = result?.items ?? [];
-                          if (items.isEmpty) {
-                            return _buildEmptyState(colorScheme);
-                          }
-                          return _buildMediaGrid(
-                            items,
-                            result?.hasNextPage ?? false,
-                          );
-                        },
-                      ),
+            if (_hasActiveNonTileFilters)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: _buildActiveFilterChips(colorScheme, uiRoundness),
               ),
-            ],
-          ),
+            Expanded(
+              child: searchState == null
+                  ? (isTrackerMode
+                        ? _buildGenreGridView(
+                            context,
+                            colorScheme,
+                            uiRoundness,
+                            filtersAsync!,
+                          )
+                        : _buildSourceGridView(
+                            context,
+                            prefs,
+                            colorScheme,
+                            uiRoundness,
+                          ))
+                  : searchState.when(
+                      loading: () => _buildSkeletonGrid(),
+                      error: (e, _) => _buildErrorState(colorScheme, e),
+                      data: (result) {
+                        final items = result?.items ?? [];
+                        if (items.isEmpty) {
+                          return _buildEmptyState(colorScheme);
+                        }
+                        return _buildMediaGrid(
+                          items,
+                          result?.hasNextPage ?? false,
+                        );
+                      },
+                    ),
+            ),
+          ],
         ),
       ),
     );
@@ -705,55 +680,69 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
 
         return CustomScrollView(
           physics: const BouncingScrollPhysics(),
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           slivers: [
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
                 child: Row(
                   children: [
-                    Icon(
-                      isShowingGenres
-                          ? Icons.category_rounded
-                          : Icons.tag_rounded,
-                      size: 18,
-                      color: colorScheme.primary,
+                    Text(
+                      isShowingGenres ? 'Genres' : 'Tags',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: colorScheme.onSurface,
+                      ),
                     ),
                     const SizedBox(width: 8),
-                    Text(
-                      isShowingGenres ? 'Browse Genres' : 'Browse Tags',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: colorScheme.onSurface,
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colorScheme.surfaceContainerHigh,
+                        borderRadius: BorderRadius.circular(
+                          uiRoundness.clamp(6.0, 12.0),
+                        ),
+                      ),
+                      child: Text(
+                        '${items.length}',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ),
                     const Spacer(),
                     if (tags.isNotEmpty)
-                      SegmentedButton<int>(
-                        segments: [
-                          ButtonSegment(
-                            value: 0,
-                            label: Text('Genres (${genres.length})'),
-                            icon: const Icon(Icons.category_rounded, size: 14),
+                      Container(
+                        padding: const EdgeInsets.all(3),
+                        decoration: BoxDecoration(
+                          color: colorScheme.surfaceContainerHigh,
+                          borderRadius: BorderRadius.circular(
+                            uiRoundness.clamp(8.0, 20.0),
                           ),
-                          ButtonSegment(
-                            value: 1,
-                            label: Text('Tags (${tags.length})'),
-                            icon: const Icon(Icons.tag_rounded, size: 14),
-                          ),
-                        ],
-                        selected: {isShowingGenres ? 0 : 1},
-                        onSelectionChanged: (selected) {
-                          setState(() {
-                            _selectedQuickTileSection = selected.first;
-                          });
-                        },
-                        style: ButtonStyle(
-                          visualDensity: VisualDensity.compact,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          textStyle: WidgetStatePropertyAll(
-                            Theme.of(context).textTheme.labelMedium,
-                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _DiscoverModeTab(
+                              label: 'Genres',
+                              selected: isShowingGenres,
+                              radius: (uiRoundness - 2).clamp(6.0, 18.0),
+                              onTap: () =>
+                                  setState(() => _selectedQuickTileSection = 0),
+                            ),
+                            _DiscoverModeTab(
+                              label: 'Tags',
+                              selected: !isShowingGenres,
+                              radius: (uiRoundness - 2).clamp(6.0, 18.0),
+                              onTap: () =>
+                                  setState(() => _selectedQuickTileSection = 1),
+                            ),
+                          ],
                         ),
                       ),
                   ],
@@ -761,23 +750,21 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
               ),
             ),
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(12, 4, 12, 120),
-              sliver: SliverGrid(
-                gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                  maxCrossAxisExtent: 200,
-                  childAspectRatio: 1.55,
-                  crossAxisSpacing: 10,
-                  mainAxisSpacing: 10,
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 136),
+              sliver: SliverToBoxAdapter(
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (int i = 0; i < items.length; i++)
+                      _buildQuickTileCard(
+                        context: context,
+                        name: items[i],
+                        isTag: !isShowingGenres,
+                        uiRoundness: uiRoundness,
+                      ),
+                  ],
                 ),
-                delegate: SliverChildBuilderDelegate((context, index) {
-                  final name = items[index];
-                  return _buildQuickTileCard(
-                    context: context,
-                    name: name,
-                    isTag: !isShowingGenres,
-                    uiRoundness: uiRoundness,
-                  );
-                }, childCount: items.length),
               ),
             ),
           ],
@@ -835,22 +822,21 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
             ),
           ),
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(12, 4, 12, 120),
-            sliver: SliverGrid(
-              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                maxCrossAxisExtent: 200,
-                childAspectRatio: 1.55,
-                crossAxisSpacing: 10,
-                mainAxisSpacing: 10,
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 136),
+            sliver: SliverToBoxAdapter(
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final item in dummyItems)
+                    _buildQuickTileCard(
+                      context: context,
+                      name: item,
+                      isTag: false,
+                      uiRoundness: uiRoundness,
+                    ),
+                ],
               ),
-              delegate: SliverChildBuilderDelegate((context, index) {
-                return _buildQuickTileCard(
-                  context: context,
-                  name: dummyItems[index % dummyItems.length],
-                  isTag: false,
-                  uiRoundness: uiRoundness,
-                );
-              }, childCount: 10),
             ),
           ),
         ],
@@ -864,82 +850,24 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
     required bool isTag,
     required double uiRoundness,
   }) {
-    final gradient = _gradientForText(name);
-    final icon = _iconForGenreOrTag(name);
+    final colorScheme = Theme.of(context).colorScheme;
+    final radius = BorderRadius.circular(uiRoundness.clamp(10.0, 24.0));
 
     return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(uiRoundness),
+      color: colorScheme.surfaceContainerHigh,
+      borderRadius: radius,
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: () => _onQuickTileTap(name, isTag: isTag),
-        borderRadius: BorderRadius.circular(uiRoundness),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(uiRoundness),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                gradient[0].withValues(alpha: 0.85),
-                gradient[1].withValues(alpha: 0.65),
-              ],
+        borderRadius: radius,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          child: Text(
+            isTag ? '#$name' : name,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: colorScheme.onSurface,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: gradient[0].withValues(alpha: 0.25),
-                blurRadius: 8,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Stack(
-            children: [
-              Positioned(
-                right: -8,
-                bottom: -8,
-                child: Icon(
-                  icon,
-                  size: 64,
-                  color: Colors.white.withValues(alpha: 0.18),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.2),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(icon, size: 16, color: Colors.white),
-                    ),
-                    Text(
-                      name,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        letterSpacing: -0.2,
-                        shadows: [
-                          Shadow(
-                            color: Colors.black26,
-                            blurRadius: 4,
-                            offset: Offset(0, 1),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
           ),
         ),
       ),
@@ -1035,23 +963,17 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
 
         return CustomScrollView(
           physics: const BouncingScrollPhysics(),
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           slivers: [
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
                 child: Row(
                   children: [
-                    Icon(
-                      Icons.extension_rounded,
-                      size: 18,
-                      color: colorScheme.primary,
-                    ),
-                    const SizedBox(width: 8),
                     Text(
-                      'Available Sources',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
+                      'Sources',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
                         color: colorScheme.onSurface,
                       ),
                     ),
@@ -1068,25 +990,22 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
               ),
             ),
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(12, 4, 12, 120),
-              sliver: SliverGrid(
-                gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                  maxCrossAxisExtent: 220,
-                  childAspectRatio: 1.6,
-                  crossAxisSpacing: 10,
-                  mainAxisSpacing: 10,
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 136),
+              sliver: SliverToBoxAdapter(
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final source in sources)
+                      _buildSourceGridCard(
+                        context: context,
+                        source: source,
+                        isSelected: _selectedSources.contains(source.id),
+                        colorScheme: colorScheme,
+                        uiRoundness: uiRoundness,
+                      ),
+                  ],
                 ),
-                delegate: SliverChildBuilderDelegate((context, index) {
-                  final source = sources[index];
-                  final isSelected = _selectedSources.contains(source.id);
-                  return _buildSourceGridCard(
-                    context: context,
-                    source: source,
-                    isSelected: isSelected,
-                    colorScheme: colorScheme,
-                    uiRoundness: uiRoundness,
-                  );
-                }, childCount: sources.length),
               ),
             ),
           ],
@@ -1110,71 +1029,37 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
     required ColorScheme colorScheme,
     required double uiRoundness,
   }) {
+    final radius = BorderRadius.circular(uiRoundness.clamp(10.0, 24.0));
+
     return Material(
       color: isSelected
           ? colorScheme.primaryContainer
-          : colorScheme.surfaceContainerLow,
-      borderRadius: BorderRadius.circular(uiRoundness),
+          : colorScheme.surfaceContainerHigh,
+      borderRadius: radius,
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: () => _toggleSource(source.id),
-        borderRadius: BorderRadius.circular(uiRoundness),
-        child: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(uiRoundness),
-            border: Border.all(
-              color: isSelected
-                  ? colorScheme.primary
-                  : colorScheme.outlineVariant.withValues(alpha: 0.3),
-              width: isSelected ? 1.5 : 1,
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        borderRadius: radius,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Row(
-                children: [
-                  _buildSourceIcon(
-                    source,
-                    colorScheme,
-                    size: 24,
-                    radius: uiRoundness * 0.4,
-                  ),
-                  const Spacer(),
-                  if (isSelected)
-                    Icon(
-                      Icons.check_circle_rounded,
-                      size: 18,
-                      color: colorScheme.primary,
-                    ),
-                ],
+              _buildSourceIcon(
+                source,
+                colorScheme,
+                size: 18,
+                radius: (uiRoundness * 0.4).clamp(4.0, 8.0),
               ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    source.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: isSelected
-                          ? colorScheme.onPrimaryContainer
-                          : colorScheme.onSurface,
-                    ),
-                  ),
-                  Text(
-                    source.type == SourceType.inbuilt
-                        ? 'Built-in'
-                        : 'Extension',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
+              const SizedBox(width: 8),
+              Text(
+                source.name,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: isSelected
+                      ? colorScheme.onPrimaryContainer
+                      : colorScheme.onSurface,
+                ),
               ),
             ],
           ),
@@ -1198,7 +1083,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
         if (sources.isEmpty) {
           return SingleChildScrollView(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               children: [
                 ActionChip(
@@ -1219,7 +1104,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
 
         return SingleChildScrollView(
           scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           physics: const BouncingScrollPhysics(),
           child: Row(
             children: [
@@ -1349,7 +1234,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
   Widget _buildActiveFilterChips(ColorScheme colorScheme, double uiRoundness) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
           ..._selectedGenres.map(
@@ -1446,15 +1331,16 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
     return CustomScrollView(
       controller: _scrollController,
       physics: const AlwaysScrollableScrollPhysics(),
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       slivers: [
         SliverPadding(
-          padding: const EdgeInsets.fromLTRB(12, 6, 12, 160),
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 136),
           sliver: SliverGrid(
             gridDelegate: SliverGridDelegateWithMinCrossAxisExtent(
               minCrossAxisExtent: layout.width,
               childAspectRatio: layout.aspectRatio,
-              crossAxisSpacing: 10,
-              mainAxisSpacing: 10,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
             ),
             delegate: SliverChildBuilderDelegate((context, index) {
               final media = items[index];
@@ -1499,12 +1385,12 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
     return Skeletonizer(
       enabled: true,
       child: GridView.builder(
-        padding: const EdgeInsets.fromLTRB(12, 6, 12, 160),
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 136),
         gridDelegate: SliverGridDelegateWithMinCrossAxisExtent(
           minCrossAxisExtent: layout.width,
           childAspectRatio: layout.aspectRatio,
-          crossAxisSpacing: 10,
-          mainAxisSpacing: 10,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
         ),
         itemCount: 12,
         itemBuilder: (context, index) {
@@ -1611,6 +1497,44 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
               },
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DiscoverModeTab extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final double radius;
+  final VoidCallback onTap;
+
+  const _DiscoverModeTab({
+    required this.label,
+    required this.selected,
+    required this.radius,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Material(
+      color: selected ? cs.primaryContainer : Colors.transparent,
+      borderRadius: BorderRadius.circular(radius),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(radius),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+              color: selected ? cs.onPrimaryContainer : cs.onSurfaceVariant,
+            ),
+          ),
         ),
       ),
     );

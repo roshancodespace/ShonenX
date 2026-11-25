@@ -350,7 +350,7 @@ jobs:
   build-windows:
     needs: resolve-release-tag
     if: github.event_name == 'push' || github.event.inputs.build_windows == 'true'
-    runs-on: windows-2022
+    runs-on: windows-latest
 
     steps:
       - uses: actions/checkout@v4

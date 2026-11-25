@@ -9,6 +9,7 @@ import 'package:shonenx/features/tracking/providers/tracker_profile_provider.dar
 import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
 import 'package:shonenx/features/tracking/providers/tracking_prefs_provider.dart';
 import 'package:shonenx/shared/providers/navbar_action_provider.dart';
+import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
 import 'package:shonenx/shared/widgets/media_switcher_overlay.dart';
@@ -130,52 +131,100 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
                 )] !=
                 null)
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8.0),
-            child: SegmentedButton<LibraryMode>(
-              style: ButtonStyle(
-                padding: WidgetStateProperty.all(
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
-                ),
-                minimumSize: WidgetStateProperty.all(const Size(48, 40)),
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                visualDensity: VisualDensity.compact,
-              ),
-              showSelectedIcon: false,
-              segments: [
-                ButtonSegment<LibraryMode>(
-                  value: LibraryMode.cloud,
-                  icon: Icon(
-                    viewState.mode == LibraryMode.cloud
-                        ? Icons.cloud
-                        : Icons.cloud_outlined,
-                  ),
-                  tooltip: context.l10n.libraryCloud,
-                ),
-                ButtonSegment<LibraryMode>(
-                  value: LibraryMode.local,
-                  icon: Icon(
-                    viewState.mode == LibraryMode.local
-                        ? Icons.folder
-                        : Icons.folder_outlined,
-                  ),
-                  tooltip: context.l10n.libraryLocal,
-                ),
-              ],
-              selected: {viewState.mode},
-              onSelectionChanged: (Set<LibraryMode> newSelection) {
-                ref
-                    .read(libraryViewStateProvider.notifier)
-                    .setMode(newSelection.first);
+            padding: const EdgeInsets.only(right: 12),
+            child: _LibraryModeToggle(
+              mode: viewState.mode,
+              onChanged: (mode) {
+                ref.read(libraryViewStateProvider.notifier).setMode(mode);
               },
             ),
           ),
-        const SizedBox(width: 10),
       ],
       body: Column(
         children: const [
           LibraryFiltersWidget(),
           Expanded(child: LibraryGridWidget()),
         ],
+      ),
+    );
+  }
+}
+
+class _LibraryModeToggle extends StatelessWidget {
+  final LibraryMode mode;
+  final ValueChanged<LibraryMode> onChanged;
+
+  const _LibraryModeToggle({required this.mode, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final radius = GlobalUI.uiRoundness.clamp(10.0, 22.0);
+    final innerRadius = (radius - 3).clamp(7.0, 19.0);
+
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(radius),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildButton(
+            context: context,
+            cs: cs,
+            icon: mode == LibraryMode.cloud
+                ? Icons.cloud_rounded
+                : Icons.cloud_outlined,
+            tooltip: context.l10n.libraryCloud,
+            selected: mode == LibraryMode.cloud,
+            radius: innerRadius,
+            onTap: () => onChanged(LibraryMode.cloud),
+          ),
+          _buildButton(
+            context: context,
+            cs: cs,
+            icon: mode == LibraryMode.local
+                ? Icons.folder_rounded
+                : Icons.folder_outlined,
+            tooltip: context.l10n.libraryLocal,
+            selected: mode == LibraryMode.local,
+            radius: innerRadius,
+            onTap: () => onChanged(LibraryMode.local),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildButton({
+    required BuildContext context,
+    required ColorScheme cs,
+    required IconData icon,
+    required String tooltip,
+    required bool selected,
+    required double radius,
+    required VoidCallback onTap,
+  }) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: selected ? cs.primaryContainer : Colors.transparent,
+        borderRadius: BorderRadius.circular(radius),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(radius),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            child: Icon(
+              icon,
+              size: 18,
+              color: selected ? cs.onPrimaryContainer : cs.onSurfaceVariant,
+            ),
+          ),
+        ),
       ),
     );
   }

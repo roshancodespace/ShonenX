@@ -409,11 +409,13 @@ jobs:
         run: flutter pub upgrade
 
       - name: Build Windows app
-        shell: bash
+        shell: pwsh
         run: |
-          flutter build windows --release --dart-define-from-file=keys.json || {
-            echo "First build failed (likely due to media_kit libmpv download race condition). Retrying..."
-            flutter build windows --release --dart-define-from-file=keys.json
+          flutter build windows --release --dart-define-from-file=keys.json
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "First build failed. Retrying with verbose logs..."
+            flutter build windows --release --verbose --dart-define-from-file=keys.json
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }
 
       - name: Create Windows Portable Zip

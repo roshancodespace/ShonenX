@@ -12,6 +12,7 @@ import 'package:shonenx/features/settings/presentation/widgets/subtitle_translat
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
 import 'package:shonenx/shared/models/video_server.dart';
 import 'package:shonenx/core/utils/stream_cleaner.dart';
+import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/shared/widgets/app_dialog.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
 
@@ -78,10 +79,11 @@ class PlayerSettingsScreen extends ConsumerWidget {
                 customizeLabel: l10n.settingsAdvancedSettings,
                 customizeIcon: Icons.settings_outlined,
                 onCustomize: () {
-                  showModalBottomSheet(
+                  AppBottomSheet.show(
                     context: context,
-                    isScrollControlled: true,
-                    builder: (_) => const MediaKitAdvancedSettings(),
+                    title: l10n.playerMediaKitTitle,
+                    titleIcon: Icons.tune_rounded,
+                    child: const MediaKitAdvancedSettings(),
                   );
                 },
               ),

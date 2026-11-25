@@ -2,21 +2,301 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 
 import 'package:shonenx/core/localization/l10n_extension.dart';
+import 'package:shonenx/shared/widgets/m3e_slider.dart';
 
-const _tileContentPadding = EdgeInsets.symmetric(horizontal: 10);
-const _tileTitleStyle = TextStyle(fontWeight: FontWeight.w600);
-const _sectionHeaderPadding = EdgeInsets.fromLTRB(10, 10, 10, 6);
-const _chevronSize = 20.0;
+const _compactBreakpoint = 400.0;
+const _narrowTileWidth = 360.0;
+const _outerRadius = 24.0;
+const _innerRadius = 8.0;
+const _badgeRadius = 14.0;
+const _groupGap = 3.0;
+const _minTileHeight = 64.0;
+const _morphDuration = Duration(milliseconds: 220);
+const _sectionPadding = EdgeInsets.symmetric(horizontal: 12);
+const _headerPadding = EdgeInsets.fromLTRB(16, 16, 16, 8);
 
-TextStyle _subtitleStyle(ColorScheme colors) =>
-    TextStyle(fontSize: 12, color: colors.onSurfaceVariant);
+extension _Responsive on BuildContext {
+  double get _width => MediaQuery.sizeOf(this).width;
+  bool get _isCompact => _width < _compactBreakpoint;
+}
+
+enum _Position { single, first, middle, last }
+
+extension _PositionRadius on _Position {
+  BorderRadius get radius {
+    const outer = Radius.circular(_outerRadius);
+    const inner = Radius.circular(_innerRadius);
+    return switch (this) {
+      _Position.single => const BorderRadius.all(outer),
+      _Position.first => const BorderRadius.vertical(top: outer, bottom: inner),
+      _Position.middle => const BorderRadius.all(inner),
+      _Position.last => const BorderRadius.vertical(top: inner, bottom: outer),
+    };
+  }
+}
+
+class _GroupPosition extends InheritedWidget {
+  final _Position position;
+
+  const _GroupPosition({required this.position, required super.child});
+
+  static _Position of(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<_GroupPosition>()?.position ??
+      _Position.single;
+
+  @override
+  bool updateShouldNotify(_GroupPosition oldWidget) =>
+      position != oldWidget.position;
+}
+
+Text _title(
+  ColorScheme colors,
+  String text, {
+  Color? color,
+  int? maxLines,
+  TextOverflow? overflow,
+}) => Text(
+  text,
+  maxLines: maxLines,
+  overflow: overflow,
+  style: TextStyle(
+    fontSize: 16,
+    height: 1.25,
+    fontWeight: FontWeight.w600,
+    color: color ?? colors.onSurface,
+  ),
+);
+
+Text? _subtitle(
+  ColorScheme colors,
+  String? text, {
+  Color? color,
+  FontWeight? weight,
+  int? maxLines,
+  TextOverflow? overflow,
+}) => text == null
+    ? null
+    : Text(
+        text,
+        maxLines: maxLines,
+        overflow: overflow,
+        style: TextStyle(
+          fontSize: 13,
+          height: 1.3,
+          fontWeight: weight,
+          color: color ?? colors.onSurfaceVariant,
+        ),
+      );
 
 TextStyle _sectionLabelStyle(ColorScheme colors) => TextStyle(
   fontSize: 12,
-  fontWeight: FontWeight.w700,
-  letterSpacing: 1.1,
+  fontWeight: FontWeight.w800,
+  letterSpacing: 1.2,
   color: colors.primary,
 );
+
+class _IconBadge extends StatelessWidget {
+  final IconData icon;
+  final Color background;
+  final Color foreground;
+
+  const _IconBadge({
+    required this.icon,
+    required this.background,
+    required this.foreground,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox.square(
+      dimension: context._isCompact ? 36 : 40,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: background,
+          borderRadius: BorderRadius.circular(_badgeRadius),
+        ),
+        child: Icon(icon, size: 22, color: foreground),
+      ),
+    );
+  }
+}
+
+Widget? _leading(
+  ColorScheme colors,
+  IconData? icon,
+  Widget? leading, {
+  Color? background,
+  Color? foreground,
+}) =>
+    leading ??
+    (icon == null
+        ? null
+        : _IconBadge(
+            icon: icon,
+            background: background ?? colors.secondaryContainer,
+            foreground: foreground ?? colors.onSecondaryContainer,
+          ));
+
+class _Tile extends StatefulWidget {
+  final Widget? leading;
+  final Widget? title;
+  final Widget? subtitle;
+  final Widget? body;
+  final Widget Function(bool narrow)? control;
+  final bool stackWhenNarrow;
+  final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
+  final Color? color;
+  final EdgeInsetsGeometry? padding;
+
+  const _Tile({
+    this.leading,
+    this.title,
+    this.subtitle,
+    this.body,
+    this.control,
+    this.stackWhenNarrow = true,
+    this.onTap,
+    this.onLongPress,
+    this.color,
+    this.padding,
+  });
+
+  @override
+  State<_Tile> createState() => _TileState();
+}
+
+class _TileState extends State<_Tile> {
+  bool _pressed = false;
+  bool _hovered = false;
+  bool _focused = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final radius = _pressed
+        ? BorderRadius.circular(_outerRadius)
+        : _GroupPosition.of(context).radius;
+    final overlay = _pressed
+        ? 0.12
+        : (_hovered || _focused)
+        ? 0.08
+        : 0.0;
+    final base = widget.color ?? colors.surfaceContainerHigh;
+    final fill = overlay == 0
+        ? base
+        : Color.alphaBlend(colors.onSurface.withValues(alpha: overlay), base);
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final narrow = constraints.maxWidth < _narrowTileWidth;
+        final control = widget.control?.call(narrow);
+        final stacked = narrow && widget.stackWhenNarrow && control != null;
+
+        return AnimatedContainer(
+          duration: _morphDuration,
+          curve: Curves.easeOutCubic,
+          decoration: BoxDecoration(color: fill, borderRadius: radius),
+          foregroundDecoration: _focused
+              ? BoxDecoration(
+                  borderRadius: radius,
+                  border: Border.all(color: colors.primary, width: 2),
+                )
+              : null,
+          child: Material(
+            type: MaterialType.transparency,
+            child: InkWell(
+              onTap: widget.onTap,
+              onLongPress: widget.onLongPress,
+              canRequestFocus: widget.onTap != null,
+              borderRadius: radius,
+              splashFactory: NoSplash.splashFactory,
+              overlayColor: const WidgetStatePropertyAll(Colors.transparent),
+              onHighlightChanged: widget.onTap == null
+                  ? null
+                  : (v) => setState(() => _pressed = v),
+              onHover: widget.onTap == null
+                  ? null
+                  : (v) => setState(() => _hovered = v),
+              onFocusChange: widget.onTap == null
+                  ? null
+                  : (v) => setState(
+                      () => _focused =
+                          v &&
+                          FocusManager.instance.highlightMode ==
+                              FocusHighlightMode.traditional,
+                    ),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: _minTileHeight),
+                child: Padding(
+                  padding:
+                      widget.padding ??
+                      EdgeInsets.symmetric(
+                        horizontal: narrow ? 12 : 16,
+                        vertical: 12,
+                      ),
+                  child: Row(
+                    children: [
+                      if (widget.leading != null) ...[
+                        widget.leading!,
+                        SizedBox(width: narrow ? 12 : 16),
+                      ],
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (widget.title != null) widget.title!,
+                            if (widget.subtitle != null) ...[
+                              const SizedBox(height: 2),
+                              widget.subtitle!,
+                            ],
+                            if (stacked) ...[
+                              const SizedBox(height: 10),
+                              SizedBox(width: double.infinity, child: control),
+                            ],
+                            if (widget.body != null) ...[
+                              const SizedBox(height: 6),
+                              SizedBox(
+                                width: double.infinity,
+                                child: widget.body!,
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      if (control != null && !stacked) ...[
+                        const SizedBox(width: 12),
+                        control,
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _InfoButton extends StatelessWidget {
+  final VoidCallback onPressed;
+  final String? tooltip;
+
+  const _InfoButton({required this.onPressed, this.tooltip});
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      icon: const Icon(Icons.info_outline_rounded, size: 20),
+      visualDensity: VisualDensity.compact,
+      tooltip: tooltip,
+      onPressed: onPressed,
+    );
+  }
+}
 
 class SettingsSection extends StatelessWidget {
   final String title;
@@ -30,6 +310,13 @@ class SettingsSection extends StatelessWidget {
     required this.children,
   });
 
+  _Position _positionOf(int index) {
+    if (children.length == 1) return _Position.single;
+    if (index == 0) return _Position.first;
+    if (index == children.length - 1) return _Position.last;
+    return _Position.middle;
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
@@ -38,22 +325,27 @@ class SettingsSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: _sectionHeaderPadding,
+          padding: _headerPadding,
           child: Text(title.toUpperCase(), style: _sectionLabelStyle(colors)),
         ),
         if (subtitle != null)
           Padding(
-            padding: _tileContentPadding,
-            child: Text(subtitle!, style: _subtitleStyle(colors)),
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: _subtitle(colors, subtitle),
           ),
         Padding(
-          padding: _tileContentPadding,
+          padding: _sectionPadding,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: children,
+            children: [
+              for (var i = 0; i < children.length; i++) ...[
+                if (i > 0) const SizedBox(height: _groupGap),
+                _GroupPosition(position: _positionOf(i), child: children[i]),
+              ],
+            ],
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
       ],
     );
   }
@@ -79,22 +371,15 @@ class SettingsNavTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final colors = Theme.of(context).colorScheme;
 
-    return ListTile(
-      contentPadding: _tileContentPadding,
-      leading:
-          leading ??
-          (icon != null ? Icon(icon, color: theme.colorScheme.primary) : null),
-      title: Text(title, style: _tileTitleStyle),
-      subtitle: subtitle != null
-          ? Text(subtitle!, style: _subtitleStyle(theme.colorScheme))
-          : null,
-      trailing: Icon(
-        Icons.chevron_right,
-        size: _chevronSize,
-        color: theme.colorScheme.onSurfaceVariant,
-      ),
+    return _Tile(
+      stackWhenNarrow: false,
+      leading: _leading(colors, icon, leading),
+      title: _title(colors, title),
+      subtitle: _subtitle(colors, subtitle),
+      control: (_) =>
+          Icon(Icons.chevron_right_rounded, color: colors.onSurfaceVariant),
       onTap: onTap,
       onLongPress: onLongPress,
     );
@@ -123,31 +408,29 @@ class SettingsSwitchTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final colors = Theme.of(context).colorScheme;
 
-    return ListTile(
-      contentPadding: _tileContentPadding,
-      leading:
-          leading ??
-          (icon != null ? Icon(icon, color: theme.colorScheme.primary) : null),
-      title: Text(title, style: _tileTitleStyle),
-      subtitle: subtitle != null
-          ? Text(subtitle!, style: _subtitleStyle(theme.colorScheme))
-          : null,
-      trailing: Row(
+    return _Tile(
+      stackWhenNarrow: false,
+      leading: _leading(colors, icon, leading),
+      title: _title(colors, title),
+      subtitle: _subtitle(colors, subtitle),
+      control: (_) => Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (onInfoCallback != null)
-            IconButton(
-              icon: const Icon(Icons.info_outline, size: 20),
-              visualDensity: VisualDensity.compact,
-              splashRadius: 20,
-              onPressed: onInfoCallback,
+          if (onInfoCallback != null) _InfoButton(onPressed: onInfoCallback!),
+          Switch.adaptive(
+            value: value,
+            onChanged: onChanged,
+            thumbIcon: WidgetStateProperty.resolveWith<Icon?>(
+              (states) => states.contains(WidgetState.selected)
+                  ? const Icon(Icons.check_rounded)
+                  : null,
             ),
-          Switch.adaptive(value: value, onChanged: onChanged),
+          ),
         ],
       ),
-      onTap: onChanged != null ? () => onChanged!(!value) : null,
+      onTap: onChanged == null ? null : () => onChanged!(!value),
     );
   }
 }
@@ -188,37 +471,37 @@ class SettingsActionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final color = isDestructive ? theme.colorScheme.error : foregroundColor;
+    final colors = Theme.of(context).colorScheme;
+    final tint = isDestructive ? colors.onErrorContainer : foregroundColor;
+    final badgeColor = tint ?? accentColor ?? colors.onSecondaryContainer;
 
-    return ListTile(
-      contentPadding: _tileContentPadding,
-      tileColor: tileColor,
-      textColor: color,
-      iconColor: color,
-      leading:
-          leading ??
-          (icon != null
-              ? Icon(
-                  icon,
-                  color: color ?? accentColor ?? theme.colorScheme.primary,
-                )
-              : null),
-      title: Text(
+    return _Tile(
+      stackWhenNarrow: false,
+      color: tileColor ?? (isDestructive ? colors.errorContainer : null),
+      leading: _leading(
+        colors,
+        icon,
+        leading,
+        foreground: badgeColor,
+        background: tint == null && accentColor == null
+            ? null
+            : badgeColor.withValues(alpha: 0.16),
+      ),
+      title: _title(
+        colors,
         title,
+        color: tint,
         maxLines: titleMaxLines,
         overflow: titleOverflow,
-        style: _tileTitleStyle.copyWith(color: color),
       ),
-      subtitle: subtitle != null
-          ? Text(
-              subtitle!,
-              maxLines: subtitleMaxLines,
-              overflow: subtitleOverflow,
-              style: _subtitleStyle(theme.colorScheme),
-            )
-          : null,
-      trailing: trailing,
+      subtitle: _subtitle(
+        colors,
+        subtitle,
+        color: tint?.withValues(alpha: 0.8),
+        maxLines: subtitleMaxLines,
+        overflow: subtitleOverflow,
+      ),
+      control: trailing == null ? null : (_) => trailing!,
       onTap: onTap,
     );
   }
@@ -229,7 +512,7 @@ class SettingsSegmentedTile<T> extends StatelessWidget {
   final List<ButtonSegment<T>> segments;
   final Set<T> selected;
   final void Function(Set<T>)? onSelectionChanged;
-  final EdgeInsetsGeometry padding;
+  final EdgeInsetsGeometry? padding;
 
   const SettingsSegmentedTile({
     super.key,
@@ -237,32 +520,37 @@ class SettingsSegmentedTile<T> extends StatelessWidget {
     required this.segments,
     required this.selected,
     this.onSelectionChanged,
-    this.padding = const EdgeInsets.symmetric(horizontal: 10.0, vertical: 8.0),
+    this.padding,
   });
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final colors = Theme.of(context).colorScheme;
 
-    return Padding(
+    return _Tile(
       padding: padding,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (title != null) ...[
-            Text(title!, style: _sectionLabelStyle(theme.colorScheme)),
-            const SizedBox(height: 12),
-          ],
-          SegmentedButton<T>(
-            segments: segments,
-            selected: selected,
-            onSelectionChanged: onSelectionChanged,
-            style: SegmentedButton.styleFrom(
-              visualDensity: VisualDensity.adaptivePlatformDensity,
-            ),
+      title: title == null
+          ? null
+          : Text(title!, style: _sectionLabelStyle(colors)),
+      control: (narrow) {
+        final button = SegmentedButton<T>(
+          segments: segments,
+          selected: selected,
+          onSelectionChanged: onSelectionChanged,
+          showSelectedIcon: !context._isCompact,
+          style: SegmentedButton.styleFrom(
+            visualDensity: VisualDensity.adaptivePlatformDensity,
+            backgroundColor: colors.surfaceContainerHighest,
+            foregroundColor: colors.onSurfaceVariant,
+            selectedBackgroundColor: colors.primary,
+            selectedForegroundColor: colors.onPrimary,
+            side: BorderSide.none,
           ),
-        ],
-      ),
+        );
+        return narrow
+            ? FittedBox(fit: BoxFit.scaleDown, child: button)
+            : button;
+      },
     );
   }
 }
@@ -283,15 +571,22 @@ class SettingsRadioTile<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: _tileContentPadding,
+    final colors = Theme.of(context).colorScheme;
+    final isSelected = value == groupValue;
+
+    return _Tile(
+      color: isSelected ? colors.primaryContainer : null,
       leading: Radio<T>(
         value: value,
         groupValue: groupValue,
         onChanged: onChanged,
       ),
-      title: Text(title, style: _tileTitleStyle),
-      onTap: onChanged != null ? () => onChanged!(value) : null,
+      title: _title(
+        colors,
+        title,
+        color: isSelected ? colors.onPrimaryContainer : null,
+      ),
+      onTap: onChanged == null ? null : () => onChanged!(value),
     );
   }
 }
@@ -330,14 +625,11 @@ class _SettingsSliderTileState extends State<SettingsSliderTile> {
   FocusNode? _internalFocusNode;
 
   FocusNode get _effectiveFocusNode =>
-      widget.focusNode ?? (_internalFocusNode ??= _createFocusNode());
-
-  FocusNode _createFocusNode() {
-    return FocusNode(
-      debugLabel: 'SettingsSliderTile_${widget.title}',
-      onKeyEvent: _handleKeyEvent,
-    );
-  }
+      widget.focusNode ??
+      (_internalFocusNode ??= FocusNode(
+        debugLabel: 'SettingsSliderTile_${widget.title}',
+        onKeyEvent: _handleKeyEvent,
+      ));
 
   @override
   void dispose() {
@@ -345,81 +637,59 @@ class _SettingsSliderTileState extends State<SettingsSliderTile> {
     super.dispose();
   }
 
-  double _calculateNewValue(double delta) {
+  void _step(double direction) {
+    final onChanged = widget.onChanged;
     final range = widget.max - widget.min;
-    if (range <= 0) return widget.value;
+    if (onChanged == null || range <= 0) return;
 
-    final step = widget.divisions > 0 ? range / widget.divisions : range / 20.0;
-    final rawNewValue = (widget.value + delta * step).clamp(
-      widget.min,
-      widget.max,
+    final step = range / (widget.divisions > 0 ? widget.divisions : 20);
+    final next = double.parse(
+      (widget.value + direction * step)
+          .clamp(widget.min, widget.max)
+          .toStringAsFixed(4),
     );
-
-    if (widget.divisions > 0) {
-      final fraction = (rawNewValue - widget.min) / range;
-      final roundedFraction =
-          (fraction * widget.divisions).round() / widget.divisions;
-      final stepped = widget.min + roundedFraction * range;
-      return double.parse(
-        stepped.clamp(widget.min, widget.max).toStringAsFixed(4),
-      );
-    }
-    return rawNewValue;
+    if (next != widget.value) onChanged(next);
   }
 
   KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
-    if (event is KeyDownEvent || event is KeyRepeatEvent) {
-      if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
-        node.focusInDirection(TraversalDirection.up);
-        return KeyEventResult.handled;
-      } else if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
-        node.focusInDirection(TraversalDirection.down);
-        return KeyEventResult.handled;
-      } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
-        if (widget.onChanged != null) {
-          final next = _calculateNewValue(1.0);
-          if (next != widget.value) {
-            widget.onChanged!(next);
-          }
-        }
-        return KeyEventResult.handled;
-      } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
-        if (widget.onChanged != null) {
-          final next = _calculateNewValue(-1.0);
-          if (next != widget.value) {
-            widget.onChanged!(next);
-          }
-        }
-        return KeyEventResult.handled;
-      }
+    if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
+      return KeyEventResult.ignored;
     }
-    return KeyEventResult.ignored;
+
+    final key = event.logicalKey;
+    if (key == LogicalKeyboardKey.arrowUp) {
+      node.focusInDirection(TraversalDirection.up);
+    } else if (key == LogicalKeyboardKey.arrowDown) {
+      node.focusInDirection(TraversalDirection.down);
+    } else if (key == LogicalKeyboardKey.arrowRight) {
+      _step(1);
+    } else if (key == LogicalKeyboardKey.arrowLeft) {
+      _step(-1);
+    } else {
+      return KeyEventResult.ignored;
+    }
+    return KeyEventResult.handled;
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = theme.colorScheme;
 
-    return ListTile(
-      contentPadding: _tileContentPadding,
-      leading: Icon(widget.icon, color: theme.colorScheme.primary),
-      title: Text(widget.title, style: _tileTitleStyle),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 2),
-          if (widget.subtitle != null)
-            Text(widget.subtitle!, style: _subtitleStyle(theme.colorScheme)),
-          Slider.adaptive(
-            focusNode: _effectiveFocusNode,
-            value: widget.value,
-            min: widget.min,
-            max: widget.max,
-            divisions: widget.divisions,
-            label: widget.label,
-            onChanged: widget.onChanged,
-          ),
-        ],
+    return _Tile(
+      stackWhenNarrow: false,
+      leading: _leading(colors, widget.icon, null),
+      title: _title(colors, widget.title),
+      subtitle: _subtitle(colors, widget.subtitle),
+      control: (_) => SettingsValueChip(label: widget.label),
+      body: M3ESlider(
+        focusNode: _effectiveFocusNode,
+        value: widget.value,
+        min: widget.min,
+        max: widget.max,
+        divisions: widget.divisions,
+        label: widget.label,
+        onChanged: widget.onChanged,
       ),
     );
   }
@@ -449,41 +719,63 @@ class SettingsDropdownTile<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final colors = Theme.of(context).colorScheme;
 
-    return ListTile(
-      contentPadding: _tileContentPadding,
-      leading: Icon(icon, color: theme.colorScheme.primary),
-      title: Text(title, style: _tileTitleStyle),
-      subtitle: subtitle != null
-          ? Text(subtitle!, style: _subtitleStyle(theme.colorScheme))
-          : null,
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (onInfoCallback != null) ...[
-            IconButton(
-              icon: const Icon(Icons.info_outline, size: 20),
-              visualDensity: VisualDensity.compact,
-              splashRadius: 20,
-              tooltip: context.l10n.settingsInfo,
-              onPressed: onInfoCallback,
-            ),
-            const SizedBox(width: 4),
-          ],
-          DropdownButtonHideUnderline(
-            child: DropdownButton<T>(
-              value: value,
-              items: items,
-              onChanged: onChanged,
-              isDense: true,
-              alignment: AlignmentDirectional.centerEnd,
-              borderRadius: BorderRadius.circular(12),
-              selectedItemBuilder: selectedItemBuilder,
+    return _Tile(
+      leading: _leading(colors, icon, null),
+      title: _title(colors, title),
+      subtitle: _subtitle(colors, subtitle),
+      control: (narrow) {
+        final dropdown = Material(
+          color: colors.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(16),
+          clipBehavior: Clip.antiAlias,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<T>(
+                value: value,
+                items: items,
+                onChanged: onChanged,
+                isDense: true,
+                isExpanded: true,
+                focusColor: Colors.transparent,
+                icon: const Icon(Icons.expand_more_rounded),
+                dropdownColor: colors.surfaceContainerHigh,
+                alignment: AlignmentDirectional.centerStart,
+                borderRadius: BorderRadius.circular(16),
+                selectedItemBuilder: selectedItemBuilder,
+              ),
             ),
           ),
-        ],
-      ),
+        );
+        final info = onInfoCallback == null
+            ? null
+            : _InfoButton(
+                onPressed: onInfoCallback!,
+                tooltip: context.l10n.settingsInfo,
+              );
+
+        if (narrow) {
+          return Row(
+            children: [
+              Expanded(child: dropdown),
+              if (info != null) info,
+            ],
+          );
+        }
+
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (info != null) info,
+            SizedBox(
+              width: (context._width * 0.3).clamp(110.0, 200.0),
+              child: dropdown,
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -512,43 +804,39 @@ class SettingsSelectionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final colors = Theme.of(context).colorScheme;
+    final label = customizeLabel ?? context.l10n.settingsCustomize;
 
-    return ListTile(
-      contentPadding: _tileContentPadding,
-      selected: isSelected,
-      selectedTileColor: theme.colorScheme.primaryContainer.withValues(
-        alpha: 0.3,
-      ),
-      selectedColor: theme.colorScheme.primary,
-      leading:
-          leading ??
-          Icon(
-            isSelected ? Icons.check_circle_rounded : Icons.circle_outlined,
-            color: isSelected
-                ? theme.colorScheme.primary
-                : theme.colorScheme.onSurfaceVariant,
-          ),
-      title: Text(title, style: _tileTitleStyle),
-      subtitle: Text(
-        subtitle,
-        style: TextStyle(
-          fontWeight: isSelected ? FontWeight.w700 : FontWeight.normal,
-          color: isSelected ? theme.colorScheme.onPrimaryContainer : null,
-        ),
-      ),
+    return _Tile(
+      color: isSelected ? colors.primaryContainer : null,
       onTap: onSelect,
-      trailing: onCustomize != null
-          ? FilledButton.icon(
-              style: IconButton.styleFrom(
-                backgroundColor: theme.colorScheme.surfaceContainerHighest,
-                foregroundColor: theme.colorScheme.onSurface,
-              ),
+      leading: _leading(
+        colors,
+        isSelected ? Icons.check_rounded : Icons.circle_outlined,
+        leading,
+        background: isSelected
+            ? colors.primary
+            : colors.surfaceContainerHighest,
+        foreground: isSelected ? colors.onPrimary : colors.onSurfaceVariant,
+      ),
+      title: _title(
+        colors,
+        title,
+        color: isSelected ? colors.onPrimaryContainer : null,
+      ),
+      subtitle: _subtitle(
+        colors,
+        subtitle,
+        color: isSelected ? colors.onPrimaryContainer : null,
+        weight: isSelected ? FontWeight.w700 : FontWeight.normal,
+      ),
+      control: onCustomize == null
+          ? null
+          : (_) => FilledButton.tonalIcon(
               onPressed: onCustomize,
               icon: Icon(customizeIcon, size: 18),
-              label: Text(customizeLabel ?? context.l10n.settingsCustomize),
-            )
-          : null,
+              label: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
+            ),
     );
   }
 }
@@ -562,20 +850,52 @@ class SettingsValueChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: colors.primary.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          color: colors.primary,
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: context._width * 0.4),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: colors.secondaryContainer,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: colors.onSecondaryContainer,
+            ),
+          ),
         ),
       ),
+    );
+  }
+}
+
+class SettingsCustomTile extends StatelessWidget {
+  final Widget child;
+  final EdgeInsetsGeometry? padding;
+  final Color? color;
+  final VoidCallback? onTap;
+
+  const SettingsCustomTile({
+    super.key,
+    required this.child,
+    this.padding,
+    this.color,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return _Tile(
+      padding: padding ?? const EdgeInsets.fromLTRB(16, 8, 16, 14),
+      color: color,
+      onTap: onTap,
+      body: child,
     );
   }
 }

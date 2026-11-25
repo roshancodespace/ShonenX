@@ -24,21 +24,21 @@ class SubtitlePrefs {
   const SubtitlePrefs({
     this.useCustomSubtitle = true,
     this.fontSize = 1.0,
-    this.fontColor = 0xFFFFFFFF, // White
-    this.backgroundColor = 0x80000000, // Semi-transparent black
-    this.outlineColor = 0xFF000000, // Black
-    this.bottomPadding = 20.0,
+    this.fontColor = 0xFFFFFFFF,
+    this.backgroundColor = 0x00000000,
+    this.outlineColor = 0xFF000000,
+    this.bottomPadding = 24.0,
     this.bold = true,
-    this.outlineSize = 1.5,
-    this.shadowColor = 0x00000000, // Transparent
-    this.shadowOffsetX = 2.0,
-    this.shadowOffsetY = 2.0,
+    this.outlineSize = 2.5,
+    this.shadowColor = 0xB3000000,
+    this.shadowOffsetX = 0.0,
+    this.shadowOffsetY = 1.5,
     this.shadowBlur = 4.0,
     this.fontFamily = 'Default',
     this.letterSpacing = 0.0,
     this.wordSpacing = 0.0,
-    this.lineHeight = 1.15,
-    this.padding = 8.0,
+    this.lineHeight = 1.2,
+    this.padding = 4.0,
   });
 
   SubtitlePrefs copyWith({

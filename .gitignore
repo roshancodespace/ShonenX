@@ -93,6 +93,7 @@ android/app/build/
 
 # Misc
 *.log
+/home/roshan/dev/shonenx/android/local.properties
 
 *.js
 *.py

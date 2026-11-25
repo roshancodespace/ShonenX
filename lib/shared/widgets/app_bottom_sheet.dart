@@ -373,7 +373,10 @@ class AppBottomSheet extends ConsumerWidget {
                 borderRadius: effectiveBorderRadius,
                 border: effectiveBorder,
               ),
-              child: innerContent,
+              child: Material(
+                type: MaterialType.transparency,
+                child: innerContent,
+              ),
             ),
           ),
         ),
@@ -395,7 +398,7 @@ class AppBottomSheet extends ConsumerWidget {
                 ]
               : null,
         ),
-        child: innerContent,
+        child: Material(type: MaterialType.transparency, child: innerContent),
       );
     }
 

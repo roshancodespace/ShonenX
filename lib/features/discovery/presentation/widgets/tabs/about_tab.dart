@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/localization/l10n_extension.dart';
-import 'package:shonenx/shared/widgets/smart_image.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:shonenx/core/router/app_navigator.dart';
@@ -30,10 +29,10 @@ abstract final class _Space {
 
 const double _innerRadius = 6;
 const double _segmentGap = 2;
-const double _characterImageWidth = 56;
-const double _characterImageHeight = 92;
-const double _characterCardPadding = 6;
-const double _characterCardWidth = 208;
+const double _characterImageWidth = 74;
+const double _characterImageHeight = 112;
+const double _characterCardPadding = 0;
+const double _characterCardWidth = 284;
 
 const StadiumBorder _stadium = StadiumBorder();
 
@@ -611,128 +610,18 @@ class _CharactersListState extends ConsumerState<_CharactersList> {
               if (_isLoading) {
                 return _CharacterSkeleton(radius: widget.radius);
               }
-              return _CharacterCard(
+              return CharacterCastCard(
                 character: _list[index],
                 radius: widget.radius,
+                width: _characterCardWidth,
+                height: _characterImageHeight,
+                characterImageWidth: _characterImageWidth,
+                voiceActorImageWidth: 56,
               );
             },
           ),
         ),
       ],
-    );
-  }
-}
-
-class _CharacterImage extends StatelessWidget {
-  final String? url;
-  final double radius;
-
-  const _CharacterImage({required this.url, required this.radius});
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final borderRadius = BorderRadius.circular(radius);
-
-    Widget placeholder() => Container(
-      width: _characterImageWidth,
-      height: _characterImageHeight,
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest,
-        borderRadius: borderRadius,
-      ),
-      child: Icon(Icons.person_rounded, size: 24, color: cs.onSurfaceVariant),
-    );
-
-    if (url == null || url!.isEmpty) return placeholder();
-
-    return ClipRRect(
-      borderRadius: borderRadius,
-      child: SmartImage(
-        imageUrl: url!,
-        width: _characterImageWidth,
-        height: _characterImageHeight,
-        fit: BoxFit.cover,
-        errorWidget: (_, __, ___) => placeholder(),
-      ),
-    );
-  }
-}
-
-class _CharacterCard extends StatelessWidget {
-  final MediaCharacter character;
-  final double radius;
-
-  const _CharacterCard({required this.character, required this.radius});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-    final imageRadius = (radius - _characterCardPadding)
-        .clamp(8.0, 28.0)
-        .toDouble();
-
-    return Material(
-      color: cs.surfaceContainer,
-      borderRadius: BorderRadius.circular(radius),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => CharactersSheet.showDetails(context, character),
-        child: SizedBox(
-          width: _characterCardWidth,
-          child: Padding(
-            padding: const EdgeInsets.all(_characterCardPadding),
-            child: Row(
-              children: [
-                _CharacterImage(url: character.image, radius: imageRadius),
-                const SizedBox(width: _Space.md),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        character.name,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.labelLarge?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          height: 1.25,
-                        ),
-                      ),
-                      if (_hasText(character.role)) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          _sentenceCase(character.role!),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.labelMedium?.copyWith(
-                            color: cs.primary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                      if (_hasText(character.voiceActorName)) ...[
-                        const SizedBox(height: _Space.xs),
-                        Text(
-                          character.voiceActorName!,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: cs.onSurfaceVariant,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
     );
   }
 }

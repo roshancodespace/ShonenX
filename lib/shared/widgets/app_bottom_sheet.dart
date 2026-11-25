@@ -65,7 +65,7 @@ class AppBottomSheet extends ConsumerWidget {
     Color? backgroundColor,
     Color? barrierColor,
     double? blurSigma,
-    double maxWidth = 600,
+    double maxWidth = 750,
     BoxBorder? border,
     BorderRadius? borderRadius,
     EdgeInsetsGeometry? margin,

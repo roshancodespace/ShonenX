@@ -3,7 +3,6 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_md/flutter_md.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/source_engine/source_engine_provider.dart';
-import 'package:shonenx/shared/models/ui_style_enums.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 
@@ -46,27 +45,12 @@ class CharactersSheet extends ConsumerStatefulWidget {
     BuildContext context,
     MediaCharacter character,
   ) {
-    return showModalBottomSheet(
+    return AppBottomSheet.show(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return DraggableScrollableSheet(
-          expand: false,
-          initialChildSize: 0.6,
-          maxChildSize: 0.9,
-          minChildSize: 0.4,
-          builder: (context, scrollController) {
-            return _CharacterDetailsModal(
-              character: character,
-              scrollController: scrollController,
-            );
-          },
-        );
-      },
+      title: 'Character',
+      titleIcon: Icons.person_rounded,
+      contentPadding: const EdgeInsets.fromLTRB(22, 4, 22, 24),
+      child: _CharacterDetailsModal(character: character),
     );
   }
 
@@ -192,216 +176,170 @@ class _CharactersSheetState extends ConsumerState<CharactersSheet> {
 
     return Column(
       children: [
-        // Search Bar & Filter Chips Header
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          padding: const EdgeInsets.fromLTRB(16, 6, 16, 12),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               TextField(
                 controller: _searchController,
                 onChanged: (val) => setState(() => _searchQuery = val),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w500,
+                ),
                 decoration: InputDecoration(
                   hintText: 'Search character or voice actor...',
-                  prefixIcon: const Icon(Icons.search_rounded, size: 20),
+                  hintStyle: theme.textTheme.bodyMedium?.copyWith(
+                    color: cs.onSurfaceVariant.withValues(alpha: 0.65),
+                  ),
+                  prefixIcon: Icon(
+                    Icons.search_rounded,
+                    size: 19,
+                    color: cs.onSurfaceVariant,
+                  ),
                   suffixIcon: _searchQuery.isNotEmpty
                       ? IconButton(
-                          icon: const Icon(Icons.clear_rounded, size: 18),
+                          icon: Icon(
+                            Icons.close_rounded,
+                            size: 18,
+                            color: cs.onSurfaceVariant,
+                          ),
                           onPressed: () {
                             _searchController.clear();
                             setState(() => _searchQuery = '');
                           },
                         )
                       : null,
-                  isDense: true,
                   contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 10,
+                    horizontal: 14,
+                    vertical: 11,
                   ),
                   filled: true,
-                  fillColor: cs.surfaceContainerHigh.withValues(alpha: 0.5),
+                  fillColor: cs.surfaceContainerLow,
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
+                    borderRadius: BorderRadius.circular(14),
                     borderSide: BorderSide.none,
                   ),
                 ),
               ),
-              const SizedBox(height: 8),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    _FilterChipItem(
-                      label: 'All (${_characters.length})',
-                      selected: _selectedRole == 'ALL',
-                      onTap: () => setState(() => _selectedRole = 'ALL'),
-                    ),
-                    const SizedBox(width: 6),
-                    _FilterChipItem(
-                      label: 'Main',
-                      selected: _selectedRole == 'MAIN',
-                      onTap: () => setState(() => _selectedRole = 'MAIN'),
-                    ),
-                    const SizedBox(width: 6),
-                    _FilterChipItem(
-                      label: 'Supporting',
-                      selected: _selectedRole == 'SUPPORTING',
-                      onTap: () => setState(() => _selectedRole = 'SUPPORTING'),
-                    ),
-                    const SizedBox(width: 6),
-                    _FilterChipItem(
-                      label: 'Background',
-                      selected: _selectedRole == 'BACKGROUND',
-                      onTap: () => setState(() => _selectedRole = 'BACKGROUND'),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        const Divider(height: 1),
-
-        // Character Grid View with Infinite Scroll
-        Expanded(
-          child: filtered.isEmpty && !_isLoading
-              ? Center(
-                  child: Text(
-                    'No characters found',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: cs.onSurfaceVariant,
-                    ),
-                  ),
-                )
-              : GridView.builder(
-                  controller: _scrollController,
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.all(10),
-                  gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                    maxCrossAxisExtent: 195,
-                    mainAxisExtent: 105,
-                    crossAxisSpacing: 8,
-                    mainAxisSpacing: 8,
-                  ),
-                  itemCount: filtered.length + (_isLoading ? 2 : 0),
-                  itemBuilder: (context, index) {
-                    if (index >= filtered.length) {
-                      return Container(
-                        decoration: BoxDecoration(
-                          color: cs.surfaceContainerHigh.withValues(alpha: 0.3),
-                          borderRadius: BorderRadius.circular(
-                            GlobalUI.uiRoundness,
-                          ),
-                        ),
-                        child: const Center(
-                          child: SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                        ),
-                      );
-                    }
-
-                    final c = filtered[index];
-                    return InkWell(
-                      onTap: () => _showCharacterDetails(context, c),
-                      borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
                       child: Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
+                        padding: const EdgeInsets.all(3),
+                        decoration: ShapeDecoration(
                           color: cs.surfaceContainerLow,
-                          borderRadius: BorderRadius.circular(
-                            GlobalUI.uiRoundness,
-                          ),
-                          border: Border.all(
-                            color: cs.outlineVariant.withValues(alpha: 0.25),
-                          ),
+                          shape: const StadiumBorder(),
                         ),
                         child: Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            if (c.image != null && c.image!.isNotEmpty)
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(
-                                  GlobalUI.uiRoundness * 0.7,
-                                ),
-                                child: SmartImage(
-                                  imageUrl: c.image!,
-                                  width: 52,
-                                  height: 92,
-                                  fit: BoxFit.cover,
-                                  errorWidget: (_, __, ___) => Container(
-                                    width: 52,
-                                    height: 92,
-                                    color: cs.surfaceContainerHigh,
-                                    child: const Icon(
-                                      Icons.person_rounded,
-                                      size: 22,
-                                    ),
-                                  ),
-                                ),
-                              )
-                            else
-                              Container(
-                                width: 52,
-                                height: 92,
-                                decoration: BoxDecoration(
-                                  color: cs.surfaceContainerHigh,
-                                  borderRadius: BorderRadius.circular(
-                                    GlobalUI.uiRoundness * 0.7,
-                                  ),
-                                ),
-                                child: const Icon(
-                                  Icons.person_rounded,
-                                  size: 22,
-                                ),
-                              ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    c.name,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      fontSize: 11.5,
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                                  ),
-                                  if (c.role != null && c.role!.isNotEmpty) ...[
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      c.role!.toUpperCase(),
-                                      style: TextStyle(
-                                        fontSize: 8.5,
-                                        fontWeight: FontWeight.w800,
-                                        color: cs.primary,
-                                      ),
-                                    ),
-                                  ],
-                                  if (c.voiceActorName != null &&
-                                      c.voiceActorName!.isNotEmpty) ...[
-                                    const SizedBox(height: 3),
-                                    Text(
-                                      c.voiceActorName!,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        fontSize: 9.5,
-                                        color: cs.onSurfaceVariant,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
+                            _FilterChipItem(
+                              label: 'All',
+                              count: _characters.length,
+                              selected: _selectedRole == 'ALL',
+                              onTap: () =>
+                                  setState(() => _selectedRole = 'ALL'),
+                            ),
+                            _FilterChipItem(
+                              label: 'Main',
+                              selected: _selectedRole == 'MAIN',
+                              onTap: () =>
+                                  setState(() => _selectedRole = 'MAIN'),
+                            ),
+                            _FilterChipItem(
+                              label: 'Supporting',
+                              selected: _selectedRole == 'SUPPORTING',
+                              onTap: () =>
+                                  setState(() => _selectedRole = 'SUPPORTING'),
+                            ),
+                            _FilterChipItem(
+                              label: 'Background',
+                              selected: _selectedRole == 'BACKGROUND',
+                              onTap: () =>
+                                  setState(() => _selectedRole = 'BACKGROUND'),
                             ),
                           ],
                         ),
                       ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    '${filtered.length}',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.8,
+                      color: cs.onSurfaceVariant.withValues(alpha: 0.7),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        Divider(height: 1, color: cs.outlineVariant.withValues(alpha: 0.16)),
+        Expanded(
+          child: filtered.isEmpty && !_isLoading
+              ? Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.person_search_rounded,
+                        size: 36,
+                        color: cs.onSurfaceVariant.withValues(alpha: 0.45),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        'No matching characters',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: cs.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : LayoutBuilder(
+                  builder: (context, constraints) {
+                    final columns = constraints.maxWidth >= 520
+                        ? (constraints.maxWidth / 270).floor().clamp(2, 3)
+                        : 1;
+                    return GridView.builder(
+                      controller: _scrollController,
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: columns,
+                        mainAxisExtent: 104,
+                        crossAxisSpacing: 10,
+                        mainAxisSpacing: 10,
+                      ),
+                      itemCount: filtered.length + (_isLoading ? columns : 0),
+                      itemBuilder: (context, index) {
+                        if (index >= filtered.length) {
+                          return Container(
+                            decoration: BoxDecoration(
+                              color: cs.surfaceContainerLow,
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: const Center(
+                              child: SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                            ),
+                          );
+                        }
+                        return CharacterCastCard(character: filtered[index]);
+                      },
                     );
                   },
                 ),
@@ -410,42 +348,12 @@ class _CharactersSheetState extends ConsumerState<CharactersSheet> {
     );
   }
 
-  void _showCharacterDetails(BuildContext context, MediaCharacter c) {
-    final cs = Theme.of(context).colorScheme;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: cs.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return DraggableScrollableSheet(
-          expand: false,
-          initialChildSize: 0.6,
-          maxChildSize: 0.9,
-          minChildSize: 0.4,
-          builder: (context, scrollController) {
-            return _CharacterDetailsModal(
-              character: c,
-              scrollController: scrollController,
-            );
-          },
-        );
-      },
-    );
-  }
 }
 
 class _CharacterDetailsModal extends ConsumerStatefulWidget {
   final MediaCharacter character;
-  final ScrollController scrollController;
 
-  const _CharacterDetailsModal({
-    required this.character,
-    required this.scrollController,
-  });
+  const _CharacterDetailsModal({required this.character});
 
   @override
   ConsumerState<_CharacterDetailsModal> createState() =>
@@ -500,158 +408,348 @@ class _CharacterDetailsModalState
     final cs = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final c = _character;
+    final isMain = (c.role?.toUpperCase() ?? '') == 'MAIN';
 
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: ListView(
-        controller: widget.scrollController,
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Center(
-            child: Container(
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: cs.onSurfaceVariant.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(2),
-              ),
+          const SizedBox(height: 8),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            _CastPortrait(
+              url: c.image,
+              width: 96,
+              height: 134,
+              radius: 16,
+              fallbackIcon: Icons.person_rounded,
+              iconSize: 34,
             ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (c.image != null && c.image!.isNotEmpty)
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
-                  child: SmartImage(
-                    imageUrl: c.image!,
-                    width: 100,
-                    height: 140,
-                    fit: BoxFit.cover,
-                    errorWidget: (_, __, ___) => Container(
-                      width: 100,
-                      height: 140,
-                      color: cs.surfaceContainerHigh,
-                      child: const Icon(Icons.person_rounded, size: 36),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (c.role != null && c.role!.isNotEmpty) ...[
+                    Text(
+                      '${c.role!.replaceAll('_', ' ').toUpperCase()} CHARACTER',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.2,
+                        color: isMain ? cs.primary : cs.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                  ],
+                  Text(
+                    c.name,
+                    style: textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.4,
+                      height: 1.12,
                     ),
                   ),
-                ),
+                  if (c.nativeName != null && c.nativeName!.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      c.nativeName!,
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: cs.onSurfaceVariant.withValues(alpha: 0.75),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+        if (c.voiceActorName != null && c.voiceActorName!.isNotEmpty) ...[
+          Divider(
+            height: 32,
+            color: cs.outlineVariant.withValues(alpha: 0.2),
+          ),
+          Row(
+            children: [
+              _CastPortrait(
+                url: c.voiceActorImage,
+                width: 52,
+                height: 68,
+                radius: 12,
+                fallbackIcon: Icons.mic_none_rounded,
+                iconSize: 20,
+              ),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      c.name,
-                      style: textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w800,
+                      'VOICED BY',
+                      style: textTheme.labelSmall?.copyWith(
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w700,
+                        color: cs.onSurfaceVariant,
+                        letterSpacing: 1.1,
                       ),
                     ),
-                    if (c.nativeName != null && c.nativeName!.isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        c.nativeName!,
-                        style: textTheme.bodySmall?.copyWith(
-                          color: cs.onSurfaceVariant,
-                        ),
+                    const SizedBox(height: 3),
+                    Text(
+                      c.voiceActorName!,
+                      style: textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.2,
                       ),
-                    ],
-                    if (c.role != null && c.role!.isNotEmpty) ...[
-                      const SizedBox(height: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: cs.primaryContainer,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          c.role!.toUpperCase(),
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w800,
-                            color: cs.onPrimaryContainer,
-                          ),
-                        ),
-                      ),
-                    ],
-                    if (c.voiceActorName != null &&
-                        c.voiceActorName!.isNotEmpty) ...[
-                      const SizedBox(height: 10),
-                      Text(
-                        'Voice Actor (Seiyuu)',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          color: cs.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        c.voiceActorName!,
-                        style: textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: cs.primary,
-                        ),
-                      ),
-                    ],
+                    ),
                   ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          Text(
-            'About',
-            style: textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+        ],
+        Divider(
+          height: 32,
+          color: cs.outlineVariant.withValues(alpha: 0.2),
+        ),
+        Text(
+          'BIOGRAPHY',
+          style: textTheme.labelSmall?.copyWith(
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+            color: cs.onSurfaceVariant,
+            letterSpacing: 1.2,
           ),
-          const SizedBox(height: 6),
-          if (_isLoadingBio)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 12),
-              child: Center(
-                child: SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-              ),
-            )
-          else if (c.description != null && c.description!.isNotEmpty)
-            MarkdownWidget(
-              markdown: Markdown.fromString(c.description!),
-              theme: MarkdownThemeData(
-                textStyle:
-                    textTheme.bodySmall?.copyWith(
-                      height: 1.4,
-                      color: cs.onSurfaceVariant,
-                    ) ??
-                    TextStyle(height: 1.4, color: cs.onSurfaceVariant),
-              ),
-            )
-          else
-            Text(
-              'No bio available for this character.',
-              style: textTheme.bodySmall?.copyWith(
-                color: cs.onSurfaceVariant.withValues(alpha: 0.7),
-                fontStyle: FontStyle.italic,
+        ),
+        const SizedBox(height: 10),
+        if (_isLoadingBio)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 20),
+            child: Center(
+              child: SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(strokeWidth: 2),
               ),
             ),
+          )
+        else if (c.description != null && c.description!.isNotEmpty)
+          MarkdownWidget(
+            markdown: Markdown.fromString(c.description!),
+            theme: MarkdownThemeData(
+              textStyle:
+                  textTheme.bodyMedium?.copyWith(
+                    height: 1.6,
+                    color: cs.onSurface.withValues(alpha: 0.85),
+                  ) ??
+                  TextStyle(
+                    height: 1.6,
+                    color: cs.onSurface.withValues(alpha: 0.85),
+                  ),
+              linkColor: cs.primary,
+            ),
+          )
+        else
+          Text(
+            'No bio available for this character.',
+            style: textTheme.bodyMedium?.copyWith(
+              color: cs.onSurfaceVariant.withValues(alpha: 0.7),
+              fontStyle: FontStyle.italic,
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
+class CharacterCastCard extends StatelessWidget {
+  final MediaCharacter character;
+  final double radius;
+  final double? width;
+  final double height;
+  final double characterImageWidth;
+  final double voiceActorImageWidth;
+  final VoidCallback? onTap;
+
+  const CharacterCastCard({
+    super.key,
+    required this.character,
+    this.radius = 16,
+    this.width,
+    this.height = 104,
+    this.characterImageWidth = 68,
+    this.voiceActorImageWidth = 52,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final isMain = (character.role?.toUpperCase() ?? '') == 'MAIN';
+    final hasVa =
+        character.voiceActorName != null &&
+        character.voiceActorName!.isNotEmpty;
+    final hasVaImage =
+        character.voiceActorImage != null &&
+        character.voiceActorImage!.isNotEmpty;
+
+    final card = Material(
+      color: cs.surfaceContainerLow,
+      borderRadius: BorderRadius.circular(radius),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap ?? () => CharactersSheet.showDetails(context, character),
+        child: Row(
+          children: [
+            _CastPortrait(
+              url: character.image,
+              width: characterImageWidth,
+              height: height,
+              fallbackIcon: Icons.person_rounded,
+              iconSize: 24,
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 10, 10, 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (character.role != null &&
+                            character.role!.isNotEmpty) ...[
+                          Text(
+                            character.role!.replaceAll('_', ' ').toUpperCase(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: isMain ? cs.primary : cs.onSurfaceVariant,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 9.5,
+                              letterSpacing: 1.1,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                        ],
+                        Text(
+                          character.name,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            height: 1.15,
+                            letterSpacing: -0.2,
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (hasVa)
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'VOICE',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              fontSize: 8.5,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1.0,
+                              color: cs.onSurfaceVariant.withValues(
+                                alpha: 0.65,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 1),
+                          Text(
+                            character.voiceActorName!,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              color: cs.onSurfaceVariant,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 11.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            if (hasVa && hasVaImage)
+              _CastPortrait(
+                url: character.voiceActorImage,
+                width: voiceActorImageWidth,
+                height: height,
+                fallbackIcon: Icons.mic_none_rounded,
+                iconSize: 20,
+              ),
+          ],
+        ),
+      ),
+    );
+
+    return width != null ? SizedBox(width: width, child: card) : card;
+  }
+}
+
+class _CastPortrait extends StatelessWidget {
+  final String? url;
+  final double width;
+  final double height;
+  final double radius;
+  final IconData fallbackIcon;
+  final double iconSize;
+
+  const _CastPortrait({
+    required this.url,
+    required this.width,
+    required this.height,
+    this.radius = 0,
+    required this.fallbackIcon,
+    this.iconSize = 24,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final placeholder = Container(
+      width: width,
+      height: height,
+      color: cs.surfaceContainerHigh,
+      child: Icon(fallbackIcon, size: iconSize, color: cs.onSurfaceVariant),
+    );
+
+    final child = url != null && url!.isNotEmpty
+        ? SmartImage(
+            imageUrl: url!,
+            width: width,
+            height: height,
+            fit: BoxFit.cover,
+            errorWidget: (_, __, ___) => placeholder,
+          )
+        : placeholder;
+
+    return radius > 0
+        ? ClipRRect(borderRadius: BorderRadius.circular(radius), child: child)
+        : child;
+  }
+}
+
 class _FilterChipItem extends StatelessWidget {
   final String label;
+  final int? count;
   final bool selected;
   final VoidCallback onTap;
 
   const _FilterChipItem({
     required this.label,
+    this.count,
     required this.selected,
     required this.onTap,
   });
@@ -660,23 +758,44 @@ class _FilterChipItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
-    return ChoiceChip(
-      visualDensity: VisualDensity.compact,
-      label: Text(label),
-      selected: selected,
-      onSelected: (_) => onTap(),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
-      ),
-      labelStyle: TextStyle(
-        fontSize: 11,
-        fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-        color: selected ? cs.onPrimaryContainer : cs.onSurfaceVariant,
-      ),
-      selectedColor: cs.primaryContainer,
-      backgroundColor: Colors.transparent,
-      side: BorderSide(
-        color: selected ? cs.primary : cs.outlineVariant.withValues(alpha: 0.3),
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: ShapeDecoration(
+          color: selected ? cs.primaryContainer : Colors.transparent,
+          shape: const StadiumBorder(),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                letterSpacing: -0.1,
+                color: selected ? cs.onPrimaryContainer : cs.onSurfaceVariant,
+              ),
+            ),
+            if (count != null) ...[
+              const SizedBox(width: 5),
+              Text(
+                '$count',
+                style: TextStyle(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w700,
+                  color:
+                      (selected ? cs.onPrimaryContainer : cs.onSurfaceVariant)
+                          .withValues(alpha: 0.7),
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }

@@ -150,6 +150,33 @@ class AboutScreen extends ConsumerWidget {
                   mode: LaunchMode.externalApplication,
                 ),
               ),
+              SettingsActionTile(
+                icon: Icons.privacy_tip_outlined,
+                title: 'Privacy Policy',
+                subtitle: 'How ShonenX handles your data & tracker tokens',
+                onTap: () => launchUrl(
+                  Uri.parse(
+                    'https://github.com/roshancodespace/ShonenX/blob/main/docs/privacy-policy.md',
+                  ),
+                  mode: LaunchMode.externalApplication,
+                ),
+              ),
+            ],
+          ),
+
+          SettingsSection(
+            title: 'Legal & Attributions',
+            children: [
+              SettingsActionTile(
+                icon: Icons.movie_filter_outlined,
+                title: 'Trakt API',
+                subtitle:
+                    'This product uses the Trakt API but is not endorsed or certified by Trakt.',
+                onTap: () => launchUrl(
+                  Uri.parse('https://trakt.tv'),
+                  mode: LaunchMode.externalApplication,
+                ),
+              ),
             ],
           ),
 

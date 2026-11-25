@@ -17,6 +17,7 @@ import 'package:shonenx/shared/widgets/app_dialog.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
 import 'package:shonenx/shared/widgets/tracker_avatar.dart';
 import 'package:shonenx/core/utils/env.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class TrackingSettingsScreen extends ConsumerStatefulWidget {
   const TrackingSettingsScreen({super.key});
@@ -669,6 +670,41 @@ class _TrackingSettingsScreenState
                 ),
               );
             }).toList(),
+          ),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'This product uses the Trakt API but is not endorsed or certified by Trakt.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                InkWell(
+                  borderRadius: BorderRadius.circular(6),
+                  onTap: () => launchUrl(
+                    Uri.parse(
+                      'https://github.com/roshancodespace/ShonenX/blob/main/docs/privacy-policy.md',
+                    ),
+                    mode: LaunchMode.externalApplication,
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Text(
+                      'Privacy Policy',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),

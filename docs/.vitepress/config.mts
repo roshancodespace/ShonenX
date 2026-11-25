@@ -30,12 +30,13 @@ export default withMermaid({
       text: 'Edit this page'
     },
     footer: {
-      message: 'Released under the <a href="https://github.com/roshancodespace/ShonenX/blob/main/LICENSE" target="_blank" rel="noopener">GNU General Public License v3.0</a>.',
+      message: 'Released under the <a href="https://github.com/roshancodespace/ShonenX/blob/main/LICENSE" target="_blank" rel="noopener">GNU General Public License v3.0</a> • <a href="/ShonenX/privacy-policy">Privacy Policy</a>',
       copyright: 'Copyright © 2026-present Roshan (<a href="https://github.com/roshancodespace" target="_blank" rel="noopener">@roshancodespace</a>)'
     },
     nav: [
       { text: 'Home', link: '/' },
       { text: 'Setup', link: '/setup/' },
+      { text: 'Privacy Policy', link: '/privacy-policy' },
       { text: 'Contributing', link: '/contributing/' },
       { text: 'Donate', link: 'https://www.buymeacoffee.com/roshan.codespace' }
     ],
@@ -44,7 +45,8 @@ export default withMermaid({
       {
         text: 'Introduction',
         items: [
-          { text: 'Overview', link: '/overview' }
+          { text: 'Overview', link: '/overview' },
+          { text: 'Privacy Policy', link: '/privacy-policy' }
         ]
       },
       {

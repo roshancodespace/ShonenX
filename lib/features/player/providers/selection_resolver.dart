@@ -153,11 +153,7 @@ class SelectionResolver {
     }
 
     if (!extractedFromM3u8) {
-      if (streams.length > 1) {
-        qualitiesList.addAll(streams);
-      } else {
-        qualitiesList.add(activeStream);
-      }
+      qualitiesList.add(activeStream);
     }
 
     // Pick the preferred quality from the parsed list

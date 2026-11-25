@@ -79,7 +79,7 @@ class DownloadSettingsScreen extends ConsumerWidget {
               ],
             ),
             SettingsSection(
-              title: 'Organization',
+              title: context.l10n.downloadOrganizationSection,
               children: [
                 AbsorbPointer(
                   absorbing: prefs.useOneDM,
@@ -89,9 +89,9 @@ class DownloadSettingsScreen extends ConsumerWidget {
                       children: [
                         SettingsSwitchTile(
                           icon: Icons.create_new_folder_outlined,
-                          title: 'Create Anime Folders',
+                          title: context.l10n.downloadCreateSubfolders,
                           subtitle:
-                              'Groups episodes inside a folder named after the anime title',
+                              context.l10n.downloadCreateSubfoldersSubtitle,
                           value: prefs.createSubfolders,
                           onChanged: (val) {
                             prefsNotifier.setCreateSubfolders(val);
@@ -99,7 +99,7 @@ class DownloadSettingsScreen extends ConsumerWidget {
                         ),
                         SettingsDropdownTile<FileNameFormat>(
                           icon: Icons.title_outlined,
-                          title: 'File Name Format',
+                          title: context.l10n.downloadFileNameFormat,
                           value: prefs.fileNameFormat,
                           items: FileNameFormat.values
                               .map(
@@ -122,7 +122,9 @@ class DownloadSettingsScreen extends ConsumerWidget {
                             bottom: 16,
                           ),
                           child: Text(
-                            '↳ Preview: ${_getPreviewFormat(prefs.fileNameFormat)}',
+                            context.l10n.downloadPreviewFormat(
+                              _getPreviewFormat(prefs.fileNameFormat),
+                            ),
                             style: TextStyle(
                               color: colors.primary,
                               fontStyle: FontStyle.italic,
@@ -137,7 +139,7 @@ class DownloadSettingsScreen extends ConsumerWidget {
               ],
             ),
             SettingsSection(
-              title: 'Network & Integration',
+              title: context.l10n.downloadNetworkSection,
               children: [
                 AbsorbPointer(
                   absorbing: prefs.useOneDM,
@@ -145,8 +147,8 @@ class DownloadSettingsScreen extends ConsumerWidget {
                     opacity: prefs.useOneDM ? 0.5 : 1.0,
                     child: SettingsSwitchTile(
                       icon: Icons.wifi_outlined,
-                      title: 'Download over Wi-Fi Only',
-                      subtitle: 'Pause downloads when connected to mobile data',
+                      title: context.l10n.downloadWifiOnly,
+                      subtitle: context.l10n.downloadWifiOnlySubtitle,
                       value: prefs.wifiOnly,
                       onChanged: (val) {
                         prefsNotifier.setWifiOnly(val);
@@ -173,9 +175,8 @@ class DownloadSettingsScreen extends ConsumerWidget {
                       if (isInstalled) {
                         return SettingsSwitchTile(
                           leading: svgIcon,
-                          title: 'Use External Downloader (1DM)',
-                          subtitle:
-                              'Send links to external apps instead of the built-in engine',
+                          title: context.l10n.downloadUseOneDm,
+                          subtitle: context.l10n.downloadUseOneDmSubtitle,
                           value: prefs.useOneDM,
                           onChanged: (val) {
                             prefsNotifier.setUseOneDM(val);
@@ -184,9 +185,8 @@ class DownloadSettingsScreen extends ConsumerWidget {
                       } else {
                         return SettingsActionTile(
                           leading: Opacity(opacity: 0.5, child: svgIcon),
-                          title: 'Use External Downloader (1DM)',
-                          subtitle:
-                              '1DM is not installed on your device. High-speed multi-threaded downloader for Android.',
+                          title: context.l10n.downloadUseOneDm,
+                          subtitle: context.l10n.downloadOneDmNotInstalled,
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -195,27 +195,27 @@ class DownloadSettingsScreen extends ConsumerWidget {
                                   Icons.info_outline_rounded,
                                   size: 20,
                                 ),
-                                tooltip: 'What is 1DM?',
+                                tooltip: context.l10n.downloadWhatIsOneDm,
                                 onPressed: () {
                                   AppDialog.show(
                                     context: context,
-                                    title: 'About 1DM Downloader',
-                                    child: const Text(
-                                      '1DM (Internet Download Manager) is a popular third-party Android download manager app. '
-                                      'It supports up to 32 parallel download connections, background downloads, and smart error recovery.\n\n'
-                                      'If installed, ShonenX can send episode download streams directly to 1DM.',
+                                    title: context.l10n.downloadAboutOneDmTitle,
+                                    child: Text(
+                                      context.l10n.downloadAboutOneDmBody,
                                     ),
                                     actions: [
                                       TextButton(
                                         onPressed: () => Navigator.pop(context),
-                                        child: const Text('Close'),
+                                        child: Text(context.l10n.commonClose),
                                       ),
                                       FilledButton.icon(
                                         icon: const Icon(
                                           Icons.get_app_rounded,
                                           size: 18,
                                         ),
-                                        label: const Text('Get on Play Store'),
+                                        label: Text(
+                                          context.l10n.downloadGetOnPlayStore,
+                                        ),
                                         onPressed: () {
                                           Navigator.pop(context);
                                           OneDMService.instance
@@ -232,7 +232,7 @@ class DownloadSettingsScreen extends ConsumerWidget {
                                   Icons.download_rounded,
                                   size: 16,
                                 ),
-                                label: const Text('Install'),
+                                label: Text(context.l10n.addonsActionInstall),
                                 onPressed: () =>
                                     OneDMService.instance.launchPlayStore(),
                               ),
@@ -247,7 +247,7 @@ class DownloadSettingsScreen extends ConsumerWidget {
               ],
             ),
             SettingsSection(
-              title: 'Performance Tweaks',
+              title: context.l10n.downloadPerformanceSection,
               children: [
                 AbsorbPointer(
                   absorbing: prefs.useOneDM,
@@ -257,8 +257,8 @@ class DownloadSettingsScreen extends ConsumerWidget {
                       children: [
                         SettingsSliderTile(
                           icon: Icons.layers_outlined,
-                          title: 'Max Queue (Concurrent Downloads)',
-                          subtitle: 'Maximum active downloads at a time',
+                          title: context.l10n.downloadMaxQueue,
+                          subtitle: context.l10n.downloadMaxQueueSubtitle,
                           value: prefs.concurrentDownloads.toDouble(),
                           min: 1,
                           max: 5,
@@ -270,8 +270,8 @@ class DownloadSettingsScreen extends ConsumerWidget {
                         ),
                         SettingsSliderTile(
                           icon: Icons.speed_outlined,
-                          title: 'Max Concurrent Segments (HLS)',
-                          subtitle: 'Parallel threads for stream segments',
+                          title: context.l10n.downloadMaxSegments,
+                          subtitle: context.l10n.downloadMaxSegmentsSubtitle,
                           value: prefs.concurrentSegments.toDouble(),
                           min: 1,
                           max: 16,
@@ -290,7 +290,7 @@ class DownloadSettingsScreen extends ConsumerWidget {
                     Platform.isMacOS) ...[
                   SettingsDropdownTile<RemuxerPreference>(
                     icon: Icons.auto_fix_high_outlined,
-                    title: 'HLS Remuxer Preference',
+                    title: context.l10n.downloadRemuxerPref,
                     value: prefs.remuxerPreference,
                     items: RemuxerPreference.values
                         .map(
@@ -341,9 +341,7 @@ class DownloadSettingsScreen extends ConsumerWidget {
       await notifier.migrateStorageToPath(targetPath, moveFiles: false);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Download location changed successfully.'),
-          ),
+          SnackBar(content: Text(context.l10n.downloadLocationChanged)),
         );
       }
       return;
@@ -429,7 +427,7 @@ class _FileReviewSheetState extends State<_FileReviewSheet> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            'Review Files to Move',
+                            context.l10n.downloadReviewFilesTitle,
                             style: textTheme.titleLarge?.copyWith(
                               fontWeight: FontWeight.w700,
                             ),
@@ -439,7 +437,7 @@ class _FileReviewSheetState extends State<_FileReviewSheet> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Moving to:\n${widget.targetPath}',
+                      context.l10n.downloadMovingTo(widget.targetPath),
                       style: textTheme.bodySmall?.copyWith(
                         color: cs.onSurfaceVariant,
                       ),
@@ -449,7 +447,10 @@ class _FileReviewSheetState extends State<_FileReviewSheet> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          '$selectedCount of ${widget.files.length} selected',
+                          context.l10n.downloadSelectedOfTotal(
+                            selectedCount.toString(),
+                            widget.files.length.toString(),
+                          ),
                           style: textTheme.labelLarge,
                         ),
                         Row(
@@ -458,13 +459,13 @@ class _FileReviewSheetState extends State<_FileReviewSheet> {
                               onPressed: () => setState(
                                 () => _selected.updateAll((_, __) => true),
                               ),
-                              child: const Text('Select All'),
+                              child: Text(context.l10n.historySelectAll),
                             ),
                             TextButton(
                               onPressed: () => setState(
                                 () => _selected.updateAll((_, __) => false),
                               ),
-                              child: const Text('None'),
+                              child: Text(context.l10n.commonNone),
                             ),
                           ],
                         ),
@@ -536,7 +537,9 @@ class _FileReviewSheetState extends State<_FileReviewSheet> {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text(
-                                      'Moved $count files and updated location.',
+                                      context.l10n.downloadMovedFiles(
+                                        count.toString(),
+                                      ),
                                     ),
                                   ),
                                 );
@@ -544,7 +547,9 @@ class _FileReviewSheetState extends State<_FileReviewSheet> {
                             },
                       icon: const Icon(Icons.drive_file_move_outlined),
                       label: Text(
-                        'Move Selected ($selectedCount) & Change Location',
+                        context.l10n.downloadMoveSelectedBtn(
+                          selectedCount.toString(),
+                        ),
                       ),
                       style: FilledButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14),
@@ -560,9 +565,9 @@ class _FileReviewSheetState extends State<_FileReviewSheet> {
                         );
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
+                            SnackBar(
                               content: Text(
-                                'Changed location without moving files.',
+                                context.l10n.downloadChangedLocationOnly,
                               ),
                             ),
                           );
@@ -571,8 +576,8 @@ class _FileReviewSheetState extends State<_FileReviewSheet> {
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
-                      child: const Text(
-                        'Change Location Only (Don\'t Move Any)',
+                      child: Text(
+                        context.l10n.downloadChangeLocationOnlyBtn,
                       ),
                     ),
                   ],

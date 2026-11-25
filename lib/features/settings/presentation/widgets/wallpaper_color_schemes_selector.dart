@@ -114,7 +114,7 @@ class _WallpaperColorSchemesSelectorState
 
     return ThemePaletteShelf(
       title: context.l10n.settingsTopGeneratedSchemes,
-      countBadge: '${items.length} Palettes',
+      countBadge: context.l10n.themeCountPalettes(items.length.toString()),
       items: items,
       selectedId: widget.currentSeed?.toString(),
       onSelect: (item) => widget.onSelect(int.parse(item.id)),

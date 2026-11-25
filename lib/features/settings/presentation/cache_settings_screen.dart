@@ -124,21 +124,24 @@ class _CacheSettingsScreenState extends ConsumerState<CacheSettingsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Storage Usage',
+                        context.l10n.cacheStorageUsage,
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${(_totalCacheSize / 1024 / 1024).toStringAsFixed(2)} MB used out of ${_formatBytes(maxCacheSize)}',
+                        context.l10n.cacheUsedOutOf(
+                          (_totalCacheSize / 1024 / 1024).toStringAsFixed(2),
+                          _formatBytes(maxCacheSize),
+                        ),
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: cs.onSurfaceVariant,
                         ),
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        'Isar Database storage active',
+                        context.l10n.cacheIsarActive,
                         style: theme.textTheme.labelMedium?.copyWith(
                           color: cs.primary,
                           fontWeight: FontWeight.w600,
@@ -152,13 +155,12 @@ class _CacheSettingsScreenState extends ConsumerState<CacheSettingsScreen> {
           ),
           const Divider(height: 32),
           SettingsSection(
-            title: 'Caching Settings',
+            title: context.l10n.cacheSectionTitle,
             children: [
               SettingsSwitchTile(
                 icon: Icons.cached_outlined,
-                title: 'Enable HTTP Caching',
-                subtitle:
-                    'Cache network responses to load pages faster and save data.',
+                title: context.l10n.cacheEnableHttp,
+                subtitle: context.l10n.cacheEnableHttpSubtitle,
                 value: cacheConfig.enableCaching,
                 onChanged: (val) {
                   notifier.setEnableCaching(val);
@@ -166,9 +168,8 @@ class _CacheSettingsScreenState extends ConsumerState<CacheSettingsScreen> {
               ),
               SettingsSwitchTile(
                 icon: Icons.refresh_rounded,
-                title: 'Bypass Cache (Force Refresh)',
-                subtitle:
-                    'Forces network fetching, bypassing cached results on reads.',
+                title: context.l10n.cacheBypassTitle,
+                subtitle: context.l10n.cacheBypassSubtitle,
                 value: cacheConfig.bypassCache,
                 onChanged: (val) {
                   notifier.setBypassCache(val);
@@ -208,12 +209,12 @@ class _CacheSettingsScreenState extends ConsumerState<CacheSettingsScreen> {
           ),
           const SizedBox(height: 20),
           SettingsSection(
-            title: 'Global Actions',
+            title: context.l10n.cacheGlobalActions,
             children: [
               SettingsActionTile(
                 icon: Icons.delete_forever_outlined,
                 title: context.l10n.settingsClearEntireCache,
-                subtitle: 'Delete all cached files and network logs.',
+                subtitle: context.l10n.cacheClearEntireSubtitle,
                 isDestructive: true,
                 onTap: () async {
                   await ref.read(cacheManagerProvider).clearCache();

@@ -86,8 +86,8 @@ class SecuritySettingsScreen extends ConsumerWidget {
                       children: [
                         Text(
                           prefs.isAppLockEnabled
-                              ? 'App Lock is Active'
-                              : 'App Lock is Disabled',
+                              ? context.l10n.securityAppLockActive
+                              : context.l10n.securityAppLockDisabled,
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -97,9 +97,9 @@ class SecuritySettingsScreen extends ConsumerWidget {
                         Text(
                           prefs.isAppLockEnabled
                               ? (isMobile && prefs.useBiometrics
-                                    ? 'Protected with PIN & Biometrics'
-                                    : 'Protected with 4-digit PIN')
-                              : 'Set up a PIN to protect your data.',
+                                    ? context.l10n.securityProtectedPinBio
+                                    : context.l10n.securityProtectedPin)
+                              : context.l10n.securitySetupPinPrompt,
                           style: TextStyle(
                             fontSize: 12,
                             color: cs.onSurfaceVariant,
@@ -115,12 +115,12 @@ class SecuritySettingsScreen extends ConsumerWidget {
 
           // App Lock Section
           SettingsSection(
-            title: 'App Lock',
+            title: context.l10n.securityAppLockSection,
             children: [
               SettingsSwitchTile(
                 icon: Icons.lock_outline_rounded,
-                title: 'Enable App Lock',
-                subtitle: 'Require authentication to open ShonenX',
+                title: context.l10n.securityEnableAppLock,
+                subtitle: context.l10n.securityEnableAppLockSubtitle,
                 value: prefs.isAppLockEnabled,
                 onChanged: (enabled) async {
                   if (enabled) {
@@ -148,8 +148,9 @@ class SecuritySettingsScreen extends ConsumerWidget {
                     final verified = await PinInputSheet.show(
                       context: context,
                       flowType: PinFlowType.verify,
-                      customTitle: 'Disable App Lock',
-                      customSubtitle: 'Enter your PIN to turn off app lock',
+                      customTitle: context.l10n.securityDisableAppLock,
+                      customSubtitle:
+                          context.l10n.securityDisableAppLockSubtitle,
                     );
                     if (verified == true) {
                       await ref
@@ -163,8 +164,8 @@ class SecuritySettingsScreen extends ConsumerWidget {
               if (prefs.isAppLockEnabled) ...[
                 SettingsNavTile(
                   icon: Icons.pin_outlined,
-                  title: 'Change PIN',
-                  subtitle: 'Update your 4-digit security PIN',
+                  title: context.l10n.securityChangePin,
+                  subtitle: context.l10n.securityChangePinSubtitle,
                   onTap: () async {
                     final changed = await PinInputSheet.show(
                       context: context,
@@ -172,8 +173,8 @@ class SecuritySettingsScreen extends ConsumerWidget {
                     );
                     if (changed == true && context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('PIN updated successfully'),
+                        SnackBar(
+                          content: Text(context.l10n.securityPinUpdated),
                         ),
                       );
                     }
@@ -189,7 +190,7 @@ class SecuritySettingsScreen extends ConsumerWidget {
                         children: [
                           SettingsSwitchTile(
                             icon: Icons.fingerprint_rounded,
-                            title: 'Biometric Unlock',
+                            title: context.l10n.securityBiometricUnlock,
                             subtitle: capability.hardwareDescription,
                             value: prefs.useBiometrics && isSupported,
                             onChanged: isSupported
@@ -201,8 +202,9 @@ class SecuritySettingsScreen extends ConsumerWidget {
                                       );
                                       final success = await securityService
                                           .authenticateBiometrics(
-                                            reason:
-                                                'Confirm biometrics to enable unlock',
+                                            reason: context
+                                                .l10n
+                                                .securityConfirmBiometricsReason,
                                           );
                                       if (success) {
                                         await ref
@@ -222,9 +224,10 @@ class SecuritySettingsScreen extends ConsumerWidget {
                           if (prefs.useBiometrics && isSupported)
                             SettingsSwitchTile(
                               icon: Icons.flash_on_outlined,
-                              title: 'Auto-prompt Biometrics',
-                              subtitle:
-                                  'Immediately show prompt when opening app',
+                              title: context.l10n.securityAutoPromptBiometrics,
+                              subtitle: context
+                                  .l10n
+                                  .securityAutoPromptBiometricsSubtitle,
                               value: prefs.autoPromptBiometrics,
                               onChanged: (val) {
                                 ref
@@ -241,7 +244,7 @@ class SecuritySettingsScreen extends ConsumerWidget {
 
                 SettingsDropdownTile<LockTimeout>(
                   icon: Icons.timer_outlined,
-                  title: 'Auto-Lock Timeout',
+                  title: context.l10n.securityAutoLockTimeout,
                   value: prefs.lockTimeout,
                   items: LockTimeout.values
                       .map(
@@ -262,13 +265,12 @@ class SecuritySettingsScreen extends ConsumerWidget {
 
           // Privacy Section
           SettingsSection(
-            title: 'Privacy',
+            title: context.l10n.securityPrivacySection,
             children: [
               SettingsSwitchTile(
                 icon: Icons.visibility_off_outlined,
-                title: 'Incognito Mode',
-                subtitle:
-                    'Pause watch history, read history, and cloud tracking',
+                title: context.l10n.securityIncognitoMode,
+                subtitle: context.l10n.securityIncognitoSubtitle,
                 value: prefs.incognitoMode,
                 onInfoCallback: () {
                   final theme = Theme.of(context);
@@ -277,7 +279,7 @@ class SecuritySettingsScreen extends ConsumerWidget {
 
                   AppBottomSheet.show(
                     context: context,
-                    title: 'Incognito Mode',
+                    title: context.l10n.securityIncognitoMode,
                     child: Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
@@ -297,7 +299,7 @@ class SecuritySettingsScreen extends ConsumerWidget {
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
-                                  'Private Viewing & Reading',
+                                  context.l10n.securityIncognitoSheetHeading,
                                   style: textTheme.titleMedium?.copyWith(
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -307,7 +309,7 @@ class SecuritySettingsScreen extends ConsumerWidget {
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            'Incognito Mode prevents ShonenX from saving your watch progress, read history, or syncing activity to your connected trackers (MAL, AniList, etc.).',
+                            context.l10n.securityIncognitoSheetBody,
                             style: textTheme.bodyMedium,
                           ),
                           const SizedBox(height: 16),
@@ -327,7 +329,7 @@ class SecuritySettingsScreen extends ConsumerWidget {
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Text(
-                                    'Watch history, read chapters, and cloud tracker updates are paused until disabled.',
+                                    context.l10n.securityIncognitoSheetPauseNote,
                                     style: textTheme.bodyMedium?.copyWith(
                                       color: cs.onSecondaryContainer,
                                     ),
@@ -338,7 +340,7 @@ class SecuritySettingsScreen extends ConsumerWidget {
                           ),
                           const SizedBox(height: 14),
                           Text(
-                            'Your tracker accounts and existing history remain intact. Normal syncing and history resume when Incognito Mode is turned off.',
+                            context.l10n.securityIncognitoSheetFooter,
                             style: textTheme.bodySmall?.copyWith(
                               color: cs.onSurfaceVariant,
                             ),
@@ -359,11 +361,11 @@ class SecuritySettingsScreen extends ConsumerWidget {
 
           // Network & DNS (DoH) Section
           SettingsSection(
-            title: 'Network & DNS',
+            title: context.l10n.securityNetworkDnsSection,
             children: [
               SettingsDropdownTile<DohProvider>(
                 icon: Icons.dns_outlined,
-                title: 'DNS over HTTPS (DoH)',
+                title: context.l10n.securityDohTitle,
                 subtitle: dohPrefs.provider.description,
                 value: dohPrefs.provider,
                 items: DohProvider.values
@@ -384,28 +386,27 @@ class SecuritySettingsScreen extends ConsumerWidget {
           // Quick Actions Section
           if (prefs.isAppLockEnabled) ...[
             SettingsSection(
-              title: 'Actions',
+              title: context.l10n.securityActionsSection,
               children: [
                 SettingsActionTile(
                   icon: Icons.lock_clock_outlined,
-                  title: 'Lock App Now',
-                  subtitle: 'Instantly lock the app to test security',
+                  title: context.l10n.securityLockNow,
+                  subtitle: context.l10n.securityLockNowSubtitle,
                   onTap: () {
                     ref.read(appLockProvider.notifier).lock();
                   },
                 ),
                 SettingsActionTile(
                   icon: Icons.delete_forever_outlined,
-                  title: 'Reset Security Settings',
-                  subtitle: 'Clear PIN and remove all lock preferences',
+                  title: context.l10n.securityResetTitle,
+                  subtitle: context.l10n.securityResetSubtitle,
                   isDestructive: true,
                   onTap: () {
                     ConfirmationBottomSheet.show(
                       context,
-                      title: 'Reset Security Settings',
-                      message:
-                          'This will remove your PIN and disable app lock. Are you sure?',
-                      confirmText: 'Reset',
+                      title: context.l10n.securityResetTitle,
+                      message: context.l10n.securityResetConfirmMessage,
+                      confirmText: context.l10n.commonReset,
                       isDestructive: true,
                       onConfirm: () async {
                         final verified = await PinInputSheet.show(
@@ -418,8 +419,10 @@ class SecuritySettingsScreen extends ConsumerWidget {
                               .disableAppLock();
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Security settings reset'),
+                              SnackBar(
+                                content: Text(
+                                  context.l10n.securitySettingsResetSnack,
+                                ),
                               ),
                             );
                           }
@@ -440,10 +443,11 @@ class SecuritySettingsScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final textTheme = theme.textTheme;
+    final l10n = context.l10n;
 
     AppBottomSheet.show(
       context: context,
-      title: 'DNS over HTTPS (DoH)',
+      title: l10n.securityDohTitle,
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -460,7 +464,7 @@ class SecuritySettingsScreen extends ConsumerWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Encrypted DNS Lookups',
+                    l10n.securityDohSheetHeading,
                     style: textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -470,7 +474,7 @@ class SecuritySettingsScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 14),
             Text(
-              'DNS over HTTPS (DoH) encrypts all domain name queries via HTTPS to prevent ISP snooping, ISP domain hijacking, and censorship. By default, ShonenX uses Cloudflare DNS (1.1.1.1) for maximum speed and privacy.',
+              l10n.securityDohSheetBody,
               style: textTheme.bodyMedium,
             ),
             const SizedBox(height: 14),
@@ -485,21 +489,21 @@ class SecuritySettingsScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '• Cloudflare: Fast, zero-logging DNS (1.1.1.1 & 1.0.0.1)',
+                    l10n.securityDohCloudflareNote,
                     style: textTheme.bodySmall?.copyWith(
                       color: cs.onSecondaryContainer,
                     ),
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    '• Google: Highly reliable global resolver (8.8.8.8 & 8.8.4.4)',
+                    l10n.securityDohGoogleNote,
                     style: textTheme.bodySmall?.copyWith(
                       color: cs.onSecondaryContainer,
                     ),
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    '• System: Bypasses DoH and uses standard device DNS',
+                    l10n.securityDohSystemNote,
                     style: textTheme.bodySmall?.copyWith(
                       color: cs.onSecondaryContainer,
                     ),
@@ -549,9 +553,9 @@ class _DohTestWidgetState extends ConsumerState<_DohTestWidget> {
   void _clearDnsCache() {
     DohResolver.instance.clearCache();
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('DNS cache flushed successfully'),
-        duration: Duration(seconds: 2),
+      SnackBar(
+        content: Text(context.l10n.securityDnsCacheFlushed),
+        duration: const Duration(seconds: 2),
       ),
     );
   }
@@ -562,6 +566,7 @@ class _DohTestWidgetState extends ConsumerState<_DohTestWidget> {
     final cs = theme.colorScheme;
     final textTheme = theme.textTheme;
     final dohPrefs = ref.watch(dohPrefsProvider);
+    final l10n = context.l10n;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -578,12 +583,14 @@ class _DohTestWidgetState extends ConsumerState<_DohTestWidget> {
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.speed_rounded, size: 18),
-                label: Text(_isTesting ? 'Testing...' : 'Test DNS Resolution'),
+                label: Text(
+                  _isTesting ? l10n.securityTestingDns : l10n.securityTestDns,
+                ),
               ),
             ),
             const SizedBox(width: 8),
             IconButton.filledTonal(
-              tooltip: 'Flush DNS Cache',
+              tooltip: l10n.securityFlushDnsCache,
               onPressed: _clearDnsCache,
               icon: const Icon(Icons.cleaning_services_outlined, size: 18),
             ),
@@ -621,7 +628,7 @@ class _DohTestWidgetState extends ConsumerState<_DohTestWidget> {
                       Text(
                         _result!.success
                             ? '${dohPrefs.provider.title} (${_result!.latencyMs} ms)'
-                            : 'Test Failed',
+                            : l10n.securityTestFailed,
                         style: textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: _result!.success ? Colors.green : Colors.red,
@@ -630,8 +637,10 @@ class _DohTestWidgetState extends ConsumerState<_DohTestWidget> {
                       const SizedBox(height: 2),
                       Text(
                         _result!.success
-                            ? 'Resolved to: ${_result!.addresses.take(3).join(', ')}'
-                            : (_result!.errorMessage ?? 'Unknown error'),
+                            ? l10n.securityResolvedTo(
+                                _result!.addresses.take(3).join(', '),
+                              )
+                            : (_result!.errorMessage ?? l10n.commonUnknown),
                         style: textTheme.bodySmall?.copyWith(
                           color: cs.onSurfaceVariant,
                         ),

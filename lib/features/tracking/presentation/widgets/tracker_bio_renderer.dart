@@ -1,7 +1,6 @@
 import 'package:material_ui/material_ui.dart';
-import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
+import 'package:flutter_md/flutter_md.dart';
 import 'package:shonenx/features/tracking/utils/tracker_bio_parser.dart';
-import 'package:shonenx/shared/widgets/smart_image.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class TrackerBioRenderer extends StatelessWidget {
@@ -17,70 +16,31 @@ class TrackerBioRenderer extends StatelessWidget {
     final cs = theme.colorScheme;
     final parsedBio = TrackerBioParser.parse(bio);
 
-    return MarkdownBody(
-      data: parsedBio,
-      selectable: true,
-      onTapLink: (text, href, title) {
-        if (href != null) {
-          launchUrl(Uri.parse(href), mode: LaunchMode.externalApplication);
-        }
-      },
-      imageBuilder: (uri, title, alt) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: SmartImage(
-              imageUrl: uri.toString(),
-              fit: BoxFit.cover,
-              errorWidget: (context, url, error) => const SizedBox.shrink(),
-            ),
-          ),
-        );
-      },
-      styleSheet: MarkdownStyleSheet(
-        p: theme.textTheme.bodyMedium?.copyWith(
-          color: cs.onSurfaceVariant,
-          height: 1.5,
-        ),
-        strong: theme.textTheme.titleSmall?.copyWith(
-          color: cs.onSurface,
-          fontWeight: FontWeight.w700,
-          height: 1.5,
-        ),
-        em: theme.textTheme.bodyMedium?.copyWith(
+    return MarkdownWidget(
+      markdown: Markdown.fromString(parsedBio),
+      theme: MarkdownThemeData(
+        textStyle:
+            theme.textTheme.bodyMedium?.copyWith(
+              color: cs.onSurfaceVariant,
+              height: 1.5,
+            ) ??
+            TextStyle(color: cs.onSurfaceVariant, height: 1.5),
+        quoteStyle: theme.textTheme.bodyMedium?.copyWith(
           color: cs.onSurfaceVariant,
           fontStyle: FontStyle.italic,
           height: 1.5,
         ),
-        blockquote: theme.textTheme.bodyMedium?.copyWith(
-          color: cs.onSurfaceVariant,
-          fontStyle: FontStyle.italic,
-          height: 1.5,
-        ),
-        blockquoteDecoration: BoxDecoration(
-          color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
-          border: Border(left: BorderSide(color: cs.primary, width: 4)),
-          borderRadius: BorderRadius.circular(4),
-        ),
-        blockquotePadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 12,
-        ),
-        horizontalRuleDecoration: BoxDecoration(
-          border: Border(
-            top: BorderSide(
-              width: 2,
-              color: cs.outlineVariant.withValues(alpha: 0.3),
-            ),
-          ),
-        ),
-        a: theme.textTheme.bodyMedium?.copyWith(
+        surfaceColor: cs.surfaceContainerHighest.withValues(alpha: 0.5),
+        dividerColor: cs.outlineVariant.withValues(alpha: 0.3),
+        linkColor: cs.primary,
+        linkStyle: theme.textTheme.bodyMedium?.copyWith(
           color: cs.primary,
           decoration: TextDecoration.underline,
-          decorationColor: cs.primary.withValues(alpha: 0.5),
-          height: 1.5,
         ),
+        onLinkTap: (title, url) {
+          launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+        },
+        imageResolver: const MarkdownProviderImageResolver().call,
       ),
     );
   }

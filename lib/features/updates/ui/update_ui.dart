@@ -1,8 +1,7 @@
 import 'dart:io';
 
-import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
+import 'package:flutter_md/flutter_md.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:flutter/material.dart' as flutter;
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -98,49 +97,46 @@ class UpdateUI {
               ),
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(12),
-                child: MarkdownBody(
-                  data: release.body.trim().isEmpty
-                      ? 'No release notes provided.'
-                      : release.body.trim(),
-                  selectable: true,
-                  onTapLink: (text, href, title) {
-                    if (href != null) {
+                child: MarkdownWidget(
+                  markdown: Markdown.fromString(
+                    release.body.trim().isEmpty
+                        ? 'No release notes provided.'
+                        : release.body.trim(),
+                  ),
+                  theme: MarkdownThemeData(
+                    textStyle: TextStyle(
+                      fontSize: 14,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      height: 1.45,
+                    ),
+                    h1Style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    h2Style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    h3Style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    quoteStyle: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      fontStyle: FontStyle.italic,
+                    ),
+                    monospaceFontFamily: 'monospace',
+                    monospaceBackgroundColor: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest,
+                    linkColor: Theme.of(context).colorScheme.primary,
+                    onLinkTap: (title, url) {
                       launchUrl(
-                        Uri.parse(href),
+                        Uri.parse(url),
                         mode: LaunchMode.externalApplication,
                       );
-                    }
-                  },
-                  styleSheet: MarkdownStyleSheet.fromTheme(flutter.Theme.of(context))
-                      .copyWith(
-                        p: TextStyle(
-                          fontSize: 14,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          height: 1.45,
-                        ),
-                        h1: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        h2: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        h3: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        code: TextStyle(
-                          fontFamily: 'monospace',
-                          backgroundColor: Theme.of(
-                            context,
-                          ).colorScheme.surfaceContainerHighest,
-                        ),
-                        blockquote: TextStyle(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
+                    },
+                  ),
                 ),
               ),
             ),

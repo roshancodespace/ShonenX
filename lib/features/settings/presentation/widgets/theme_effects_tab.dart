@@ -1,5 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/core/localization/l10n_extension.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
 import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
 
@@ -10,18 +11,19 @@ class ThemeEffectsTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final themePrefs = ref.watch(themePrefsProvider);
     final notifier = ref.read(themePrefsProvider.notifier);
+    final l10n = context.l10n;
 
     return ListView(
       padding: const EdgeInsets.only(bottom: 50),
       children: [
         // Blend & Gradients
         SettingsSection(
-          title: 'Surface Styling',
+          title: l10n.themeEffectsSurfaceStyling,
           children: [
             SettingsSliderTile(
               icon: Icons.opacity_outlined,
-              title: 'Blend Level',
-              subtitle: 'Color infusion intensity',
+              title: l10n.themeEffectsBlendLevel,
+              subtitle: l10n.themeEffectsBlendLevelSubtitle,
               value: themePrefs.blendLevel.toDouble(),
               min: 0,
               max: 40,
@@ -34,10 +36,10 @@ class ThemeEffectsTab extends ConsumerWidget {
             if (themePrefs.customBackgroundImagePath == null) ...[
               SettingsSwitchTile(
                 icon: Icons.gradient_outlined,
-                title: 'Gradient Surfaces',
+                title: l10n.themeEffectsGradientSurfaces,
                 subtitle: themePrefs.useAmoled
-                    ? 'Disabled with Pure Black'
-                    : 'Subtle gradients instead of flat fills',
+                    ? l10n.themeEffectsDisabledWithPureBlack
+                    : l10n.themeEffectsGradientSurfacesSubtitle,
                 value: themePrefs.useGradients,
                 onChanged: themePrefs.useAmoled
                     ? null
@@ -48,7 +50,7 @@ class ThemeEffectsTab extends ConsumerWidget {
               if (themePrefs.useGradients && !themePrefs.useAmoled) ...[
                 SettingsDropdownTile<BackgroundGradientStyle>(
                   icon: Icons.auto_awesome_outlined,
-                  title: 'Gradient Shape',
+                  title: l10n.themeEffectsGradientShape,
                   value: themePrefs.gradientStyle,
                   items: BackgroundGradientStyle.values
                       .map(
@@ -70,7 +72,7 @@ class ThemeEffectsTab extends ConsumerWidget {
                     BackgroundGradientStyle.linear)
                   SettingsDropdownTile<BackgroundGradientDirection>(
                     icon: Icons.explore_outlined,
-                    title: 'Gradient Angle',
+                    title: l10n.themeEffectsGradientAngle,
                     value: themePrefs.gradientDirection,
                     items: BackgroundGradientDirection.values
                         .map(
@@ -90,7 +92,7 @@ class ThemeEffectsTab extends ConsumerWidget {
                   ),
                 SettingsDropdownTile<BackgroundGradientColorPair>(
                   icon: Icons.color_lens_outlined,
-                  title: 'Gradient Palette',
+                  title: l10n.themeEffectsGradientPalette,
                   value: themePrefs.gradientColorPair,
                   items: BackgroundGradientColorPair.values
                       .map(
@@ -110,8 +112,8 @@ class ThemeEffectsTab extends ConsumerWidget {
                 ),
                 SettingsSliderTile(
                   icon: Icons.tune_rounded,
-                  title: 'Gradient Intensity',
-                  subtitle: 'Color vibrancy over background',
+                  title: l10n.themeEffectsGradientIntensity,
+                  subtitle: l10n.themeEffectsGradientIntensitySubtitle,
                   value: themePrefs.gradientIntensity,
                   min: 0.05,
                   max: 1.0,
@@ -129,14 +131,14 @@ class ThemeEffectsTab extends ConsumerWidget {
 
         // Noise
         SettingsSection(
-          title: 'Texture',
+          title: l10n.themeEffectsTextureSection,
           children: [
             SettingsSwitchTile(
               icon: Icons.grain_rounded,
-              title: 'Noise Overlay',
+              title: l10n.themeEffectsNoiseOverlay,
               subtitle: themePrefs.useAmoled
-                  ? 'Disabled with Pure Black'
-                  : 'Overlay a subtle textured grain grid',
+                  ? l10n.themeEffectsDisabledWithPureBlack
+                  : l10n.themeEffectsNoiseOverlaySubtitle,
               value: themePrefs.useNoiseOverlay,
               onChanged: themePrefs.useAmoled
                   ? null
@@ -147,8 +149,8 @@ class ThemeEffectsTab extends ConsumerWidget {
             if (themePrefs.useNoiseOverlay && !themePrefs.useAmoled)
               SettingsSliderTile(
                 icon: Icons.opacity_rounded,
-                title: 'Noise Intensity',
-                subtitle: 'Textured grain strength',
+                title: l10n.themeEffectsNoiseIntensity,
+                subtitle: l10n.themeEffectsNoiseIntensitySubtitle,
                 value: themePrefs.noiseOpacity > 0.15
                     ? 0.15
                     : themePrefs.noiseOpacity,

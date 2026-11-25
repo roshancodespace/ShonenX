@@ -1,6 +1,7 @@
 import 'package:shonenx/shared/widgets/smart_image.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/core/localization/l10n_extension.dart';
 import 'package:shonenx/features/discord/models/discord_rpc_custom_settings.dart';
 import 'package:shonenx/features/discord/presentation/discord_login_page.dart';
 import 'package:shonenx/features/discord/presentation/widgets/discord_rpc_preview_card.dart';
@@ -23,10 +24,11 @@ class DiscordSettingsScreen extends ConsumerWidget {
       text: settings.idleActivity,
     );
     final detailsController = TextEditingController(text: settings.idleDetails);
+    final l10n = context.l10n;
 
     AppBottomSheet.show(
       context: context,
-      title: 'Customize Idle RPC Status',
+      title: l10n.discordEditIdleTitle,
       titleIcon: Icons.edit_note_rounded,
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -34,16 +36,16 @@ class DiscordSettingsScreen extends ConsumerWidget {
         children: [
           TextField(
             controller: activityController,
-            decoration: const InputDecoration(
-              labelText: 'Activity Name',
+            decoration: InputDecoration(
+              labelText: l10n.discordActivityName,
               hintText: 'e.g. Glazing ShonenX',
             ),
           ),
           const SizedBox(height: 14),
           TextField(
             controller: detailsController,
-            decoration: const InputDecoration(
-              labelText: 'Details / Subtitle',
+            decoration: InputDecoration(
+              labelText: l10n.discordDetailsSubtitle,
               hintText: 'e.g. Browsing Catalog',
             ),
           ),
@@ -66,7 +68,7 @@ class DiscordSettingsScreen extends ConsumerWidget {
                   );
               Navigator.of(context).pop();
             },
-            child: const Text('Save Changes'),
+            child: Text(l10n.discordSaveChanges),
           ),
         ],
       ),
@@ -74,20 +76,19 @@ class DiscordSettingsScreen extends ConsumerWidget {
   }
 
   void _confirmDisconnect(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
     AppDialog.show(
       context: context,
-      title: 'Disconnect Discord Account',
+      title: l10n.discordDisconnectTitle,
       icon: Icon(
         Icons.logout_rounded,
         color: Theme.of(context).colorScheme.error,
       ),
-      child: const Text(
-        'Are you sure you want to disconnect your Discord account? Your saved account token will be removed.',
-      ),
+      child: Text(l10n.discordDisconnectMessage),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(l10n.commonCancel),
         ),
         FilledButton(
           style: FilledButton.styleFrom(
@@ -97,7 +98,7 @@ class DiscordSettingsScreen extends ConsumerWidget {
             ref.read(discordProvider.notifier).logout();
             Navigator.of(context).pop();
           },
-          child: const Text('Disconnect'),
+          child: Text(l10n.discordDisconnectAction),
         ),
       ],
     );
@@ -110,10 +111,11 @@ class DiscordSettingsScreen extends ConsumerWidget {
     final settings = rpcState.customSettings;
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final l10n = context.l10n;
 
     return AppScaffold(
-      title: 'Discord RPC',
-      subtitle: 'Send rich presence to Discord',
+      title: l10n.settingsDiscordRpc,
+      subtitle: l10n.settingsDiscordRpcSubtitle,
       body: discordState.isLoading
           ? const Center(child: CircularProgressIndicator())
           : ListView(
@@ -203,7 +205,7 @@ class DiscordSettingsScreen extends ConsumerWidget {
                                   children: [
                                     Text(
                                       discordState.user?.displayName ??
-                                          'Discord User',
+                                          l10n.discordUserFallback,
                                       style: const TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,
@@ -233,8 +235,8 @@ class DiscordSettingsScreen extends ConsumerWidget {
                                         const SizedBox(width: 6),
                                         Text(
                                           rpcState.isConnected
-                                              ? 'Active & Synced'
-                                              : 'Connected',
+                                              ? l10n.discordActiveSynced
+                                              : l10n.discordConnected,
                                           style: const TextStyle(
                                             fontSize: 11,
                                             fontWeight: FontWeight.bold,
@@ -248,7 +250,7 @@ class DiscordSettingsScreen extends ConsumerWidget {
                               ),
                               IconButton(
                                 icon: const Icon(Icons.refresh_rounded),
-                                tooltip: 'Refresh Profile',
+                                tooltip: l10n.discordRefreshProfile,
                                 onPressed: () {
                                   if (discordState.token != null) {
                                     ref
@@ -262,7 +264,7 @@ class DiscordSettingsScreen extends ConsumerWidget {
                                   Icons.logout_rounded,
                                   color: cs.error,
                                 ),
-                                tooltip: 'Disconnect',
+                                tooltip: l10n.discordDisconnectAction,
                                 onPressed: () =>
                                     _confirmDisconnect(context, ref),
                               ),
@@ -288,21 +290,21 @@ class DiscordSettingsScreen extends ConsumerWidget {
                                     ),
                                   ),
                                   const SizedBox(width: 12),
-                                  const Expanded(
+                                  Expanded(
                                     child: Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          'Discord Rich Presence',
-                                          style: TextStyle(
+                                          l10n.discordRichPresenceTitle,
+                                          style: const TextStyle(
                                             fontSize: 15,
                                             fontWeight: FontWeight.bold,
                                           ),
                                         ),
                                         Text(
-                                          'Share your watch & read activity',
-                                          style: TextStyle(
+                                          l10n.discordShareActivity,
+                                          style: const TextStyle(
                                             fontSize: 12,
                                             color: Colors.grey,
                                           ),
@@ -314,7 +316,7 @@ class DiscordSettingsScreen extends ConsumerWidget {
                               ),
                               const SizedBox(height: 12),
                               Text(
-                                'Desktop users connect automatically via the running Discord app. Signing in with a user token is optional (for mobile/gateway sync).',
+                                l10n.discordDesktopAutoConnectNote,
                                 style: TextStyle(
                                   fontSize: 11,
                                   color: cs.onSurfaceVariant,
@@ -335,9 +337,9 @@ class DiscordSettingsScreen extends ConsumerWidget {
                                     ),
                                   ),
                                   icon: const Icon(Icons.key_rounded, size: 18),
-                                  label: const Text(
-                                    'Sign in with Discord Account',
-                                    style: TextStyle(
+                                  label: Text(
+                                    l10n.discordSignInButton,
+                                    style: const TextStyle(
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
@@ -356,13 +358,12 @@ class DiscordSettingsScreen extends ConsumerWidget {
                 ),
 
                 SettingsSection(
-                  title: 'Presence Control',
+                  title: l10n.discordPresenceControl,
                   children: [
                     SettingsSwitchTile(
                       icon: Icons.discord,
-                      title: 'Enable Discord RPC',
-                      subtitle:
-                          'Broadcast anime watching & manga reading activity',
+                      title: l10n.discordEnableRpc,
+                      subtitle: l10n.discordEnableRpcSubtitle,
                       value: rpcState.isEnabled,
                       onChanged: (value) {
                         ref
@@ -384,13 +385,14 @@ class DiscordSettingsScreen extends ConsumerWidget {
 
                 if (rpcState.isEnabled)
                   SettingsSection(
-                    title: 'Activity Broadcasting',
+                    title: l10n.discordActivityBroadcasting,
                     children: [
                       SettingsSwitchTile(
                         icon: Icons.art_track_rounded,
-                        title: 'Show Details Screen Activity',
-                        subtitle:
-                            'Display "Viewing {Title}" when inspecting anime/manga',
+                        title: l10n.discordShowDetailsActivity,
+                        subtitle: l10n.discordShowDetailsActivitySubtitle(
+                          '{Title}',
+                        ),
                         value: settings.enableDetailsPresence,
                         onChanged: (val) {
                           ref
@@ -402,9 +404,8 @@ class DiscordSettingsScreen extends ConsumerWidget {
                       ),
                       SettingsSwitchTile(
                         icon: Icons.play_circle_outline_rounded,
-                        title: 'Show Video Player Activity',
-                        subtitle:
-                            'Display "Watching Episode X" while playing anime',
+                        title: l10n.discordShowPlayerActivity,
+                        subtitle: l10n.discordShowPlayerActivitySubtitle,
                         value: settings.enablePlayerPresence,
                         onChanged: (val) {
                           ref
@@ -416,9 +417,8 @@ class DiscordSettingsScreen extends ConsumerWidget {
                       ),
                       SettingsSwitchTile(
                         icon: Icons.menu_book_rounded,
-                        title: 'Show Manga Reader Activity',
-                        subtitle:
-                            'Display "Reading Chapter X" while reading manga',
+                        title: l10n.discordShowReaderActivity,
+                        subtitle: l10n.discordShowReaderActivitySubtitle,
                         value: settings.enableReaderPresence,
                         onChanged: (val) {
                           ref
@@ -433,20 +433,19 @@ class DiscordSettingsScreen extends ConsumerWidget {
 
                 if (rpcState.isEnabled)
                   SettingsSection(
-                    title: 'Presence Customization',
+                    title: l10n.discordPresenceCustomization,
                     children: [
                       SettingsActionTile(
                         icon: Icons.edit_note_rounded,
-                        title: 'Idle Activity Status',
+                        title: l10n.discordIdleActivityStatus,
                         subtitle:
                             '${settings.idleActivity} • ${settings.idleDetails}',
                         onTap: () => _showEditIdleSheet(context, ref, settings),
                       ),
                       SettingsSwitchTile(
                         icon: Icons.numbers_rounded,
-                        title: 'Show Episode/Chapter Numbers',
-                        subtitle:
-                            'Include the current episode or chapter number',
+                        title: l10n.discordShowEpisodeNumbers,
+                        subtitle: l10n.discordShowEpisodeNumbersSubtitle,
                         value: settings.showEpisodeNumber,
                         onChanged: (val) {
                           ref
@@ -458,8 +457,8 @@ class DiscordSettingsScreen extends ConsumerWidget {
                       ),
                       SettingsSwitchTile(
                         icon: Icons.timer_outlined,
-                        title: 'Show Watch/Read Progress',
-                        subtitle: 'Display elapsed time and page progress',
+                        title: l10n.discordShowProgress,
+                        subtitle: l10n.discordShowProgressSubtitle,
                         value: settings.showProgress,
                         onChanged: (val) {
                           ref
@@ -471,8 +470,8 @@ class DiscordSettingsScreen extends ConsumerWidget {
                       ),
                       SettingsSwitchTile(
                         icon: Icons.image_outlined,
-                        title: 'Show Media Cover Images',
-                        subtitle: 'Display the anime/manga poster in Discord',
+                        title: l10n.discordShowMediaImages,
+                        subtitle: l10n.discordShowMediaImagesSubtitle,
                         value: settings.showMediaImage,
                         onChanged: (val) {
                           ref
@@ -484,8 +483,8 @@ class DiscordSettingsScreen extends ConsumerWidget {
                       ),
                       SettingsSwitchTile(
                         icon: Icons.smart_button_rounded,
-                        title: 'Show View Buttons',
-                        subtitle: 'Add a clickable button to the Anilist page',
+                        title: l10n.discordShowViewButtons,
+                        subtitle: l10n.discordShowViewButtonsSubtitle,
                         value: settings.showButtons,
                         onChanged: (val) {
                           ref

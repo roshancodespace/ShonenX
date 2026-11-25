@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:shonenx/app_init.dart';
+import 'package:shonenx/core/localization/l10n_extension.dart';
 import 'package:shonenx/core/router/app_navigator.dart';
 import 'package:shonenx/features/extensions/providers/extension_service_provider.dart';
 import 'package:shonenx/features/extensions/providers/extensions_provider.dart';
@@ -92,11 +93,13 @@ class _ExtensionsSettingsScreenState
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
+    final l10n = context.l10n;
+
     return DefaultTabController(
       length: 2,
       child: AppScaffold(
-        title: 'Sources',
-        subtitle: 'Extensions & Catalogs',
+        title: l10n.extensionsSourcesTitle,
+        subtitle: l10n.extensionsCatalogsSubtitle,
         floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
         barBottom: _buildBarBottom(),
         actions: _buildActions(context),
@@ -263,7 +266,7 @@ class _ExtensionsSettingsScreenState
                 ),
                 const SizedBox(width: 10),
                 Text(
-                  e == 'All' ? 'All Engines' : e,
+                  e == 'All' ? context.l10n.extensionsAllEngines : e,
                   style: TextStyle(
                     fontWeight: isSelected
                         ? FontWeight.bold
@@ -299,7 +302,7 @@ class _ExtensionsSettingsScreenState
             ),
             const SizedBox(width: 6),
             Text(
-              isAll ? 'All Engines' : _selectedEngineFilter,
+              isAll ? context.l10n.extensionsAllEngines : _selectedEngineFilter,
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: isAll ? FontWeight.w500 : FontWeight.bold,
@@ -344,7 +347,9 @@ class _ExtensionsSettingsScreenState
                 ),
                 const SizedBox(width: 10),
                 Text(
-                  l == 'All' ? 'All Languages' : l.toUpperCase(),
+                  l == 'All'
+                      ? context.l10n.extensionsAllLanguages
+                      : l.toUpperCase(),
                   style: TextStyle(
                     fontWeight: isSelected
                         ? FontWeight.bold
@@ -380,7 +385,9 @@ class _ExtensionsSettingsScreenState
             ),
             const SizedBox(width: 6),
             Text(
-              isAll ? 'All Languages' : _selectedLangFilter.toUpperCase(),
+              isAll
+                  ? context.l10n.extensionsAllLanguages
+                  : _selectedLangFilter.toUpperCase(),
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: isAll ? FontWeight.w500 : FontWeight.bold,
@@ -418,7 +425,7 @@ class _ExtensionsSettingsScreenState
             Icon(Icons.close_rounded, size: 14, color: cs.onErrorContainer),
             const SizedBox(width: 4),
             Text(
-              'Reset',
+              context.l10n.commonReset,
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
@@ -448,7 +455,7 @@ class _ExtensionsSettingsScreenState
             value: true,
             icon: const Icon(Icons.download_done_rounded, size: 18),
             label: Text(
-              'Installed ($totalInstalled)',
+              context.l10n.extensionsInstalledCount(totalInstalled.toString()),
               style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
             ),
           ),
@@ -456,7 +463,7 @@ class _ExtensionsSettingsScreenState
             value: false,
             icon: const Icon(Icons.explore_outlined, size: 18),
             label: Text(
-              'Get Extensions ($availableStr)',
+              context.l10n.extensionsGetExtensionsCount(availableStr),
               style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
             ),
           ),
@@ -493,11 +500,11 @@ class _ExtensionsSettingsScreenState
       dividerColor: Colors.transparent,
       tabs: [
         _buildTab(
-          'Anime',
+          context.l10n.libraryAnimeTab,
           _isInstalledMode ? countInstalledAnime : countAvailableAnime,
         ),
         _buildTab(
-          'Manga',
+          context.l10n.libraryMangaTab,
           _isInstalledMode ? countInstalledManga : countAvailableManga,
         ),
       ],
@@ -539,21 +546,22 @@ class _ExtensionsSettingsScreenState
   }
 
   List<Widget> _buildActions(BuildContext context) {
+    final l10n = context.l10n;
     return [
       IconButton(
         icon: const Icon(Icons.dashboard_customize_outlined),
-        tooltip: 'Addons (TorrServer)',
+        tooltip: l10n.extensionsAddonsTooltip,
         onPressed: () => context.pushSettingsAddons(),
       ),
       IconButton(
         icon: const Icon(Icons.speed_rounded),
-        tooltip: 'Test Extensions',
+        tooltip: l10n.extensionsTestTooltip,
         onPressed: () => context.pushSettingsExtensionsTest(),
       ),
 
       IconButton(
         icon: const Icon(Icons.info_outline_rounded),
-        tooltip: 'Extension Guide',
+        tooltip: l10n.extensionsGuideTooltip,
         onPressed: () => ExtensionGuideSheet.show(context),
       ),
       const SizedBox(width: 4),
@@ -561,6 +569,7 @@ class _ExtensionsSettingsScreenState
   }
 
   Widget _buildFab(BuildContext context, ThemeData theme) {
+    final l10n = context.l10n;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.end,
@@ -570,7 +579,7 @@ class _ExtensionsSettingsScreenState
           expandedWidth: MediaQuery.of(context).size.width * 0.75,
           height: 52,
           controller: _searchController,
-          hintText: 'Search extensions...',
+          hintText: l10n.extensionsSearchHint,
           onExpand: () => setState(() => _isSearching = true),
           onBackPressed: () => setState(() {
             _isSearching = false;
@@ -597,9 +606,9 @@ class _ExtensionsSettingsScreenState
                 backgroundColor: theme.colorScheme.secondaryContainer,
                 foregroundColor: theme.colorScheme.onSecondaryContainer,
                 icon: const Icon(Icons.extension_rounded, size: 18),
-                label: const Text(
-                  'Manage Engines',
-                  style: TextStyle(fontSize: 13),
+                label: Text(
+                  l10n.extensionsManageEngines,
+                  style: const TextStyle(fontSize: 13),
                 ),
                 onPressed: () => _showManageEnginesSheet(context),
               ),
@@ -611,9 +620,9 @@ class _ExtensionsSettingsScreenState
                 backgroundColor: theme.colorScheme.primary,
                 foregroundColor: theme.colorScheme.onPrimary,
                 icon: const Icon(Icons.storage_rounded, size: 18),
-                label: const Text(
-                  'Manage Repos',
-                  style: TextStyle(fontSize: 13),
+                label: Text(
+                  l10n.extensionsManageRepos,
+                  style: const TextStyle(fontSize: 13),
                 ),
                 onPressed: () => _showManageReposSheet(context),
               ),
@@ -639,42 +648,43 @@ class _ExtensionsSettingsScreenState
 
             final isRuntimeReady = AppInit.isBridgeInitialized;
             final cs = Theme.of(context).colorScheme;
+            final l10n = context.l10n;
 
             final engines = [
               (
                 'mangayomi',
                 'Mangayomi Engine',
-                'External runtime engine for Anime & Manga extensions',
+                l10n.extensionsEngineMangayomiDesc,
                 Icons.auto_awesome_mosaic_rounded,
               ),
               (
                 'aniyomi',
                 'Tachiyomi / Aniyomi Engine',
-                'External runtime engine for Manga & Anime extensions',
+                l10n.extensionsEngineAniyomiDesc,
                 Icons.video_library_rounded,
               ),
               (
                 'cloudstream',
                 'CloudStream Engine',
-                'External runtime engine for Video streaming extensions',
+                l10n.extensionsEngineCloudStreamDesc,
                 Icons.cloud_queue_rounded,
               ),
               (
                 'kotatsu',
                 'Kotatsu Engine',
-                'External runtime engine for Manga reading extensions',
+                l10n.extensionsEngineKotatsuDesc,
                 Icons.menu_book_rounded,
               ),
               (
                 'sora',
                 'Sora Engine',
-                'External runtime engine for Novel & Anime extensions',
+                l10n.extensionsEngineSoraDesc,
                 Icons.auto_stories_rounded,
               ),
             ];
 
             return AppBottomSheet(
-              title: 'Manage Extension Engines',
+              title: l10n.extensionsManageEnginesTitle,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -685,7 +695,7 @@ class _ExtensionsSettingsScreenState
                       vertical: 4,
                     ),
                     child: Text(
-                      'Enable or disable external extension runtime engines. Enabled engines will appear in your catalogs and discovery feeds alongside your native inbuilt sources.',
+                      l10n.extensionsManageEnginesDesc,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: cs.onSurfaceVariant,
                         height: 1.3,

@@ -15,10 +15,11 @@ void showNavBarStyleSheet(
   ThemeData theme,
 ) {
   final cs = theme.colorScheme;
+  final l10n = context.l10n;
 
   AppBottomSheet.show(
     context: context,
-    title: 'Navigation Bar Style',
+    title: l10n.uiSettingsNavBarTitle,
     child: UiSettingsSheetLayout(
       preview: Consumer(
         builder: (_, r, _) {
@@ -29,7 +30,7 @@ void showNavBarStyleSheet(
           );
         },
       ),
-      optionsTitle: 'Navigation Bar Preset',
+      optionsTitle: l10n.navBarStylePreset,
       options: Consumer(
         builder: (_, r, _) {
           final current = r.watch(uiPrefsProvider.select((s) => s.navBarStyle));
@@ -38,7 +39,7 @@ void showNavBarStyleSheet(
                 (style) => PickerOption(
                   icon: _navBarStyleIcon(style),
                   title: style.displayName,
-                  subtitle: _navBarStyleDesc(style),
+                  subtitle: _navBarStyleDesc(context, style),
                   selected: current == style,
                   onTap: () => notifier.updateNavBarStyle(style),
                 ),
@@ -75,14 +76,16 @@ Widget _buildNavBarPreviewWidget(BuildContext context, NavBarStyle style) {
   );
 }
 
-String _navBarStyleDesc(NavBarStyle style) => switch (style) {
-  NavBarStyle.classic => 'Floating container with modern backdrop blur',
-  NavBarStyle.minimal => 'Sleek, transparent floating glass dock style',
-  NavBarStyle.frosted => 'Super-translucent frosted glassmorphism layout',
-  NavBarStyle.material =>
-    'Material You rounded capsules with navigation indicators',
-  NavBarStyle.docked => 'Solid edge-to-edge layout connected to screen bottom',
-};
+String _navBarStyleDesc(BuildContext context, NavBarStyle style) {
+  final l10n = context.l10n;
+  return switch (style) {
+    NavBarStyle.classic => l10n.navBarClassicDesc,
+    NavBarStyle.minimal => l10n.navBarMinimalDesc,
+    NavBarStyle.frosted => l10n.navBarFrostedDesc,
+    NavBarStyle.material => l10n.navBarMaterialDesc,
+    NavBarStyle.docked => l10n.navBarDockedDesc,
+  };
+}
 
 IconData _navBarStyleIcon(NavBarStyle style) => switch (style) {
   NavBarStyle.classic => Icons.layers_outlined,

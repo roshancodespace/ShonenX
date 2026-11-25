@@ -1,5 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/core/localization/l10n_extension.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/episodes_panel/episode_tiles.dart';
 import 'package:shonenx/features/settings/presentation/widgets/picker_sheet_shell.dart';
 import 'package:shonenx/shared/models/unified_episode.dart';
@@ -14,10 +15,11 @@ void showEpisodeModeSheet(
   ThemeData theme,
 ) {
   final cs = theme.colorScheme;
+  final l10n = context.l10n;
 
   AppBottomSheet.show(
     context: context,
-    title: 'Episode View Mode',
+    title: l10n.episodeModeTitle,
     child: UiSettingsSheetLayout(
       preview: Consumer(
         builder: (_, r, _) {
@@ -27,7 +29,7 @@ void showEpisodeModeSheet(
           return EpisodeModePreview(mode: current);
         },
       ),
-      optionsTitle: 'Episode View Mode Preset',
+      optionsTitle: l10n.episodeModePreset,
       options: Consumer(
         builder: (_, r, _) {
           final current = r.watch(
@@ -38,7 +40,7 @@ void showEpisodeModeSheet(
                 (mode) => PickerOption(
                   icon: _episodeModeIcon(mode),
                   title: mode.displayName,
-                  subtitle: _episodeModeDesc(mode),
+                  subtitle: _episodeModeDesc(context, mode),
                   selected: current == mode,
                   onTap: () => notifier.updateEpisodeViewMode(mode),
                 ),
@@ -160,15 +162,16 @@ class EpisodeModePreview extends StatelessWidget {
   }
 }
 
-String _episodeModeDesc(EpisodeViewMode m) => switch (m) {
-  EpisodeViewMode.classic => 'Detailed list with episode art and title',
-  EpisodeViewMode.grid => 'Thumbnail grid with episode numbers',
-  EpisodeViewMode.box => 'Compact numbered boxes — great for long anime',
-  EpisodeViewMode.compact =>
-    'Clean text rows without thumbnails for fast browsing',
-  EpisodeViewMode.cover =>
-    'Wide landscape cards with thumbnail preview and details',
-};
+String _episodeModeDesc(BuildContext context, EpisodeViewMode m) {
+  final l10n = context.l10n;
+  return switch (m) {
+    EpisodeViewMode.classic => l10n.episodeModeClassicDesc,
+    EpisodeViewMode.grid => l10n.episodeModeGridDesc,
+    EpisodeViewMode.box => l10n.episodeModeBoxDesc,
+    EpisodeViewMode.compact => l10n.episodeModeCompactDesc,
+    EpisodeViewMode.cover => l10n.episodeModeCoverDesc,
+  };
+}
 
 IconData _episodeModeIcon(EpisodeViewMode m) => switch (m) {
   EpisodeViewMode.classic => Icons.view_agenda_outlined,

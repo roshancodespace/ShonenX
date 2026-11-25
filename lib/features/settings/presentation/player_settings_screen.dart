@@ -35,8 +35,10 @@ class PlayerSettingsScreen extends ConsumerWidget {
       });
     }
 
+    final l10n = context.l10n;
+
     return AppScaffold(
-      title: context.l10n.settingsPlayer,
+      title: l10n.settingsPlayer,
       body: ListView(
         padding: const EdgeInsets.only(bottom: 50),
         children: [
@@ -66,15 +68,14 @@ class PlayerSettingsScreen extends ConsumerWidget {
                 .toList(),
           ),
           SettingsSection(
-            title: 'Video Engine & Preferences',
+            title: l10n.playerVideoEngineSection,
             children: [
               SettingsSelectionTile(
-                title: 'Media Kit (MPV)',
-                subtitle:
-                    'Standalone player engine with advanced subtitle & shader support',
+                title: l10n.playerMediaKitTitle,
+                subtitle: l10n.playerMediaKitSubtitle,
                 isSelected: playerPrefs.playerType == PlayerType.mediakit,
                 onSelect: () => prefsNotifier.changePlayer(PlayerType.mediakit),
-                customizeLabel: context.l10n.settingsAdvancedSettings,
+                customizeLabel: l10n.settingsAdvancedSettings,
                 customizeIcon: Icons.settings_outlined,
                 onCustomize: () {
                   showModalBottomSheet(
@@ -86,8 +87,8 @@ class PlayerSettingsScreen extends ConsumerWidget {
               ),
               if (Platform.isAndroid)
                 SettingsSelectionTile(
-                  title: 'Better Player (ExoPlayer)',
-                  subtitle: 'Official Android native video rendering engine',
+                  title: l10n.playerBetterPlayerTitle,
+                  subtitle: l10n.playerBetterPlayerSubtitle,
                   isSelected: playerPrefs.playerType == PlayerType.betterPlayer,
                   onSelect: () =>
                       prefsNotifier.changePlayer(PlayerType.betterPlayer),
@@ -95,11 +96,11 @@ class PlayerSettingsScreen extends ConsumerWidget {
             ],
           ),
           SettingsSection(
-            title: 'Playback Defaults',
+            title: l10n.playerPlaybackDefaultsSection,
             children: [
               SettingsDropdownTile<ServerType>(
                 icon: Icons.translate_rounded,
-                title: 'Default Server Type (Sub / Dub)',
+                title: l10n.playerDefaultServerType,
                 value: playerPrefs.defaultServerType,
                 items:
                     [
@@ -112,7 +113,9 @@ class PlayerSettingsScreen extends ConsumerWidget {
                           (t) => DropdownMenuItem(
                             value: t,
                             child: Text(
-                              t == ServerType.unknown ? 'Any' : t.displayName,
+                              t == ServerType.unknown
+                                  ? l10n.playerServerAny
+                                  : t.displayName,
                             ),
                           ),
                         )
@@ -123,7 +126,7 @@ class PlayerSettingsScreen extends ConsumerWidget {
               ),
               SettingsDropdownTile<String>(
                 icon: Icons.high_quality_rounded,
-                title: 'Default Video Quality',
+                title: l10n.playerDefaultVideoQuality,
                 value: cleanQuality,
                 items: [
                   ..._kQualityOptions.entries.map(
@@ -134,17 +137,17 @@ class PlayerSettingsScreen extends ConsumerWidget {
                       value: cleanQuality,
                       child: Text(cleanQuality),
                     ),
-                  const DropdownMenuItem(
+                  DropdownMenuItem(
                     value: '__custom__',
-                    child: Text('Custom...'),
+                    child: Text(l10n.playerCustomOption),
                   ),
                 ],
                 onChanged: (val) {
                   if (val == '__custom__') {
                     _showCustomInputDialog(
                       context,
-                      title: 'Custom Video Quality',
-                      hint: 'e.g. 4K, 2160p, 1440p, 1080p',
+                      title: l10n.playerCustomVideoQualityTitle,
+                      hint: l10n.playerCustomVideoQualityHint,
                       initialValue: cleanQuality,
                       onSubmitted: (q) => prefsNotifier.setDefaultQuality(
                         StreamCleaner.sanitizeDefaultQuality(q),
@@ -159,7 +162,7 @@ class PlayerSettingsScreen extends ConsumerWidget {
               ),
               SettingsDropdownTile<String>(
                 icon: Icons.audiotrack_rounded,
-                title: 'Default Audio Language',
+                title: l10n.playerDefaultAudioLang,
                 value: playerPrefs.defaultAudioLang,
                 items: [
                   ..._kAudioLangOptions.entries.map(
@@ -172,17 +175,17 @@ class PlayerSettingsScreen extends ConsumerWidget {
                       value: playerPrefs.defaultAudioLang,
                       child: Text(playerPrefs.defaultAudioLang.toUpperCase()),
                     ),
-                  const DropdownMenuItem(
+                  DropdownMenuItem(
                     value: '__custom__',
-                    child: Text('Custom...'),
+                    child: Text(l10n.playerCustomOption),
                   ),
                 ],
                 onChanged: (val) {
                   if (val == '__custom__') {
                     _showCustomInputDialog(
                       context,
-                      title: 'Custom Audio Language',
-                      hint: 'e.g. jpn, eng, spa, de',
+                      title: l10n.playerCustomAudioLangTitle,
+                      hint: l10n.playerCustomAudioLangHint,
                       initialValue: playerPrefs.defaultAudioLang,
                       onSubmitted: (l) => prefsNotifier.setDefaultAudioLang(l),
                     );
@@ -193,7 +196,7 @@ class PlayerSettingsScreen extends ConsumerWidget {
               ),
               SettingsDropdownTile<String>(
                 icon: Icons.subtitles_rounded,
-                title: 'Default Subtitle Language',
+                title: l10n.playerDefaultSubtitleLang,
                 value: playerPrefs.defaultSubtitleLang,
                 items: [
                   ..._kSubtitleLangOptions.entries.map(
@@ -208,17 +211,17 @@ class PlayerSettingsScreen extends ConsumerWidget {
                         playerPrefs.defaultSubtitleLang.toUpperCase(),
                       ),
                     ),
-                  const DropdownMenuItem(
+                  DropdownMenuItem(
                     value: '__custom__',
-                    child: Text('Custom...'),
+                    child: Text(l10n.playerCustomOption),
                   ),
                 ],
                 onChanged: (val) {
                   if (val == '__custom__') {
                     _showCustomInputDialog(
                       context,
-                      title: 'Custom Subtitle Language',
-                      hint: 'e.g. eng, spa, ger, ja',
+                      title: l10n.playerCustomSubtitleLangTitle,
+                      hint: l10n.playerCustomSubtitleLangHint,
                       initialValue: playerPrefs.defaultSubtitleLang,
                       onSubmitted: (l) =>
                           prefsNotifier.setDefaultSubtitleLang(l),
@@ -231,19 +234,18 @@ class PlayerSettingsScreen extends ConsumerWidget {
             ],
           ),
           SettingsSection(
-            title: 'Auto-Next & Quick Skip',
+            title: l10n.playerAutoNextQuickSkipSection,
             children: [
               SettingsSwitchTile(
                 icon: Icons.skip_next_rounded,
-                title: 'Auto-Switch to Next Episode',
-                subtitle:
-                    'Automatically load next episode when countdown finishes or video ends',
+                title: l10n.playerAutoSwitchNextEpisode,
+                subtitle: l10n.playerAutoSwitchNextEpisodeSubtitle,
                 value: playerPrefs.autoNext,
                 onChanged: (val) => prefsNotifier.setAutoNext(val),
               ),
               SettingsDropdownTile<int>(
                 icon: Icons.timer_outlined,
-                title: 'Next Episode Prompt Threshold',
+                title: l10n.playerNextEpisodePromptThreshold,
                 value:
                     [
                       30,
@@ -259,7 +261,7 @@ class PlayerSettingsScreen extends ConsumerWidget {
                     .map(
                       (s) => DropdownMenuItem(
                         value: s,
-                        child: Text('${s}s before end'),
+                        child: Text(l10n.playerSecondsBeforeEnd(s.toString())),
                       ),
                     )
                     .toList(),
@@ -269,15 +271,15 @@ class PlayerSettingsScreen extends ConsumerWidget {
               ),
               SettingsSwitchTile(
                 icon: Icons.fast_forward_rounded,
-                title: 'Show Quick Skip Button',
-                subtitle: 'Display quick seek button (+Xs) during playback',
+                title: l10n.playerShowQuickSkip,
+                subtitle: l10n.playerShowQuickSkipSubtitle,
                 value: playerPrefs.showSkipButton,
                 onChanged: (val) => prefsNotifier.setShowSkipButton(val),
               ),
               if (playerPrefs.showSkipButton)
                 SettingsDropdownTile<int>(
                   icon: Icons.forward_10_rounded,
-                  title: 'Quick Skip Duration',
+                  title: l10n.playerQuickSkipDuration,
                   value:
                       [
                         15,
@@ -303,12 +305,12 @@ class PlayerSettingsScreen extends ConsumerWidget {
             ],
           ),
           SettingsSection(
-            title: 'Subtitles & Gestures',
+            title: l10n.playerSubtitlesGesturesSection,
             children: [
               SettingsActionTile(
                 icon: Icons.subtitles_rounded,
-                title: 'Subtitle Preferences',
-                subtitle: 'Customize subtitle appearance and rendering engine',
+                title: l10n.playerSubtitlePreferences,
+                subtitle: l10n.playerSubtitlePreferencesSubtitle,
                 onTap: () {
                   showModalBottomSheet(
                     context: context,
@@ -324,17 +326,16 @@ class PlayerSettingsScreen extends ConsumerWidget {
               ),
               SettingsActionTile(
                 icon: Icons.translate_rounded,
-                title: 'Subtitle Translation',
-                subtitle:
-                    'Configure AI translation providers, API keys, and auto-translation',
+                title: l10n.playerSubtitleTranslation,
+                subtitle: l10n.playerSubtitleTranslationSubtitle,
                 onTap: () {
                   SubtitleTranslationSettingsSheet.show(context);
                 },
               ),
               SettingsActionTile(
                 icon: Icons.gesture_rounded,
-                title: 'Gesture Area',
-                subtitle: 'Customize active zones for volume and brightness',
+                title: l10n.playerGestureArea,
+                subtitle: l10n.playerGestureAreaSubtitle,
                 onTap: () {
                   showModalBottomSheet(
                     context: context,
@@ -346,9 +347,8 @@ class PlayerSettingsScreen extends ConsumerWidget {
               ),
               SettingsSwitchTile(
                 icon: Icons.touch_app_rounded,
-                title: 'Enable Gestures',
-                subtitle:
-                    'Allow swiping to seek, change volume, and brightness',
+                title: l10n.playerEnableGestures,
+                subtitle: l10n.playerEnableGesturesSubtitle,
                 value: playerPrefs.gesturePrefs.enableGestures,
                 onChanged: (val) {
                   prefsNotifier.updateGesturePrefs(
@@ -359,9 +359,8 @@ class PlayerSettingsScreen extends ConsumerWidget {
               if (playerPrefs.gesturePrefs.enableGestures)
                 SettingsSwitchTile(
                   icon: Icons.swap_horiz_rounded,
-                  title: 'Swap Volume & Brightness',
-                  subtitle:
-                      'Place Volume on the left and Brightness on the right',
+                  title: l10n.playerSwapVolumeBrightness,
+                  subtitle: l10n.playerSwapVolumeBrightnessSubtitle,
                   value: playerPrefs.gesturePrefs.swapVolumeAndBrightness,
                   onChanged: (val) {
                     prefsNotifier.updateGesturePrefs(
@@ -408,7 +407,7 @@ class PlayerSettingsScreen extends ConsumerWidget {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(context.l10n.commonCancel),
         ),
         FilledButton(
           onPressed: () {
@@ -418,7 +417,7 @@ class PlayerSettingsScreen extends ConsumerWidget {
               Navigator.of(context).pop();
             }
           },
-          child: const Text('Save'),
+          child: Text(context.l10n.commonSave),
         ),
       ],
     );

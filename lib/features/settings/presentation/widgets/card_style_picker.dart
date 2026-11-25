@@ -1,5 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/core/localization/l10n_extension.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/cards/media_card.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/continue/continue_reading_card.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/continue/continue_watching_card.dart';
@@ -72,7 +73,7 @@ void _showCardStylePickerSheet({
                 (style) => PickerOption(
                   icon: _cardStyleIcon(style),
                   title: style.displayName,
-                  subtitle: _cardStyleDesc(style),
+                  subtitle: _cardStyleDesc(context, style),
                   selected: current == style,
                   onTap: () => onSelectStyle(notifier, style),
                 ),
@@ -97,10 +98,11 @@ void showCardStyleSheet(
   UiPrefsNotifier notifier,
   ThemeData theme,
 ) {
+  final l10n = context.l10n;
   _showCardStylePickerSheet(
     context: context,
-    title: 'Card Style',
-    optionsTitle: 'Card Style Preset',
+    title: l10n.uiSettingsCardStyleTitle,
+    optionsTitle: l10n.pickerCardStylePreset,
     getStyle: (s) => s.cardStyle,
     getIsWide: (s, name) => s.isMediaCardWide(name),
     onSelectStyle: (n, style) => n.updateCardStyle(style),
@@ -143,19 +145,19 @@ void showCardStyleSheet(
         children: [
           FilterChip(
             avatar: const Icon(Icons.star_rounded, size: 16),
-            label: const Text('Ratings'),
+            label: Text(ctx.l10n.pickerRatingsChip),
             selected: uiState.showCardRatings,
             onSelected: (_) => notifier.toggleShowCardRatings(),
           ),
           FilterChip(
             avatar: const Icon(Icons.category_rounded, size: 16),
-            label: const Text('Genres'),
+            label: Text(ctx.l10n.detailsGenres),
             selected: uiState.showCardGenres,
             onSelected: (_) => notifier.toggleShowCardGenres(),
           ),
           FilterChip(
             avatar: const Icon(Icons.calendar_today_rounded, size: 16),
-            label: const Text('Release Year'),
+            label: Text(ctx.l10n.pickerReleaseYearChip),
             selected: uiState.showCardYear,
             onSelected: (_) => notifier.toggleShowCardYear(),
           ),
@@ -165,7 +167,11 @@ void showCardStyleSheet(
                 isWide ? Icons.table_rows_rounded : Icons.grid_view_rounded,
                 size: 16,
               ),
-              label: Text(isWide ? 'Wide Mode' : 'Portrait Mode'),
+              label: Text(
+                isWide
+                    ? ctx.l10n.pickerWideModeChip
+                    : ctx.l10n.pickerPortraitModeChip,
+              ),
               selected: isWide,
               onSelected: (_) => notifier.toggleMediaCardWide(current.name),
             ),
@@ -181,10 +187,11 @@ void showContinueWatchingSheet(
   UiPrefsNotifier notifier,
   ThemeData theme,
 ) {
+  final l10n = context.l10n;
   _showCardStylePickerSheet(
     context: context,
-    title: 'Continue Watching Style',
-    optionsTitle: 'Continue Watching Style Preset',
+    title: l10n.uiSettingsContinueWatchingTitle,
+    optionsTitle: l10n.pickerContinueWatchingPreset,
     getStyle: (s) => s.continueWatchingStyle,
     getIsWide: (s, name) => s.isContinueWatchingWide(name),
     onSelectStyle: (n, style) => n.updateContinueWatchingStyle(style),
@@ -204,10 +211,11 @@ void showContinueReadingSheet(
   UiPrefsNotifier notifier,
   ThemeData theme,
 ) {
+  final l10n = context.l10n;
   _showCardStylePickerSheet(
     context: context,
-    title: 'Continue Reading Style',
-    optionsTitle: 'Continue Reading Style Preset',
+    title: l10n.uiSettingsContinueReadingTitle,
+    optionsTitle: l10n.pickerContinueReadingPreset,
     getStyle: (s) => s.continueReadingStyle,
     getIsWide: (s, name) => s.isContinueReadingWide(name),
     onSelectStyle: (n, style) => n.updateContinueReadingStyle(style),
@@ -233,14 +241,17 @@ IconData _cardStyleIcon(MediaCardStyle s) => switch (s) {
   MediaCardStyle.wideBanner => Icons.view_headline_rounded,
 };
 
-String _cardStyleDesc(MediaCardStyle s) => switch (s) {
-  MediaCardStyle.classic => 'Classic poster layout with metadata overlay',
-  MediaCardStyle.minimal => 'Clean border-free poster card',
-  MediaCardStyle.expressive => 'Spacious container with bold badges',
-  MediaCardStyle.material => 'Rounded Material card styling',
-  MediaCardStyle.cinematic => 'Full-bleed cinematic landscape view',
-  MediaCardStyle.neon => 'Glowing vibrant accent borders',
-  MediaCardStyle.compact => 'Dense compact layout for high density',
-  MediaCardStyle.editorial => 'High-whitespace magazine design',
-  MediaCardStyle.wideBanner => 'Wide horizontal banner card',
-};
+String _cardStyleDesc(BuildContext context, MediaCardStyle s) {
+  final l10n = context.l10n;
+  return switch (s) {
+    MediaCardStyle.classic => l10n.cardStyleClassicDesc,
+    MediaCardStyle.minimal => l10n.cardStyleMinimalDesc,
+    MediaCardStyle.expressive => l10n.cardStyleExpressiveDesc,
+    MediaCardStyle.material => l10n.cardStyleMaterialDesc,
+    MediaCardStyle.cinematic => l10n.cardStyleCinematicDesc,
+    MediaCardStyle.neon => l10n.cardStyleNeonDesc,
+    MediaCardStyle.compact => l10n.cardStyleCompactDesc,
+    MediaCardStyle.editorial => l10n.cardStyleEditorialDesc,
+    MediaCardStyle.wideBanner => l10n.cardStyleWideBannerDesc,
+  };
+}

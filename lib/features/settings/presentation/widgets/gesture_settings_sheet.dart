@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/core/localization/l10n_extension.dart';
 import 'package:shonenx/features/player/domain/gesture_prefs.dart';
 import 'package:shonenx/features/player/providers/player_prefs_provider.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
@@ -15,7 +16,7 @@ class GestureSettingsSheet extends ConsumerWidget {
     final notifier = ref.read(playerPrefsProvider.notifier);
 
     return AppBottomSheet(
-      title: 'Gesture Areas',
+      title: context.l10n.playerGestureArea,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(10, 0, 10, 24),
         child: _LivePreview(

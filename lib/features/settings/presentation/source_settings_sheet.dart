@@ -1,5 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/core/localization/l10n_extension.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
@@ -55,9 +56,10 @@ class _SourceSettingsSheetState extends ConsumerState<SourceSettingsSheet> {
     final settingsMap = ref.watch(sourceSettingsProvider(source.id));
     final notifier = ref.read(sourceSettingsProvider(source.id).notifier);
     final mediaSource = _getMediaSource();
+    final l10n = context.l10n;
 
     return AppBottomSheet(
-      title: '${source.name} Settings',
+      title: l10n.sourceSettingsTitle(source.name),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -82,8 +84,7 @@ class _SourceSettingsSheetState extends ConsumerState<SourceSettingsSheet> {
                   if (setting.id == 'cf_bypass_proxy' &&
                       useWebviewBypass == true) {
                     isEnabled = false;
-                    displaySubtitle =
-                        'Inactive (In-app Cloudflare Bypass is enabled)';
+                    displaySubtitle = l10n.sourceSettingsCfInactive;
                   }
                 }
 
@@ -107,7 +108,8 @@ class _SourceSettingsSheetState extends ConsumerState<SourceSettingsSheet> {
                   return SettingsActionTile(
                     icon: Icons.list_alt_rounded,
                     title: setting.name,
-                    subtitle: currentValue?.toString() ?? 'Default',
+                    subtitle:
+                        currentValue?.toString() ?? l10n.sourceSettingsDefault,
                     onTap: isEnabled
                         ? () {
                             _showSelectSheet(
@@ -155,11 +157,11 @@ class _SourceSettingsSheetState extends ConsumerState<SourceSettingsSheet> {
                           }
                         : () {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
+                              SnackBar(
                                 content: Text(
-                                  'Disable "In-app Cloudflare Bypass" to use a custom proxy.',
+                                  l10n.sourceSettingsCfDisableHint,
                                 ),
-                                duration: Duration(seconds: 2),
+                                duration: const Duration(seconds: 2),
                               ),
                             );
                           },
@@ -175,7 +177,7 @@ class _SourceSettingsSheetState extends ConsumerState<SourceSettingsSheet> {
                     icon: Icons.checklist_rtl_rounded,
                     title: setting.name,
                     subtitle: currentList.isEmpty
-                        ? 'None'
+                        ? l10n.commonNone
                         : currentList.join(', '),
                     onTap: isEnabled
                         ? () {
@@ -248,7 +250,7 @@ class _SourceSettingsSheetState extends ConsumerState<SourceSettingsSheet> {
               onChanged(controller.text);
               Navigator.pop(context);
             },
-            child: const Text('Save'),
+            child: Text(context.l10n.commonSave),
           ),
         ],
       ),
@@ -295,11 +297,11 @@ class _SourceSettingsSheetState extends ConsumerState<SourceSettingsSheet> {
                                 selected.remove(option);
                               } else {
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
+                                  SnackBar(
                                     content: Text(
-                                      'At least one option must be selected.',
+                                      context.l10n.sourceSettingsMinOneOption,
                                     ),
-                                    duration: Duration(seconds: 1),
+                                    duration: const Duration(seconds: 1),
                                   ),
                                 );
                               }
@@ -317,7 +319,7 @@ class _SourceSettingsSheetState extends ConsumerState<SourceSettingsSheet> {
                   onChanged(selected);
                   Navigator.pop(context);
                 },
-                child: const Text('Save'),
+                child: Text(context.l10n.commonSave),
               ),
             ],
           );

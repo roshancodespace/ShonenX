@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:shonenx/shared/widgets/smart_image.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/core/localization/l10n_extension.dart';
 import 'package:shonenx/features/tracking/providers/tracker_auth_provider.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_auth_mode.dart';
@@ -58,15 +59,16 @@ class _TrackingSettingsScreenState
       text: custom?.clientSecret ?? '',
     );
 
+    final l10n = context.l10n;
     AppDialog.show(
       context: context,
-      title: '${type.displayName} Credentials',
+      title: l10n.trackingCredentialsTitle(type.displayName),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Provide your own API Client ID and Secret. This overrides the default bundled credentials.\nLeave blank or click Reset to use the default credentials.',
+            l10n.trackingCredentialsBody,
             style: Theme.of(context).textTheme.bodySmall,
           ),
           const SizedBox(height: 10),
@@ -80,7 +82,7 @@ class _TrackingSettingsScreenState
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Active Redirect URI (${prefs.authMode.displayName} mode):',
+                  l10n.trackingActiveRedirectUri(prefs.authMode.displayName),
                   style: Theme.of(
                     context,
                   ).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold),
@@ -104,19 +106,19 @@ class _TrackingSettingsScreenState
           const SizedBox(height: 16),
           TextField(
             controller: idController,
-            decoration: const InputDecoration(
-              labelText: 'Client ID',
-              hintText: 'Leave empty for default',
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              labelText: l10n.trackingClientId,
+              hintText: l10n.trackingLeaveEmptyDefault,
+              border: const OutlineInputBorder(),
             ),
           ),
           const SizedBox(height: 16),
           TextField(
             controller: secretController,
-            decoration: const InputDecoration(
-              labelText: 'Client Secret',
-              hintText: 'Leave empty for default',
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              labelText: l10n.trackingClientSecret,
+              hintText: l10n.trackingLeaveEmptyDefault,
+              border: const OutlineInputBorder(),
             ),
           ),
         ],
@@ -132,20 +134,20 @@ class _TrackingSettingsScreenState
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
-                    'Reset ${type.displayName} credentials to default',
+                    l10n.trackingCredentialsResetSnack(type.displayName),
                   ),
                 ),
               );
             },
             icon: const Icon(Icons.restore, size: 18),
-            label: const Text('Reset'),
+            label: Text(l10n.commonReset),
             style: TextButton.styleFrom(
               foregroundColor: Theme.of(context).colorScheme.error,
             ),
           ),
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          child: Text(l10n.commonCancel),
         ),
         FilledButton(
           onPressed: () {
@@ -162,7 +164,7 @@ class _TrackingSettingsScreenState
             }
             Navigator.pop(context);
           },
-          child: const Text('Save'),
+          child: Text(l10n.commonSave),
         ),
       ],
     );
@@ -171,36 +173,37 @@ class _TrackingSettingsScreenState
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
 
     final prefs = ref.watch(trackingPrefsProvider);
     final authTokens = ref.watch(authTokensProvider).value ?? {};
     final allTrackers = ref.watch(availableTrackersProvider);
 
     return AppScaffold(
-      title: 'Tracking & Sync',
+      title: l10n.trackingSyncTitle,
       body: ListView(
         padding: const EdgeInsets.only(bottom: 50),
         children: [
           SettingsSection(
-            title: 'General',
+            title: l10n.settingsGeneral,
             children: [
               SettingsSegmentedTile<TrackerAuthMode>(
-                title: 'OAuth Authentication Method',
-                segments: const [
+                title: l10n.trackingOAuthMethod,
+                segments: [
                   ButtonSegment(
                     value: TrackerAuthMode.auto,
-                    label: Text('Auto'),
-                    icon: Icon(Icons.auto_mode_outlined),
+                    label: Text(l10n.trackingAuthAuto),
+                    icon: const Icon(Icons.auto_mode_outlined),
                   ),
                   ButtonSegment(
                     value: TrackerAuthMode.browser,
-                    label: Text('Browser'),
-                    icon: Icon(Icons.open_in_browser_outlined),
+                    label: Text(l10n.trackingAuthBrowser),
+                    icon: const Icon(Icons.open_in_browser_outlined),
                   ),
                   ButtonSegment(
                     value: TrackerAuthMode.webview,
-                    label: Text('WebView'),
-                    icon: Icon(Icons.web_outlined),
+                    label: Text(l10n.trackingAuthWebview),
+                    icon: const Icon(Icons.web_outlined),
                   ),
                 ],
                 selected: {prefs.authMode},
@@ -227,9 +230,10 @@ class _TrackingSettingsScreenState
               const SizedBox(height: 8),
               SettingsSliderTile(
                 icon: Icons.percent,
-                title: 'Sync Threshold',
-                subtitle:
-                    'Mark episode as watched after ${(prefs.syncThreshold * 100).toInt()}% runtime',
+                title: l10n.trackingSyncThreshold,
+                subtitle: l10n.trackingSyncThresholdSubtitle(
+                  (prefs.syncThreshold * 100).toInt().toString(),
+                ),
                 value: prefs.syncThreshold,
                 min: 0.1,
                 max: 1.0,
@@ -244,13 +248,12 @@ class _TrackingSettingsScreenState
             ],
           ),
           SettingsSection(
-            title: 'Automation',
+            title: l10n.trackingAutomationSection,
             children: [
               SettingsSwitchTile(
                 icon: Icons.auto_awesome_outlined,
-                title: 'Auto-Link Trackers',
-                subtitle:
-                    'Automatically create mappings with active trackers when matching IDs are found',
+                title: l10n.trackingAutoLink,
+                subtitle: l10n.trackingAutoLinkSubtitle,
                 value: prefs.autoTrackPrimary,
                 onInfoCallback: () {
                   final theme = Theme.of(context);
@@ -259,7 +262,7 @@ class _TrackingSettingsScreenState
 
                   AppBottomSheet.show(
                     context: context,
-                    title: 'Auto-Link Trackers',
+                    title: l10n.trackingAutoLink,
                     child: Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
@@ -279,7 +282,7 @@ class _TrackingSettingsScreenState
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
-                                  'Automatically connect tracker entries',
+                                  l10n.trackingAutoLinkSheetHeading,
                                   style: textTheme.titleMedium?.copyWith(
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -291,8 +294,7 @@ class _TrackingSettingsScreenState
                           const SizedBox(height: 16),
 
                           Text(
-                            'Normally you need to manually link anime and manga to your trackers. '
-                            'With Auto-Link Trackers enabled, ShonenX automatically creates mappings with your active trackers whenever matching IDs are found.',
+                            l10n.trackingAutoLinkSheetBody,
                             style: textTheme.bodyMedium,
                           ),
 
@@ -314,9 +316,7 @@ class _TrackingSettingsScreenState
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Text(
-                                    'If a media is already in your cloud tracker library, '
-                                    'its status and progress will appear instantly without manual linking. '
-                                    'Watched episodes and read chapters will also sync progress automatically.',
+                                    l10n.trackingAutoLinkSheetHighlight,
                                     style: textTheme.bodyMedium?.copyWith(
                                       color: cs.onPrimaryContainer,
                                     ),
@@ -334,13 +334,14 @@ class _TrackingSettingsScreenState
                                 color: cs.onSurface,
                               ),
                               children: [
-                                const TextSpan(
-                                  text: 'Best results: ',
-                                  style: TextStyle(fontWeight: FontWeight.w700),
+                                TextSpan(
+                                  text: l10n.trackingBestResultsPrefix,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                  ),
                                 ),
                                 TextSpan(
-                                  text:
-                                      'Use the same service for both your Discovery Source and Primary Tracker (for example, AniList + AniList).',
+                                  text: l10n.trackingBestResultsBody,
                                   style: TextStyle(color: cs.onSurfaceVariant),
                                 ),
                               ],
@@ -350,7 +351,7 @@ class _TrackingSettingsScreenState
                           const SizedBox(height: 12),
 
                           Text(
-                            'When disabled, tracker mappings will never be created automatically and unlinked media will not sync.',
+                            l10n.trackingAutoLinkFooter,
                             style: textTheme.bodySmall?.copyWith(
                               color: cs.onSurfaceVariant,
                             ),
@@ -369,7 +370,7 @@ class _TrackingSettingsScreenState
             ],
           ),
           SettingsSection(
-            title: 'Trackers',
+            title: l10n.trackingTrackersSection,
             children: allTrackers.map((tracker) {
               final isRemote = tracker is RemoteTracker;
               final loadingTracker = ref.watch(authLoadingTrackerProvider);
@@ -388,7 +389,7 @@ class _TrackingSettingsScreenState
                   : (localProfile?.username != null &&
                             localProfile!.username != 'Guest'
                         ? localProfile.username
-                        : 'Guest');
+                        : l10n.trackingGuest);
 
               return AbsorbPointer(
                 absorbing: prefs.isIncognito || isLoggingIn,
@@ -488,7 +489,7 @@ class _TrackingSettingsScreenState
                                       ),
                                     )),
                         title: Text(
-                          '${tracker.type.displayName} ${isPrimary ? '(Primary)' : ''}',
+                          '${tracker.type.displayName}${isPrimary ? l10n.trackingPrimaryBadge : ''}',
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                         subtitle: isLoggingIn
@@ -505,7 +506,7 @@ class _TrackingSettingsScreenState
                                   ),
                                   const SizedBox(width: 8),
                                   Text(
-                                    'Logging in...',
+                                    l10n.trackingLoggingIn,
                                     style: TextStyle(
                                       fontWeight: FontWeight.w600,
                                       color: theme.colorScheme.primary,
@@ -516,11 +517,13 @@ class _TrackingSettingsScreenState
                             : Text(
                                 isRemote
                                     ? (isLoggedIn
-                                          ? 'Logged in as $profileName'
+                                          ? l10n.trackingLoggedInAs(
+                                              profileName ?? '',
+                                            )
                                           : (!_hasCredentials(tracker.type)
-                                                ? 'Missing API Credentials'
-                                                : 'Not logged in'))
-                                    : ('Logged in as $profileName'),
+                                                ? l10n.trackingMissingApiCreds
+                                                : l10n.trackingNotLoggedIn))
+                                    : l10n.trackingLoggedInAs(profileName ?? ''),
                                 style: TextStyle(
                                   fontWeight: FontWeight.w700,
                                   color: !isPrimary
@@ -550,7 +553,7 @@ class _TrackingSettingsScreenState
                                     color: theme.colorScheme.onSurfaceVariant,
                                   ),
                                 ),
-                                label: const Text('Logging in...'),
+                                label: Text(l10n.trackingLoggingIn),
                               )
                             : (!isRemote || isLoggedIn
                                   ? Row(
@@ -565,7 +568,8 @@ class _TrackingSettingsScreenState
                                               _showCredentialsDialog(
                                                 tracker.type,
                                               ),
-                                          tooltip: 'Custom API Credentials',
+                                          tooltip:
+                                              l10n.trackingCustomApiCredsTooltip,
                                         ),
                                         const SizedBox(width: 4),
                                         IconButton.filledTonal(
@@ -581,7 +585,7 @@ class _TrackingSettingsScreenState
                                             Icons.edit_outlined,
                                             size: 20,
                                           ),
-                                          tooltip: 'Customize',
+                                          tooltip: l10n.settingsCustomize,
                                         ),
                                       ],
                                     )
@@ -601,8 +605,8 @@ class _TrackingSettingsScreenState
                                                   tracker.type,
                                                 ),
                                             icon: const Icon(Icons.key_off),
-                                            label: const Text(
-                                              'Add Credentials',
+                                            label: Text(
+                                              l10n.trackingAddCredentials,
                                             ),
                                           )
                                         else ...[
@@ -615,7 +619,8 @@ class _TrackingSettingsScreenState
                                                 _showCredentialsDialog(
                                                   tracker.type,
                                                 ),
-                                            tooltip: 'Custom API Credentials',
+                                            tooltip: l10n
+                                                .trackingCustomApiCredsTooltip,
                                           ),
                                           const SizedBox(width: 4),
                                           FilledButton(
@@ -653,7 +658,7 @@ class _TrackingSettingsScreenState
                                                 }
                                               }
                                             },
-                                            child: const Text('Login'),
+                                            child: Text(l10n.trackingLogin),
                                           ),
                                         ],
                                       ],

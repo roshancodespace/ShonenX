@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/core/localization/l10n_extension.dart';
 import 'package:shonenx/shared/models/app_theme_preset.dart';
 import 'package:shonenx/shared/models/built_in_presets.dart';
 import 'package:shonenx/shared/providers/preset_provider.dart';
@@ -14,7 +15,7 @@ class PresetGallerySheet extends ConsumerStatefulWidget {
   static void show(BuildContext context) {
     AppBottomSheet.show(
       context: context,
-      title: 'Preset Gallery',
+      title: context.l10n.presetsGalleryTitle,
       child: const PresetGallerySheet(),
     );
   }
@@ -31,6 +32,7 @@ class _PresetGallerySheetState extends ConsumerState<PresetGallerySheet> {
     final presetState = ref.watch(presetProvider);
     final notifier = ref.read(presetProvider.notifier);
     final theme = Theme.of(context);
+    final l10n = context.l10n;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -69,7 +71,9 @@ class _PresetGallerySheetState extends ConsumerState<PresetGallerySheet> {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      'Curated (${BuiltInPresets.all.length})',
+                      l10n.presetsCuratedCount(
+                        BuiltInPresets.all.length.toString(),
+                      ),
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: _selectedSegment == 0
@@ -113,7 +117,9 @@ class _PresetGallerySheetState extends ConsumerState<PresetGallerySheet> {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      'Custom (${presetState.customPresets.length})',
+                      l10n.presetsCustomCount(
+                        presetState.customPresets.length.toString(),
+                      ),
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: _selectedSegment == 1
@@ -141,7 +147,7 @@ class _PresetGallerySheetState extends ConsumerState<PresetGallerySheet> {
             children: [
               if (_selectedSegment == 0) ...[
                 Text(
-                  'BUILT-IN THEMES',
+                  l10n.presetsBuiltInHeader,
                   style: theme.textTheme.labelSmall?.copyWith(
                     color: theme.colorScheme.primary,
                     fontWeight: FontWeight.w700,
@@ -157,7 +163,7 @@ class _PresetGallerySheetState extends ConsumerState<PresetGallerySheet> {
                       notifier.applyPreset(preset);
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Loaded preset: ${preset.name}'),
+                          content: Text(l10n.presetsLoadedSnack(preset.name)),
                           behavior: SnackBarBehavior.floating,
                         ),
                       );
@@ -167,7 +173,7 @@ class _PresetGallerySheetState extends ConsumerState<PresetGallerySheet> {
                 ),
               ] else ...[
                 Text(
-                  'YOUR CUSTOM THEMES',
+                  l10n.presetsCustomHeader,
                   style: theme.textTheme.labelSmall?.copyWith(
                     color: theme.colorScheme.primary,
                     fontWeight: FontWeight.w700,
@@ -197,14 +203,14 @@ class _PresetGallerySheetState extends ConsumerState<PresetGallerySheet> {
                         ),
                         const SizedBox(height: 10),
                         Text(
-                          'No custom presets yet',
+                          l10n.presetsNoCustomTitle,
                           style: theme.textTheme.bodyMedium?.copyWith(
                             fontWeight: FontWeight.w600,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Use "Create Theme" above or import a .json theme from the community.',
+                          l10n.presetsNoCustomSubtitle,
                           textAlign: TextAlign.center,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
@@ -223,7 +229,7 @@ class _PresetGallerySheetState extends ConsumerState<PresetGallerySheet> {
                         notifier.applyPreset(preset);
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('Loaded preset: ${preset.name}'),
+                            content: Text(l10n.presetsLoadedSnack(preset.name)),
                             behavior: SnackBarBehavior.floating,
                           ),
                         );
@@ -276,7 +282,7 @@ class _PresetGallerySheetState extends ConsumerState<PresetGallerySheet> {
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  'Snapshot Current',
+                  context.l10n.presetsSnapshotCurrent,
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
@@ -311,7 +317,7 @@ class _PresetGallerySheetState extends ConsumerState<PresetGallerySheet> {
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  'Import JSON',
+                  context.l10n.presetsImportJson,
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -346,7 +352,7 @@ class _PresetGallerySheetState extends ConsumerState<PresetGallerySheet> {
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  'Export',
+                  context.l10n.presetsExport,
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
@@ -376,12 +382,13 @@ class _PresetGallerySheetState extends ConsumerState<PresetGallerySheet> {
       text: targetPreset?.description ?? 'Exported custom theme configuration.',
     );
     final cs = Theme.of(context).colorScheme;
+    final l10n = context.l10n;
 
     AppBottomSheet.show<void>(
       context: context,
       title: targetPreset != null
-          ? 'Export Preset JSON'
-          : 'Export Current Theme',
+          ? l10n.presetsExportPresetTitle
+          : l10n.presetsExportCurrentTitle,
       child: Builder(
         builder: (ctx) => Column(
           mainAxisSize: MainAxisSize.min,
@@ -389,37 +396,37 @@ class _PresetGallerySheetState extends ConsumerState<PresetGallerySheet> {
           children: [
             Text(
               targetPreset != null
-                  ? 'Customize the metadata before exporting "${targetPreset.name}" to clipboard:'
-                  : 'Customize the metadata before exporting your current theme settings to clipboard:',
+                  ? l10n.presetsExportPresetPrompt(targetPreset.name)
+                  : l10n.presetsExportCurrentPrompt,
               style: const TextStyle(fontSize: 13),
             ),
             const SizedBox(height: 14),
             TextField(
               controller: nameController,
-              decoration: const InputDecoration(
-                labelText: 'Preset Name',
+              decoration: InputDecoration(
+                labelText: l10n.presetsPresetName,
                 hintText: 'e.g. Neon Horizon',
-                border: OutlineInputBorder(),
+                border: const OutlineInputBorder(),
                 isDense: true,
               ),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: authorController,
-              decoration: const InputDecoration(
-                labelText: 'Author / Creator',
+              decoration: InputDecoration(
+                labelText: l10n.presetsAuthorCreator,
                 hintText: 'e.g. @username or Me',
-                border: OutlineInputBorder(),
+                border: const OutlineInputBorder(),
                 isDense: true,
               ),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: descController,
-              decoration: const InputDecoration(
-                labelText: 'Description',
+              decoration: InputDecoration(
+                labelText: l10n.presetsDescription,
                 hintText: 'Brief summary of your theme aesthetic',
-                border: OutlineInputBorder(),
+                border: const OutlineInputBorder(),
                 isDense: true,
               ),
             ),
@@ -429,7 +436,7 @@ class _PresetGallerySheetState extends ConsumerState<PresetGallerySheet> {
               children: [
                 TextButton(
                   onPressed: () => Navigator.pop(ctx),
-                  child: const Text('Cancel'),
+                  child: Text(l10n.commonCancel),
                 ),
                 const SizedBox(width: 8),
                 FilledButton.icon(
@@ -475,14 +482,14 @@ class _PresetGallerySheetState extends ConsumerState<PresetGallerySheet> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
-                          'Copied "$name" JSON by ${exportPreset.author} to clipboard!',
+                          l10n.presetsCopiedSnack(name, exportPreset.author),
                         ),
                         behavior: SnackBarBehavior.floating,
                       ),
                     );
                   },
                   icon: const Icon(Icons.copy_rounded, size: 16),
-                  label: const Text('Copy JSON'),
+                  label: Text(l10n.presetsCopyJson),
                 ),
               ],
             ),
@@ -494,9 +501,10 @@ class _PresetGallerySheetState extends ConsumerState<PresetGallerySheet> {
 
   void _showImportDialog(BuildContext context, WidgetRef ref) {
     final controller = TextEditingController();
+    final l10n = context.l10n;
     AppBottomSheet.show<void>(
       context: context,
-      title: 'Import Theme (.json)',
+      title: l10n.presetsImportTitle,
       child: Builder(
         builder: (ctx) => Column(
           mainAxisSize: MainAxisSize.min,
@@ -505,10 +513,10 @@ class _PresetGallerySheetState extends ConsumerState<PresetGallerySheet> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Expanded(
+                Expanded(
                   child: Text(
-                    'Paste a ShonenX Theme JSON code below:',
-                    style: TextStyle(fontSize: 13),
+                    l10n.presetsPasteBelow,
+                    style: const TextStyle(fontSize: 13),
                   ),
                 ),
                 TextButton.icon(
@@ -519,9 +527,9 @@ class _PresetGallerySheetState extends ConsumerState<PresetGallerySheet> {
                     }
                   },
                   icon: const Icon(Icons.content_paste_rounded, size: 15),
-                  label: const Text(
-                    'Paste Clipboard',
-                    style: TextStyle(fontSize: 12),
+                  label: Text(
+                    l10n.presetsPasteClipboard,
+                    style: const TextStyle(fontSize: 12),
                   ),
                 ),
               ],
@@ -546,7 +554,7 @@ class _PresetGallerySheetState extends ConsumerState<PresetGallerySheet> {
               children: [
                 TextButton(
                   onPressed: () => Navigator.pop(ctx),
-                  child: const Text('Cancel'),
+                  child: Text(l10n.commonCancel),
                 ),
                 OutlinedButton(
                   onPressed: () {
@@ -560,7 +568,7 @@ class _PresetGallerySheetState extends ConsumerState<PresetGallerySheet> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
-                            'Saved "${preset.name}" to Custom Themes (not applied).',
+                            l10n.presetsSavedNotApplied(preset.name),
                           ),
                           behavior: SnackBarBehavior.floating,
                         ),
@@ -568,13 +576,15 @@ class _PresetGallerySheetState extends ConsumerState<PresetGallerySheet> {
                     } catch (e) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Invalid JSON format: ${e.toString()}'),
+                          content: Text(
+                            l10n.presetsInvalidJson(e.toString()),
+                          ),
                           backgroundColor: Theme.of(context).colorScheme.error,
                         ),
                       );
                     }
                   },
-                  child: const Text('Save Only'),
+                  child: Text(l10n.presetsSaveOnly),
                 ),
                 FilledButton(
                   onPressed: () {
@@ -588,7 +598,7 @@ class _PresetGallerySheetState extends ConsumerState<PresetGallerySheet> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
-                            'Successfully installed & applied "${preset.name}"!',
+                            l10n.presetsInstalledApplied(preset.name),
                           ),
                           behavior: SnackBarBehavior.floating,
                         ),
@@ -596,13 +606,15 @@ class _PresetGallerySheetState extends ConsumerState<PresetGallerySheet> {
                     } catch (e) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Invalid JSON format: ${e.toString()}'),
+                          content: Text(
+                            l10n.presetsInvalidJson(e.toString()),
+                          ),
                           backgroundColor: Theme.of(context).colorScheme.error,
                         ),
                       );
                     }
                   },
-                  child: const Text('Install & Apply'),
+                  child: Text(l10n.presetsInstallApply),
                 ),
               ],
             ),
@@ -616,10 +628,11 @@ class _PresetGallerySheetState extends ConsumerState<PresetGallerySheet> {
     final nameController = TextEditingController();
     final authorController = TextEditingController(text: 'Me');
     final cs = Theme.of(context).colorScheme;
+    final l10n = context.l10n;
 
     AppBottomSheet.show<void>(
       context: context,
-      title: 'Snapshot Current Theme',
+      title: l10n.presetsSnapshotTitle,
       child: Builder(
         builder: (ctx) => Column(
           mainAxisSize: MainAxisSize.min,
@@ -627,19 +640,19 @@ class _PresetGallerySheetState extends ConsumerState<PresetGallerySheet> {
           children: [
             TextField(
               controller: nameController,
-              decoration: const InputDecoration(
-                labelText: 'Preset Name',
+              decoration: InputDecoration(
+                labelText: l10n.presetsPresetName,
                 hintText: 'e.g. Neon Horizon',
-                border: OutlineInputBorder(),
+                border: const OutlineInputBorder(),
                 isDense: true,
               ),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: authorController,
-              decoration: const InputDecoration(
-                labelText: 'Author / Creator',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: l10n.presetsAuthorCreator,
+                border: const OutlineInputBorder(),
                 isDense: true,
               ),
             ),
@@ -649,7 +662,7 @@ class _PresetGallerySheetState extends ConsumerState<PresetGallerySheet> {
               children: [
                 TextButton(
                   onPressed: () => Navigator.pop(ctx),
-                  child: const Text('Cancel'),
+                  child: Text(l10n.commonCancel),
                 ),
                 const SizedBox(width: 8),
                 FilledButton(
@@ -674,13 +687,13 @@ class _PresetGallerySheetState extends ConsumerState<PresetGallerySheet> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
-                          'Saved "${preset.name}" to your presets!',
+                          l10n.presetsSavedSnapshotSnack(preset.name),
                         ),
                         behavior: SnackBarBehavior.floating,
                       ),
                     );
                   },
-                  child: const Text('Save Snapshot'),
+                  child: Text(l10n.presetsSaveSnapshot),
                 ),
               ],
             ),
@@ -760,7 +773,7 @@ class _PresetCard extends StatelessWidget {
               color: theme.colorScheme.primary,
               size: 19,
             ),
-            tooltip: 'Export / Share JSON',
+            tooltip: context.l10n.presetsExportShareTooltip,
             onPressed: onExport,
           ),
           if (isCustom && onDelete != null)
@@ -770,7 +783,7 @@ class _PresetCard extends StatelessWidget {
                 color: theme.colorScheme.error,
                 size: 19,
               ),
-              tooltip: 'Delete Preset',
+              tooltip: context.l10n.presetsDeleteTooltip,
               onPressed: onDelete,
             ),
         ],

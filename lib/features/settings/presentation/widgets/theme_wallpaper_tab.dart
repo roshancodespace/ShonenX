@@ -3,6 +3,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:shonenx/core/localization/l10n_extension.dart';
 import 'package:shonenx/core/utils/wallpaper_processor.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
 import 'package:shonenx/features/settings/presentation/widgets/wallpaper_color_schemes_selector.dart';
@@ -17,22 +18,23 @@ class ThemeWallpaperTab extends ConsumerWidget {
     final themePrefs = ref.watch(themePrefsProvider);
     final notifier = ref.read(themePrefsProvider.notifier);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final l10n = context.l10n;
 
     return ListView(
       padding: const EdgeInsets.only(bottom: 50),
       children: [
         // Wallpaper
         SettingsSection(
-          title: 'Wallpaper',
+          title: l10n.settingsWallpaper,
           children: [
             SettingsActionTile(
               icon: Icons.image_outlined,
-              title: 'Custom Wallpaper',
+              title: l10n.themeWallpaperCustomTitle,
               subtitle: themePrefs.useAmoled
-                  ? 'Disabled with Pure Black'
+                  ? l10n.themeEffectsDisabledWithPureBlack
                   : themePrefs.customBackgroundImagePath != null
-                  ? 'Change custom background image'
-                  : 'Select a custom background image',
+                  ? l10n.themeWallpaperChangeSubtitle
+                  : l10n.themeWallpaperSelectSubtitle,
               onTap: themePrefs.useAmoled
                   ? null
                   : () async {
@@ -67,9 +69,8 @@ class ThemeWallpaperTab extends ConsumerWidget {
                 )) ...[
               SettingsActionTile(
                 icon: Icons.tune_rounded,
-                title: 'Customize Wallpaper',
-                subtitle:
-                    'Adjust blur, opacity, saturation, and brightness',
+                title: l10n.themeWallpaperCustomizeTitle,
+                subtitle: l10n.themeWallpaperCustomizeSubtitle,
                 onTap: () {
                   final ws = themePrefs.wallpaperSettings;
                   if (context.mounted &&
@@ -88,8 +89,8 @@ class ThemeWallpaperTab extends ConsumerWidget {
               ),
               SettingsSwitchTile(
                 icon: Icons.color_lens_outlined,
-                title: 'Use Wallpaper Colors',
-                subtitle: 'Generate theme colors from the wallpaper',
+                title: l10n.themeWallpaperUseColors,
+                subtitle: l10n.themeWallpaperUseColorsSubtitle,
                 value: themePrefs.useImageColors,
                 onChanged: (v) => notifier.updateTheme(
                   (p) => p.copyWith(useImageColors: v),
@@ -120,8 +121,8 @@ class ThemeWallpaperTab extends ConsumerWidget {
               ],
               SettingsActionTile(
                 icon: Icons.delete_outline_rounded,
-                title: 'Remove Wallpaper',
-                subtitle: 'Clear custom background image',
+                title: l10n.themeWallpaperRemoveTitle,
+                subtitle: l10n.themeWallpaperRemoveSubtitle,
                 isDestructive: true,
                 onTap: () async {
                   WallpaperProcessor.clearCache();

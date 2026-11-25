@@ -1,5 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/core/localization/l10n_extension.dart';
 import 'package:shonenx/features/player/data/translation/subtitle_cache_service.dart';
 import 'package:shonenx/features/player/domain/subtitle_translation_models.dart';
 import 'package:shonenx/features/player/providers/subtitle_translation_prefs_provider.dart';
@@ -13,7 +14,7 @@ class SubtitleTranslationSettingsSheet extends ConsumerStatefulWidget {
   static Future<void> show(BuildContext context) {
     return AppBottomSheet.show(
       context: context,
-      title: 'Subtitle Translation',
+      title: context.l10n.playerSubtitleTranslation,
       titleIcon: Icons.translate_rounded,
       child: const SubtitleTranslationSettingsSheet(),
     );
@@ -61,6 +62,7 @@ class _SubtitleTranslationSettingsSheetState
     final cs = Theme.of(context).colorScheme;
     final config = ref.watch(subtitleTranslationPrefsProvider);
     final notifier = ref.read(subtitleTranslationPrefsProvider.notifier);
+    final l10n = context.l10n;
 
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
@@ -69,19 +71,18 @@ class _SubtitleTranslationSettingsSheetState
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           SettingsSection(
-            title: 'General',
+            title: l10n.settingsGeneral,
             children: [
               SettingsSwitchTile(
                 icon: Icons.translate_rounded,
-                title: 'Enable Translation',
+                title: l10n.subtitleTransEnable,
                 value: config.enabled,
                 onChanged: notifier.setEnabled,
               ),
               SettingsSwitchTile(
                 icon: Icons.auto_awesome_rounded,
-                title: 'Auto-Translate',
-                subtitle:
-                    'Translate when preferred subtitle language is missing',
+                title: l10n.subtitleTransAuto,
+                subtitle: l10n.subtitleTransAutoSubtitle,
                 value: config.autoTranslateIfPreferredMissing,
                 onChanged: config.enabled
                     ? notifier.setAutoTranslateIfPreferredMissing
@@ -89,7 +90,7 @@ class _SubtitleTranslationSettingsSheetState
               ),
               SettingsDropdownTile<String>(
                 icon: Icons.language_rounded,
-                title: 'Target Language',
+                title: l10n.playerSubtitleTargetLanguage,
                 value: config.defaultTargetLanguage,
                 items: kSupportedSubtitleLanguages.entries
                     .map(
@@ -105,16 +106,16 @@ class _SubtitleTranslationSettingsSheetState
               ),
               SettingsDropdownTile<TranslationStrategy>(
                 icon: Icons.download_for_offline_rounded,
-                title: 'Strategy',
+                title: l10n.subtitleTransStrategy,
                 value: config.strategy,
-                items: const [
+                items: [
                   DropdownMenuItem(
                     value: TranslationStrategy.bulk,
-                    child: Text('Bulk (Pre-load full episode)'),
+                    child: Text(l10n.subtitleTransStrategyBulk),
                   ),
                   DropdownMenuItem(
                     value: TranslationStrategy.onDemand,
-                    child: Text('On-Demand (Live chunks)'),
+                    child: Text(l10n.subtitleTransStrategyOnDemand),
                   ),
                 ],
                 onChanged: config.enabled
@@ -129,7 +130,7 @@ class _SubtitleTranslationSettingsSheetState
           const SizedBox(height: 12),
 
           SettingsSection(
-            title: 'Provider Priority',
+            title: l10n.subtitleTransProviderPriority,
             children: [
               ReorderableListView.builder(
                 shrinkWrap: true,
@@ -183,14 +184,14 @@ class _SubtitleTranslationSettingsSheetState
           const SizedBox(height: 12),
 
           SettingsSection(
-            title: 'API Keys',
+            title: l10n.subtitleTransApiKeys,
             children: [
               SettingsActionTile(
                 icon: Icons.bolt_rounded,
                 title: 'Google Gemini',
                 subtitle: config.geminiApiKey.isNotEmpty
-                    ? '${config.geminiModel} (Configured)'
-                    : 'Set API Key',
+                    ? l10n.subtitleTransConfigured(config.geminiModel)
+                    : l10n.subtitleTransSetApiKey,
                 onTap: () => _showGeminiDialog(context, config, notifier),
               ),
               SettingsActionTile(
@@ -198,7 +199,7 @@ class _SubtitleTranslationSettingsSheetState
                 title: 'DeepL',
                 subtitle: config.deeplApiKey.isNotEmpty
                     ? (config.deeplUsePro ? 'Pro API' : 'Free API')
-                    : 'Set Auth Key',
+                    : l10n.subtitleTransSetAuthKey,
                 onTap: () => _showDeepLDialog(context, config, notifier),
               ),
               SettingsActionTile(
@@ -206,7 +207,7 @@ class _SubtitleTranslationSettingsSheetState
                 title: 'OpenAI-Compatible',
                 subtitle: config.openaiApiKey.isNotEmpty
                     ? config.openaiModel
-                    : 'Set API Key & URL',
+                    : l10n.subtitleTransSetApiKeyUrl,
                 onTap: () => _showOpenAIDialog(context, config, notifier),
               ),
             ],
@@ -215,19 +216,22 @@ class _SubtitleTranslationSettingsSheetState
           const SizedBox(height: 12),
 
           SettingsSection(
-            title: 'Storage',
+            title: l10n.settingsStorage,
             children: [
               SettingsActionTile(
                 icon: Icons.storage_rounded,
-                title: 'Clear Cache',
+                title: l10n.settingsClearCache,
                 subtitle: _isLoadingCache
-                    ? 'Calculating...'
+                    ? l10n.subtitleTransCalculating
                     : _formatBytes(_cacheSizeBytes),
                 trailing: TextButton(
                   onPressed: _cacheSizeBytes == 0
                       ? null
                       : () => _confirmClearCache(context),
-                  child: Text('Clear', style: TextStyle(color: cs.error)),
+                  child: Text(
+                    l10n.commonClear,
+                    style: TextStyle(color: cs.error),
+                  ),
                 ),
               ),
             ],
@@ -241,21 +245,22 @@ class _SubtitleTranslationSettingsSheetState
     TranslationProviderType type,
     SubtitleTranslationConfig config,
   ) {
+    final l10n = context.l10n;
     switch (type) {
       case TranslationProviderType.google:
-        return 'Free (No key needed)';
+        return l10n.subtitleTransFreeNoKey;
       case TranslationProviderType.gemini:
         return config.geminiApiKey.trim().isNotEmpty
-            ? 'Configured (${config.geminiModel})'
-            : 'Key missing';
+            ? l10n.subtitleTransConfigured(config.geminiModel)
+            : l10n.subtitleTransKeyMissing;
       case TranslationProviderType.deepl:
         return config.deeplApiKey.trim().isNotEmpty
-            ? 'Configured (${config.deeplUsePro ? "Pro" : "Free"})'
-            : 'Key missing';
+            ? l10n.subtitleTransConfigured(config.deeplUsePro ? 'Pro' : 'Free')
+            : l10n.subtitleTransKeyMissing;
       case TranslationProviderType.openai:
         return config.openaiApiKey.trim().isNotEmpty
-            ? 'Configured (${config.openaiModel})'
-            : 'Key missing';
+            ? l10n.subtitleTransConfigured(config.openaiModel)
+            : l10n.subtitleTransKeyMissing;
     }
   }
 
@@ -283,6 +288,7 @@ class _SubtitleTranslationSettingsSheetState
     final keyController = TextEditingController(text: config.geminiApiKey);
     final modelController = TextEditingController(text: config.geminiModel);
 
+    final l10n = context.l10n;
     await AppDialog.show(
       context: context,
       title: 'Google Gemini',
@@ -294,7 +300,7 @@ class _SubtitleTranslationSettingsSheetState
             controller: keyController,
             obscureText: true,
             decoration: InputDecoration(
-              labelText: 'API Key',
+              labelText: l10n.subtitleTransApiKeyLabel,
               hintText: 'AIzaSy...',
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -305,7 +311,7 @@ class _SubtitleTranslationSettingsSheetState
           TextField(
             controller: modelController,
             decoration: InputDecoration(
-              labelText: 'Model',
+              labelText: l10n.subtitleTransModelLabel,
               hintText: 'gemini-2.5-flash',
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -317,7 +323,7 @@ class _SubtitleTranslationSettingsSheetState
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          child: Text(l10n.commonCancel),
         ),
         FilledButton(
           onPressed: () {
@@ -329,7 +335,7 @@ class _SubtitleTranslationSettingsSheetState
             );
             Navigator.pop(context);
           },
-          child: const Text('Save'),
+          child: Text(l10n.commonSave),
         ),
       ],
     );
@@ -342,6 +348,7 @@ class _SubtitleTranslationSettingsSheetState
   ) async {
     final keyController = TextEditingController(text: config.deeplApiKey);
     bool usePro = config.deeplUsePro;
+    final l10n = context.l10n;
 
     await AppDialog.show(
       context: context,
@@ -356,7 +363,7 @@ class _SubtitleTranslationSettingsSheetState
                 controller: keyController,
                 obscureText: true,
                 decoration: InputDecoration(
-                  labelText: 'Auth Key',
+                  labelText: l10n.subtitleTransAuthKeyLabel,
                   hintText: 'xxxxxxxx-xxxx-xxxx-xxxx:fx',
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -366,7 +373,7 @@ class _SubtitleTranslationSettingsSheetState
               const SizedBox(height: 8),
               SwitchListTile.adaptive(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Use DeepL Pro API'),
+                title: Text(l10n.subtitleTransUseDeepLPro),
                 value: usePro,
                 onChanged: (val) => setDialogState(() => usePro = val),
               ),
@@ -377,7 +384,7 @@ class _SubtitleTranslationSettingsSheetState
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          child: Text(l10n.commonCancel),
         ),
         FilledButton(
           onPressed: () {
@@ -385,7 +392,7 @@ class _SubtitleTranslationSettingsSheetState
             notifier.setDeeplUsePro(usePro);
             Navigator.pop(context);
           },
-          child: const Text('Save'),
+          child: Text(l10n.commonSave),
         ),
       ],
     );
@@ -399,6 +406,7 @@ class _SubtitleTranslationSettingsSheetState
     final urlController = TextEditingController(text: config.openaiBaseUrl);
     final keyController = TextEditingController(text: config.openaiApiKey);
     final modelController = TextEditingController(text: config.openaiModel);
+    final l10n = context.l10n;
 
     await AppDialog.show(
       context: context,
@@ -410,7 +418,7 @@ class _SubtitleTranslationSettingsSheetState
           TextField(
             controller: urlController,
             decoration: InputDecoration(
-              labelText: 'Base URL',
+              labelText: l10n.subtitleTransBaseUrlLabel,
               hintText: 'https://api.openai.com/v1',
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -422,7 +430,7 @@ class _SubtitleTranslationSettingsSheetState
             controller: keyController,
             obscureText: true,
             decoration: InputDecoration(
-              labelText: 'API Key',
+              labelText: l10n.subtitleTransApiKeyLabel,
               hintText: 'sk-...',
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -433,7 +441,7 @@ class _SubtitleTranslationSettingsSheetState
           TextField(
             controller: modelController,
             decoration: InputDecoration(
-              labelText: 'Model',
+              labelText: l10n.subtitleTransModelLabel,
               hintText: 'gpt-4o-mini',
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -445,7 +453,7 @@ class _SubtitleTranslationSettingsSheetState
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          child: Text(l10n.commonCancel),
         ),
         FilledButton(
           onPressed: () {
@@ -458,29 +466,30 @@ class _SubtitleTranslationSettingsSheetState
             );
             Navigator.pop(context);
           },
-          child: const Text('Save'),
+          child: Text(l10n.commonSave),
         ),
       ],
     );
   }
 
   Future<void> _confirmClearCache(BuildContext context) async {
+    final l10n = context.l10n;
     final confirmed = await AppDialog.show<bool>(
       context: context,
-      title: 'Clear Cache',
+      title: l10n.settingsClearCache,
       maxWidth: 380,
-      child: const Text('Delete all saved offline translations?'),
+      child: Text(l10n.subtitleTransDeleteAllConfirm),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context, false),
-          child: const Text('Cancel'),
+          child: Text(l10n.commonCancel),
         ),
         FilledButton(
           style: FilledButton.styleFrom(
             backgroundColor: Theme.of(context).colorScheme.error,
           ),
           onPressed: () => Navigator.pop(context, true),
-          child: const Text('Clear'),
+          child: Text(l10n.commonClear),
         ),
       ],
     );

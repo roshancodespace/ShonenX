@@ -73,11 +73,11 @@ class ContentSettingsScreen extends ConsumerWidget {
             ],
           ),
           SettingsSection(
-            title: 'Episode Metadata',
+            title: context.l10n.contentEpisodeMetadata,
             children: [
               SettingsNavTile(
                 icon: Icons.auto_awesome_rounded,
-                title: 'Episode Metadata Provider',
+                title: context.l10n.contentEpisodeMetadataProvider,
                 subtitle: prefs.episodeMetadataProvider.displayName,
                 onTap: () => _showMetadataProviderSheet(
                   context,
@@ -97,9 +97,10 @@ class ContentSettingsScreen extends ConsumerWidget {
     WidgetRef ref,
     EpisodeMetadataProviderType activeProvider,
   ) {
+    final l10n = context.l10n;
     AppBottomSheet.show(
       context: context,
-      title: 'Episode Metadata Provider',
+      title: l10n.contentEpisodeMetadataProvider,
       titleIcon: Icons.auto_awesome_rounded,
       child: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
@@ -108,16 +109,15 @@ class ContentSettingsScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             SelectionCardGroup(
-              title: 'Available Providers',
-              subtitle:
-                  'Select which provider enriches episode titles and thumbnails.',
+              title: l10n.contentAvailableProviders,
+              subtitle: l10n.contentAvailableProvidersSubtitle,
               children: [
                 _buildProviderTile(
                   context,
                   type: EpisodeMetadataProviderType.auto,
                   activeProvider: activeProvider,
                   icon: Icons.auto_mode_rounded,
-                  title: 'Auto (Recommended)',
+                  title: l10n.contentProviderAutoTitle,
                   subtitle: 'Anizip → Tenrai → Kitsu',
                   showDivider: true,
                   onTap: () {
@@ -135,8 +135,7 @@ class ContentSettingsScreen extends ConsumerWidget {
                   activeProvider: activeProvider,
                   icon: Icons.image_rounded,
                   title: 'Tenrai',
-                  subtitle:
-                      'Official titles, air dates & thumbnails from MyAnimeList',
+                  subtitle: l10n.contentProviderTenraiSubtitle,
                   showDivider: true,
                   onTap: () {
                     ref
@@ -153,7 +152,7 @@ class ContentSettingsScreen extends ConsumerWidget {
                   activeProvider: activeProvider,
                   icon: Icons.collections_rounded,
                   title: 'Kitsu',
-                  subtitle: 'Community titles, synopses & preview thumbnails',
+                  subtitle: l10n.contentProviderKitsuSubtitle,
                   showDivider: true,
                   onTap: () {
                     ref
@@ -170,7 +169,7 @@ class ContentSettingsScreen extends ConsumerWidget {
                   activeProvider: activeProvider,
                   icon: Icons.speed_rounded,
                   title: 'AniZip',
-                  subtitle: 'Fast titles & synopses from AniList / MAL',
+                  subtitle: l10n.contentProviderAnizipSubtitle,
                   showDivider: true,
                   onTap: () {
                     ref
@@ -186,8 +185,8 @@ class ContentSettingsScreen extends ConsumerWidget {
                   type: EpisodeMetadataProviderType.disabled,
                   activeProvider: activeProvider,
                   icon: Icons.do_not_disturb_on_rounded,
-                  title: 'Disabled',
-                  subtitle: 'Raw stream titles without external metadata',
+                  title: l10n.contentProviderDisabled,
+                  subtitle: l10n.contentProviderDisabledSubtitle,
                   showDivider: false,
                   onTap: () {
                     ref

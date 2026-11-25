@@ -43,7 +43,7 @@ class _UpdateSettingsScreenState extends ConsumerState<UpdateSettingsScreen> {
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('You are using the latest version!')),
+          SnackBar(content: Text(context.l10n.updatesLatestVersion)),
         );
       }
     } finally {
@@ -79,8 +79,10 @@ class _UpdateSettingsScreenState extends ConsumerState<UpdateSettingsScreen> {
     final notifier = ref.read(updatePrefsProvider.notifier);
     final releasesAsync = ref.watch(releasesListProvider);
 
+    final l10n = context.l10n;
+
     return AppScaffold(
-      title: context.l10n.settingsUpdates,
+      title: l10n.settingsUpdates,
       body: RefreshIndicator(
         onRefresh: () async {
           ref.invalidate(releasesListProvider);
@@ -91,24 +93,23 @@ class _UpdateSettingsScreenState extends ConsumerState<UpdateSettingsScreen> {
           children: [
             if (Platform.isLinux)
               SettingsSection(
-                title: 'Linux Installation & Updater',
+                title: l10n.updatesLinuxSection,
                 children: [
                   SettingsActionTile(
                     icon: Icons.terminal_rounded,
-                    title: 'Open Linux Update Manager',
-                    subtitle:
-                        'Interactive installer, custom repo/icon config, and live terminal output',
+                    title: l10n.updatesLinuxOpenTitle,
+                    subtitle: l10n.updatesLinuxOpenSubtitle,
                     onTap: () => LinuxUpdateWidget.show(context),
                   ),
                 ],
               ),
             SettingsSection(
-              title: 'Check for Updates',
+              title: l10n.settingsCheckUpdates,
               children: [
                 SettingsActionTile(
                   icon: Icons.sync_rounded,
-                  title: 'Check now',
-                  subtitle: 'Fetch the latest releases directly from GitHub',
+                  title: l10n.updatesCheckNow,
+                  subtitle: l10n.updatesCheckNowSubtitle,
                   trailing: _isChecking
                       ? const SizedBox(
                           width: 24,
@@ -118,37 +119,34 @@ class _UpdateSettingsScreenState extends ConsumerState<UpdateSettingsScreen> {
                       : FilledButton.icon(
                           onPressed: _manualCheck,
                           icon: const Icon(Icons.sync_rounded, size: 18),
-                          label: const Text('Check'),
+                          label: Text(l10n.updatesCheckButton),
                         ),
                   onTap: _manualCheck,
                 ),
               ],
             ),
             SettingsSection(
-              title: 'Preferences',
+              title: l10n.updatesPreferences,
               children: [
                 SettingsSwitchTile(
                   icon: Icons.new_releases_outlined,
-                  title: 'Include Pre-releases',
-                  subtitle:
-                      'Receive early builds marked as pre-release on GitHub',
+                  title: l10n.updatesIncludePrerelease,
+                  subtitle: l10n.updatesIncludePrereleaseSubtitle,
                   value: prefs.includePrerelease,
                   onChanged: (v) => notifier.setIncludePrerelease(v),
                 ),
                 SettingsSwitchTile(
                   icon: Icons.update_rounded,
-                  title: 'Auto Check on Startup',
-                  subtitle:
-                      'Automatically check for updates when the application launches',
+                  title: l10n.updatesAutoCheck,
+                  subtitle: l10n.updatesAutoCheckSubtitle,
                   value: prefs.autoCheckOnStartup,
                   onChanged: (v) => notifier.setAutoCheckOnStartup(v),
                 ),
               ],
             ),
             SettingsSection(
-              title: 'Browse Releases',
-              subtitle:
-                  'Tap a release to view full changelog and download options',
+              title: l10n.updatesBrowseReleases,
+              subtitle: l10n.updatesBrowseReleasesSubtitle,
               children: [
                 releasesAsync.when(
                   loading: () => const Padding(
@@ -158,7 +156,7 @@ class _UpdateSettingsScreenState extends ConsumerState<UpdateSettingsScreen> {
                   error: (err, _) => Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: Text(
-                      'Failed to load releases.',
+                      l10n.updatesLoadFailed,
                       style: TextStyle(
                         color: Theme.of(context).colorScheme.error,
                       ),
@@ -169,7 +167,7 @@ class _UpdateSettingsScreenState extends ConsumerState<UpdateSettingsScreen> {
                       return Padding(
                         padding: const EdgeInsets.all(16.0),
                         child: Text(
-                          'No releases found.',
+                          l10n.updatesNoneFound,
                           style: TextStyle(
                             color: Theme.of(
                               context,

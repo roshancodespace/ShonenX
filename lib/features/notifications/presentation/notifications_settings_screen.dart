@@ -1,6 +1,7 @@
 import 'package:shonenx/shared/widgets/smart_image.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/core/localization/l10n_extension.dart';
 import 'package:shonenx/features/notifications/domain/models/notification_subscription.dart';
 import 'package:shonenx/features/notifications/providers/notification_subscriptions_provider.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
@@ -34,8 +35,9 @@ class NotificationsSettingsScreen extends ConsumerWidget {
           return timeA.compareTo(timeB);
         });
 
+    final l10n = context.l10n;
     return AppScaffold(
-      title: 'Manage Anime Notifications',
+      title: l10n.notificationsManageTitle,
       body: subscriptions.isEmpty
           ? Center(
               child: Padding(
@@ -52,12 +54,12 @@ class NotificationsSettingsScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'No Subscriptions Yet',
+                      l10n.notificationsEmptyTitle,
                       style: theme.textTheme.titleLarge,
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'You can enable notifications for upcoming episodes directly from the anime details page.',
+                      l10n.notificationsEmptySubtitle,
                       textAlign: TextAlign.center,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
@@ -72,7 +74,7 @@ class NotificationsSettingsScreen extends ConsumerWidget {
               children: [
                 if (upcoming.isNotEmpty) ...[
                   Text(
-                    'Upcoming',
+                    l10n.notificationsUpcoming,
                     style: theme.textTheme.titleSmall?.copyWith(
                       color: theme.colorScheme.primary,
                       fontWeight: FontWeight.bold,
@@ -85,7 +87,7 @@ class NotificationsSettingsScreen extends ConsumerWidget {
                   const SizedBox(height: 24),
                 ],
                 Text(
-                  'All Subscriptions',
+                  l10n.notificationsAllSubscriptions,
                   style: theme.textTheme.titleSmall?.copyWith(
                     color: theme.colorScheme.primary,
                     fontWeight: FontWeight.bold,
@@ -146,8 +148,8 @@ class _SubscriptionTile extends ConsumerWidget {
             const SizedBox(height: 4),
             Text(
               subscription.mode == SubscriptionMode.entireSeason
-                  ? 'Following Season'
-                  : 'Following Next Episode',
+                  ? context.l10n.notificationsFollowingSeason
+                  : context.l10n.notificationsFollowingNextEp,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -156,7 +158,9 @@ class _SubscriptionTile extends ConsumerWidget {
                 scheduledTime != null &&
                 scheduledTime.isAfter(DateTime.now()))
               Text(
-                'Next reminder: ${formatDateWithTime(scheduledTime)}',
+                context.l10n.notificationsNextReminder(
+                  formatDateWithTime(scheduledTime),
+                ),
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.primary,
                   fontWeight: FontWeight.w500,

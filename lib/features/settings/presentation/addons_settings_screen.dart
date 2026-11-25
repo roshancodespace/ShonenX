@@ -1,5 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/core/localization/l10n_extension.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
 import 'package:shonenx/shared/widgets/app_dialog.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
@@ -32,8 +33,8 @@ class _AddonsSettingsScreenState extends ConsumerState<AddonsSettingsScreen> {
         SnackBar(
           content: Text(
             hasAnyUpdate
-                ? 'Updates available for addons.'
-                : 'All addons are up to date.',
+                ? context.l10n.addonsUpdatesAvailable
+                : context.l10n.addonsUpToDate,
           ),
           behavior: SnackBarBehavior.floating,
         ),
@@ -42,7 +43,7 @@ class _AddonsSettingsScreenState extends ConsumerState<AddonsSettingsScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to check for updates: $e'),
+          content: Text(context.l10n.addonsCheckFailed(e.toString())),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -56,8 +57,8 @@ class _AddonsSettingsScreenState extends ConsumerState<AddonsSettingsScreen> {
   Future<void> _handleTap(AddonInfo addon) async {
     if (addon.isDownloading) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Download in progress...'),
+        SnackBar(
+          content: Text(context.l10n.addonsDownloadInProgress),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -71,7 +72,9 @@ class _AddonsSettingsScreenState extends ConsumerState<AddonsSettingsScreen> {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to install ${addon.name}: $e'),
+            content: Text(
+              context.l10n.addonsInstallFailed(addon.name, e.toString()),
+            ),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -80,24 +83,25 @@ class _AddonsSettingsScreenState extends ConsumerState<AddonsSettingsScreen> {
     }
 
     final cs = Theme.of(context).colorScheme;
+    final l10n = context.l10n;
     final action = await AppDialog.show<String>(
       context: context,
       title: addon.name,
       child: Text(
         addon.hasUpdate
-            ? 'An update is available for ${addon.name}.'
-            : '${addon.name} is installed and active.',
+            ? l10n.addonsUpdateAvailableDialog(addon.name)
+            : l10n.addonsInstalledActiveDialog(addon.name),
         style: Theme.of(context).textTheme.bodyMedium,
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(l10n.commonCancel),
         ),
         if (addon.hasUpdate)
           FilledButton(
             onPressed: () => Navigator.of(context).pop('update'),
-            child: const Text('Update'),
+            child: Text(l10n.addonsActionUpdate),
           ),
         FilledButton(
           style: FilledButton.styleFrom(
@@ -105,7 +109,7 @@ class _AddonsSettingsScreenState extends ConsumerState<AddonsSettingsScreen> {
             foregroundColor: cs.onError,
           ),
           onPressed: () => Navigator.of(context).pop('uninstall'),
-          child: const Text('Uninstall'),
+          child: Text(l10n.addonsActionUninstall),
         ),
       ],
     );
@@ -119,7 +123,9 @@ class _AddonsSettingsScreenState extends ConsumerState<AddonsSettingsScreen> {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to update ${addon.name}: $e'),
+            content: Text(
+              context.l10n.addonsUpdateFailed(addon.name, e.toString()),
+            ),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -130,7 +136,7 @@ class _AddonsSettingsScreenState extends ConsumerState<AddonsSettingsScreen> {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Uninstalled ${addon.name}'),
+            content: Text(context.l10n.addonsUninstalled(addon.name)),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -138,7 +144,9 @@ class _AddonsSettingsScreenState extends ConsumerState<AddonsSettingsScreen> {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to uninstall ${addon.name}: $e'),
+            content: Text(
+              context.l10n.addonsUninstallFailed(addon.name, e.toString()),
+            ),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -175,7 +183,7 @@ class _AddonsSettingsScreenState extends ConsumerState<AddonsSettingsScreen> {
     if (addon.isInstalled) {
       if (addon.hasUpdate) {
         return Text(
-          'Update',
+          context.l10n.addonsActionUpdate,
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.bold,
@@ -184,7 +192,7 @@ class _AddonsSettingsScreenState extends ConsumerState<AddonsSettingsScreen> {
         );
       }
       return Text(
-        'Installed',
+        context.l10n.addonsActionInstalled,
         style: TextStyle(
           fontSize: 13,
           fontWeight: FontWeight.bold,
@@ -194,7 +202,7 @@ class _AddonsSettingsScreenState extends ConsumerState<AddonsSettingsScreen> {
     }
 
     return Text(
-      'Install',
+      context.l10n.addonsActionInstall,
       style: TextStyle(
         fontSize: 13,
         fontWeight: FontWeight.bold,
@@ -207,14 +215,15 @@ class _AddonsSettingsScreenState extends ConsumerState<AddonsSettingsScreen> {
   Widget build(BuildContext context) {
     final addons = ref.watch(addonListProvider);
     final cs = Theme.of(context).colorScheme;
+    final l10n = context.l10n;
 
     return AppScaffold(
-      title: 'Addons',
+      title: l10n.settingsAddons,
       body: ListView(
         padding: const EdgeInsets.only(bottom: 50),
         children: [
           SettingsSection(
-            title: 'Available Addons',
+            title: l10n.addonsAvailableSection,
             children: [
               if (addons.isEmpty)
                 Padding(
@@ -223,7 +232,7 @@ class _AddonsSettingsScreenState extends ConsumerState<AddonsSettingsScreen> {
                     vertical: 12,
                   ),
                   child: Text(
-                    'No addons registered.',
+                    l10n.addonsNoneRegistered,
                     style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant),
                   ),
                 )
@@ -240,12 +249,12 @@ class _AddonsSettingsScreenState extends ConsumerState<AddonsSettingsScreen> {
             ],
           ),
           SettingsSection(
-            title: 'Maintenance',
+            title: l10n.addonsMaintenanceSection,
             children: [
               SettingsActionTile(
                 icon: Icons.sync_rounded,
-                title: 'Check for Updates',
-                subtitle: 'Scan for new versions of installed addons',
+                title: l10n.settingsCheckUpdates,
+                subtitle: l10n.addonsCheckUpdatesSubtitle,
                 trailing: _isCheckingUpdates
                     ? const SizedBox(
                         width: 16,

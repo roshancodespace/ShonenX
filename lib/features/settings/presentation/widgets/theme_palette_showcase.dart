@@ -1,5 +1,6 @@
 import 'dart:ui' as ui;
 import 'package:material_ui/material_ui.dart';
+import 'package:shonenx/core/localization/l10n_extension.dart';
 import 'package:shonenx/core/theme/exclusive_schemes.dart';
 import 'package:shonenx/core/theme/standard_schemes.dart';
 import 'package:shonenx/shared/models/ui_style_enums.dart';
@@ -415,7 +416,7 @@ class ThemePaletteShelf extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  child: const Text('View All'),
+                  child: Text(context.l10n.homeViewAll),
                 ),
             ],
           ),

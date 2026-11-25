@@ -1,6 +1,7 @@
 import 'package:shonenx/shared/widgets/smart_image.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/core/localization/l10n_extension.dart';
 import 'package:shonenx/core/utils/responsive.dart';
 import 'package:shonenx/features/player/domain/subtitle_prefs.dart';
 import 'package:shonenx/features/player/providers/subtitle_prefs_provider.dart';
@@ -84,7 +85,7 @@ class _SubtitleSettingsSheetState extends ConsumerState<SubtitleSettingsSheet> {
                             children: [
                               Expanded(
                                 child: Text(
-                                  'Subtitles',
+                                  context.l10n.playerSubtitleTrack,
                                   style: theme.textTheme.titleMedium?.copyWith(
                                     fontWeight: FontWeight.w700,
                                   ),
@@ -119,7 +120,7 @@ class _SubtitleSettingsSheetState extends ConsumerState<SubtitleSettingsSheet> {
                                 ),
                                 child: ExpansionTile(
                                   title: Text(
-                                    'Advanced Settings',
+                                    context.l10n.subtitleAdvancedSettings,
                                     style: theme.textTheme.bodyMedium?.copyWith(
                                       fontWeight: FontWeight.w600,
                                       color: cs.primary,
@@ -148,7 +149,7 @@ class _SubtitleSettingsSheetState extends ConsumerState<SubtitleSettingsSheet> {
     }
 
     return AppBottomSheet(
-      title: 'Subtitle Preferences',
+      title: context.l10n.playerSubtitlePreferences,
       actions: [
         IconButton.filledTonal(
           style: IconButton.styleFrom(
@@ -213,7 +214,7 @@ class _SubtitleSettingsSheetState extends ConsumerState<SubtitleSettingsSheet> {
                   data: theme.copyWith(dividerColor: Colors.transparent),
                   child: ExpansionTile(
                     title: Text(
-                      'Advanced Settings',
+                      context.l10n.subtitleAdvancedSettings,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                         color: cs.primary,
@@ -293,10 +294,11 @@ class _SubtitleSettingsSheetState extends ConsumerState<SubtitleSettingsSheet> {
     ThemeData theme,
     ColorScheme cs,
   ) {
+    final l10n = context.l10n;
     return [
       SettingsSwitchTile(
         icon: Icons.subtitles_outlined,
-        title: 'Custom Engine Overlay',
+        title: l10n.subtitleCustomEngineOverlay,
         value: prefs.useCustomSubtitle,
         onChanged: (value) {
           notifier.updatePrefs(prefs.copyWith(useCustomSubtitle: value));
@@ -312,7 +314,7 @@ class _SubtitleSettingsSheetState extends ConsumerState<SubtitleSettingsSheet> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Native subtitles active. Some appearance settings may be ignored.',
+                  l10n.subtitleNativeActiveWarning,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: cs.error,
                     height: 1.3,
@@ -324,7 +326,7 @@ class _SubtitleSettingsSheetState extends ConsumerState<SubtitleSettingsSheet> {
         ),
       SettingsDropdownTile<String>(
         icon: Icons.font_download_outlined,
-        title: 'Font Family',
+        title: l10n.subtitleFontFamily,
         value: prefs.fontFamily,
         items: kSubtitleFonts
             .map((font) => DropdownMenuItem(value: font, child: Text(font)))
@@ -337,7 +339,7 @@ class _SubtitleSettingsSheetState extends ConsumerState<SubtitleSettingsSheet> {
       ),
       SettingsSliderTile(
         icon: Icons.format_size_rounded,
-        title: 'Size Scale',
+        title: l10n.subtitleSizeScale,
         value: prefs.fontSize,
         min: 0.5,
         max: 3.0,
@@ -349,12 +351,12 @@ class _SubtitleSettingsSheetState extends ConsumerState<SubtitleSettingsSheet> {
       ),
       SettingsActionTile(
         icon: Icons.format_color_text_rounded,
-        title: 'Font Color',
+        title: l10n.subtitleFontColor,
         trailing: _ColorIndicator(colorValue: prefs.fontColor),
         onTap: () {
           _showColorSheet(
             context,
-            title: 'Font Color',
+            title: l10n.subtitleFontColor,
             currentValue: prefs.fontColor,
             options: const [
               0xFFFFFFFF,
@@ -371,12 +373,12 @@ class _SubtitleSettingsSheetState extends ConsumerState<SubtitleSettingsSheet> {
       ),
       SettingsActionTile(
         icon: Icons.format_color_fill_rounded,
-        title: 'Background Color',
+        title: l10n.readerBackgroundColor,
         trailing: _ColorIndicator(colorValue: prefs.backgroundColor),
         onTap: () {
           _showColorSheet(
             context,
-            title: 'Background Color',
+            title: l10n.readerBackgroundColor,
             currentValue: prefs.backgroundColor,
             options: const [0x00000000, 0x80000000, 0xFF000000, 0x80FFFFFF],
             onChanged: (value) {
@@ -387,7 +389,7 @@ class _SubtitleSettingsSheetState extends ConsumerState<SubtitleSettingsSheet> {
       ),
       SettingsSwitchTile(
         icon: Icons.format_bold_rounded,
-        title: 'Bold Text',
+        title: l10n.subtitleBoldText,
         value: prefs.bold,
         onChanged: (value) {
           notifier.updatePrefs(prefs.copyWith(bold: value));
@@ -395,7 +397,7 @@ class _SubtitleSettingsSheetState extends ConsumerState<SubtitleSettingsSheet> {
       ),
       SettingsSliderTile(
         icon: Icons.format_line_spacing_rounded,
-        title: 'Line Height',
+        title: l10n.subtitleLineHeight,
         value: prefs.lineHeight,
         min: 0.8,
         max: 2.0,
@@ -414,15 +416,16 @@ class _SubtitleSettingsSheetState extends ConsumerState<SubtitleSettingsSheet> {
     ThemeData theme,
     ColorScheme cs,
   ) {
+    final l10n = context.l10n;
     return [
       SettingsActionTile(
         icon: Icons.border_style_rounded,
-        title: 'Outline Color',
+        title: l10n.subtitleOutlineColor,
         trailing: _ColorIndicator(colorValue: prefs.outlineColor),
         onTap: () {
           _showColorSheet(
             context,
-            title: 'Outline Color',
+            title: l10n.subtitleOutlineColor,
             currentValue: prefs.outlineColor,
             options: const [0x00000000, 0x80000000, 0xFF000000, 0xFFFFFFFF],
             onChanged: (value) {
@@ -433,7 +436,7 @@ class _SubtitleSettingsSheetState extends ConsumerState<SubtitleSettingsSheet> {
       ),
       SettingsSliderTile(
         icon: Icons.line_weight_rounded,
-        title: 'Outline Size',
+        title: l10n.subtitleOutlineSize,
         value: prefs.outlineSize,
         min: 0.0,
         max: 5.0,
@@ -445,12 +448,12 @@ class _SubtitleSettingsSheetState extends ConsumerState<SubtitleSettingsSheet> {
       ),
       SettingsActionTile(
         icon: Icons.blur_on_rounded,
-        title: 'Shadow Color',
+        title: l10n.subtitleShadowColor,
         trailing: _ColorIndicator(colorValue: prefs.shadowColor),
         onTap: () {
           _showColorSheet(
             context,
-            title: 'Shadow Color',
+            title: l10n.subtitleShadowColor,
             currentValue: prefs.shadowColor,
             options: const [0x00000000, 0x80000000, 0xFF000000],
             onChanged: (value) {
@@ -461,7 +464,7 @@ class _SubtitleSettingsSheetState extends ConsumerState<SubtitleSettingsSheet> {
       ),
       SettingsSliderTile(
         icon: Icons.blur_linear_rounded,
-        title: 'Shadow Blur',
+        title: l10n.subtitleShadowBlur,
         value: prefs.shadowBlur,
         min: 0.0,
         max: 10.0,
@@ -473,7 +476,7 @@ class _SubtitleSettingsSheetState extends ConsumerState<SubtitleSettingsSheet> {
       ),
       SettingsSliderTile(
         icon: Icons.vertical_align_bottom_rounded,
-        title: 'Bottom Padding',
+        title: l10n.subtitleBottomPadding,
         value: prefs.bottomPadding,
         min: 0,
         max: 100,
@@ -485,7 +488,7 @@ class _SubtitleSettingsSheetState extends ConsumerState<SubtitleSettingsSheet> {
       ),
       SettingsSliderTile(
         icon: Icons.padding_rounded,
-        title: 'Background Padding',
+        title: l10n.subtitleBgPadding,
         value: prefs.padding,
         min: 0,
         max: 30,
@@ -497,7 +500,7 @@ class _SubtitleSettingsSheetState extends ConsumerState<SubtitleSettingsSheet> {
       ),
       SettingsSliderTile(
         icon: Icons.space_bar_rounded,
-        title: 'Letter Spacing',
+        title: l10n.subtitleLetterSpacing,
         value: prefs.letterSpacing,
         min: -2.0,
         max: 5.0,
@@ -509,7 +512,7 @@ class _SubtitleSettingsSheetState extends ConsumerState<SubtitleSettingsSheet> {
       ),
       SettingsSliderTile(
         icon: Icons.notes_rounded,
-        title: 'Word Spacing',
+        title: l10n.subtitleWordSpacing,
         value: prefs.wordSpacing,
         min: -3.0,
         max: 10.0,
@@ -607,7 +610,7 @@ class _SubtitleSettingsSheetState extends ConsumerState<SubtitleSettingsSheet> {
                   TextField(
                     controller: textController,
                     decoration: InputDecoration(
-                      labelText: 'Hex Code (AARRGGBB)',
+                      labelText: context.l10n.subtitleHexCodeLabel,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),

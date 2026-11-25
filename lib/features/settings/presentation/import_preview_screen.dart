@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shonenx/core/localization/l10n_extension.dart';
 import 'package:shonenx/shared/providers/backup_provider.dart';
 import 'package:shonenx/core/services/backup_service.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
@@ -50,8 +51,8 @@ class _ImportPreviewScreenState extends ConsumerState<ImportPreviewScreen> {
       if (mounted) {
         context.pop();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Backup restored successfully'),
+          SnackBar(
+            content: Text(context.l10n.backupRestoredSuccess),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -60,7 +61,7 @@ class _ImportPreviewScreenState extends ConsumerState<ImportPreviewScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Import failed: $e'),
+            content: Text(context.l10n.backupImportFailed(e.toString())),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -76,8 +77,10 @@ class _ImportPreviewScreenState extends ConsumerState<ImportPreviewScreen> {
     final colorScheme = theme.colorScheme;
     final manifest = widget.manifest;
 
+    final l10n = context.l10n;
+
     return AppScaffold(
-      title: 'Import Preview',
+      title: l10n.backupImportPreviewTitle,
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : ListView(
@@ -110,13 +113,13 @@ class _ImportPreviewScreenState extends ConsumerState<ImportPreviewScreen> {
                     vertical: 4,
                   ),
                   child: Text(
-                    'Importing will replace existing data for selected categories.',
+                    l10n.backupImportWarning,
                     style: TextStyle(fontSize: 12, color: colorScheme.error),
                   ),
                 ),
 
                 SettingsSection(
-                  title: 'Categories',
+                  title: l10n.backupCategoriesSection,
                   children: [
                     for (final cat in manifest.categories) ...[
                       SettingsSwitchTile(
@@ -135,10 +138,10 @@ class _ImportPreviewScreenState extends ConsumerState<ImportPreviewScreen> {
                 // Import action
                 SettingsActionTile(
                   icon: Icons.download_done_outlined,
-                  title: 'Confirm Import',
+                  title: l10n.backupConfirmImport,
                   subtitle: _importing
-                      ? 'Importing…'
-                      : '${_selected.length} categories selected',
+                      ? l10n.backupImporting
+                      : l10n.backupCategoriesSelected(_selected.length.toString()),
                   isDestructive: true,
                   onTap: _importing || _selected.isEmpty
                       ? null
@@ -162,9 +165,12 @@ class _ImportPreviewScreenState extends ConsumerState<ImportPreviewScreen> {
     final incoming = widget.manifest.countFor(cat);
     final existing = _existingCounts?[cat] ?? 0;
     if (existing > 0 && _selected.contains(cat)) {
-      return '$incoming items → replaces $existing existing';
+      return context.l10n.backupItemsReplace(
+        incoming.toString(),
+        existing.toString(),
+      );
     }
-    return '$incoming items';
+    return context.l10n.backupItemsCount(incoming.toString());
   }
 
   String _fmtDate(DateTime d) {

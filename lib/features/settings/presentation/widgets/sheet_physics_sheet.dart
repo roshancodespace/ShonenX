@@ -1,13 +1,15 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/core/localization/l10n_extension.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 
 void showSheetPhysicsSheet(BuildContext context, WidgetRef ref) {
+  final l10n = context.l10n;
   AppBottomSheet.show(
     context: context,
-    title: 'Sheet Physics',
+    title: l10n.uiSettingsSheetPhysicsTitle,
     titleIcon: Icons.animation_rounded,
     child: Consumer(
       builder: (sheetContext, r, _) {
@@ -21,16 +23,16 @@ void showSheetPhysicsSheet(BuildContext context, WidgetRef ref) {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               SettingsSegmentedTile<bool>(
-                segments: const [
+                segments: [
                   ButtonSegment<bool>(
                     value: true,
-                    label: Text('Hammer'),
-                    icon: Icon(Icons.gavel_rounded),
+                    label: Text(l10n.uiSettingsSheetPhysicsHammer),
+                    icon: const Icon(Icons.gavel_rounded),
                   ),
                   ButtonSegment<bool>(
                     value: false,
-                    label: Text('Slide Up'),
-                    icon: Icon(Icons.swipe_up_rounded),
+                    label: Text(l10n.uiSettingsSheetPhysicsSlideUp),
+                    icon: const Icon(Icons.swipe_up_rounded),
                   ),
                 ],
                 selected: {prefs.sheetPhysics},

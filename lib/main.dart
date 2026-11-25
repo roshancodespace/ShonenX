@@ -2,8 +2,13 @@ import 'dart:io';
 import 'dart:ui';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/foundation.dart';
-import 'package:material_ui/material_ui.dart' hide GlobalMaterialLocalizations;
-import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:flutter_localizations/flutter_localizations.dart'
+    as flutter_l10n
+    show
+        GlobalCupertinoLocalizations,
+        GlobalMaterialLocalizations,
+        GlobalWidgetsLocalizations;
 import 'package:shonenx/l10n/generated/app_localizations.dart';
 import 'package:shonenx/core/localization/cantonese_localizations_delegate.dart';
 import 'package:shonenx/shared/providers/locale_prefs_provider.dart';
@@ -150,9 +155,10 @@ class ShonenXApp extends ConsumerWidget {
             AppLocalizations.delegate,
             CantoneseMaterialLocalizationsDelegate(),
             CantoneseCupertinoLocalizationsDelegate(),
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
+            ...GlobalMaterialLocalizations.delegates,
+            flutter_l10n.GlobalMaterialLocalizations.delegate,
+            flutter_l10n.GlobalWidgetsLocalizations.delegate,
+            flutter_l10n.GlobalCupertinoLocalizations.delegate,
           ],
           supportedLocales: AppLocalizations.supportedLocales,
           themeMode: themePrefs.themeMode,

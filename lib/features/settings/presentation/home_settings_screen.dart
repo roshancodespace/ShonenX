@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:shonenx/core/localization/l10n_extension.dart';
 import 'package:shonenx/features/discovery/domain/models/home_section.dart';
 import 'package:shonenx/features/discovery/providers/discovery_prefs_provider.dart';
 import 'package:shonenx/features/discovery/providers/home_layout_provider.dart';
@@ -42,7 +43,7 @@ class HomeSettingsScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Source Discovery Mode Active',
+                  context.l10n.homeSourceModeActive,
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: theme.colorScheme.onTertiaryContainer,
@@ -50,7 +51,7 @@ class HomeSettingsScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Content extensions only support a single Trending feed. Switch to Tracker Discovery Mode to unlock custom categories (Popular, Upcoming, Top Rated).',
+                  context.l10n.homeSourceModeBannerDesc,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onTertiaryContainer.withValues(
                       alpha: 0.9,
@@ -72,9 +73,10 @@ class HomeSettingsScreen extends ConsumerWidget {
       discoveryPrefsProvider.select((p) => p.mode == MetadataMode.source),
     );
     final theme = Theme.of(context);
+    final l10n = context.l10n;
 
     return AppScaffold(
-      title: 'Home Settings',
+      title: l10n.homeSettingsTitle,
       body: Column(
         children: [
           if (isSourceMode) _buildSourceModeBanner(context),
@@ -123,13 +125,16 @@ class HomeSettingsScreen extends ConsumerWidget {
                 String getSubtitle() {
                   switch (section.type) {
                     case HomeSectionType.continueMedia:
-                      return '${mediaType.displayName} • Continue Progress';
+                      return l10n.homeContinueProgressSubtitle(
+                        mediaType.displayName,
+                      );
                     case HomeSectionType.libraryStatus:
                       final statusLabel =
                           section.libraryStatus?.getLabelForMedia(mediaType) ??
-                          'Library';
+                          l10n.navLibrary;
                       final trackerName =
-                          section.targetTracker?.displayName ?? 'Auto Source';
+                          section.targetTracker?.displayName ??
+                          l10n.homeAutoSource;
                       return '${mediaType.displayName} • $statusLabel ($trackerName)';
                     case HomeSectionType.discovery:
                       final catLabel =
@@ -192,7 +197,7 @@ class HomeSettingsScreen extends ConsumerWidget {
             ref.read(userHomeLayoutProvider.notifier).reset();
           },
           icon: const Icon(Icons.restore_rounded),
-          tooltip: 'Reset',
+          tooltip: l10n.commonReset,
         ),
         IconButton(
           onPressed: () {
@@ -204,7 +209,7 @@ class HomeSettingsScreen extends ConsumerWidget {
             );
           },
           icon: const Icon(Icons.add_rounded),
-          tooltip: 'Add Section',
+          tooltip: l10n.homeAddSection,
         ),
         const SizedBox(width: 8),
       ],
@@ -223,15 +228,16 @@ class _SectionOptionsSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
     return AppBottomSheet(
-      title: 'Section Options',
+      title: l10n.homeSectionOptions,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           SettingsActionTile(
             icon: Icons.edit_rounded,
-            title: 'Edit',
+            title: l10n.commonEdit,
             onTap: () {
               context.pop();
               showModalBottomSheet(
@@ -247,7 +253,7 @@ class _SectionOptionsSheet extends ConsumerWidget {
           ),
           SettingsActionTile(
             icon: Icons.delete_outline_rounded,
-            title: 'Delete',
+            title: l10n.commonDelete,
             isDestructive: true,
             onTap: () {
               context.pop();
@@ -492,8 +498,9 @@ class _SectionFormSheetState extends ConsumerState<_SectionFormSheet> {
             (isLibrary && availableStats.isNotEmpty) ||
             (isContinue && isContinueValid));
 
+    final l10n = context.l10n;
     return AppBottomSheet(
-      title: _isEditing ? 'Edit Section' : 'Add Section',
+      title: _isEditing ? l10n.homeEditSection : l10n.homeAddSection,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -502,7 +509,7 @@ class _SectionFormSheetState extends ConsumerState<_SectionFormSheet> {
             DropdownButtonFormField<HomeSectionType>(
               initialValue: _selectedType,
               decoration: InputDecoration(
-                labelText: 'Section Type',
+                labelText: l10n.homeSectionType,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -514,10 +521,10 @@ class _SectionFormSheetState extends ConsumerState<_SectionFormSheet> {
                     children: [
                       const Icon(Icons.explore_outlined, size: 20),
                       const SizedBox(width: 8),
-                      const Text('Discovery Feed'),
+                      Text(l10n.homeDiscoveryFeed),
                       if (availableCats.isEmpty)
                         Text(
-                          ' (All added)',
+                          l10n.homeAllAdded,
                           style: TextStyle(
                             color: Theme.of(context).colorScheme.error,
                             fontSize: 12,
@@ -532,10 +539,10 @@ class _SectionFormSheetState extends ConsumerState<_SectionFormSheet> {
                     children: [
                       const Icon(Icons.play_circle_outline, size: 20),
                       const SizedBox(width: 8),
-                      const Text('Continue Progress'),
+                      Text(l10n.homeContinueProgress),
                       if (!isContinueValid)
                         Text(
-                          ' (Already added)',
+                          l10n.homeAlreadyAdded,
                           style: TextStyle(
                             color: Theme.of(context).colorScheme.error,
                             fontSize: 12,
@@ -550,10 +557,10 @@ class _SectionFormSheetState extends ConsumerState<_SectionFormSheet> {
                     children: [
                       const Icon(Icons.collections_bookmark_outlined, size: 20),
                       const SizedBox(width: 8),
-                      const Text('Library List'),
+                      Text(l10n.homeLibraryList),
                       if (availableStats.isEmpty)
                         Text(
-                          ' (All added)',
+                          l10n.homeAllAdded,
                           style: TextStyle(
                             color: Theme.of(context).colorScheme.error,
                             fontSize: 12,
@@ -578,7 +585,7 @@ class _SectionFormSheetState extends ConsumerState<_SectionFormSheet> {
           DropdownButtonFormField<MediaType>(
             initialValue: _selectedMediaType,
             decoration: InputDecoration(
-              labelText: 'Media Type',
+              labelText: l10n.homeMediaType,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -603,9 +610,9 @@ class _SectionFormSheetState extends ConsumerState<_SectionFormSheet> {
             DropdownButtonFormField<TrackerCategory>(
               initialValue: _selectedCategory,
               decoration: InputDecoration(
-                labelText: 'Category',
+                labelText: l10n.homeCategory,
                 helperText: isSourceMode
-                    ? 'Categories are locked to Trending in Source Discovery Mode.'
+                    ? l10n.homeCategoriesLockedHelper
                     : null,
                 helperStyle: isSourceMode
                     ? TextStyle(color: Theme.of(context).colorScheme.tertiary)
@@ -638,7 +645,7 @@ class _SectionFormSheetState extends ConsumerState<_SectionFormSheet> {
             DropdownButtonFormField<TrackedStatus>(
               initialValue: _selectedStatus,
               decoration: InputDecoration(
-                labelText: 'List to Display',
+                labelText: l10n.homeListToDisplay,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -662,15 +669,15 @@ class _SectionFormSheetState extends ConsumerState<_SectionFormSheet> {
             DropdownButtonFormField<TrackerType?>(
               initialValue: _targetTracker,
               decoration: InputDecoration(
-                labelText: 'Data Source',
+                labelText: l10n.homeDataSource,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
               items: [
-                const DropdownMenuItem(
+                DropdownMenuItem(
                   value: null,
-                  child: Text('Auto (Default)'),
+                  child: Text(l10n.homeAutoDefault),
                 ),
                 ...TrackerType.values.map(
                   (t) => DropdownMenuItem(value: t, child: Text(t.displayName)),
@@ -684,7 +691,7 @@ class _SectionFormSheetState extends ConsumerState<_SectionFormSheet> {
           TextField(
             controller: _titleController,
             decoration: InputDecoration(
-              labelText: 'Section Title',
+              labelText: l10n.homeSectionTitle,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -713,7 +720,7 @@ class _SectionFormSheetState extends ConsumerState<_SectionFormSheet> {
                 ),
               ),
               child: Text(
-                _isEditing ? 'Save Changes' : 'Add Section',
+                _isEditing ? l10n.discordSaveChanges : l10n.homeAddSection,
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,

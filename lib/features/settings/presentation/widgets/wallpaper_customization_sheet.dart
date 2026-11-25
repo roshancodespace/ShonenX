@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/core/localization/l10n_extension.dart';
 import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
 
 void showWallpaperCustomizationSheet(
@@ -266,9 +267,9 @@ class _WallpaperCustomizationOverlayState
                           style: TextButton.styleFrom(
                             foregroundColor: cs.onSurfaceVariant,
                           ),
-                          child: const Text(
-                            'Cancel',
-                            style: TextStyle(fontSize: 16),
+                          child: Text(
+                            context.l10n.commonCancel,
+                            style: const TextStyle(fontSize: 16),
                           ),
                         ),
                         FilledButton.icon(
@@ -325,9 +326,9 @@ class _WallpaperCustomizationOverlayState
                                   ),
                                 )
                               : const Icon(Icons.check_rounded, size: 20),
-                          label: const Text(
-                            'Apply Wallpaper',
-                            style: TextStyle(
+                          label: Text(
+                            context.l10n.themeWallpaperApplyBtn,
+                            style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 15,
                             ),

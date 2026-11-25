@@ -1,5 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/core/localization/l10n_extension.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/header/home_header.dart';
 import 'package:shonenx/features/settings/presentation/widgets/picker_sheet_shell.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
@@ -12,10 +13,11 @@ void showHomeHeaderStyleSheet(
   ThemeData theme,
 ) {
   final cs = theme.colorScheme;
+  final l10n = context.l10n;
 
   AppBottomSheet.show(
     context: context,
-    title: 'Home Header Style',
+    title: l10n.headerStyleTitle,
     child: UiSettingsSheetLayout(
       preview: Consumer(
         builder: (_, r, _) {
@@ -39,7 +41,7 @@ void showHomeHeaderStyleSheet(
           );
         },
       ),
-      optionsTitle: 'Header Layout Preset',
+      optionsTitle: l10n.headerStylePreset,
       options: Consumer(
         builder: (_, r, _) {
           final current = r.watch(
@@ -50,7 +52,7 @@ void showHomeHeaderStyleSheet(
                 (style) => PickerOption(
                   icon: _homeHeaderStyleIcon(style),
                   title: style.displayName,
-                  subtitle: _homeHeaderStyleDesc(style),
+                  subtitle: _homeHeaderStyleDesc(context, style),
                   selected: current == style,
                   onTap: () => notifier.updateHomeHeaderStyle(style),
                 ),
@@ -63,13 +65,16 @@ void showHomeHeaderStyleSheet(
   );
 }
 
-String _homeHeaderStyleDesc(HomeHeaderStyle style) => switch (style) {
-  HomeHeaderStyle.classic => 'Balanced avatar and greeting',
-  HomeHeaderStyle.minimal => 'Compact single-line row',
-  HomeHeaderStyle.material => 'Segmented pill layout',
-  HomeHeaderStyle.prominent => 'Expressive hero layout',
-  HomeHeaderStyle.docked => 'Seamless side-by-side tv layout',
-};
+String _homeHeaderStyleDesc(BuildContext context, HomeHeaderStyle style) {
+  final l10n = context.l10n;
+  return switch (style) {
+    HomeHeaderStyle.classic => l10n.headerStyleClassicDesc,
+    HomeHeaderStyle.minimal => l10n.headerStyleMinimalDesc,
+    HomeHeaderStyle.material => l10n.headerStyleMaterialDesc,
+    HomeHeaderStyle.prominent => l10n.headerStyleProminentDesc,
+    HomeHeaderStyle.docked => l10n.headerStyleDockedDesc,
+  };
+}
 
 IconData _homeHeaderStyleIcon(HomeHeaderStyle style) => switch (style) {
   HomeHeaderStyle.classic => Icons.view_headline_rounded,

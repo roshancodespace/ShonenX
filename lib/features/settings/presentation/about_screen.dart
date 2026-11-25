@@ -118,13 +118,13 @@ class AboutScreen extends ConsumerWidget {
               SettingsActionTile(
                 icon: Icons.system_update_outlined,
                 title: context.l10n.settingsCheckUpdates,
-                subtitle: 'Update settings and pre-release options',
+                subtitle: context.l10n.aboutCheckUpdatesSubtitle,
                 onTap: () => context.pushSettingsUpdates(),
               ),
               SettingsActionTile(
                 icon: Icons.code_rounded,
                 title: 'GitHub',
-                subtitle: 'Source code and releases',
+                subtitle: context.l10n.aboutGithubSubtitle,
                 onTap: () => launchUrl(
                   Uri.parse('https://github.com/roshancodespace/shonenx'),
                   mode: LaunchMode.externalApplication,
@@ -133,7 +133,7 @@ class AboutScreen extends ConsumerWidget {
               SettingsActionTile(
                 icon: Icons.forum_rounded,
                 title: 'Discord',
-                subtitle: 'Join the community',
+                subtitle: context.l10n.aboutDiscordSubtitle,
                 onTap: () => launchUrl(
                   Uri.parse('https://discord.gg/Fp6HRPCsqe'),
                   mode: LaunchMode.externalApplication,
@@ -142,7 +142,7 @@ class AboutScreen extends ConsumerWidget {
               SettingsActionTile(
                 icon: Icons.bug_report_rounded,
                 title: context.l10n.settingsReportIssue,
-                subtitle: 'Found a bug? Let us know',
+                subtitle: context.l10n.aboutReportIssueSubtitle,
                 onTap: () => launchUrl(
                   Uri.parse(
                     'https://github.com/roshancodespace/shonenx/issues',
@@ -168,17 +168,17 @@ class AboutScreen extends ConsumerWidget {
             title: context.l10n.settingsContributors,
             children: [
               contributors.when(
-                loading: () => const ListTile(
-                  leading: SizedBox(
+                loading: () => ListTile(
+                  leading: const SizedBox(
                     width: 24,
                     height: 24,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   ),
-                  title: Text('Loading contributors...'),
+                  title: Text(context.l10n.aboutLoadingContributors),
                 ),
-                error: (_, __) => const ListTile(
-                  leading: Icon(Icons.error_outline),
-                  title: Text('Failed to load contributors'),
+                error: (_, __) => ListTile(
+                  leading: const Icon(Icons.error_outline),
+                  title: Text(context.l10n.aboutFailedContributors),
                 ),
                 data: (contributors) {
                   final sorted = [...contributors];
@@ -205,7 +205,9 @@ class AboutScreen extends ConsumerWidget {
                       case 'Darkx-Dev':
                         return 'Co-Founder • Certified Chaos Engineer';
                       default:
-                        return '${c.contributions} contributions';
+                        return context.l10n.aboutContributionsCount(
+                          c.contributions.toString(),
+                        );
                     }
                   }
 

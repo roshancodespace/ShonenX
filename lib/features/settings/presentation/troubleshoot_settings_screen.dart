@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shonenx/core/caching/cache_manager.dart';
 import 'package:shonenx/core/caching/domain/cache_entry.dart';
+import 'package:shonenx/core/localization/l10n_extension.dart';
 import 'package:shonenx/features/comments/api/commentum_auth_service.dart';
 import 'package:shonenx/core/network/secure_storage.dart';
 import 'package:shonenx/features/tracking/providers/tracker_auth_provider.dart';
@@ -199,11 +200,9 @@ class _TroubleshootSettingsScreenState
     if (!mounted) return;
     if (items.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           behavior: SnackBarBehavior.floating,
-          content: Text(
-            'No unfinished downloads or orphaned temp files found.',
-          ),
+          content: Text(context.l10n.troubleshootNoUnfinishedDownloads),
         ),
       );
       return;
@@ -218,15 +217,16 @@ class _TroubleshootSettingsScreenState
           builder: (context, setSheetState) {
             final selectedCount = items.where((i) => i.selected).length;
             final colors = Theme.of(context).colorScheme;
+            final l10n = context.l10n;
 
             return AppBottomSheet(
-              title: 'Review Unfinished Downloads',
+              title: l10n.troubleshootReviewUnfinishedTitle,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Select unfinished queue tasks or incomplete temporary folders to permanently remove.',
+                    l10n.troubleshootReviewUnfinishedDesc,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: colors.onSurfaceVariant,
                     ),
@@ -270,7 +270,7 @@ class _TroubleshootSettingsScreenState
                       Expanded(
                         child: FilledButton.tonal(
                           onPressed: () => Navigator.pop(context),
-                          child: const Text('Cancel'),
+                          child: Text(l10n.commonCancel),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -307,13 +307,19 @@ class _TroubleshootSettingsScreenState
                                       SnackBar(
                                         behavior: SnackBarBehavior.floating,
                                         content: Text(
-                                          'Cleaned up $selectedCount item(s).',
+                                          l10n.troubleshootCleanedUpSnack(
+                                            selectedCount.toString(),
+                                          ),
                                         ),
                                       ),
                                     );
                                   }
                                 },
-                          child: Text('Clean Up ($selectedCount)'),
+                          child: Text(
+                            l10n.troubleshootCleanUpBtn(
+                              selectedCount.toString(),
+                            ),
+                          ),
                         ),
                       ),
                     ],
@@ -328,15 +334,16 @@ class _TroubleshootSettingsScreenState
   }
 
   Future<void> _clearAllExtensionRepos() async {
+    final l10n = context.l10n;
     final confirmed = await AppDialog.show<bool>(
       context: context,
-      title: 'Clear All Repositories?',
+      title: l10n.troubleshootClearAllReposDialogTitle,
       icon: Icon(
         Icons.folder_delete_rounded,
         color: Theme.of(context).colorScheme.error,
       ),
       child: Text(
-        'This will remove all added extension repository URLs across Aniyomi, Mangayomi, CloudStream, Kotatsu, and Sora.\n\nInstalled extensions will remain until uninstalled.',
+        l10n.troubleshootClearAllReposDialogBody,
         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
           color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
@@ -344,7 +351,7 @@ class _TroubleshootSettingsScreenState
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(false),
-          child: const Text('Cancel'),
+          child: Text(l10n.commonCancel),
         ),
         FilledButton(
           style: FilledButton.styleFrom(
@@ -352,7 +359,7 @@ class _TroubleshootSettingsScreenState
             foregroundColor: Theme.of(context).colorScheme.onError,
           ),
           onPressed: () => Navigator.of(context).pop(true),
-          child: const Text('Clear All'),
+          child: Text(l10n.troubleshootClearAllBtn),
         ),
       ],
     );
@@ -364,9 +371,9 @@ class _TroubleshootSettingsScreenState
       ref.invalidateAllSources();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             behavior: SnackBarBehavior.floating,
-            content: Text('All extension repositories cleared.'),
+            content: Text(l10n.troubleshootAllReposCleared),
           ),
         );
       }
@@ -374,15 +381,16 @@ class _TroubleshootSettingsScreenState
   }
 
   Future<void> _uninstallAllExtensions() async {
+    final l10n = context.l10n;
     final confirmed = await AppDialog.show<bool>(
       context: context,
-      title: 'Uninstall All Extensions?',
+      title: l10n.troubleshootUninstallAllExtDialogTitle,
       icon: Icon(
         Icons.extension_off_rounded,
         color: Theme.of(context).colorScheme.error,
       ),
       child: Text(
-        'This will remove all installed extension plugins across all engines.\n\nFixes crashes or broken sources caused by outdated/corrupted extension installs.',
+        l10n.troubleshootUninstallAllExtDialogBody,
         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
           color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
@@ -390,7 +398,7 @@ class _TroubleshootSettingsScreenState
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(false),
-          child: const Text('Cancel'),
+          child: Text(l10n.commonCancel),
         ),
         FilledButton(
           style: FilledButton.styleFrom(
@@ -398,7 +406,7 @@ class _TroubleshootSettingsScreenState
             foregroundColor: Theme.of(context).colorScheme.onError,
           ),
           onPressed: () => Navigator.of(context).pop(true),
-          child: const Text('Uninstall All'),
+          child: Text(l10n.troubleshootUninstallAllBtn),
         ),
       ],
     );
@@ -409,9 +417,9 @@ class _TroubleshootSettingsScreenState
       ref.invalidateAllSources();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             behavior: SnackBarBehavior.floating,
-            content: Text('All installed extensions uninstalled.'),
+            content: Text(l10n.troubleshootAllExtUninstalled),
           ),
         );
       }
@@ -419,15 +427,16 @@ class _TroubleshootSettingsScreenState
   }
 
   Future<void> _resetExtensionCacheAndPreferences() async {
+    final l10n = context.l10n;
     final confirmed = await AppDialog.show<bool>(
       context: context,
-      title: 'Reset Extension Cache & Preferences?',
+      title: l10n.troubleshootResetExtCacheDialogTitle,
       icon: Icon(
         Icons.restart_alt_rounded,
         color: Theme.of(context).colorScheme.primary,
       ),
       child: Text(
-        'This will reset extension-specific settings, source preferences, and cached metadata, then reload active extension managers.',
+        l10n.troubleshootResetExtCacheDialogBody,
         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
           color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
@@ -435,11 +444,11 @@ class _TroubleshootSettingsScreenState
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(false),
-          child: const Text('Cancel'),
+          child: Text(l10n.commonCancel),
         ),
         FilledButton(
           onPressed: () => Navigator.of(context).pop(true),
-          child: const Text('Reset'),
+          child: Text(l10n.commonReset),
         ),
       ],
     );
@@ -451,9 +460,9 @@ class _TroubleshootSettingsScreenState
       ref.invalidateAllSources();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             behavior: SnackBarBehavior.floating,
-            content: Text('Extension cache and preferences reset.'),
+            content: Text(l10n.troubleshootExtCacheResetSnack),
           ),
         );
       }
@@ -463,27 +472,30 @@ class _TroubleshootSettingsScreenState
   Future<void> _clearMediaMappings() async {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final l10n = context.l10n;
 
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: cs.surfaceContainerHigh,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text(
-          'Clear Media Mappings?',
-          style: TextStyle(fontWeight: FontWeight.w600),
+        title: Text(
+          l10n.troubleshootClearMediaMappingsDialogTitle,
+          style: const TextStyle(fontWeight: FontWeight.w600),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'This will clear $_mappingsCount saved preferred sources and manual matches.',
+              l10n.troubleshootClearMediaMappingsDialogBody(
+                _mappingsCount.toString(),
+              ),
               style: TextStyle(color: cs.onSurfaceVariant),
             ),
             const SizedBox(height: 12),
             Text(
-              'Your library bookmarks, watch history, and tracking progression will not be affected.',
+              l10n.troubleshootLibraryNotAffected,
               style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant),
             ),
           ],
@@ -491,7 +503,10 @@ class _TroubleshootSettingsScreenState
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('Cancel', style: TextStyle(color: cs.onSurfaceVariant)),
+            child: Text(
+              l10n.commonCancel,
+              style: TextStyle(color: cs.onSurfaceVariant),
+            ),
           ),
           FilledButton(
             style: FilledButton.styleFrom(
@@ -500,7 +515,7 @@ class _TroubleshootSettingsScreenState
               elevation: 0,
             ),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Clear'),
+            child: Text(l10n.commonClear),
           ),
         ],
       ),
@@ -517,9 +532,9 @@ class _TroubleshootSettingsScreenState
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           behavior: SnackBarBehavior.floating,
-          content: Text('Media mappings cleared.'),
+          content: Text(l10n.troubleshootMappingsCleared),
         ),
       );
     } catch (e) {
@@ -533,24 +548,30 @@ class _TroubleshootSettingsScreenState
   Future<void> _clearTrackerLinks() async {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final l10n = context.l10n;
 
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: cs.surfaceContainerHigh,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text(
-          'Clear Tracker Bridges?',
-          style: TextStyle(fontWeight: FontWeight.w600),
+        title: Text(
+          l10n.troubleshootClearTrackerBridgesDialogTitle,
+          style: const TextStyle(fontWeight: FontWeight.w600),
         ),
         content: Text(
-          'Clears $_trackerLinksCount cached ID pairings between AniList and MyAnimeList.',
+          l10n.troubleshootResetTrackerBridgesSubtitle(
+            _trackerLinksCount.toString(),
+          ),
           style: TextStyle(color: cs.onSurfaceVariant),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('Cancel', style: TextStyle(color: cs.onSurfaceVariant)),
+            child: Text(
+              l10n.commonCancel,
+              style: TextStyle(color: cs.onSurfaceVariant),
+            ),
           ),
           FilledButton(
             style: FilledButton.styleFrom(
@@ -559,7 +580,7 @@ class _TroubleshootSettingsScreenState
               elevation: 0,
             ),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Clear'),
+            child: Text(l10n.commonClear),
           ),
         ],
       ),
@@ -576,9 +597,9 @@ class _TroubleshootSettingsScreenState
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           behavior: SnackBarBehavior.floating,
-          content: Text('Tracker bridges cleared.'),
+          content: Text(l10n.troubleshootTrackerBridgesCleared),
         ),
       );
     } catch (_) {}
@@ -601,9 +622,9 @@ class _TroubleshootSettingsScreenState
 
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
+      SnackBar(
         behavior: SnackBarBehavior.floating,
-        content: Text('Image & poster cache purged from memory and disk.'),
+        content: Text(context.l10n.troubleshootImageCachePurged),
       ),
     );
   }
@@ -611,29 +632,28 @@ class _TroubleshootSettingsScreenState
   Future<void> _resetAuthenticationData() async {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final l10n = context.l10n;
 
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: cs.surfaceContainerHigh,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text(
-          'Reset Authentication Data?',
-          style: TextStyle(fontWeight: FontWeight.w600),
+        title: Text(
+          l10n.troubleshootResetAuthDialogTitle,
+          style: const TextStyle(fontWeight: FontWeight.w600),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'This will sign out of all linked accounts and erase saved tokens:',
+              l10n.troubleshootResetAuthDialogLead,
               style: TextStyle(color: cs.onSurfaceVariant),
             ),
             const SizedBox(height: 12),
             Text(
-              '• Tracker accounts (AniList, MyAnimeList, Kitsu, SIMKL)\n'
-              '• Discord Rich Presence integration\n'
-              '• Commentum discussions session',
+              l10n.troubleshootResetAuthDialogList,
               style: TextStyle(
                 fontSize: 13,
                 height: 1.5,
@@ -642,7 +662,7 @@ class _TroubleshootSettingsScreenState
             ),
             const SizedBox(height: 12),
             Text(
-              'Your local bookmarks, watch history, and downloads will NOT be affected.',
+              l10n.troubleshootLocalDataSafeNote,
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
@@ -654,7 +674,10 @@ class _TroubleshootSettingsScreenState
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('Cancel', style: TextStyle(color: cs.onSurfaceVariant)),
+            child: Text(
+              l10n.commonCancel,
+              style: TextStyle(color: cs.onSurfaceVariant),
+            ),
           ),
           FilledButton(
             style: FilledButton.styleFrom(
@@ -663,7 +686,7 @@ class _TroubleshootSettingsScreenState
               elevation: 0,
             ),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Reset Auth'),
+            child: Text(l10n.troubleshootResetAuthBtn),
           ),
         ],
       ),
@@ -693,11 +716,9 @@ class _TroubleshootSettingsScreenState
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           behavior: SnackBarBehavior.floating,
-          content: Text(
-            'All authentication tokens cleared and accounts signed out.',
-          ),
+          content: Text(l10n.troubleshootAuthClearedSnack),
         ),
       );
     } catch (e) {
@@ -711,24 +732,28 @@ class _TroubleshootSettingsScreenState
   Future<void> _resetAppSettings() async {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final l10n = context.l10n;
 
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: cs.surfaceContainerHigh,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text(
-          'Reset App Settings?',
-          style: TextStyle(fontWeight: FontWeight.w600),
+        title: Text(
+          l10n.troubleshootResetAppSettingsDialogTitle,
+          style: const TextStyle(fontWeight: FontWeight.w600),
         ),
         content: Text(
-          'This will revert all player, UI theme, extension, and content settings back to factory defaults.\n\nYour library bookmarks, history, and downloads will remain intact.',
+          l10n.troubleshootResetAppSettingsDialogBody,
           style: TextStyle(color: cs.onSurfaceVariant, height: 1.4),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('Cancel', style: TextStyle(color: cs.onSurfaceVariant)),
+            child: Text(
+              l10n.commonCancel,
+              style: TextStyle(color: cs.onSurfaceVariant),
+            ),
           ),
           FilledButton(
             style: FilledButton.styleFrom(
@@ -737,7 +762,7 @@ class _TroubleshootSettingsScreenState
               elevation: 0,
             ),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Reset Settings'),
+            child: Text(l10n.troubleshootResetSettingsBtn),
           ),
         ],
       ),
@@ -751,9 +776,9 @@ class _TroubleshootSettingsScreenState
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           behavior: SnackBarBehavior.floating,
-          content: Text('App settings restored to defaults.'),
+          content: Text(l10n.troubleshootSettingsRestoredSnack),
         ),
       );
     } catch (e) {
@@ -765,61 +790,62 @@ class _TroubleshootSettingsScreenState
   }
 
   Future<void> _showSelectiveClearDataSheet() async {
+    final l10n = context.l10n;
     final categories = [
       _SelectiveDataCategory(
         key: 'history',
-        title: 'Watch & Read History',
-        subtitle: '$_historyCount history entries',
+        title: l10n.troubleshootCatHistory,
+        subtitle: l10n.troubleshootCatHistorySub(_historyCount.toString()),
         icon: Icons.history_rounded,
         count: _historyCount,
         isSelected: true,
       ),
       _SelectiveDataCategory(
         key: 'library',
-        title: 'Library & Bookmarks',
-        subtitle: '$_libraryCount saved titles in your library',
+        title: l10n.troubleshootCatLibrary,
+        subtitle: l10n.troubleshootCatLibrarySub(_libraryCount.toString()),
         icon: Icons.collections_bookmark_rounded,
         count: _libraryCount,
         isSelected: false,
       ),
       _SelectiveDataCategory(
         key: 'cache',
-        title: 'Scraper & Network Cache',
-        subtitle: '$_cacheCount cached API responses and stream links',
+        title: l10n.troubleshootCatCache,
+        subtitle: l10n.troubleshootCatCacheSub(_cacheCount.toString()),
         icon: Icons.cached_rounded,
         count: _cacheCount,
         isSelected: true,
       ),
       _SelectiveDataCategory(
         key: 'mappings',
-        title: 'Media & Source Mappings',
-        subtitle: '$_mappingsCount preferred sources and manual matches',
+        title: l10n.troubleshootCatMappings,
+        subtitle: l10n.troubleshootCatMappingsSub(_mappingsCount.toString()),
         icon: Icons.link_off_rounded,
         count: _mappingsCount,
         isSelected: true,
       ),
       _SelectiveDataCategory(
         key: 'bridges',
-        title: 'Tracker Bridges',
-        subtitle: '$_trackerLinksCount AniList to MAL ID mapping links',
+        title: l10n.troubleshootCatBridges,
+        subtitle: l10n.troubleshootCatBridgesSub(_trackerLinksCount.toString()),
         icon: Icons.sync_problem_rounded,
         count: _trackerLinksCount,
         isSelected: true,
       ),
       _SelectiveDataCategory(
         key: 'downloads',
-        title: 'Incomplete Downloads & Temp Files',
-        subtitle:
-            '$_unfinishedDownloadsCount pending download tasks and temp files',
+        title: l10n.troubleshootCatDownloads,
+        subtitle: l10n.troubleshootCatDownloadsSub(
+          _unfinishedDownloadsCount.toString(),
+        ),
         icon: Icons.download_for_offline_rounded,
         count: _unfinishedDownloadsCount,
         isSelected: true,
       ),
       _SelectiveDataCategory(
         key: 'auth',
-        title: 'Authentication & Accounts',
-        subtitle:
-            '$_authTokensCount saved tokens (AniList, MAL, Kitsu, Discord)',
+        title: l10n.troubleshootAuthAccountsSection,
+        subtitle: l10n.troubleshootCatAuthSub(_authTokensCount.toString()),
         icon: Icons.lock_reset_rounded,
         count: _authTokensCount,
         isDestructive: true,
@@ -827,8 +853,8 @@ class _TroubleshootSettingsScreenState
       ),
       _SelectiveDataCategory(
         key: 'settings',
-        title: 'App Preferences & Settings',
-        subtitle: 'Reset all player, UI, and extension settings to defaults',
+        title: l10n.troubleshootCatSettings,
+        subtitle: l10n.troubleshootCatSettingsSub,
         icon: Icons.tune_rounded,
         isDestructive: true,
         isSelected: false,
@@ -846,7 +872,7 @@ class _TroubleshootSettingsScreenState
             final selectedCount = categories.where((c) => c.isSelected).length;
 
             return AppBottomSheet(
-              title: 'Clear Data (Selective)',
+              title: l10n.troubleshootClearDataSelectiveTitle,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -855,7 +881,7 @@ class _TroubleshootSettingsScreenState
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Select data categories to purge:',
+                        l10n.troubleshootSelectCategoriesToPurge,
                         style: TextStyle(
                           fontSize: 13,
                           color: cs.onSurfaceVariant,
@@ -874,8 +900,8 @@ class _TroubleshootSettingsScreenState
                         },
                         child: Text(
                           categories.every((c) => c.isSelected)
-                              ? 'Deselect All'
-                              : 'Select All',
+                              ? l10n.historyDeselectAll
+                              : l10n.historySelectAll,
                           style: const TextStyle(fontSize: 12),
                         ),
                       ),
@@ -932,7 +958,7 @@ class _TroubleshootSettingsScreenState
                       Expanded(
                         child: OutlinedButton(
                           onPressed: () => Navigator.pop(context),
-                          child: const Text('Cancel'),
+                          child: Text(l10n.commonCancel),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -952,14 +978,16 @@ class _TroubleshootSettingsScreenState
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(16),
                                       ),
-                                      title: const Text(
-                                        'Confirm Data Wipe?',
-                                        style: TextStyle(
+                                      title: Text(
+                                        l10n.troubleshootConfirmDataWipeTitle,
+                                        style: const TextStyle(
                                           fontWeight: FontWeight.w600,
                                         ),
                                       ),
                                       content: Text(
-                                        'This will permanently delete the $selectedCount selected categories. This action cannot be undone.',
+                                        l10n.troubleshootConfirmDataWipeBody(
+                                          selectedCount.toString(),
+                                        ),
                                         style: TextStyle(
                                           color: cs.onSurfaceVariant,
                                         ),
@@ -969,7 +997,7 @@ class _TroubleshootSettingsScreenState
                                           onPressed: () =>
                                               Navigator.pop(context, false),
                                           child: Text(
-                                            'Cancel',
+                                            l10n.commonCancel,
                                             style: TextStyle(
                                               color: cs.onSurfaceVariant,
                                             ),
@@ -982,7 +1010,9 @@ class _TroubleshootSettingsScreenState
                                           ),
                                           onPressed: () =>
                                               Navigator.pop(context, true),
-                                          child: const Text('Wipe Selected'),
+                                          child: Text(
+                                            l10n.troubleshootWipeSelectedBtn,
+                                          ),
                                         ),
                                       ],
                                     ),
@@ -1084,12 +1114,18 @@ class _TroubleshootSettingsScreenState
                                     SnackBar(
                                       behavior: SnackBarBehavior.floating,
                                       content: Text(
-                                        'Purged $selectedCount selected data categories.',
+                                        l10n.troubleshootPurgedCategoriesSnack(
+                                          selectedCount.toString(),
+                                        ),
                                       ),
                                     ),
                                   );
                                 },
-                          child: Text('Wipe Selected ($selectedCount)'),
+                          child: Text(
+                            l10n.troubleshootWipeSelectedCountBtn(
+                              selectedCount.toString(),
+                            ),
+                          ),
                         ),
                       ),
                     ],
@@ -1107,9 +1143,10 @@ class _TroubleshootSettingsScreenState
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final l10n = context.l10n;
 
     return AppScaffold(
-      title: 'Troubleshoot & Repair',
+      title: l10n.settingsTroubleshoot,
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : ListView(
@@ -1118,7 +1155,7 @@ class _TroubleshootSettingsScreenState
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                   child: Text(
-                    'Use these options if you encounter broken playback, frozen scrapers, desynced tracking, or corrupted settings.',
+                    l10n.troubleshootIntro,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: cs.onSurfaceVariant,
                     ),
@@ -1128,27 +1165,28 @@ class _TroubleshootSettingsScreenState
 
                 // Storage & Cache
                 SettingsSection(
-                  title: 'Storage & Cache',
+                  title: l10n.troubleshootStorageCacheSection,
                   children: [
                     SettingsActionTile(
                       icon: Icons.cleaning_services_rounded,
-                      title: 'Clean Incomplete Downloads',
-                      subtitle:
-                          'Review and purge $_unfinishedDownloadsCount unfinished tasks & orphaned temp files',
+                      title: l10n.troubleshootCleanIncompleteDownloads,
+                      subtitle: l10n.troubleshootCleanIncompleteDownloadsSubtitle(
+                        _unfinishedDownloadsCount.toString(),
+                      ),
                       onTap: _reviewAndClearDownloads,
                     ),
                     SettingsActionTile(
                       icon: Icons.photo_library_outlined,
-                      title: 'Clear Image & Poster Cache',
-                      subtitle:
-                          'Purge loaded cover art thumbnails and temp files from memory & disk',
+                      title: l10n.troubleshootClearImageCache,
+                      subtitle: l10n.troubleshootClearImageCacheSubtitle,
                       onTap: _clearImageCache,
                     ),
                     SettingsActionTile(
                       icon: Icons.cached_rounded,
-                      title: 'Flush Scraper Cache',
-                      subtitle:
-                          'Clear $_cacheCount temporary scraper responses and stream links',
+                      title: l10n.troubleshootFlushScraperCache,
+                      subtitle: l10n.troubleshootFlushScraperCacheSubtitle(
+                        _cacheCount.toString(),
+                      ),
                       onTap: () async {
                         await ref.read(cacheManagerProvider).clearCache();
                         final isar = ref.read(databaseProvider);
@@ -1158,9 +1196,9 @@ class _TroubleshootSettingsScreenState
                         await _loadCounts();
                         if (!context.mounted) return;
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
+                          SnackBar(
                             behavior: SnackBarBehavior.floating,
-                            content: Text('Scraper cache flushed.'),
+                            content: Text(l10n.troubleshootScraperCacheFlushed),
                           ),
                         );
                       },
@@ -1171,19 +1209,20 @@ class _TroubleshootSettingsScreenState
 
                 // Matching & Scrapers
                 SettingsSection(
-                  title: 'Matching & Scrapers',
+                  title: l10n.troubleshootMatchingScrapersSection,
                   children: [
                     SettingsActionTile(
                       icon: Icons.link_off_rounded,
-                      title: 'Clear All Media Mappings',
-                      subtitle:
-                          'Reset $_mappingsCount preferred sources and manual matches',
+                      title: l10n.troubleshootClearMediaMappings,
+                      subtitle: l10n.troubleshootClearMediaMappingsSubtitle(
+                        _mappingsCount.toString(),
+                      ),
                       onTap: _mappingsCount > 0 ? _clearMediaMappings : null,
                     ),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(52, 0, 16, 12),
                       child: Text(
-                        'Fixes "Episodes Not Found" after extension updates. Forces automatic re-matching on your next visit.',
+                        l10n.troubleshootClearMediaMappingsNote,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: cs.onSurfaceVariant,
                         ),
@@ -1195,29 +1234,26 @@ class _TroubleshootSettingsScreenState
 
                 // Extensions & Repositories
                 SettingsSection(
-                  title: 'Extensions & Repositories',
+                  title: l10n.troubleshootExtensionsReposSection,
                   children: [
                     SettingsActionTile(
                       icon: Icons.folder_delete_rounded,
                       isDestructive: true,
-                      title: 'Clear All Extension Repositories',
-                      subtitle:
-                          'Wipe all repository URLs across Aniyomi, Mangayomi, CloudStream, Kotatsu, and Sora',
+                      title: l10n.troubleshootClearAllReposTitle,
+                      subtitle: l10n.troubleshootClearAllReposSubtitle,
                       onTap: _clearAllExtensionRepos,
                     ),
                     SettingsActionTile(
                       icon: Icons.extension_off_rounded,
                       isDestructive: true,
-                      title: 'Uninstall All Extensions',
-                      subtitle:
-                          'Uninstall all extension plugins across all engines to fix corrupted builds',
+                      title: l10n.troubleshootUninstallAllExtTitle,
+                      subtitle: l10n.troubleshootUninstallAllExtSubtitle,
                       onTap: _uninstallAllExtensions,
                     ),
                     SettingsActionTile(
                       icon: Icons.restart_alt_rounded,
-                      title: 'Reset Extension Cache & Preferences',
-                      subtitle:
-                          'Clear custom source preferences, cached metadata, and refresh engines',
+                      title: l10n.troubleshootResetExtCacheTitle,
+                      subtitle: l10n.troubleshootResetExtCacheSubtitle,
                       onTap: _resetExtensionCacheAndPreferences,
                     ),
                   ],
@@ -1226,13 +1262,14 @@ class _TroubleshootSettingsScreenState
 
                 // Sync & Tracking
                 SettingsSection(
-                  title: 'Sync & Tracking',
+                  title: l10n.troubleshootSyncTrackingSection,
                   children: [
                     SettingsActionTile(
                       icon: Icons.sync_problem_rounded,
-                      title: 'Reset Tracker Bridges',
-                      subtitle:
-                          'Clear $_trackerLinksCount cached AniList to MAL ID pairings',
+                      title: l10n.troubleshootResetTrackerBridges,
+                      subtitle: l10n.troubleshootResetTrackerBridgesSubtitle(
+                        _trackerLinksCount.toString(),
+                      ),
                       onTap: _trackerLinksCount > 0 ? _clearTrackerLinks : null,
                     ),
                   ],
@@ -1241,14 +1278,13 @@ class _TroubleshootSettingsScreenState
 
                 // Authentication & Accounts
                 SettingsSection(
-                  title: 'Authentication & Accounts',
+                  title: l10n.troubleshootAuthAccountsSection,
                   children: [
                     SettingsActionTile(
                       icon: Icons.lock_reset_rounded,
                       isDestructive: true,
-                      title: 'Reset Authentication Data',
-                      subtitle:
-                          'Log out and erase all saved credentials (AniList, MAL, Kitsu, SIMKL, Discord, Commentum)',
+                      title: l10n.troubleshootResetAuthTitle,
+                      subtitle: l10n.troubleshootResetAuthSubtitle,
                       onTap: _resetAuthenticationData,
                     ),
                   ],
@@ -1257,21 +1293,19 @@ class _TroubleshootSettingsScreenState
 
                 // Reset & Data Management (Danger Zone)
                 SettingsSection(
-                  title: 'Data Management & Reset',
+                  title: l10n.troubleshootDataMgmtSection,
                   children: [
                     SettingsActionTile(
                       icon: Icons.delete_sweep_rounded,
                       isDestructive: true,
-                      title: 'Clear App Data (Selective)',
-                      subtitle:
-                          'Selectively wipe history, bookmarks, caches, mappings, or perform a full wipe',
+                      title: l10n.troubleshootClearDataSelectiveTitle,
+                      subtitle: l10n.troubleshootClearDataSelectiveSubtitle,
                       onTap: _showSelectiveClearDataSheet,
                     ),
                     SettingsActionTile(
                       icon: Icons.settings_backup_restore_rounded,
-                      title: 'Reset App Settings to Default',
-                      subtitle:
-                          'Restore all player, UI, and extension preferences without affecting saved data',
+                      title: l10n.troubleshootResetAppSettingsTitle,
+                      subtitle: l10n.troubleshootResetAppSettingsSubtitle,
                       onTap: _resetAppSettings,
                     ),
                   ],

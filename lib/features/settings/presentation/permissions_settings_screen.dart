@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:shonenx/core/localization/l10n_extension.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
 
@@ -80,10 +81,15 @@ class _PermissionsSettingsScreenState
     }
   }
 
-  Widget _buildStatusBadge(PermissionStatus? status, ColorScheme cs) {
+  Widget _buildStatusBadge(
+    BuildContext context,
+    PermissionStatus? status,
+    ColorScheme cs,
+  ) {
+    final l10n = context.l10n;
     if (status == null) {
       return Text(
-        'Checking...',
+        l10n.permissionsChecking,
         style: TextStyle(
           fontSize: 12,
           color: cs.onSurfaceVariant.withValues(alpha: 0.7),
@@ -92,7 +98,7 @@ class _PermissionsSettingsScreenState
     }
     if (status.isGranted) {
       return Text(
-        'Granted',
+        l10n.permissionsGranted,
         style: TextStyle(
           fontSize: 13,
           fontWeight: FontWeight.bold,
@@ -102,7 +108,7 @@ class _PermissionsSettingsScreenState
     }
     if (status.isDenied) {
       return Text(
-        'Denied',
+        l10n.permissionsDenied,
         style: TextStyle(
           fontSize: 13,
           fontWeight: FontWeight.bold,
@@ -112,7 +118,7 @@ class _PermissionsSettingsScreenState
     }
     if (status.isPermanentlyDenied) {
       return Text(
-        'Denied (Locked)',
+        l10n.permissionsDeniedLocked,
         style: TextStyle(
           fontSize: 13,
           fontWeight: FontWeight.bold,
@@ -122,7 +128,7 @@ class _PermissionsSettingsScreenState
     }
     if (status.isRestricted) {
       return Text(
-        'Restricted',
+        l10n.permissionsRestricted,
         style: TextStyle(
           fontSize: 13,
           fontWeight: FontWeight.bold,
@@ -131,7 +137,7 @@ class _PermissionsSettingsScreenState
       );
     }
     return Text(
-      'Unknown',
+      l10n.commonUnknown,
       style: TextStyle(
         fontSize: 12,
         color: cs.onSurfaceVariant.withValues(alpha: 0.7),
@@ -142,54 +148,60 @@ class _PermissionsSettingsScreenState
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l10n = context.l10n;
 
     return AppScaffold(
-      title: 'Permissions',
+      title: l10n.settingsPermissions,
       body: ListView(
         padding: const EdgeInsets.only(bottom: 50),
         children: [
           SettingsSection(
-            title: 'System Permissions',
+            title: l10n.permissionsSystemSection,
             children: [
               SettingsActionTile(
                 icon: Icons.notifications_active_outlined,
-                title: 'Notifications',
-                subtitle: 'Push notifications and episode release reminders',
-                trailing: _buildStatusBadge(_notificationStatus, cs),
+                title: l10n.settingsNotifications,
+                subtitle: l10n.permissionsNotifSubtitle,
+                trailing: _buildStatusBadge(context, _notificationStatus, cs),
                 onTap: () => _requestPermission(Permission.notification),
               ),
               if (Platform.isAndroid) ...[
                 SettingsActionTile(
                   icon: Icons.battery_charging_full_rounded,
-                  title: 'Ignore Battery Optimizations',
-                  subtitle:
-                      'Keep downloads running when app is in background or recent apps',
-                  trailing: _buildStatusBadge(_batteryOptimizationStatus, cs),
+                  title: l10n.permissionsBatteryTitle,
+                  subtitle: l10n.permissionsBatterySubtitle,
+                  trailing: _buildStatusBadge(
+                    context,
+                    _batteryOptimizationStatus,
+                    cs,
+                  ),
                   onTap: () =>
                       _requestPermission(Permission.ignoreBatteryOptimizations),
                 ),
                 SettingsActionTile(
                   icon: Icons.alarm_rounded,
-                  title: 'Exact Alarms (Android 12+)',
-                  subtitle:
-                      'Scheduling precise airing reminders without system delays',
-                  trailing: _buildStatusBadge(_exactAlarmStatus, cs),
+                  title: l10n.permissionsExactAlarmsTitle,
+                  subtitle: l10n.permissionsExactAlarmsSubtitle,
+                  trailing: _buildStatusBadge(context, _exactAlarmStatus, cs),
                   onTap: () =>
                       _requestPermission(Permission.scheduleExactAlarm),
                 ),
                 SettingsActionTile(
                   icon: Icons.folder_outlined,
-                  title: 'Storage (Android 10 and below)',
-                  subtitle: 'Save downloads on older Android versions',
-                  trailing: _buildStatusBadge(_storageStatus, cs),
+                  title: l10n.permissionsStorageLegacyTitle,
+                  subtitle: l10n.permissionsStorageLegacySubtitle,
+                  trailing: _buildStatusBadge(context, _storageStatus, cs),
                   onTap: () => _requestPermission(Permission.storage),
                 ),
                 SettingsActionTile(
                   icon: Icons.manage_search_outlined,
-                  title: 'Manage External Storage (Android 11+)',
-                  subtitle:
-                      'Save downloads to custom directories across device',
-                  trailing: _buildStatusBadge(_manageStorageStatus, cs),
+                  title: l10n.permissionsManageStorageTitle,
+                  subtitle: l10n.permissionsManageStorageSubtitle,
+                  trailing: _buildStatusBadge(
+                    context,
+                    _manageStorageStatus,
+                    cs,
+                  ),
                   onTap: () =>
                       _requestPermission(Permission.manageExternalStorage),
                 ),
@@ -202,7 +214,7 @@ class _PermissionsSettingsScreenState
               vertical: 24.0,
             ),
             child: Text(
-              'If a permission is permanently denied, tapping on it will open the app settings where you can manually grant the permission.',
+              l10n.permissionsPermanentlyDeniedNote,
               style: TextStyle(
                 fontSize: 12,
                 color: cs.onSurfaceVariant.withValues(alpha: 0.7),

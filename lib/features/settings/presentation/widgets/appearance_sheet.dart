@@ -1,5 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/core/localization/l10n_extension.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
 import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
@@ -11,9 +12,10 @@ void showAppearanceSheet(
   ThemePrefsState initialThemePrefs,
   ThemeData theme,
 ) {
+  final l10n = context.l10n;
   AppBottomSheet.show(
     context: context,
-    title: 'Global UI Customization',
+    title: l10n.appearanceGlobalUiTitle,
     child: Consumer(
       builder: (_, r, __) {
         final currentPrefs = r.watch(themePrefsProvider);
@@ -22,14 +24,15 @@ void showAppearanceSheet(
             mainAxisSize: MainAxisSize.min,
             children: [
               _buildGlobalUiPreview(
+                context,
                 theme,
                 currentPrefs.uiRoundness,
                 currentPrefs.fontScaleFactor,
                 currentPrefs.uiScaleFactor,
               ),
               SettingsSliderTile(
-                title: 'Border Roundness',
-                subtitle: 'Corner roundness across the app',
+                title: l10n.appearanceBorderRoundness,
+                subtitle: l10n.appearanceBorderRoundnessSubtitle,
                 value: currentPrefs.uiRoundness,
                 min: 0.0,
                 max: 32.0,
@@ -41,8 +44,8 @@ void showAppearanceSheet(
                 ),
               ),
               SettingsSliderTile(
-                title: 'Font Scale',
-                subtitle: 'Scale text size globally',
+                title: l10n.appearanceFontScale,
+                subtitle: l10n.appearanceFontScaleSubtitle,
                 value: currentPrefs.fontScaleFactor,
                 min: 0.8,
                 max: 1.5,
@@ -54,8 +57,8 @@ void showAppearanceSheet(
                 ),
               ),
               SettingsSliderTile(
-                title: 'Widget Scale',
-                subtitle: 'Scale media cards & navigation bar',
+                title: l10n.appearanceWidgetScale,
+                subtitle: l10n.appearanceWidgetScaleSubtitle,
                 value: currentPrefs.uiScaleFactor,
                 min: 0.8,
                 max: 1.5,
@@ -76,11 +79,13 @@ void showAppearanceSheet(
 }
 
 Widget _buildGlobalUiPreview(
+  BuildContext context,
   ThemeData theme,
   double roundness,
   double fontScale,
   double uiScale,
 ) {
+  final l10n = context.l10n;
   final cs = theme.colorScheme;
   return Container(
     height: 120,
@@ -133,7 +138,7 @@ Widget _buildGlobalUiPreview(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          'Primary text',
+                          l10n.appearancePrimaryText,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
@@ -143,7 +148,7 @@ Widget _buildGlobalUiPreview(
                           ),
                         ),
                         Text(
-                          'Secondary text',
+                          l10n.appearanceSecondaryText,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(

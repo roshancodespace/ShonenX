@@ -1,6 +1,6 @@
 import 'package:shonenx/shared/widgets/smart_image.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
+import 'package:flutter_md/flutter_md.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/source_engine/source_engine_provider.dart';
 import 'package:shonenx/shared/models/ui_style_enums.dart';
@@ -620,17 +620,15 @@ class _CharacterDetailsModalState
               ),
             )
           else if (c.description != null && c.description!.isNotEmpty)
-            MarkdownBody(
-              data: c.description!,
-              styleSheet: MarkdownStyleSheet(
-                p: textTheme.bodySmall?.copyWith(
-                  height: 1.4,
-                  color: cs.onSurfaceVariant,
-                ),
-                strong: textTheme.bodySmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: cs.onSurface,
-                ),
+            MarkdownWidget(
+              markdown: Markdown.fromString(c.description!),
+              theme: MarkdownThemeData(
+                textStyle:
+                    textTheme.bodySmall?.copyWith(
+                      height: 1.4,
+                      color: cs.onSurfaceVariant,
+                    ) ??
+                    TextStyle(height: 1.4, color: cs.onSurfaceVariant),
               ),
             )
           else

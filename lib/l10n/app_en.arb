@@ -1377,5 +1377,2654 @@
   "settingsTopGeneratedSchemes": "Top Generated Schemes",
   "@settingsTopGeneratedSchemes": {
     "description": "Title of the top generated schemes shelf"
+  },
+  "aboutCheckUpdatesSubtitle": "Update settings and pre-release options",
+  "@aboutCheckUpdatesSubtitle": {
+    "description": "Subtitle for Check for Updates in About screen"
+  },
+  "aboutGithubSubtitle": "Source code and releases",
+  "@aboutGithubSubtitle": {
+    "description": "Subtitle for GitHub link in About screen"
+  },
+  "aboutDiscordSubtitle": "Join the community",
+  "@aboutDiscordSubtitle": {
+    "description": "Subtitle for Discord link in About screen"
+  },
+  "aboutReportIssueSubtitle": "Found a bug? Let us know",
+  "@aboutReportIssueSubtitle": {
+    "description": "Subtitle for Report an Issue in About screen"
+  },
+  "aboutLoadingContributors": "Loading contributors...",
+  "@aboutLoadingContributors": {
+    "description": "Loading contributors text"
+  },
+  "aboutFailedContributors": "Failed to load contributors",
+  "@aboutFailedContributors": {
+    "description": "Failed to load contributors text"
+  },
+  "aboutContributionsCount": "{count} contributions",
+  "@aboutContributionsCount": {
+    "description": "Number of contributions for a GitHub contributor",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "addonsUpdatesAvailable": "Updates available for addons.",
+  "@addonsUpdatesAvailable": {
+    "description": "Snackbar when addon updates are available"
+  },
+  "addonsUpToDate": "All addons are up to date.",
+  "@addonsUpToDate": {
+    "description": "Snackbar when all addons are up to date"
+  },
+  "addonsCheckFailed": "Failed to check for updates: {error}",
+  "@addonsCheckFailed": {
+    "description": "Snackbar when checking addon updates fails",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "addonsDownloadInProgress": "Download in progress...",
+  "@addonsDownloadInProgress": {
+    "description": "Snackbar when addon download is already running"
+  },
+  "addonsInstallFailed": "Failed to install {name}: {error}",
+  "@addonsInstallFailed": {
+    "description": "Snackbar when installing an addon fails",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "addonsUpdateAvailableDialog": "An update is available for {name}.",
+  "@addonsUpdateAvailableDialog": {
+    "description": "Dialog text when an addon has an update",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "addonsInstalledActiveDialog": "{name} is installed and active.",
+  "@addonsInstalledActiveDialog": {
+    "description": "Dialog text when an addon is installed and active",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "addonsActionUpdate": "Update",
+  "@addonsActionUpdate": {
+    "description": "Update button label"
+  },
+  "addonsActionUninstall": "Uninstall",
+  "@addonsActionUninstall": {
+    "description": "Uninstall button label"
+  },
+  "addonsActionInstall": "Install",
+  "@addonsActionInstall": {
+    "description": "Install button label"
+  },
+  "addonsActionInstalled": "Installed",
+  "@addonsActionInstalled": {
+    "description": "Installed status label"
+  },
+  "addonsUpdateFailed": "Failed to update {name}: {error}",
+  "@addonsUpdateFailed": {
+    "description": "Snackbar when updating an addon fails",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "addonsUninstalled": "Uninstalled {name}",
+  "@addonsUninstalled": {
+    "description": "Snackbar when an addon is uninstalled",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "addonsUninstallFailed": "Failed to uninstall {name}: {error}",
+  "@addonsUninstallFailed": {
+    "description": "Snackbar when uninstalling an addon fails",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "addonsAvailableSection": "Available Addons",
+  "@addonsAvailableSection": {
+    "description": "Section title for available addons"
+  },
+  "addonsNoneRegistered": "No addons registered.",
+  "@addonsNoneRegistered": {
+    "description": "Message when no addons are registered"
+  },
+  "addonsMaintenanceSection": "Maintenance",
+  "@addonsMaintenanceSection": {
+    "description": "Section title for addon maintenance"
+  },
+  "addonsCheckUpdatesSubtitle": "Scan for new versions of installed addons",
+  "@addonsCheckUpdatesSubtitle": {
+    "description": "Subtitle for checking addon updates"
+  },
+  "cacheStorageUsage": "Storage Usage",
+  "@cacheStorageUsage": {
+    "description": "Heading for cache storage usage"
+  },
+  "cacheUsedOutOf": "{used} MB used out of {total}",
+  "@cacheUsedOutOf": {
+    "description": "Text showing used MB out of max cache size",
+    "placeholders": {
+      "total": {
+        "type": "String"
+      },
+      "used": {
+        "type": "String"
+      }
+    }
+  },
+  "cacheIsarActive": "Isar Database storage active",
+  "@cacheIsarActive": {
+    "description": "Label indicating Isar database storage is active"
+  },
+  "cacheSectionTitle": "Caching Settings",
+  "@cacheSectionTitle": {
+    "description": "Section title for caching settings"
+  },
+  "cacheEnableHttp": "Enable HTTP Caching",
+  "@cacheEnableHttp": {
+    "description": "Switch title for enabling HTTP caching"
+  },
+  "cacheEnableHttpSubtitle": "Cache network responses to load pages faster and save data.",
+  "@cacheEnableHttpSubtitle": {
+    "description": "Switch subtitle for HTTP caching"
+  },
+  "cacheBypassTitle": "Bypass Cache (Force Refresh)",
+  "@cacheBypassTitle": {
+    "description": "Switch title for bypassing cache"
+  },
+  "cacheBypassSubtitle": "Forces network fetching, bypassing cached results on reads.",
+  "@cacheBypassSubtitle": {
+    "description": "Switch subtitle for bypassing cache"
+  },
+  "cacheGlobalActions": "Global Actions",
+  "@cacheGlobalActions": {
+    "description": "Section title for global cache actions"
+  },
+  "cacheClearEntireSubtitle": "Delete all cached files and network logs.",
+  "@cacheClearEntireSubtitle": {
+    "description": "Subtitle for clearing entire cache"
+  },
+  "contentEpisodeMetadata": "Episode Metadata",
+  "@contentEpisodeMetadata": {
+    "description": "Section title for episode metadata"
+  },
+  "contentEpisodeMetadataProvider": "Episode Metadata Provider",
+  "@contentEpisodeMetadataProvider": {
+    "description": "Title for episode metadata provider setting"
+  },
+  "contentAvailableProviders": "Available Providers",
+  "@contentAvailableProviders": {
+    "description": "Title for available metadata providers group"
+  },
+  "contentAvailableProvidersSubtitle": "Select which provider enriches episode titles and thumbnails.",
+  "@contentAvailableProvidersSubtitle": {
+    "description": "Subtitle for available metadata providers group"
+  },
+  "contentProviderAutoTitle": "Auto (Recommended)",
+  "@contentProviderAutoTitle": {
+    "description": "Auto metadata provider title"
+  },
+  "contentProviderTenraiSubtitle": "Official titles, air dates & thumbnails from MyAnimeList",
+  "@contentProviderTenraiSubtitle": {
+    "description": "Tenrai metadata provider subtitle"
+  },
+  "contentProviderKitsuSubtitle": "Community titles, synopses & preview thumbnails",
+  "@contentProviderKitsuSubtitle": {
+    "description": "Kitsu metadata provider subtitle"
+  },
+  "contentProviderAnizipSubtitle": "Fast titles & synopses from AniList / MAL",
+  "@contentProviderAnizipSubtitle": {
+    "description": "AniZip metadata provider subtitle"
+  },
+  "contentProviderDisabled": "Disabled",
+  "@contentProviderDisabled": {
+    "description": "Disabled label"
+  },
+  "contentProviderDisabledSubtitle": "Raw stream titles without external metadata",
+  "@contentProviderDisabledSubtitle": {
+    "description": "Disabled metadata provider subtitle"
+  },
+  "readerBgBlack": "Black",
+  "@readerBgBlack": {
+    "description": "Black reader background option"
+  },
+  "readerBgDarkGrey": "Dark Grey",
+  "@readerBgDarkGrey": {
+    "description": "Dark grey reader background option"
+  },
+  "readerBgWhite": "White",
+  "@readerBgWhite": {
+    "description": "White reader background option"
+  },
+  "readerPageTransition": "Page Transition",
+  "@readerPageTransition": {
+    "description": "Page transition setting title"
+  },
+  "readerControlsBehavior": "Controls & Behavior",
+  "@readerControlsBehavior": {
+    "description": "Section title for reader controls and behavior"
+  },
+  "readerMiniStatusPill": "Mini Status Pill",
+  "@readerMiniStatusPill": {
+    "description": "Mini status pill switch title"
+  },
+  "readerMiniStatusPillSubtitle": "Show page number & progress when controls are hidden",
+  "@readerMiniStatusPillSubtitle": {
+    "description": "Mini status pill switch subtitle"
+  },
+  "readerTapToTurnPages": "Tap to Turn Pages",
+  "@readerTapToTurnPages": {
+    "description": "Tap to turn pages switch title"
+  },
+  "readerTapToTurnPagesSubtitle": "Tap screen edges to turn pages, center to show controls",
+  "@readerTapToTurnPagesSubtitle": {
+    "description": "Tap to turn pages switch subtitle"
+  },
+  "readerKeepScreenAwake": "Keep Screen Awake",
+  "@readerKeepScreenAwake": {
+    "description": "Keep screen awake switch title"
+  },
+  "readerKeepScreenAwakeSubtitle": "Prevent display from sleeping while reading",
+  "@readerKeepScreenAwakeSubtitle": {
+    "description": "Keep screen awake switch subtitle"
+  },
+  "permissionsSystemSection": "System Permissions",
+  "@permissionsSystemSection": {
+    "description": "Section title for system permissions"
+  },
+  "permissionsChecking": "Checking...",
+  "@permissionsChecking": {
+    "description": "Permission status checking"
+  },
+  "permissionsGranted": "Granted",
+  "@permissionsGranted": {
+    "description": "Permission status granted"
+  },
+  "permissionsDenied": "Denied",
+  "@permissionsDenied": {
+    "description": "Permission status denied"
+  },
+  "permissionsDeniedLocked": "Denied (Locked)",
+  "@permissionsDeniedLocked": {
+    "description": "Permission status permanently denied"
+  },
+  "permissionsRestricted": "Restricted",
+  "@permissionsRestricted": {
+    "description": "Permission status restricted"
+  },
+  "permissionsNotifSubtitle": "Push notifications and episode release reminders",
+  "@permissionsNotifSubtitle": {
+    "description": "Subtitle for notification permission"
+  },
+  "permissionsBatteryTitle": "Ignore Battery Optimizations",
+  "@permissionsBatteryTitle": {
+    "description": "Title for ignore battery optimizations permission"
+  },
+  "permissionsBatterySubtitle": "Keep downloads running when app is in background or recent apps",
+  "@permissionsBatterySubtitle": {
+    "description": "Subtitle for ignore battery optimizations permission"
+  },
+  "permissionsExactAlarmsTitle": "Exact Alarms (Android 12+)",
+  "@permissionsExactAlarmsTitle": {
+    "description": "Title for exact alarms permission"
+  },
+  "permissionsExactAlarmsSubtitle": "Scheduling precise airing reminders without system delays",
+  "@permissionsExactAlarmsSubtitle": {
+    "description": "Subtitle for exact alarms permission"
+  },
+  "permissionsStorageLegacyTitle": "Storage (Android 10 and below)",
+  "@permissionsStorageLegacyTitle": {
+    "description": "Title for legacy storage permission"
+  },
+  "permissionsStorageLegacySubtitle": "Save downloads on older Android versions",
+  "@permissionsStorageLegacySubtitle": {
+    "description": "Subtitle for legacy storage permission"
+  },
+  "permissionsManageStorageTitle": "Manage External Storage (Android 11+)",
+  "@permissionsManageStorageTitle": {
+    "description": "Title for manage external storage permission"
+  },
+  "permissionsManageStorageSubtitle": "Save downloads to custom directories across device",
+  "@permissionsManageStorageSubtitle": {
+    "description": "Subtitle for manage external storage permission"
+  },
+  "permissionsPermanentlyDeniedNote": "If a permission is permanently denied, tapping on it will open the app settings where you can manually grant the permission.",
+  "@permissionsPermanentlyDeniedNote": {
+    "description": "Footnote explaining permanently denied permissions"
+  },
+  "notificationsManageTitle": "Manage Anime Notifications",
+  "@notificationsManageTitle": {
+    "description": "Title for notifications settings screen"
+  },
+  "notificationsEmptyTitle": "No Subscriptions Yet",
+  "@notificationsEmptyTitle": {
+    "description": "Empty state title for notifications"
+  },
+  "notificationsEmptySubtitle": "You can enable notifications for upcoming episodes directly from the anime details page.",
+  "@notificationsEmptySubtitle": {
+    "description": "Empty state subtitle for notifications"
+  },
+  "notificationsUpcoming": "Upcoming",
+  "@notificationsUpcoming": {
+    "description": "Heading for upcoming notifications"
+  },
+  "notificationsAllSubscriptions": "All Subscriptions",
+  "@notificationsAllSubscriptions": {
+    "description": "Heading for all notification subscriptions"
+  },
+  "notificationsFollowingSeason": "Following Season",
+  "@notificationsFollowingSeason": {
+    "description": "Subscription mode label for entire season"
+  },
+  "notificationsFollowingNextEp": "Following Next Episode",
+  "@notificationsFollowingNextEp": {
+    "description": "Subscription mode label for next episode"
+  },
+  "notificationsNextReminder": "Next reminder: {time}",
+  "@notificationsNextReminder": {
+    "description": "Next reminder timestamp label",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "sourceSettingsTitle": "{name} Settings",
+  "@sourceSettingsTitle": {
+    "description": "Bottom sheet title for source settings",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sourceSettingsCfInactive": "Inactive (In-app Cloudflare Bypass is enabled)",
+  "@sourceSettingsCfInactive": {
+    "description": "Subtitle when proxy setting is inactive due to in-app CF bypass"
+  },
+  "sourceSettingsDefault": "Default",
+  "@sourceSettingsDefault": {
+    "description": "Default fallback value label"
+  },
+  "sourceSettingsCfDisableHint": "Disable \"In-app Cloudflare Bypass\" to use a custom proxy.",
+  "@sourceSettingsCfDisableHint": {
+    "description": "Snackbar when tapping disabled proxy setting"
+  },
+  "sourceSettingsMinOneOption": "At least one option must be selected.",
+  "@sourceSettingsMinOneOption": {
+    "description": "Snackbar when trying to uncheck last multi-select option"
+  },
+  "updatesLatestVersion": "You are using the latest version!",
+  "@updatesLatestVersion": {
+    "description": "Snackbar when already on latest version"
+  },
+  "updatesLinuxSection": "Linux Installation & Updater",
+  "@updatesLinuxSection": {
+    "description": "Section title for Linux updater"
+  },
+  "updatesLinuxOpenTitle": "Open Linux Update Manager",
+  "@updatesLinuxOpenTitle": {
+    "description": "Tile title to open Linux update manager"
+  },
+  "updatesLinuxOpenSubtitle": "Interactive installer, custom repo/icon config, and live terminal output",
+  "@updatesLinuxOpenSubtitle": {
+    "description": "Tile subtitle for Linux update manager"
+  },
+  "updatesCheckNow": "Check now",
+  "@updatesCheckNow": {
+    "description": "Tile title for manual update check"
+  },
+  "updatesCheckNowSubtitle": "Fetch the latest releases directly from GitHub",
+  "@updatesCheckNowSubtitle": {
+    "description": "Tile subtitle for manual update check"
+  },
+  "updatesCheckButton": "Check",
+  "@updatesCheckButton": {
+    "description": "Button label to check updates"
+  },
+  "updatesPreferences": "Preferences",
+  "@updatesPreferences": {
+    "description": "Section title for update preferences"
+  },
+  "updatesIncludePrerelease": "Include Pre-releases",
+  "@updatesIncludePrerelease": {
+    "description": "Switch title for including pre-releases"
+  },
+  "updatesIncludePrereleaseSubtitle": "Receive early builds marked as pre-release on GitHub",
+  "@updatesIncludePrereleaseSubtitle": {
+    "description": "Switch subtitle for including pre-releases"
+  },
+  "updatesAutoCheck": "Auto Check on Startup",
+  "@updatesAutoCheck": {
+    "description": "Switch title for auto check on startup"
+  },
+  "updatesAutoCheckSubtitle": "Automatically check for updates when the application launches",
+  "@updatesAutoCheckSubtitle": {
+    "description": "Switch subtitle for auto check on startup"
+  },
+  "updatesBrowseReleases": "Browse Releases",
+  "@updatesBrowseReleases": {
+    "description": "Section title for browsing GitHub releases"
+  },
+  "updatesBrowseReleasesSubtitle": "Tap a release to view full changelog and download options",
+  "@updatesBrowseReleasesSubtitle": {
+    "description": "Section subtitle for browsing releases"
+  },
+  "updatesLoadFailed": "Failed to load releases.",
+  "@updatesLoadFailed": {
+    "description": "Error text when releases fail to load"
+  },
+  "updatesNoneFound": "No releases found.",
+  "@updatesNoneFound": {
+    "description": "Empty text when no releases found"
+  },
+  "backupSelectAtLeastOne": "Select at least one category to export",
+  "@backupSelectAtLeastOne": {
+    "description": "Snackbar when exporting without selected categories"
+  },
+  "backupSaveDialogTitle": "Save backup",
+  "@backupSaveDialogTitle": {
+    "description": "Dialog title when saving backup"
+  },
+  "backupSaved": "Backup saved",
+  "@backupSaved": {
+    "description": "Snackbar when backup is saved"
+  },
+  "backupExportFailed": "Export failed: {error}",
+  "@backupExportFailed": {
+    "description": "Snackbar when export fails",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "backupFileEmpty": "Backup file is empty",
+  "@backupFileEmpty": {
+    "description": "Snackbar when picked backup file is empty"
+  },
+  "backupNoValidData": "No valid backup data found in file",
+  "@backupNoValidData": {
+    "description": "Snackbar when backup file has no valid data"
+  },
+  "backupInvalidFile": "Invalid backup file: {error}",
+  "@backupInvalidFile": {
+    "description": "Snackbar when backup file is invalid",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "backupRestoreSection": "Restore",
+  "@backupRestoreSection": {
+    "description": "Section title for restoring backup"
+  },
+  "backupRestoreSectionSubtitle": "Import data from a previously exported backup file",
+  "@backupRestoreSectionSubtitle": {
+    "description": "Section subtitle for restoring backup"
+  },
+  "backupRestoreFromFile": "Restore from file",
+  "@backupRestoreFromFile": {
+    "description": "Tile title for restoring from file"
+  },
+  "backupRestoreFromFileSubtitle": "Select a .json backup file to inspect and restore",
+  "@backupRestoreFromFileSubtitle": {
+    "description": "Tile subtitle for restoring from file"
+  },
+  "backupExportSection": "Export",
+  "@backupExportSection": {
+    "description": "Section title for exporting backup"
+  },
+  "backupExportSectionSubtitle": "Choose what to include in your backup file",
+  "@backupExportSectionSubtitle": {
+    "description": "Section subtitle for exporting backup"
+  },
+  "backupLocalRecordsCount": "{count} local records",
+  "@backupLocalRecordsCount": {
+    "description": "Count of local records in backup screen",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "backupExporting": "Exporting…",
+  "@backupExporting": {
+    "description": "Button label while exporting"
+  },
+  "backupSaveBackup": "Save Backup",
+  "@backupSaveBackup": {
+    "description": "Button label to save backup"
+  },
+  "backupShareBackup": "Share Backup",
+  "@backupShareBackup": {
+    "description": "Tooltip for sharing backup"
+  },
+  "backupImportPreviewTitle": "Import Preview",
+  "@backupImportPreviewTitle": {
+    "description": "Title for import preview screen"
+  },
+  "backupRestoredSuccess": "Backup restored successfully",
+  "@backupRestoredSuccess": {
+    "description": "Snackbar when backup is restored"
+  },
+  "backupImportFailed": "Import failed: {error}",
+  "@backupImportFailed": {
+    "description": "Snackbar when backup import fails",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "backupImportWarning": "Importing will replace existing data for selected categories.",
+  "@backupImportWarning": {
+    "description": "Warning text on import preview screen"
+  },
+  "backupCategoriesSection": "Categories",
+  "@backupCategoriesSection": {
+    "description": "Section title for backup categories"
+  },
+  "backupConfirmImport": "Confirm Import",
+  "@backupConfirmImport": {
+    "description": "Tile title to confirm backup import"
+  },
+  "backupImporting": "Importing…",
+  "@backupImporting": {
+    "description": "Subtitle while importing backup"
+  },
+  "backupCategoriesSelected": "{count} categories selected",
+  "@backupCategoriesSelected": {
+    "description": "Subtitle showing number of selected categories",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "backupItemsReplace": "{incoming} items → replaces {existing} existing",
+  "@backupItemsReplace": {
+    "description": "Subtitle showing incoming items replacing existing items",
+    "placeholders": {
+      "existing": {
+        "type": "String"
+      },
+      "incoming": {
+        "type": "String"
+      }
+    }
+  },
+  "backupItemsCount": "{count} items",
+  "@backupItemsCount": {
+    "description": "Subtitle showing incoming items count",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "downloadOrganizationSection": "Organization",
+  "@downloadOrganizationSection": {
+    "description": "Section title for download organization"
+  },
+  "downloadCreateSubfolders": "Create Anime Folders",
+  "@downloadCreateSubfolders": {
+    "description": "Switch title for creating anime subfolders"
+  },
+  "downloadCreateSubfoldersSubtitle": "Groups episodes inside a folder named after the anime title",
+  "@downloadCreateSubfoldersSubtitle": {
+    "description": "Switch subtitle for creating anime subfolders"
+  },
+  "downloadFileNameFormat": "File Name Format",
+  "@downloadFileNameFormat": {
+    "description": "Dropdown title for file name format"
+  },
+  "downloadPreviewFormat": "↳ Preview: {preview}",
+  "@downloadPreviewFormat": {
+    "description": "Preview label for file name format",
+    "placeholders": {
+      "preview": {
+        "type": "String"
+      }
+    }
+  },
+  "downloadNetworkSection": "Network & Integration",
+  "@downloadNetworkSection": {
+    "description": "Section title for download network & integration"
+  },
+  "downloadWifiOnly": "Download over Wi-Fi Only",
+  "@downloadWifiOnly": {
+    "description": "Switch title for Wi-Fi only downloads"
+  },
+  "downloadWifiOnlySubtitle": "Pause downloads when connected to mobile data",
+  "@downloadWifiOnlySubtitle": {
+    "description": "Switch subtitle for Wi-Fi only downloads"
+  },
+  "downloadUseOneDm": "Use External Downloader (1DM)",
+  "@downloadUseOneDm": {
+    "description": "Title for using external 1DM downloader"
+  },
+  "downloadUseOneDmSubtitle": "Send links to external apps instead of the built-in engine",
+  "@downloadUseOneDmSubtitle": {
+    "description": "Subtitle when 1DM is installed"
+  },
+  "downloadOneDmNotInstalled": "1DM is not installed on your device. High-speed multi-threaded downloader for Android.",
+  "@downloadOneDmNotInstalled": {
+    "description": "Subtitle when 1DM is not installed"
+  },
+  "downloadWhatIsOneDm": "What is 1DM?",
+  "@downloadWhatIsOneDm": {
+    "description": "Tooltip for 1DM info button"
+  },
+  "downloadAboutOneDmTitle": "About 1DM Downloader",
+  "@downloadAboutOneDmTitle": {
+    "description": "Dialog title about 1DM"
+  },
+  "downloadAboutOneDmBody": "1DM (Internet Download Manager) is a popular third-party Android download manager app. It supports up to 32 parallel download connections, background downloads, and smart error recovery.\n\nIf installed, ShonenX can send episode download streams directly to 1DM.",
+  "@downloadAboutOneDmBody": {
+    "description": "Dialog body explaining 1DM"
+  },
+  "downloadGetOnPlayStore": "Get on Play Store",
+  "@downloadGetOnPlayStore": {
+    "description": "Button label to open Play Store"
+  },
+  "downloadPerformanceSection": "Performance Tweaks",
+  "@downloadPerformanceSection": {
+    "description": "Section title for download performance tweaks"
+  },
+  "downloadMaxQueue": "Max Queue (Concurrent Downloads)",
+  "@downloadMaxQueue": {
+    "description": "Slider title for max concurrent downloads"
+  },
+  "downloadMaxQueueSubtitle": "Maximum active downloads at a time",
+  "@downloadMaxQueueSubtitle": {
+    "description": "Slider subtitle for max concurrent downloads"
+  },
+  "downloadMaxSegments": "Max Concurrent Segments (HLS)",
+  "@downloadMaxSegments": {
+    "description": "Slider title for max concurrent HLS segments"
+  },
+  "downloadMaxSegmentsSubtitle": "Parallel threads for stream segments",
+  "@downloadMaxSegmentsSubtitle": {
+    "description": "Slider subtitle for max concurrent HLS segments"
+  },
+  "downloadRemuxerPref": "HLS Remuxer Preference",
+  "@downloadRemuxerPref": {
+    "description": "Dropdown title for HLS remuxer preference"
+  },
+  "downloadLocationChanged": "Download location changed successfully.",
+  "@downloadLocationChanged": {
+    "description": "Snackbar when download location changed"
+  },
+  "downloadReviewFilesTitle": "Review Files to Move",
+  "@downloadReviewFilesTitle": {
+    "description": "Sheet title for reviewing files to move"
+  },
+  "downloadMovingTo": "Moving to:\n{path}",
+  "@downloadMovingTo": {
+    "description": "Label showing target path for moving files",
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "downloadSelectedOfTotal": "{selected} of {total} selected",
+  "@downloadSelectedOfTotal": {
+    "description": "Count of selected files out of total",
+    "placeholders": {
+      "selected": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "downloadMovedFiles": "Moved {count} files and updated location.",
+  "@downloadMovedFiles": {
+    "description": "Snackbar when files are moved",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "downloadMoveSelectedBtn": "Move Selected ({count}) & Change Location",
+  "@downloadMoveSelectedBtn": {
+    "description": "Button label to move selected files and change location",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "downloadChangedLocationOnly": "Changed location without moving files.",
+  "@downloadChangedLocationOnly": {
+    "description": "Snackbar when location changed without moving files"
+  },
+  "downloadChangeLocationOnlyBtn": "Change Location Only (Don't Move Any)",
+  "@downloadChangeLocationOnlyBtn": {
+    "description": "Button label to change location without moving files"
+  },
+  "securityAppLockActive": "App Lock is Active",
+  "@securityAppLockActive": {
+    "description": "Banner title when app lock is active"
+  },
+  "securityAppLockDisabled": "App Lock is Disabled",
+  "@securityAppLockDisabled": {
+    "description": "Banner title when app lock is disabled"
+  },
+  "securityProtectedPinBio": "Protected with PIN & Biometrics",
+  "@securityProtectedPinBio": {
+    "description": "Banner subtitle when protected with PIN and biometrics"
+  },
+  "securityProtectedPin": "Protected with 4-digit PIN",
+  "@securityProtectedPin": {
+    "description": "Banner subtitle when protected with 4-digit PIN"
+  },
+  "securitySetupPinPrompt": "Set up a PIN to protect your data.",
+  "@securitySetupPinPrompt": {
+    "description": "Banner subtitle prompting to set up a PIN"
+  },
+  "securityAppLockSection": "App Lock",
+  "@securityAppLockSection": {
+    "description": "Section title for app lock"
+  },
+  "securityEnableAppLock": "Enable App Lock",
+  "@securityEnableAppLock": {
+    "description": "Switch title to enable app lock"
+  },
+  "securityEnableAppLockSubtitle": "Require authentication to open ShonenX",
+  "@securityEnableAppLockSubtitle": {
+    "description": "Switch subtitle to enable app lock"
+  },
+  "securityDisableAppLock": "Disable App Lock",
+  "@securityDisableAppLock": {
+    "description": "Title when disabling app lock"
+  },
+  "securityDisableAppLockSubtitle": "Enter your PIN to turn off app lock",
+  "@securityDisableAppLockSubtitle": {
+    "description": "Subtitle when disabling app lock"
+  },
+  "securityChangePin": "Change PIN",
+  "@securityChangePin": {
+    "description": "Tile title to change PIN"
+  },
+  "securityChangePinSubtitle": "Update your 4-digit security PIN",
+  "@securityChangePinSubtitle": {
+    "description": "Tile subtitle to change PIN"
+  },
+  "securityPinUpdated": "PIN updated successfully",
+  "@securityPinUpdated": {
+    "description": "Snackbar when PIN is updated"
+  },
+  "securityBiometricUnlock": "Biometric Unlock",
+  "@securityBiometricUnlock": {
+    "description": "Switch title for biometric unlock"
+  },
+  "securityConfirmBiometricsReason": "Confirm biometrics to enable unlock",
+  "@securityConfirmBiometricsReason": {
+    "description": "Biometric prompt reason when enabling"
+  },
+  "securityAutoPromptBiometrics": "Auto-prompt Biometrics",
+  "@securityAutoPromptBiometrics": {
+    "description": "Switch title for auto-prompt biometrics"
+  },
+  "securityAutoPromptBiometricsSubtitle": "Immediately show prompt when opening app",
+  "@securityAutoPromptBiometricsSubtitle": {
+    "description": "Switch subtitle for auto-prompt biometrics"
+  },
+  "securityAutoLockTimeout": "Auto-Lock Timeout",
+  "@securityAutoLockTimeout": {
+    "description": "Dropdown title for auto-lock timeout"
+  },
+  "securityPrivacySection": "Privacy",
+  "@securityPrivacySection": {
+    "description": "Section title for privacy"
+  },
+  "securityIncognitoMode": "Incognito Mode",
+  "@securityIncognitoMode": {
+    "description": "Title for incognito mode"
+  },
+  "securityIncognitoSubtitle": "Pause watch history, read history, and cloud tracking",
+  "@securityIncognitoSubtitle": {
+    "description": "Subtitle for incognito mode"
+  },
+  "securityIncognitoSheetHeading": "Private Viewing & Reading",
+  "@securityIncognitoSheetHeading": {
+    "description": "Heading inside incognito info sheet"
+  },
+  "securityIncognitoSheetBody": "Incognito Mode prevents ShonenX from saving your watch progress, read history, or syncing activity to your connected trackers (MAL, AniList, etc.).",
+  "@securityIncognitoSheetBody": {
+    "description": "Body inside incognito info sheet"
+  },
+  "securityIncognitoSheetPauseNote": "Watch history, read chapters, and cloud tracker updates are paused until disabled.",
+  "@securityIncognitoSheetPauseNote": {
+    "description": "Highlighted note inside incognito info sheet"
+  },
+  "securityIncognitoSheetFooter": "Your tracker accounts and existing history remain intact. Normal syncing and history resume when Incognito Mode is turned off.",
+  "@securityIncognitoSheetFooter": {
+    "description": "Footer note inside incognito info sheet"
+  },
+  "securityNetworkDnsSection": "Network & DNS",
+  "@securityNetworkDnsSection": {
+    "description": "Section title for network and DNS"
+  },
+  "securityDohTitle": "DNS over HTTPS (DoH)",
+  "@securityDohTitle": {
+    "description": "Title for DNS over HTTPS"
+  },
+  "securityActionsSection": "Actions",
+  "@securityActionsSection": {
+    "description": "Section title for quick security actions"
+  },
+  "securityLockNow": "Lock App Now",
+  "@securityLockNow": {
+    "description": "Tile title to lock app immediately"
+  },
+  "securityLockNowSubtitle": "Instantly lock the app to test security",
+  "@securityLockNowSubtitle": {
+    "description": "Tile subtitle to lock app immediately"
+  },
+  "securityResetTitle": "Reset Security Settings",
+  "@securityResetTitle": {
+    "description": "Tile title to reset security settings"
+  },
+  "securityResetSubtitle": "Clear PIN and remove all lock preferences",
+  "@securityResetSubtitle": {
+    "description": "Tile subtitle to reset security settings"
+  },
+  "securityResetConfirmMessage": "This will remove your PIN and disable app lock. Are you sure?",
+  "@securityResetConfirmMessage": {
+    "description": "Confirmation message for resetting security settings"
+  },
+  "securitySettingsResetSnack": "Security settings reset",
+  "@securitySettingsResetSnack": {
+    "description": "Snackbar when security settings are reset"
+  },
+  "securityDohSheetHeading": "Encrypted DNS Lookups",
+  "@securityDohSheetHeading": {
+    "description": "Heading inside DoH info sheet"
+  },
+  "securityDohSheetBody": "DNS over HTTPS (DoH) encrypts all domain name queries via HTTPS to prevent ISP snooping, ISP domain hijacking, and censorship. By default, ShonenX uses Cloudflare DNS (1.1.1.1) for maximum speed and privacy.",
+  "@securityDohSheetBody": {
+    "description": "Body inside DoH info sheet"
+  },
+  "securityDohCloudflareNote": "• Cloudflare: Fast, zero-logging DNS (1.1.1.1 & 1.0.0.1)",
+  "@securityDohCloudflareNote": {
+    "description": "Bullet point for Cloudflare DNS"
+  },
+  "securityDohGoogleNote": "• Google: Highly reliable global resolver (8.8.8.8 & 8.8.4.4)",
+  "@securityDohGoogleNote": {
+    "description": "Bullet point for Google DNS"
+  },
+  "securityDohSystemNote": "• System: Bypasses DoH and uses standard device DNS",
+  "@securityDohSystemNote": {
+    "description": "Bullet point for System DNS"
+  },
+  "securityDnsCacheFlushed": "DNS cache flushed successfully",
+  "@securityDnsCacheFlushed": {
+    "description": "Snackbar when DNS cache is flushed"
+  },
+  "securityTestingDns": "Testing...",
+  "@securityTestingDns": {
+    "description": "Button label while testing DNS"
+  },
+  "securityTestDns": "Test DNS Resolution",
+  "@securityTestDns": {
+    "description": "Button label to test DNS resolution"
+  },
+  "securityFlushDnsCache": "Flush DNS Cache",
+  "@securityFlushDnsCache": {
+    "description": "Tooltip to flush DNS cache"
+  },
+  "securityTestFailed": "Test Failed",
+  "@securityTestFailed": {
+    "description": "Title when DNS test fails"
+  },
+  "securityResolvedTo": "Resolved to: {addresses}",
+  "@securityResolvedTo": {
+    "description": "Label showing resolved DNS IP addresses",
+    "placeholders": {
+      "addresses": {
+        "type": "String"
+      }
+    }
+  },
+  "discordEditIdleTitle": "Customize Idle RPC Status",
+  "@discordEditIdleTitle": {
+    "description": "Sheet title to customize idle Discord RPC status"
+  },
+  "discordActivityName": "Activity Name",
+  "@discordActivityName": {
+    "description": "TextField label for Discord activity name"
+  },
+  "discordDetailsSubtitle": "Details / Subtitle",
+  "@discordDetailsSubtitle": {
+    "description": "TextField label for Discord details/subtitle"
+  },
+  "discordSaveChanges": "Save Changes",
+  "@discordSaveChanges": {
+    "description": "Button label to save changes"
+  },
+  "discordDisconnectTitle": "Disconnect Discord Account",
+  "@discordDisconnectTitle": {
+    "description": "Dialog title to disconnect Discord account"
+  },
+  "discordDisconnectMessage": "Are you sure you want to disconnect your Discord account? Your saved account token will be removed.",
+  "@discordDisconnectMessage": {
+    "description": "Dialog message to disconnect Discord account"
+  },
+  "discordDisconnectAction": "Disconnect",
+  "@discordDisconnectAction": {
+    "description": "Button label to disconnect"
+  },
+  "discordUserFallback": "Discord User",
+  "@discordUserFallback": {
+    "description": "Fallback display name for Discord user"
+  },
+  "discordActiveSynced": "Active & Synced",
+  "@discordActiveSynced": {
+    "description": "Status label when Discord RPC is active and synced"
+  },
+  "discordConnected": "Connected",
+  "@discordConnected": {
+    "description": "Status label when Discord is connected"
+  },
+  "discordRefreshProfile": "Refresh Profile",
+  "@discordRefreshProfile": {
+    "description": "Tooltip to refresh Discord profile"
+  },
+  "discordRichPresenceTitle": "Discord Rich Presence",
+  "@discordRichPresenceTitle": {
+    "description": "Title in Discord card when logged out"
+  },
+  "discordShareActivity": "Share your watch & read activity",
+  "@discordShareActivity": {
+    "description": "Subtitle in Discord card when logged out"
+  },
+  "discordDesktopAutoConnectNote": "Desktop users connect automatically via the running Discord app. Signing in with a user token is optional (for mobile/gateway sync).",
+  "@discordDesktopAutoConnectNote": {
+    "description": "Info note about Discord desktop vs token login"
+  },
+  "discordSignInButton": "Sign in with Discord Account",
+  "@discordSignInButton": {
+    "description": "Button label to sign in with Discord account"
+  },
+  "discordPresenceControl": "Presence Control",
+  "@discordPresenceControl": {
+    "description": "Section title for presence control"
+  },
+  "discordEnableRpc": "Enable Discord RPC",
+  "@discordEnableRpc": {
+    "description": "Switch title to enable Discord RPC"
+  },
+  "discordEnableRpcSubtitle": "Broadcast anime watching & manga reading activity",
+  "@discordEnableRpcSubtitle": {
+    "description": "Switch subtitle to enable Discord RPC"
+  },
+  "discordActivityBroadcasting": "Activity Broadcasting",
+  "@discordActivityBroadcasting": {
+    "description": "Section title for activity broadcasting"
+  },
+  "discordShowDetailsActivity": "Show Details Screen Activity",
+  "@discordShowDetailsActivity": {
+    "description": "Switch title for showing details screen activity"
+  },
+  "discordShowDetailsActivitySubtitle": "Display \"Viewing {Title}\" when inspecting anime/manga",
+  "@discordShowDetailsActivitySubtitle": {
+    "description": "Switch subtitle for showing details screen activity",
+    "placeholders": {
+      "Title": {
+        "type": "String"
+      }
+    }
+  },
+  "discordShowPlayerActivity": "Show Video Player Activity",
+  "@discordShowPlayerActivity": {
+    "description": "Switch title for showing video player activity"
+  },
+  "discordShowPlayerActivitySubtitle": "Display \"Watching Episode X\" while playing anime",
+  "@discordShowPlayerActivitySubtitle": {
+    "description": "Switch subtitle for showing video player activity"
+  },
+  "discordShowReaderActivity": "Show Manga Reader Activity",
+  "@discordShowReaderActivity": {
+    "description": "Switch title for showing manga reader activity"
+  },
+  "discordShowReaderActivitySubtitle": "Display \"Reading Chapter X\" while reading manga",
+  "@discordShowReaderActivitySubtitle": {
+    "description": "Switch subtitle for showing manga reader activity"
+  },
+  "discordPresenceCustomization": "Presence Customization",
+  "@discordPresenceCustomization": {
+    "description": "Section title for presence customization"
+  },
+  "discordIdleActivityStatus": "Idle Activity Status",
+  "@discordIdleActivityStatus": {
+    "description": "Tile title for idle activity status"
+  },
+  "discordShowEpisodeNumbers": "Show Episode/Chapter Numbers",
+  "@discordShowEpisodeNumbers": {
+    "description": "Switch title for showing episode/chapter numbers"
+  },
+  "discordShowEpisodeNumbersSubtitle": "Include the current episode or chapter number",
+  "@discordShowEpisodeNumbersSubtitle": {
+    "description": "Switch subtitle for showing episode/chapter numbers"
+  },
+  "discordShowProgress": "Show Watch/Read Progress",
+  "@discordShowProgress": {
+    "description": "Switch title for showing watch/read progress"
+  },
+  "discordShowProgressSubtitle": "Display elapsed time and page progress",
+  "@discordShowProgressSubtitle": {
+    "description": "Switch subtitle for showing watch/read progress"
+  },
+  "discordShowMediaImages": "Show Media Cover Images",
+  "@discordShowMediaImages": {
+    "description": "Switch title for showing media cover images"
+  },
+  "discordShowMediaImagesSubtitle": "Display the anime/manga poster in Discord",
+  "@discordShowMediaImagesSubtitle": {
+    "description": "Switch subtitle for showing media cover images"
+  },
+  "discordShowViewButtons": "Show View Buttons",
+  "@discordShowViewButtons": {
+    "description": "Switch title for showing view buttons"
+  },
+  "discordShowViewButtonsSubtitle": "Add a clickable button to the Anilist page",
+  "@discordShowViewButtonsSubtitle": {
+    "description": "Switch subtitle for showing view buttons"
+  },
+  "homeSettingsTitle": "Home Settings",
+  "@homeSettingsTitle": {
+    "description": "Title for home settings screen"
+  },
+  "homeSourceModeActive": "Source Discovery Mode Active",
+  "@homeSourceModeActive": {
+    "description": "Banner title when source discovery mode is active"
+  },
+  "homeSourceModeBannerDesc": "Content extensions only support a single Trending feed. Switch to Tracker Discovery Mode to unlock custom categories (Popular, Upcoming, Top Rated).",
+  "@homeSourceModeBannerDesc": {
+    "description": "Banner description when source discovery mode is active"
+  },
+  "homeContinueProgressSubtitle": "{mediaType} • Continue Progress",
+  "@homeContinueProgressSubtitle": {
+    "description": "Subtitle for continue media section in home settings",
+    "placeholders": {
+      "mediaType": {
+        "type": "String"
+      }
+    }
+  },
+  "homeAutoSource": "Auto Source",
+  "@homeAutoSource": {
+    "description": "Fallback tracker label in home settings"
+  },
+  "homeAddSection": "Add Section",
+  "@homeAddSection": {
+    "description": "Tooltip/title for adding a home section"
+  },
+  "homeEditSection": "Edit Section",
+  "@homeEditSection": {
+    "description": "Sheet title for editing a home section"
+  },
+  "homeSectionOptions": "Section Options",
+  "@homeSectionOptions": {
+    "description": "Sheet title for section options"
+  },
+  "homeSectionType": "Section Type",
+  "@homeSectionType": {
+    "description": "Dropdown label for section type"
+  },
+  "homeDiscoveryFeed": "Discovery Feed",
+  "@homeDiscoveryFeed": {
+    "description": "Section type label for discovery feed"
+  },
+  "homeContinueProgress": "Continue Progress",
+  "@homeContinueProgress": {
+    "description": "Section type label for continue progress"
+  },
+  "homeLibraryList": "Library List",
+  "@homeLibraryList": {
+    "description": "Section type label for library list"
+  },
+  "homeAllAdded": " (All added)",
+  "@homeAllAdded": {
+    "description": "Suffix when all items of a section type are already added"
+  },
+  "homeAlreadyAdded": " (Already added)",
+  "@homeAlreadyAdded": {
+    "description": "Suffix when continue progress section is already added"
+  },
+  "homeMediaType": "Media Type",
+  "@homeMediaType": {
+    "description": "Dropdown label for media type"
+  },
+  "homeCategory": "Category",
+  "@homeCategory": {
+    "description": "Dropdown label for category"
+  },
+  "homeCategoriesLockedHelper": "Categories are locked to Trending in Source Discovery Mode.",
+  "@homeCategoriesLockedHelper": {
+    "description": "Helper text when categories are locked in source discovery mode"
+  },
+  "homeListToDisplay": "List to Display",
+  "@homeListToDisplay": {
+    "description": "Dropdown label for library list status"
+  },
+  "homeDataSource": "Data Source",
+  "@homeDataSource": {
+    "description": "Dropdown label for data source"
+  },
+  "homeAutoDefault": "Auto (Default)",
+  "@homeAutoDefault": {
+    "description": "Dropdown item for auto default data source"
+  },
+  "homeSectionTitle": "Section Title",
+  "@homeSectionTitle": {
+    "description": "TextField label for section title"
+  },
+  "homeMyStatusPrefix": "My {status}",
+  "@homeMyStatusPrefix": {
+    "description": "Auto title prefix for library status section",
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "trackingSyncTitle": "Tracking & Sync",
+  "@trackingSyncTitle": {
+    "description": "Title for tracking & sync screen"
+  },
+  "trackingCredentialsTitle": "{tracker} Credentials",
+  "@trackingCredentialsTitle": {
+    "description": "Dialog title for tracker API credentials",
+    "placeholders": {
+      "tracker": {
+        "type": "String"
+      }
+    }
+  },
+  "trackingCredentialsBody": "Provide your own API Client ID and Secret. This overrides the default bundled credentials.\nLeave blank or click Reset to use the default credentials.",
+  "@trackingCredentialsBody": {
+    "description": "Dialog description for custom tracker credentials"
+  },
+  "trackingActiveRedirectUri": "Active Redirect URI ({mode} mode):",
+  "@trackingActiveRedirectUri": {
+    "description": "Label showing active redirect URI",
+    "placeholders": {
+      "mode": {
+        "type": "String"
+      }
+    }
+  },
+  "trackingClientId": "Client ID",
+  "@trackingClientId": {
+    "description": "TextField label for Client ID"
+  },
+  "trackingClientSecret": "Client Secret",
+  "@trackingClientSecret": {
+    "description": "TextField label for Client Secret"
+  },
+  "trackingLeaveEmptyDefault": "Leave empty for default",
+  "@trackingLeaveEmptyDefault": {
+    "description": "TextField hint to leave empty for default"
+  },
+  "trackingCredentialsResetSnack": "Reset {tracker} credentials to default",
+  "@trackingCredentialsResetSnack": {
+    "description": "Snackbar when custom credentials are reset",
+    "placeholders": {
+      "tracker": {
+        "type": "String"
+      }
+    }
+  },
+  "trackingOAuthMethod": "OAuth Authentication Method",
+  "@trackingOAuthMethod": {
+    "description": "Title for OAuth authentication method"
+  },
+  "trackingAuthAuto": "Auto",
+  "@trackingAuthAuto": {
+    "description": "OAuth mode Auto"
+  },
+  "trackingAuthBrowser": "Browser",
+  "@trackingAuthBrowser": {
+    "description": "OAuth mode Browser"
+  },
+  "trackingAuthWebview": "WebView",
+  "@trackingAuthWebview": {
+    "description": "OAuth mode WebView"
+  },
+  "trackingSyncThreshold": "Sync Threshold",
+  "@trackingSyncThreshold": {
+    "description": "Slider title for sync threshold"
+  },
+  "trackingSyncThresholdSubtitle": "Mark episode as watched after {percent}% runtime",
+  "@trackingSyncThresholdSubtitle": {
+    "description": "Slider subtitle for sync threshold",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "trackingAutomationSection": "Automation",
+  "@trackingAutomationSection": {
+    "description": "Section title for tracking automation"
+  },
+  "trackingAutoLink": "Auto-Link Trackers",
+  "@trackingAutoLink": {
+    "description": "Switch title for auto-link trackers"
+  },
+  "trackingAutoLinkSubtitle": "Automatically create mappings with active trackers when matching IDs are found",
+  "@trackingAutoLinkSubtitle": {
+    "description": "Switch subtitle for auto-link trackers"
+  },
+  "trackingAutoLinkSheetHeading": "Automatically connect tracker entries",
+  "@trackingAutoLinkSheetHeading": {
+    "description": "Heading inside auto-link info sheet"
+  },
+  "trackingAutoLinkSheetBody": "Normally you need to manually link anime and manga to your trackers. With Auto-Link Trackers enabled, ShonenX automatically creates mappings with your active trackers whenever matching IDs are found.",
+  "@trackingAutoLinkSheetBody": {
+    "description": "Body inside auto-link info sheet"
+  },
+  "trackingAutoLinkSheetHighlight": "If a media is already in your cloud tracker library, its status and progress will appear instantly without manual linking. Watched episodes and read chapters will also sync progress automatically.",
+  "@trackingAutoLinkSheetHighlight": {
+    "description": "Highlighted box inside auto-link info sheet"
+  },
+  "trackingBestResultsPrefix": "Best results: ",
+  "@trackingBestResultsPrefix": {
+    "description": "Bold prefix for best results tip"
+  },
+  "trackingBestResultsBody": "Use the same service for both your Discovery Source and Primary Tracker (for example, AniList + AniList).",
+  "@trackingBestResultsBody": {
+    "description": "Body for best results tip"
+  },
+  "trackingAutoLinkFooter": "When disabled, tracker mappings will never be created automatically and unlinked media will not sync.",
+  "@trackingAutoLinkFooter": {
+    "description": "Footer note inside auto-link info sheet"
+  },
+  "trackingTrackersSection": "Trackers",
+  "@trackingTrackersSection": {
+    "description": "Section title for trackers list"
+  },
+  "trackingGuest": "Guest",
+  "@trackingGuest": {
+    "description": "Guest username label"
+  },
+  "trackingPrimaryBadge": " (Primary)",
+  "@trackingPrimaryBadge": {
+    "description": "Badge suffix for primary tracker"
+  },
+  "trackingLoggingIn": "Logging in...",
+  "@trackingLoggingIn": {
+    "description": "Status label while logging into tracker"
+  },
+  "trackingLoggedInAs": "Logged in as {username}",
+  "@trackingLoggedInAs": {
+    "description": "Subtitle showing logged-in username",
+    "placeholders": {
+      "username": {
+        "type": "String"
+      }
+    }
+  },
+  "trackingMissingApiCreds": "Missing API Credentials",
+  "@trackingMissingApiCreds": {
+    "description": "Subtitle when tracker API credentials are missing"
+  },
+  "trackingNotLoggedIn": "Not logged in",
+  "@trackingNotLoggedIn": {
+    "description": "Subtitle when not logged into tracker"
+  },
+  "trackingCustomApiCredsTooltip": "Custom API Credentials",
+  "@trackingCustomApiCredsTooltip": {
+    "description": "Tooltip for custom API credentials button"
+  },
+  "trackingAddCredentials": "Add Credentials",
+  "@trackingAddCredentials": {
+    "description": "Button label to add API credentials"
+  },
+  "trackingLogin": "Login",
+  "@trackingLogin": {
+    "description": "Button label to log in"
+  },
+  "playerVideoEngineSection": "Video Engine & Preferences",
+  "@playerVideoEngineSection": {
+    "description": "Section title for video engine and preferences"
+  },
+  "playerMediaKitTitle": "Media Kit (MPV)",
+  "@playerMediaKitTitle": {
+    "description": "Title for Media Kit (MPV) engine"
+  },
+  "playerMediaKitSubtitle": "Standalone player engine with advanced subtitle & shader support",
+  "@playerMediaKitSubtitle": {
+    "description": "Subtitle for Media Kit (MPV) engine"
+  },
+  "playerBetterPlayerTitle": "Better Player (ExoPlayer)",
+  "@playerBetterPlayerTitle": {
+    "description": "Title for Better Player (ExoPlayer)"
+  },
+  "playerBetterPlayerSubtitle": "Official Android native video rendering engine",
+  "@playerBetterPlayerSubtitle": {
+    "description": "Subtitle for Better Player (ExoPlayer)"
+  },
+  "playerPlaybackDefaultsSection": "Playback Defaults",
+  "@playerPlaybackDefaultsSection": {
+    "description": "Section title for playback defaults"
+  },
+  "playerDefaultServerType": "Default Server Type (Sub / Dub)",
+  "@playerDefaultServerType": {
+    "description": "Dropdown title for default server type"
+  },
+  "playerServerAny": "Any",
+  "@playerServerAny": {
+    "description": "Server type Any"
+  },
+  "playerDefaultVideoQuality": "Default Video Quality",
+  "@playerDefaultVideoQuality": {
+    "description": "Dropdown title for default video quality"
+  },
+  "playerCustomOption": "Custom...",
+  "@playerCustomOption": {
+    "description": "Dropdown item for custom value"
+  },
+  "playerCustomVideoQualityTitle": "Custom Video Quality",
+  "@playerCustomVideoQualityTitle": {
+    "description": "Dialog title for custom video quality"
+  },
+  "playerCustomVideoQualityHint": "e.g. 4K, 2160p, 1440p, 1080p",
+  "@playerCustomVideoQualityHint": {
+    "description": "Hint for custom video quality input"
+  },
+  "playerDefaultAudioLang": "Default Audio Language",
+  "@playerDefaultAudioLang": {
+    "description": "Dropdown title for default audio language"
+  },
+  "playerCustomAudioLangTitle": "Custom Audio Language",
+  "@playerCustomAudioLangTitle": {
+    "description": "Dialog title for custom audio language"
+  },
+  "playerCustomAudioLangHint": "e.g. jpn, eng, spa, de",
+  "@playerCustomAudioLangHint": {
+    "description": "Hint for custom audio language input"
+  },
+  "playerDefaultSubtitleLang": "Default Subtitle Language",
+  "@playerDefaultSubtitleLang": {
+    "description": "Dropdown title for default subtitle language"
+  },
+  "playerCustomSubtitleLangTitle": "Custom Subtitle Language",
+  "@playerCustomSubtitleLangTitle": {
+    "description": "Dialog title for custom subtitle language"
+  },
+  "playerCustomSubtitleLangHint": "e.g. eng, spa, ger, ja",
+  "@playerCustomSubtitleLangHint": {
+    "description": "Hint for custom subtitle language input"
+  },
+  "playerAutoNextQuickSkipSection": "Auto-Next & Quick Skip",
+  "@playerAutoNextQuickSkipSection": {
+    "description": "Section title for auto-next and quick skip"
+  },
+  "playerAutoSwitchNextEpisode": "Auto-Switch to Next Episode",
+  "@playerAutoSwitchNextEpisode": {
+    "description": "Switch title for auto-switching to next episode"
+  },
+  "playerAutoSwitchNextEpisodeSubtitle": "Automatically load next episode when countdown finishes or video ends",
+  "@playerAutoSwitchNextEpisodeSubtitle": {
+    "description": "Switch subtitle for auto-switching to next episode"
+  },
+  "playerNextEpisodePromptThreshold": "Next Episode Prompt Threshold",
+  "@playerNextEpisodePromptThreshold": {
+    "description": "Dropdown title for next episode prompt threshold"
+  },
+  "playerSecondsBeforeEnd": "{seconds}s before end",
+  "@playerSecondsBeforeEnd": {
+    "description": "Dropdown item showing seconds before end",
+    "placeholders": {
+      "seconds": {
+        "type": "String"
+      }
+    }
+  },
+  "playerShowQuickSkip": "Show Quick Skip Button",
+  "@playerShowQuickSkip": {
+    "description": "Switch title for showing quick skip button"
+  },
+  "playerShowQuickSkipSubtitle": "Display quick seek button (+Xs) during playback",
+  "@playerShowQuickSkipSubtitle": {
+    "description": "Switch subtitle for showing quick skip button"
+  },
+  "playerQuickSkipDuration": "Quick Skip Duration",
+  "@playerQuickSkipDuration": {
+    "description": "Dropdown title for quick skip duration"
+  },
+  "playerSubtitlesGesturesSection": "Subtitles & Gestures",
+  "@playerSubtitlesGesturesSection": {
+    "description": "Section title for subtitles and gestures"
+  },
+  "playerSubtitlePreferences": "Subtitle Preferences",
+  "@playerSubtitlePreferences": {
+    "description": "Tile and sheet title for subtitle preferences"
+  },
+  "playerSubtitlePreferencesSubtitle": "Customize subtitle appearance and rendering engine",
+  "@playerSubtitlePreferencesSubtitle": {
+    "description": "Tile subtitle for subtitle preferences"
+  },
+  "playerSubtitleTranslationSubtitle": "Configure AI translation providers, API keys, and auto-translation",
+  "@playerSubtitleTranslationSubtitle": {
+    "description": "Tile subtitle for subtitle translation"
+  },
+  "playerGestureArea": "Gesture Area",
+  "@playerGestureArea": {
+    "description": "Tile and sheet title for gesture area"
+  },
+  "playerGestureAreaSubtitle": "Customize active zones for volume and brightness",
+  "@playerGestureAreaSubtitle": {
+    "description": "Tile subtitle for gesture area"
+  },
+  "playerEnableGestures": "Enable Gestures",
+  "@playerEnableGestures": {
+    "description": "Switch title for enabling gestures"
+  },
+  "playerEnableGesturesSubtitle": "Allow swiping to seek, change volume, and brightness",
+  "@playerEnableGesturesSubtitle": {
+    "description": "Switch subtitle for enabling gestures"
+  },
+  "playerSwapVolumeBrightness": "Swap Volume & Brightness",
+  "@playerSwapVolumeBrightness": {
+    "description": "Switch title for swapping volume and brightness gestures"
+  },
+  "playerSwapVolumeBrightnessSubtitle": "Place Volume on the left and Brightness on the right",
+  "@playerSwapVolumeBrightnessSubtitle": {
+    "description": "Switch subtitle for swapping volume and brightness gestures"
+  },
+  "extensionsSourcesTitle": "Sources",
+  "@extensionsSourcesTitle": {
+    "description": "Title for extensions/sources screen"
+  },
+  "extensionsCatalogsSubtitle": "Extensions & Catalogs",
+  "@extensionsCatalogsSubtitle": {
+    "description": "Subtitle for extensions/sources screen"
+  },
+  "extensionsAllEngines": "All Engines",
+  "@extensionsAllEngines": {
+    "description": "Filter label for all extension engines"
+  },
+  "extensionsAllLanguages": "All Languages",
+  "@extensionsAllLanguages": {
+    "description": "Filter label for all extension languages"
+  },
+  "extensionsInstalledCount": "Installed ({count})",
+  "@extensionsInstalledCount": {
+    "description": "Segment label for installed extensions with count",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "extensionsGetExtensionsCount": "Get Extensions ({count})",
+  "@extensionsGetExtensionsCount": {
+    "description": "Segment label for available extensions with count",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "extensionsAddonsTooltip": "Addons (TorrServer)",
+  "@extensionsAddonsTooltip": {
+    "description": "Tooltip for addons button on extensions screen"
+  },
+  "extensionsTestTooltip": "Test Extensions",
+  "@extensionsTestTooltip": {
+    "description": "Tooltip for testing extensions"
+  },
+  "extensionsGuideTooltip": "Extension Guide",
+  "@extensionsGuideTooltip": {
+    "description": "Tooltip for extension guide"
+  },
+  "extensionsSearchHint": "Search extensions...",
+  "@extensionsSearchHint": {
+    "description": "Search hint for extensions"
+  },
+  "extensionsManageEngines": "Manage Engines",
+  "@extensionsManageEngines": {
+    "description": "FAB label to manage engines"
+  },
+  "extensionsManageRepos": "Manage Repos",
+  "@extensionsManageRepos": {
+    "description": "FAB label to manage repos"
+  },
+  "extensionsManageEnginesTitle": "Manage Extension Engines",
+  "@extensionsManageEnginesTitle": {
+    "description": "Bottom sheet title for managing extension engines"
+  },
+  "extensionsManageEnginesDesc": "Enable or disable external extension runtime engines. Enabled engines will appear in your catalogs and discovery feeds alongside your native inbuilt sources.",
+  "@extensionsManageEnginesDesc": {
+    "description": "Description inside manage extension engines sheet"
+  },
+  "extensionsEngineMangayomiDesc": "External runtime engine for Anime & Manga extensions",
+  "@extensionsEngineMangayomiDesc": {
+    "description": "Subtitle for Mangayomi engine"
+  },
+  "extensionsEngineAniyomiDesc": "External runtime engine for Manga & Anime extensions",
+  "@extensionsEngineAniyomiDesc": {
+    "description": "Subtitle for Tachiyomi / Aniyomi engine"
+  },
+  "extensionsEngineCloudStreamDesc": "External runtime engine for Video streaming extensions",
+  "@extensionsEngineCloudStreamDesc": {
+    "description": "Subtitle for CloudStream engine"
+  },
+  "extensionsEngineKotatsuDesc": "External runtime engine for Manga reading extensions",
+  "@extensionsEngineKotatsuDesc": {
+    "description": "Subtitle for Kotatsu engine"
+  },
+  "extensionsEngineSoraDesc": "External runtime engine for Novel & Anime extensions",
+  "@extensionsEngineSoraDesc": {
+    "description": "Subtitle for Sora engine"
+  },
+  "troubleshootIntro": "Use these options if you encounter broken playback, frozen scrapers, desynced tracking, or corrupted settings.",
+  "@troubleshootIntro": {
+    "description": "Introductory text on troubleshoot screen"
+  },
+  "troubleshootStorageCacheSection": "Storage & Cache",
+  "@troubleshootStorageCacheSection": {
+    "description": "Section title for storage & cache in troubleshoot"
+  },
+  "troubleshootCleanIncompleteDownloads": "Clean Incomplete Downloads",
+  "@troubleshootCleanIncompleteDownloads": {
+    "description": "Tile title to clean incomplete downloads"
+  },
+  "troubleshootCleanIncompleteDownloadsSubtitle": "Review and purge {count} unfinished tasks & orphaned temp files",
+  "@troubleshootCleanIncompleteDownloadsSubtitle": {
+    "description": "Tile subtitle for cleaning incomplete downloads",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "troubleshootNoUnfinishedDownloads": "No unfinished downloads or orphaned temp files found.",
+  "@troubleshootNoUnfinishedDownloads": {
+    "description": "Snackbar when no unfinished downloads found"
+  },
+  "troubleshootReviewUnfinishedTitle": "Review Unfinished Downloads",
+  "@troubleshootReviewUnfinishedTitle": {
+    "description": "Sheet title to review unfinished downloads"
+  },
+  "troubleshootReviewUnfinishedDesc": "Select unfinished queue tasks or incomplete temporary folders to permanently remove.",
+  "@troubleshootReviewUnfinishedDesc": {
+    "description": "Sheet description for reviewing unfinished downloads"
+  },
+  "troubleshootCleanUpBtn": "Clean Up ({count})",
+  "@troubleshootCleanUpBtn": {
+    "description": "Button label to clean up selected items",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "troubleshootCleanedUpSnack": "Cleaned up {count} item(s).",
+  "@troubleshootCleanedUpSnack": {
+    "description": "Snackbar after cleaning up items",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "troubleshootClearImageCache": "Clear Image & Poster Cache",
+  "@troubleshootClearImageCache": {
+    "description": "Tile title to clear image and poster cache"
+  },
+  "troubleshootClearImageCacheSubtitle": "Purge loaded cover art thumbnails and temp files from memory & disk",
+  "@troubleshootClearImageCacheSubtitle": {
+    "description": "Tile subtitle to clear image and poster cache"
+  },
+  "troubleshootImageCachePurged": "Image & poster cache purged from memory and disk.",
+  "@troubleshootImageCachePurged": {
+    "description": "Snackbar when image cache is purged"
+  },
+  "troubleshootFlushScraperCache": "Flush Scraper Cache",
+  "@troubleshootFlushScraperCache": {
+    "description": "Tile title to flush scraper cache"
+  },
+  "troubleshootFlushScraperCacheSubtitle": "Clear {count} temporary scraper responses and stream links",
+  "@troubleshootFlushScraperCacheSubtitle": {
+    "description": "Tile subtitle to flush scraper cache",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "troubleshootScraperCacheFlushed": "Scraper cache flushed.",
+  "@troubleshootScraperCacheFlushed": {
+    "description": "Snackbar when scraper cache is flushed"
+  },
+  "troubleshootMatchingScrapersSection": "Matching & Scrapers",
+  "@troubleshootMatchingScrapersSection": {
+    "description": "Section title for matching & scrapers"
+  },
+  "troubleshootClearMediaMappings": "Clear All Media Mappings",
+  "@troubleshootClearMediaMappings": {
+    "description": "Tile title to clear all media mappings"
+  },
+  "troubleshootClearMediaMappingsSubtitle": "Reset {count} preferred sources and manual matches",
+  "@troubleshootClearMediaMappingsSubtitle": {
+    "description": "Tile subtitle to clear media mappings",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "troubleshootClearMediaMappingsNote": "Fixes \"Episodes Not Found\" after extension updates. Forces automatic re-matching on your next visit.",
+  "@troubleshootClearMediaMappingsNote": {
+    "description": "Footnote under clear media mappings"
+  },
+  "troubleshootClearMediaMappingsDialogTitle": "Clear Media Mappings?",
+  "@troubleshootClearMediaMappingsDialogTitle": {
+    "description": "Dialog title to clear media mappings"
+  },
+  "troubleshootClearMediaMappingsDialogBody": "This will clear {count} saved preferred sources and manual matches.",
+  "@troubleshootClearMediaMappingsDialogBody": {
+    "description": "Dialog body to clear media mappings",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "troubleshootLibraryNotAffected": "Your library bookmarks, watch history, and tracking progression will not be affected.",
+  "@troubleshootLibraryNotAffected": {
+    "description": "Reassurance text that library, history, tracking are unaffected"
+  },
+  "troubleshootMappingsCleared": "Media mappings cleared.",
+  "@troubleshootMappingsCleared": {
+    "description": "Snackbar when media mappings are cleared"
+  },
+  "troubleshootExtensionsReposSection": "Extensions & Repositories",
+  "@troubleshootExtensionsReposSection": {
+    "description": "Section title for extensions & repositories"
+  },
+  "troubleshootClearAllReposTitle": "Clear All Extension Repositories",
+  "@troubleshootClearAllReposTitle": {
+    "description": "Tile title to clear all extension repos"
+  },
+  "troubleshootClearAllReposSubtitle": "Wipe all repository URLs across Aniyomi, Mangayomi, CloudStream, Kotatsu, and Sora",
+  "@troubleshootClearAllReposSubtitle": {
+    "description": "Tile subtitle to clear all extension repos"
+  },
+  "troubleshootClearAllReposDialogTitle": "Clear All Repositories?",
+  "@troubleshootClearAllReposDialogTitle": {
+    "description": "Dialog title to clear all repos"
+  },
+  "troubleshootClearAllReposDialogBody": "This will remove all added extension repository URLs across Aniyomi, Mangayomi, CloudStream, Kotatsu, and Sora.\n\nInstalled extensions will remain until uninstalled.",
+  "@troubleshootClearAllReposDialogBody": {
+    "description": "Dialog body to clear all repos"
+  },
+  "troubleshootClearAllBtn": "Clear All",
+  "@troubleshootClearAllBtn": {
+    "description": "Button label Clear All"
+  },
+  "troubleshootAllReposCleared": "All extension repositories cleared.",
+  "@troubleshootAllReposCleared": {
+    "description": "Snackbar when all extension repos are cleared"
+  },
+  "troubleshootUninstallAllExtTitle": "Uninstall All Extensions",
+  "@troubleshootUninstallAllExtTitle": {
+    "description": "Tile title to uninstall all extensions"
+  },
+  "troubleshootUninstallAllExtSubtitle": "Uninstall all extension plugins across all engines to fix corrupted builds",
+  "@troubleshootUninstallAllExtSubtitle": {
+    "description": "Tile subtitle to uninstall all extensions"
+  },
+  "troubleshootUninstallAllExtDialogTitle": "Uninstall All Extensions?",
+  "@troubleshootUninstallAllExtDialogTitle": {
+    "description": "Dialog title to uninstall all extensions"
+  },
+  "troubleshootUninstallAllExtDialogBody": "This will remove all installed extension plugins across all engines.\n\nFixes crashes or broken sources caused by outdated/corrupted extension installs.",
+  "@troubleshootUninstallAllExtDialogBody": {
+    "description": "Dialog body to uninstall all extensions"
+  },
+  "troubleshootUninstallAllBtn": "Uninstall All",
+  "@troubleshootUninstallAllBtn": {
+    "description": "Button label Uninstall All"
+  },
+  "troubleshootAllExtUninstalled": "All installed extensions uninstalled.",
+  "@troubleshootAllExtUninstalled": {
+    "description": "Snackbar when all extensions are uninstalled"
+  },
+  "troubleshootResetExtCacheTitle": "Reset Extension Cache & Preferences",
+  "@troubleshootResetExtCacheTitle": {
+    "description": "Tile title to reset extension cache & preferences"
+  },
+  "troubleshootResetExtCacheSubtitle": "Clear custom source preferences, cached metadata, and refresh engines",
+  "@troubleshootResetExtCacheSubtitle": {
+    "description": "Tile subtitle to reset extension cache & preferences"
+  },
+  "troubleshootResetExtCacheDialogTitle": "Reset Extension Cache & Preferences?",
+  "@troubleshootResetExtCacheDialogTitle": {
+    "description": "Dialog title to reset extension cache & preferences"
+  },
+  "troubleshootResetExtCacheDialogBody": "This will reset extension-specific settings, source preferences, and cached metadata, then reload active extension managers.",
+  "@troubleshootResetExtCacheDialogBody": {
+    "description": "Dialog body to reset extension cache & preferences"
+  },
+  "troubleshootExtCacheResetSnack": "Extension cache and preferences reset.",
+  "@troubleshootExtCacheResetSnack": {
+    "description": "Snackbar when extension cache & preferences are reset"
+  },
+  "troubleshootSyncTrackingSection": "Sync & Tracking",
+  "@troubleshootSyncTrackingSection": {
+    "description": "Section title for sync & tracking"
+  },
+  "troubleshootResetTrackerBridges": "Reset Tracker Bridges",
+  "@troubleshootResetTrackerBridges": {
+    "description": "Tile title to reset tracker bridges"
+  },
+  "troubleshootResetTrackerBridgesSubtitle": "Clear {count} cached AniList to MAL ID pairings",
+  "@troubleshootResetTrackerBridgesSubtitle": {
+    "description": "Tile subtitle to reset tracker bridges",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "troubleshootClearTrackerBridgesDialogTitle": "Clear Tracker Bridges?",
+  "@troubleshootClearTrackerBridgesDialogTitle": {
+    "description": "Dialog title to clear tracker bridges"
+  },
+  "troubleshootTrackerBridgesCleared": "Tracker bridges cleared.",
+  "@troubleshootTrackerBridgesCleared": {
+    "description": "Snackbar when tracker bridges are cleared"
+  },
+  "troubleshootAuthAccountsSection": "Authentication & Accounts",
+  "@troubleshootAuthAccountsSection": {
+    "description": "Section title for authentication & accounts"
+  },
+  "troubleshootResetAuthTitle": "Reset Authentication Data",
+  "@troubleshootResetAuthTitle": {
+    "description": "Tile title to reset authentication data"
+  },
+  "troubleshootResetAuthSubtitle": "Log out and erase all saved credentials (AniList, MAL, Kitsu, SIMKL, Discord, Commentum)",
+  "@troubleshootResetAuthSubtitle": {
+    "description": "Tile subtitle to reset authentication data"
+  },
+  "troubleshootResetAuthDialogTitle": "Reset Authentication Data?",
+  "@troubleshootResetAuthDialogTitle": {
+    "description": "Dialog title to reset auth data"
+  },
+  "troubleshootResetAuthDialogLead": "This will sign out of all linked accounts and erase saved tokens:",
+  "@troubleshootResetAuthDialogLead": {
+    "description": "Dialog lead text for resetting auth data"
+  },
+  "troubleshootResetAuthDialogList": "• Tracker accounts (AniList, MyAnimeList, Kitsu, SIMKL)\n• Discord Rich Presence integration\n• Commentum discussions session",
+  "@troubleshootResetAuthDialogList": {
+    "description": "Bullet list of services signed out"
+  },
+  "troubleshootLocalDataSafeNote": "Your local bookmarks, watch history, and downloads will NOT be affected.",
+  "@troubleshootLocalDataSafeNote": {
+    "description": "Note that local bookmarks, history, and downloads are safe"
+  },
+  "troubleshootResetAuthBtn": "Reset Auth",
+  "@troubleshootResetAuthBtn": {
+    "description": "Button label Reset Auth"
+  },
+  "troubleshootAuthClearedSnack": "All authentication tokens cleared and accounts signed out.",
+  "@troubleshootAuthClearedSnack": {
+    "description": "Snackbar when auth tokens are cleared"
+  },
+  "troubleshootDataMgmtSection": "Data Management & Reset",
+  "@troubleshootDataMgmtSection": {
+    "description": "Section title for data management & reset"
+  },
+  "troubleshootClearDataSelectiveTitle": "Clear App Data (Selective)",
+  "@troubleshootClearDataSelectiveTitle": {
+    "description": "Tile & sheet title for selective data clear"
+  },
+  "troubleshootClearDataSelectiveSubtitle": "Selectively wipe history, bookmarks, caches, mappings, or perform a full wipe",
+  "@troubleshootClearDataSelectiveSubtitle": {
+    "description": "Tile subtitle for selective data clear"
+  },
+  "troubleshootSelectCategoriesToPurge": "Select data categories to purge:",
+  "@troubleshootSelectCategoriesToPurge": {
+    "description": "Label in selective clear sheet"
+  },
+  "troubleshootConfirmDataWipeTitle": "Confirm Data Wipe?",
+  "@troubleshootConfirmDataWipeTitle": {
+    "description": "Dialog title to confirm selective data wipe"
+  },
+  "troubleshootConfirmDataWipeBody": "This will permanently delete the {count} selected categories. This action cannot be undone.",
+  "@troubleshootConfirmDataWipeBody": {
+    "description": "Dialog body to confirm selective data wipe",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "troubleshootWipeSelectedBtn": "Wipe Selected",
+  "@troubleshootWipeSelectedBtn": {
+    "description": "Button label Wipe Selected"
+  },
+  "troubleshootWipeSelectedCountBtn": "Wipe Selected ({count})",
+  "@troubleshootWipeSelectedCountBtn": {
+    "description": "Button label Wipe Selected with count",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "troubleshootPurgedCategoriesSnack": "Purged {count} selected data categories.",
+  "@troubleshootPurgedCategoriesSnack": {
+    "description": "Snackbar after purging selected categories",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "troubleshootResetAppSettingsTitle": "Reset App Settings to Default",
+  "@troubleshootResetAppSettingsTitle": {
+    "description": "Tile title to reset app settings to default"
+  },
+  "troubleshootResetAppSettingsSubtitle": "Restore all player, UI, and extension preferences without affecting saved data",
+  "@troubleshootResetAppSettingsSubtitle": {
+    "description": "Tile subtitle to reset app settings"
+  },
+  "troubleshootResetAppSettingsDialogTitle": "Reset App Settings?",
+  "@troubleshootResetAppSettingsDialogTitle": {
+    "description": "Dialog title to reset app settings"
+  },
+  "troubleshootResetAppSettingsDialogBody": "This will revert all player, UI theme, extension, and content settings back to factory defaults.\n\nYour library bookmarks, history, and downloads will remain intact.",
+  "@troubleshootResetAppSettingsDialogBody": {
+    "description": "Dialog body to reset app settings"
+  },
+  "troubleshootResetSettingsBtn": "Reset Settings",
+  "@troubleshootResetSettingsBtn": {
+    "description": "Button label Reset Settings"
+  },
+  "troubleshootSettingsRestoredSnack": "App settings restored to defaults.",
+  "@troubleshootSettingsRestoredSnack": {
+    "description": "Snackbar when app settings are restored"
+  },
+  "troubleshootCatHistory": "Watch & Read History",
+  "@troubleshootCatHistory": {
+    "description": "Category title for watch & read history"
+  },
+  "troubleshootCatHistorySub": "{count} history entries",
+  "@troubleshootCatHistorySub": {
+    "description": "Category subtitle for history count",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "troubleshootCatLibrary": "Library & Bookmarks",
+  "@troubleshootCatLibrary": {
+    "description": "Category title for library & bookmarks"
+  },
+  "troubleshootCatLibrarySub": "{count} saved titles in your library",
+  "@troubleshootCatLibrarySub": {
+    "description": "Category subtitle for library count",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "troubleshootCatCache": "Scraper & Network Cache",
+  "@troubleshootCatCache": {
+    "description": "Category title for scraper & network cache"
+  },
+  "troubleshootCatCacheSub": "{count} cached API responses and stream links",
+  "@troubleshootCatCacheSub": {
+    "description": "Category subtitle for cache count",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "troubleshootCatMappings": "Media & Source Mappings",
+  "@troubleshootCatMappings": {
+    "description": "Category title for media & source mappings"
+  },
+  "troubleshootCatMappingsSub": "{count} preferred sources and manual matches",
+  "@troubleshootCatMappingsSub": {
+    "description": "Category subtitle for mappings count",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "troubleshootCatBridges": "Tracker Bridges",
+  "@troubleshootCatBridges": {
+    "description": "Category title for tracker bridges"
+  },
+  "troubleshootCatBridgesSub": "{count} AniList to MAL ID mapping links",
+  "@troubleshootCatBridgesSub": {
+    "description": "Category subtitle for tracker bridges count",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "troubleshootCatDownloads": "Incomplete Downloads & Temp Files",
+  "@troubleshootCatDownloads": {
+    "description": "Category title for incomplete downloads & temp files"
+  },
+  "troubleshootCatDownloadsSub": "{count} pending download tasks and temp files",
+  "@troubleshootCatDownloadsSub": {
+    "description": "Category subtitle for incomplete downloads count",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "troubleshootCatAuthSub": "{count} saved tokens (AniList, MAL, Kitsu, Discord)",
+  "@troubleshootCatAuthSub": {
+    "description": "Category subtitle for saved auth tokens count",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "troubleshootCatSettings": "App Preferences & Settings",
+  "@troubleshootCatSettings": {
+    "description": "Category title for app preferences & settings"
+  },
+  "troubleshootCatSettingsSub": "Reset all player, UI, and extension settings to defaults",
+  "@troubleshootCatSettingsSub": {
+    "description": "Category subtitle for app preferences & settings"
+  },
+  "appearanceGlobalUiTitle": "Global UI Customization",
+  "@appearanceGlobalUiTitle": {
+    "description": "Sheet title for global UI customization"
+  },
+  "appearanceBorderRoundness": "Border Roundness",
+  "@appearanceBorderRoundness": {
+    "description": "Slider title for border roundness"
+  },
+  "appearanceBorderRoundnessSubtitle": "Corner roundness across the app",
+  "@appearanceBorderRoundnessSubtitle": {
+    "description": "Slider subtitle for border roundness"
+  },
+  "appearanceFontScale": "Font Scale",
+  "@appearanceFontScale": {
+    "description": "Slider title for font scale"
+  },
+  "appearanceFontScaleSubtitle": "Scale text size globally",
+  "@appearanceFontScaleSubtitle": {
+    "description": "Slider subtitle for font scale"
+  },
+  "appearanceWidgetScale": "Widget Scale",
+  "@appearanceWidgetScale": {
+    "description": "Slider title for widget scale"
+  },
+  "appearanceWidgetScaleSubtitle": "Scale media cards & navigation bar",
+  "@appearanceWidgetScaleSubtitle": {
+    "description": "Slider subtitle for widget scale"
+  },
+  "appearancePrimaryText": "Primary text",
+  "@appearancePrimaryText": {
+    "description": "Preview primary text"
+  },
+  "appearanceSecondaryText": "Secondary text",
+  "@appearanceSecondaryText": {
+    "description": "Preview secondary text"
+  },
+  "pickerDisplayOptions": "Display Options",
+  "@pickerDisplayOptions": {
+    "description": "Default toggles title in picker sheet shell"
+  },
+  "pickerCardStylePreset": "Card Style Preset",
+  "@pickerCardStylePreset": {
+    "description": "Options title for card style picker"
+  },
+  "pickerContinueWatchingPreset": "Continue Watching Style Preset",
+  "@pickerContinueWatchingPreset": {
+    "description": "Options title for continue watching style picker"
+  },
+  "pickerContinueReadingPreset": "Continue Reading Style Preset",
+  "@pickerContinueReadingPreset": {
+    "description": "Options title for continue reading style picker"
+  },
+  "pickerRatingsChip": "Ratings",
+  "@pickerRatingsChip": {
+    "description": "FilterChip label for ratings"
+  },
+  "pickerReleaseYearChip": "Release Year",
+  "@pickerReleaseYearChip": {
+    "description": "FilterChip label for release year"
+  },
+  "pickerWideModeChip": "Wide Mode",
+  "@pickerWideModeChip": {
+    "description": "FilterChip label for wide mode"
+  },
+  "pickerPortraitModeChip": "Portrait Mode",
+  "@pickerPortraitModeChip": {
+    "description": "FilterChip label for portrait mode"
+  },
+  "cardStyleClassicDesc": "Classic poster layout with metadata overlay",
+  "@cardStyleClassicDesc": {
+    "description": "Description for classic card style"
+  },
+  "cardStyleMinimalDesc": "Clean border-free poster card",
+  "@cardStyleMinimalDesc": {
+    "description": "Description for minimal card style"
+  },
+  "cardStyleExpressiveDesc": "Spacious container with bold badges",
+  "@cardStyleExpressiveDesc": {
+    "description": "Description for expressive card style"
+  },
+  "cardStyleMaterialDesc": "Rounded Material card styling",
+  "@cardStyleMaterialDesc": {
+    "description": "Description for material card style"
+  },
+  "cardStyleCinematicDesc": "Full-bleed cinematic landscape view",
+  "@cardStyleCinematicDesc": {
+    "description": "Description for cinematic card style"
+  },
+  "cardStyleNeonDesc": "Glowing vibrant accent borders",
+  "@cardStyleNeonDesc": {
+    "description": "Description for neon card style"
+  },
+  "cardStyleCompactDesc": "Dense compact layout for high density",
+  "@cardStyleCompactDesc": {
+    "description": "Description for compact card style"
+  },
+  "cardStyleEditorialDesc": "High-whitespace magazine design",
+  "@cardStyleEditorialDesc": {
+    "description": "Description for editorial card style"
+  },
+  "cardStyleWideBannerDesc": "Wide horizontal banner card",
+  "@cardStyleWideBannerDesc": {
+    "description": "Description for wide banner card style"
+  },
+  "episodeModeTitle": "Episode View Mode",
+  "@episodeModeTitle": {
+    "description": "Sheet title for episode view mode"
+  },
+  "episodeModePreset": "Episode View Mode Preset",
+  "@episodeModePreset": {
+    "description": "Options title for episode view mode"
+  },
+  "episodeModeClassicDesc": "Detailed list with episode art and title",
+  "@episodeModeClassicDesc": {
+    "description": "Description for classic episode mode"
+  },
+  "episodeModeGridDesc": "Thumbnail grid with episode numbers",
+  "@episodeModeGridDesc": {
+    "description": "Description for grid episode mode"
+  },
+  "episodeModeBoxDesc": "Compact numbered boxes — great for long anime",
+  "@episodeModeBoxDesc": {
+    "description": "Description for box episode mode"
+  },
+  "episodeModeCompactDesc": "Clean text rows without thumbnails for fast browsing",
+  "@episodeModeCompactDesc": {
+    "description": "Description for compact episode mode"
+  },
+  "episodeModeCoverDesc": "Wide landscape cards with thumbnail preview and details",
+  "@episodeModeCoverDesc": {
+    "description": "Description for cover episode mode"
+  },
+  "headerStyleTitle": "Home Header Style",
+  "@headerStyleTitle": {
+    "description": "Sheet title for home header style"
+  },
+  "headerStylePreset": "Header Layout Preset",
+  "@headerStylePreset": {
+    "description": "Options title for home header style"
+  },
+  "headerStyleClassicDesc": "Balanced avatar and greeting",
+  "@headerStyleClassicDesc": {
+    "description": "Description for classic header style"
+  },
+  "headerStyleMinimalDesc": "Compact single-line row",
+  "@headerStyleMinimalDesc": {
+    "description": "Description for minimal header style"
+  },
+  "headerStyleMaterialDesc": "Segmented pill layout",
+  "@headerStyleMaterialDesc": {
+    "description": "Description for material header style"
+  },
+  "headerStyleProminentDesc": "Expressive hero layout",
+  "@headerStyleProminentDesc": {
+    "description": "Description for prominent header style"
+  },
+  "headerStyleDockedDesc": "Seamless side-by-side tv layout",
+  "@headerStyleDockedDesc": {
+    "description": "Description for docked header style"
+  },
+  "navBarStylePreset": "Navigation Bar Preset",
+  "@navBarStylePreset": {
+    "description": "Options title for nav bar style"
+  },
+  "navBarClassicDesc": "Floating container with modern backdrop blur",
+  "@navBarClassicDesc": {
+    "description": "Description for classic nav bar"
+  },
+  "navBarMinimalDesc": "Sleek, transparent floating glass dock style",
+  "@navBarMinimalDesc": {
+    "description": "Description for minimal nav bar"
+  },
+  "navBarFrostedDesc": "Super-translucent frosted glassmorphism layout",
+  "@navBarFrostedDesc": {
+    "description": "Description for frosted nav bar"
+  },
+  "navBarMaterialDesc": "Material You rounded capsules with navigation indicators",
+  "@navBarMaterialDesc": {
+    "description": "Description for material nav bar"
+  },
+  "navBarDockedDesc": "Solid edge-to-edge layout connected to screen bottom",
+  "@navBarDockedDesc": {
+    "description": "Description for docked nav bar"
+  },
+  "presetsGalleryTitle": "Preset Gallery",
+  "@presetsGalleryTitle": {
+    "description": "Sheet title for preset gallery"
+  },
+  "presetsCuratedCount": "Curated ({count})",
+  "@presetsCuratedCount": {
+    "description": "Chip label for curated presets count",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "presetsCustomCount": "Custom ({count})",
+  "@presetsCustomCount": {
+    "description": "Chip label for custom presets count",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "presetsBuiltInHeader": "BUILT-IN THEMES",
+  "@presetsBuiltInHeader": {
+    "description": "Header for built-in themes"
+  },
+  "presetsCustomHeader": "YOUR CUSTOM THEMES",
+  "@presetsCustomHeader": {
+    "description": "Header for user custom themes"
+  },
+  "presetsLoadedSnack": "Loaded preset: {name}",
+  "@presetsLoadedSnack": {
+    "description": "Snackbar when a preset is loaded",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "presetsNoCustomTitle": "No custom presets yet",
+  "@presetsNoCustomTitle": {
+    "description": "Empty state title for custom presets"
+  },
+  "presetsNoCustomSubtitle": "Use \"Create Theme\" above or import a .json theme from the community.",
+  "@presetsNoCustomSubtitle": {
+    "description": "Empty state subtitle for custom presets"
+  },
+  "presetsSnapshotCurrent": "Snapshot Current",
+  "@presetsSnapshotCurrent": {
+    "description": "Button label to snapshot current theme"
+  },
+  "presetsImportJson": "Import JSON",
+  "@presetsImportJson": {
+    "description": "Button label to import JSON preset"
+  },
+  "presetsExport": "Export",
+  "@presetsExport": {
+    "description": "Button label to export preset"
+  },
+  "presetsExportPresetTitle": "Export Preset JSON",
+  "@presetsExportPresetTitle": {
+    "description": "Sheet title to export preset JSON"
+  },
+  "presetsExportCurrentTitle": "Export Current Theme",
+  "@presetsExportCurrentTitle": {
+    "description": "Sheet title to export current theme"
+  },
+  "presetsExportPresetPrompt": "Customize the metadata before exporting \"{name}\" to clipboard:",
+  "@presetsExportPresetPrompt": {
+    "description": "Prompt text when exporting a named preset",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "presetsExportCurrentPrompt": "Customize the metadata before exporting your current theme settings to clipboard:",
+  "@presetsExportCurrentPrompt": {
+    "description": "Prompt text when exporting current theme"
+  },
+  "presetsPresetName": "Preset Name",
+  "@presetsPresetName": {
+    "description": "TextField label for preset name"
+  },
+  "presetsAuthorCreator": "Author / Creator",
+  "@presetsAuthorCreator": {
+    "description": "TextField label for author/creator"
+  },
+  "presetsDescription": "Description",
+  "@presetsDescription": {
+    "description": "TextField label for preset description"
+  },
+  "presetsCopyJson": "Copy JSON",
+  "@presetsCopyJson": {
+    "description": "Button label to copy JSON"
+  },
+  "presetsCopiedSnack": "Copied \"{name}\" JSON by {author} to clipboard!",
+  "@presetsCopiedSnack": {
+    "description": "Snackbar when preset JSON is copied",
+    "placeholders": {
+      "author": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "presetsImportTitle": "Import Theme (.json)",
+  "@presetsImportTitle": {
+    "description": "Sheet title to import theme JSON"
+  },
+  "presetsPasteBelow": "Paste a ShonenX Theme JSON code below:",
+  "@presetsPasteBelow": {
+    "description": "Prompt to paste theme JSON"
+  },
+  "presetsPasteClipboard": "Paste Clipboard",
+  "@presetsPasteClipboard": {
+    "description": "Button label to paste from clipboard"
+  },
+  "presetsSaveOnly": "Save Only",
+  "@presetsSaveOnly": {
+    "description": "Button label to save imported preset without applying"
+  },
+  "presetsInstallApply": "Install & Apply",
+  "@presetsInstallApply": {
+    "description": "Button label to install and apply imported preset"
+  },
+  "presetsSavedNotApplied": "Saved \"{name}\" to Custom Themes (not applied).",
+  "@presetsSavedNotApplied": {
+    "description": "Snackbar when preset is saved without applying",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "presetsInstalledApplied": "Successfully installed & applied \"{name}\"!",
+  "@presetsInstalledApplied": {
+    "description": "Snackbar when preset is installed and applied",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "presetsInvalidJson": "Invalid JSON format: {error}",
+  "@presetsInvalidJson": {
+    "description": "Snackbar when imported JSON is invalid",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "presetsSnapshotTitle": "Snapshot Current Theme",
+  "@presetsSnapshotTitle": {
+    "description": "Sheet title to snapshot current theme"
+  },
+  "presetsSaveSnapshot": "Save Snapshot",
+  "@presetsSaveSnapshot": {
+    "description": "Button label to save snapshot"
+  },
+  "presetsSavedSnapshotSnack": "Saved \"{name}\" to your presets!",
+  "@presetsSavedSnapshotSnack": {
+    "description": "Snackbar when snapshot is saved",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "presetsExportShareTooltip": "Export / Share JSON",
+  "@presetsExportShareTooltip": {
+    "description": "Tooltip for exporting/sharing preset"
+  },
+  "presetsDeleteTooltip": "Delete Preset",
+  "@presetsDeleteTooltip": {
+    "description": "Tooltip for deleting custom preset"
+  },
+  "subtitleAdvancedSettings": "Advanced Settings",
+  "@subtitleAdvancedSettings": {
+    "description": "ExpansionTile title for advanced subtitle settings"
+  },
+  "subtitleCustomEngineOverlay": "Custom Engine Overlay",
+  "@subtitleCustomEngineOverlay": {
+    "description": "Switch title for custom engine overlay"
+  },
+  "subtitleNativeActiveWarning": "Native subtitles active. Some appearance settings may be ignored.",
+  "@subtitleNativeActiveWarning": {
+    "description": "Warning when native subtitles are active"
+  },
+  "subtitleFontFamily": "Font Family",
+  "@subtitleFontFamily": {
+    "description": "Dropdown title for subtitle font family"
+  },
+  "subtitleSizeScale": "Size Scale",
+  "@subtitleSizeScale": {
+    "description": "Slider title for subtitle size scale"
+  },
+  "subtitleFontColor": "Font Color",
+  "@subtitleFontColor": {
+    "description": "Tile title for subtitle font color"
+  },
+  "subtitleBoldText": "Bold Text",
+  "@subtitleBoldText": {
+    "description": "Switch title for bold subtitle text"
+  },
+  "subtitleLineHeight": "Line Height",
+  "@subtitleLineHeight": {
+    "description": "Slider title for subtitle line height"
+  },
+  "subtitleOutlineColor": "Outline Color",
+  "@subtitleOutlineColor": {
+    "description": "Tile title for subtitle outline color"
+  },
+  "subtitleOutlineSize": "Outline Size",
+  "@subtitleOutlineSize": {
+    "description": "Slider title for subtitle outline size"
+  },
+  "subtitleShadowColor": "Shadow Color",
+  "@subtitleShadowColor": {
+    "description": "Tile title for subtitle shadow color"
+  },
+  "subtitleShadowBlur": "Shadow Blur",
+  "@subtitleShadowBlur": {
+    "description": "Slider title for subtitle shadow blur"
+  },
+  "subtitleBottomPadding": "Bottom Padding",
+  "@subtitleBottomPadding": {
+    "description": "Slider title for subtitle bottom padding"
+  },
+  "subtitleBgPadding": "Background Padding",
+  "@subtitleBgPadding": {
+    "description": "Slider title for subtitle background padding"
+  },
+  "subtitleLetterSpacing": "Letter Spacing",
+  "@subtitleLetterSpacing": {
+    "description": "Slider title for subtitle letter spacing"
+  },
+  "subtitleWordSpacing": "Word Spacing",
+  "@subtitleWordSpacing": {
+    "description": "Slider title for subtitle word spacing"
+  },
+  "subtitleHexCodeLabel": "Hex Code (AARRGGBB)",
+  "@subtitleHexCodeLabel": {
+    "description": "TextField label for hex color code"
+  },
+  "subtitleTransEnable": "Enable Translation",
+  "@subtitleTransEnable": {
+    "description": "Switch title to enable subtitle translation"
+  },
+  "subtitleTransAuto": "Auto-Translate",
+  "@subtitleTransAuto": {
+    "description": "Switch title for auto-translate"
+  },
+  "subtitleTransAutoSubtitle": "Translate when preferred subtitle language is missing",
+  "@subtitleTransAutoSubtitle": {
+    "description": "Switch subtitle for auto-translate"
+  },
+  "subtitleTransStrategy": "Strategy",
+  "@subtitleTransStrategy": {
+    "description": "Dropdown title for translation strategy"
+  },
+  "subtitleTransStrategyBulk": "Bulk (Pre-load full episode)",
+  "@subtitleTransStrategyBulk": {
+    "description": "Dropdown item for bulk translation"
+  },
+  "subtitleTransStrategyOnDemand": "On-Demand (Live chunks)",
+  "@subtitleTransStrategyOnDemand": {
+    "description": "Dropdown item for on-demand translation"
+  },
+  "subtitleTransProviderPriority": "Provider Priority",
+  "@subtitleTransProviderPriority": {
+    "description": "Section title for translation provider priority"
+  },
+  "subtitleTransApiKeys": "API Keys",
+  "@subtitleTransApiKeys": {
+    "description": "Section title for API keys"
+  },
+  "subtitleTransConfigured": "Configured ({detail})",
+  "@subtitleTransConfigured": {
+    "description": "Subtitle when provider is configured",
+    "placeholders": {
+      "detail": {
+        "type": "String"
+      }
+    }
+  },
+  "subtitleTransSetApiKey": "Set API Key",
+  "@subtitleTransSetApiKey": {
+    "description": "Subtitle to set API key"
+  },
+  "subtitleTransSetAuthKey": "Set Auth Key",
+  "@subtitleTransSetAuthKey": {
+    "description": "Subtitle to set DeepL auth key"
+  },
+  "subtitleTransSetApiKeyUrl": "Set API Key & URL",
+  "@subtitleTransSetApiKeyUrl": {
+    "description": "Subtitle to set OpenAI API key and URL"
+  },
+  "subtitleTransCalculating": "Calculating...",
+  "@subtitleTransCalculating": {
+    "description": "Label while calculating cache size"
+  },
+  "subtitleTransFreeNoKey": "Free (No key needed)",
+  "@subtitleTransFreeNoKey": {
+    "description": "Subtitle for free Google translate provider"
+  },
+  "subtitleTransKeyMissing": "Key missing",
+  "@subtitleTransKeyMissing": {
+    "description": "Subtitle when API key is missing"
+  },
+  "subtitleTransApiKeyLabel": "API Key",
+  "@subtitleTransApiKeyLabel": {
+    "description": "TextField label for API Key"
+  },
+  "subtitleTransModelLabel": "Model",
+  "@subtitleTransModelLabel": {
+    "description": "TextField label for AI model"
+  },
+  "subtitleTransAuthKeyLabel": "Auth Key",
+  "@subtitleTransAuthKeyLabel": {
+    "description": "TextField label for DeepL Auth Key"
+  },
+  "subtitleTransUseDeepLPro": "Use DeepL Pro API",
+  "@subtitleTransUseDeepLPro": {
+    "description": "Switch title for DeepL Pro API"
+  },
+  "subtitleTransBaseUrlLabel": "Base URL",
+  "@subtitleTransBaseUrlLabel": {
+    "description": "TextField label for OpenAI Base URL"
+  },
+  "subtitleTransDeleteAllConfirm": "Delete all saved offline translations?",
+  "@subtitleTransDeleteAllConfirm": {
+    "description": "Dialog body to confirm clearing subtitle translation cache"
+  },
+  "themeEffectsSurfaceStyling": "Surface Styling",
+  "@themeEffectsSurfaceStyling": {
+    "description": "Section title for surface styling"
+  },
+  "themeEffectsBlendLevel": "Blend Level",
+  "@themeEffectsBlendLevel": {
+    "description": "Slider title for blend level"
+  },
+  "themeEffectsBlendLevelSubtitle": "Color infusion intensity",
+  "@themeEffectsBlendLevelSubtitle": {
+    "description": "Slider subtitle for blend level"
+  },
+  "themeEffectsGradientSurfaces": "Gradient Surfaces",
+  "@themeEffectsGradientSurfaces": {
+    "description": "Switch title for gradient surfaces"
+  },
+  "themeEffectsDisabledWithPureBlack": "Disabled with Pure Black",
+  "@themeEffectsDisabledWithPureBlack": {
+    "description": "Subtitle when effect is disabled with Pure Black"
+  },
+  "themeEffectsGradientSurfacesSubtitle": "Subtle gradients instead of flat fills",
+  "@themeEffectsGradientSurfacesSubtitle": {
+    "description": "Switch subtitle for gradient surfaces"
+  },
+  "themeEffectsGradientShape": "Gradient Shape",
+  "@themeEffectsGradientShape": {
+    "description": "Dropdown title for gradient shape"
+  },
+  "themeEffectsGradientAngle": "Gradient Angle",
+  "@themeEffectsGradientAngle": {
+    "description": "Dropdown title for gradient angle"
+  },
+  "themeEffectsGradientPalette": "Gradient Palette",
+  "@themeEffectsGradientPalette": {
+    "description": "Dropdown title for gradient palette"
+  },
+  "themeEffectsGradientIntensity": "Gradient Intensity",
+  "@themeEffectsGradientIntensity": {
+    "description": "Slider title for gradient intensity"
+  },
+  "themeEffectsGradientIntensitySubtitle": "Color vibrancy over background",
+  "@themeEffectsGradientIntensitySubtitle": {
+    "description": "Slider subtitle for gradient intensity"
+  },
+  "themeEffectsTextureSection": "Texture",
+  "@themeEffectsTextureSection": {
+    "description": "Section title for texture"
+  },
+  "themeEffectsNoiseOverlay": "Noise Overlay",
+  "@themeEffectsNoiseOverlay": {
+    "description": "Switch title for noise overlay"
+  },
+  "themeEffectsNoiseOverlaySubtitle": "Overlay a subtle textured grain grid",
+  "@themeEffectsNoiseOverlaySubtitle": {
+    "description": "Switch subtitle for noise overlay"
+  },
+  "themeEffectsNoiseIntensity": "Noise Intensity",
+  "@themeEffectsNoiseIntensity": {
+    "description": "Slider title for noise intensity"
+  },
+  "themeEffectsNoiseIntensitySubtitle": "Textured grain strength",
+  "@themeEffectsNoiseIntensitySubtitle": {
+    "description": "Slider subtitle for noise intensity"
+  },
+  "themeWallpaperCustomTitle": "Custom Wallpaper",
+  "@themeWallpaperCustomTitle": {
+    "description": "Tile title for custom wallpaper"
+  },
+  "themeWallpaperChangeSubtitle": "Change custom background image",
+  "@themeWallpaperChangeSubtitle": {
+    "description": "Subtitle to change custom background image"
+  },
+  "themeWallpaperSelectSubtitle": "Select a custom background image",
+  "@themeWallpaperSelectSubtitle": {
+    "description": "Subtitle to select custom background image"
+  },
+  "themeWallpaperCustomizeTitle": "Customize Wallpaper",
+  "@themeWallpaperCustomizeTitle": {
+    "description": "Tile title to customize wallpaper"
+  },
+  "themeWallpaperCustomizeSubtitle": "Adjust blur, opacity, saturation, and brightness",
+  "@themeWallpaperCustomizeSubtitle": {
+    "description": "Tile subtitle to customize wallpaper"
+  },
+  "themeWallpaperUseColors": "Use Wallpaper Colors",
+  "@themeWallpaperUseColors": {
+    "description": "Switch title to use wallpaper colors"
+  },
+  "themeWallpaperUseColorsSubtitle": "Generate theme colors from the wallpaper",
+  "@themeWallpaperUseColorsSubtitle": {
+    "description": "Switch subtitle to generate theme colors from wallpaper"
+  },
+  "themeWallpaperRemoveTitle": "Remove Wallpaper",
+  "@themeWallpaperRemoveTitle": {
+    "description": "Tile title to remove wallpaper"
+  },
+  "themeWallpaperRemoveSubtitle": "Clear custom background image",
+  "@themeWallpaperRemoveSubtitle": {
+    "description": "Tile subtitle to remove wallpaper"
+  },
+  "themeWallpaperApplyBtn": "Apply Wallpaper",
+  "@themeWallpaperApplyBtn": {
+    "description": "Button label to apply wallpaper"
+  },
+  "themeCountThemes": "{count} Themes",
+  "@themeCountThemes": {
+    "description": "Badge label showing count of themes",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "themeCountPalettes": "{count} Palettes",
+  "@themeCountPalettes": {
+    "description": "Badge label showing count of palettes",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
   }
 }

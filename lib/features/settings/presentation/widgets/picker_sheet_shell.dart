@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:shonenx/core/localization/l10n_extension.dart';
 
 class UiSettingsSheetLayout extends StatelessWidget {
   final Widget preview;
@@ -49,7 +50,7 @@ class UiSettingsSheetLayout extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Text(
-                togglesTitle ?? 'Display Options',
+                togglesTitle ?? context.l10n.pickerDisplayOptions,
                 style: theme.textTheme.labelMedium?.copyWith(
                   color: cs.onSurfaceVariant,
                   fontWeight: FontWeight.w700,

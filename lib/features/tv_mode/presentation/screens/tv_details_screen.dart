@@ -2,7 +2,7 @@ import 'dart:ui';
 
 import 'package:shonenx/shared/widgets/smart_image.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
+import 'package:flutter_md/flutter_md.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
@@ -97,10 +97,10 @@ class _TvDetailsScreenState extends ConsumerState<TvDetailsScreen> {
       title: 'Synopsis • $title',
       icon: const Icon(Icons.description_outlined),
       maxWidth: 700,
-      child: MarkdownBody(
-        data: description.replaceAll('<br>', '\n'),
-        styleSheet: MarkdownStyleSheet(
-          p: TextStyle(
+      child: MarkdownWidget(
+        markdown: Markdown.fromString(description.replaceAll('<br>', '\n')),
+        theme: MarkdownThemeData(
+          textStyle: TextStyle(
             color: Theme.of(
               context,
             ).colorScheme.onSurface.withValues(alpha: 0.9),

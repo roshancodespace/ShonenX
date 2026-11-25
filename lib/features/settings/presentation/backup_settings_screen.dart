@@ -7,6 +7,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:shonenx/core/localization/l10n_extension.dart';
 import 'package:shonenx/core/router/app_navigator.dart';
 import 'package:shonenx/shared/providers/backup_provider.dart';
 import 'package:shonenx/core/services/backup_service.dart';
@@ -60,8 +61,9 @@ class _BackupSettingsScreenState extends ConsumerState<BackupSettingsScreen> {
   }
 
   Future<void> _export({bool share = false}) async {
+    final l10n = context.l10n;
     if (_exportCategories.isEmpty) {
-      _snack('Select at least one category to export');
+      _snack(l10n.backupSelectAtLeastOne);
       return;
     }
 
@@ -98,13 +100,13 @@ class _BackupSettingsScreenState extends ConsumerState<BackupSettingsScreen> {
 
       if (Platform.isAndroid || Platform.isIOS) {
         savePath = await FilePicker.platform.saveFile(
-          dialogTitle: 'Save backup',
+          dialogTitle: l10n.backupSaveDialogTitle,
           fileName: fileName,
           bytes: bytes,
         );
       } else {
         savePath = await FilePicker.platform.saveFile(
-          dialogTitle: 'Save backup',
+          dialogTitle: l10n.backupSaveDialogTitle,
           fileName: fileName,
         );
       }
@@ -118,11 +120,11 @@ class _BackupSettingsScreenState extends ConsumerState<BackupSettingsScreen> {
         } catch (_) {}
 
         if (mounted) {
-          _snack('Backup saved');
+          _snack(l10n.backupSaved);
         }
       }
     } catch (e) {
-      if (mounted) _snack('Export failed: $e');
+      if (mounted) _snack(l10n.backupExportFailed(e.toString()));
     } finally {
       if (mounted) setState(() => _exporting = false);
     }
@@ -161,14 +163,14 @@ class _BackupSettingsScreenState extends ConsumerState<BackupSettingsScreen> {
       }
 
       if (jsonContent == null || jsonContent.trim().isEmpty) {
-        if (mounted) _snack('Backup file is empty');
+        if (mounted) _snack(context.l10n.backupFileEmpty);
         return;
       }
 
       final manifest = await BackupManifest.fromJsonAsync(jsonContent);
 
       if (manifest.categories.isEmpty) {
-        if (mounted) _snack('No valid backup data found in file');
+        if (mounted) _snack(context.l10n.backupNoValidData);
         return;
       }
 
@@ -182,7 +184,7 @@ class _BackupSettingsScreenState extends ConsumerState<BackupSettingsScreen> {
             .replaceFirst('Exception: ', '')
             .split('\n')
             .first;
-        _snack('Invalid backup file: $msg');
+        _snack(context.l10n.backupInvalidFile(msg));
       }
     } finally {
       if (mounted) setState(() => _importing = false);
@@ -199,21 +201,22 @@ class _BackupSettingsScreenState extends ConsumerState<BackupSettingsScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final l10n = context.l10n;
 
     return AppScaffold(
-      title: 'Backup & Restore',
+      title: l10n.settingsBackup,
       body: ListView(
         padding: const EdgeInsets.only(bottom: 50),
         children: [
           // ── Restore ──
           SettingsSection(
-            title: 'Restore',
-            subtitle: 'Import data from a previously exported backup file',
+            title: l10n.backupRestoreSection,
+            subtitle: l10n.backupRestoreSectionSubtitle,
             children: [
               SettingsActionTile(
                 icon: Icons.settings_backup_restore_rounded,
-                title: 'Restore from file',
-                subtitle: 'Select a .json backup file to inspect and restore',
+                title: l10n.backupRestoreFromFile,
+                subtitle: l10n.backupRestoreFromFileSubtitle,
                 trailing: _importing
                     ? const SizedBox(
                         width: 20,
@@ -234,8 +237,8 @@ class _BackupSettingsScreenState extends ConsumerState<BackupSettingsScreen> {
 
           // ── Export ──
           SettingsSection(
-            title: 'Export',
-            subtitle: 'Choose what to include in your backup file',
+            title: l10n.backupExportSection,
+            subtitle: l10n.backupExportSectionSubtitle,
             children: [
               Padding(
                 padding: const EdgeInsets.symmetric(
@@ -246,7 +249,9 @@ class _BackupSettingsScreenState extends ConsumerState<BackupSettingsScreen> {
                   children: [
                     if (_existingCounts != null)
                       Text(
-                        '$_totalRecordsCount local records',
+                        l10n.backupLocalRecordsCount(
+                          _totalRecordsCount.toString(),
+                        ),
                         style: TextStyle(
                           fontSize: 12,
                           color: cs.onSurfaceVariant,
@@ -263,9 +268,9 @@ class _BackupSettingsScreenState extends ConsumerState<BackupSettingsScreen> {
                           _exportCategories.addAll(BackupCategory.values);
                         });
                       },
-                      child: const Text(
-                        'Select All',
-                        style: TextStyle(fontSize: 12),
+                      child: Text(
+                        l10n.historySelectAll,
+                        style: const TextStyle(fontSize: 12),
                       ),
                     ),
                     TextButton(
@@ -278,9 +283,9 @@ class _BackupSettingsScreenState extends ConsumerState<BackupSettingsScreen> {
                           _exportCategories.clear();
                         });
                       },
-                      child: const Text(
-                        'Clear',
-                        style: TextStyle(fontSize: 12),
+                      child: Text(
+                        l10n.commonClear,
+                        style: const TextStyle(fontSize: 12),
                       ),
                     ),
                   ],
@@ -320,14 +325,18 @@ class _BackupSettingsScreenState extends ConsumerState<BackupSettingsScreen> {
                                 ),
                               )
                             : const Icon(Icons.save_outlined),
-                        label: Text(_exporting ? 'Exporting…' : 'Save Backup'),
+                        label: Text(
+                          _exporting
+                              ? l10n.backupExporting
+                              : l10n.backupSaveBackup,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 8),
                     IconButton.filledTonal(
                       onPressed: _exporting ? null : () => _export(share: true),
                       icon: const Icon(Icons.share_outlined),
-                      tooltip: 'Share Backup',
+                      tooltip: l10n.backupShareBackup,
                     ),
                   ],
                 ),

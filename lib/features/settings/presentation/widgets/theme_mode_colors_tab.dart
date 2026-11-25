@@ -143,7 +143,9 @@ class ThemeModeColorsTab extends ConsumerWidget {
         if (!themePrefs.useDynamic) ...[
           ThemePaletteShelf(
             title: context.l10n.settingsExclusiveThemes,
-            countBadge: '${exclusiveSchemes.length} Themes',
+            countBadge: context.l10n.themeCountThemes(
+              exclusiveSchemes.length.toString(),
+            ),
             items: exclusiveSchemes.entries
                 .map(
                   (e) => ThemePaletteItem.fromExclusive(
@@ -165,7 +167,9 @@ class ThemeModeColorsTab extends ConsumerWidget {
           const SizedBox(height: 4),
           ThemePaletteShelf(
             title: context.l10n.settingsStandardSchemes,
-            countBadge: '${standardSchemes.length} Themes',
+            countBadge: context.l10n.themeCountThemes(
+              standardSchemes.length.toString(),
+            ),
             items: standardSchemes.entries
                 .where((e) => e.key != AppScheme.custom)
                 .map(

@@ -35,18 +35,18 @@ class ReaderSettingsContent extends ConsumerWidget {
           children: [
             SettingsSegmentedTile<ReaderBackgroundColor>(
               title: l10n.readerBackgroundColor,
-              segments: const [
+              segments: [
                 ButtonSegment(
                   value: ReaderBackgroundColor.black,
-                  label: Text('Black'),
+                  label: Text(l10n.readerBgBlack),
                 ),
                 ButtonSegment(
                   value: ReaderBackgroundColor.darkGrey,
-                  label: Text('Dark Grey'),
+                  label: Text(l10n.readerBgDarkGrey),
                 ),
                 ButtonSegment(
                   value: ReaderBackgroundColor.white,
-                  label: Text('White'),
+                  label: Text(l10n.readerBgWhite),
                 ),
               ],
               selected: {readerPrefs.backgroundColor},
@@ -93,7 +93,7 @@ class ReaderSettingsContent extends ConsumerWidget {
             if (readerPrefs.direction != ReaderDirection.webtoon)
               SettingsDropdownTile<ReaderTransition>(
                 icon: Icons.animation_outlined,
-                title: 'Page Transition',
+                title: l10n.readerPageTransition,
                 value: readerPrefs.transition,
                 items: ReaderTransition.values
                     .map(
@@ -112,27 +112,26 @@ class ReaderSettingsContent extends ConsumerWidget {
           ],
         ),
         SettingsSection(
-          title: 'Controls & Behavior',
+          title: l10n.readerControlsBehavior,
           children: [
             SettingsSwitchTile(
               icon: Icons.info_outline_rounded,
-              title: 'Mini Status Pill',
-              subtitle: 'Show page number & progress when controls are hidden',
+              title: l10n.readerMiniStatusPill,
+              subtitle: l10n.readerMiniStatusPillSubtitle,
               value: readerPrefs.showMiniStatus,
               onChanged: (val) => prefsNotifier.updateShowMiniStatus(val),
             ),
             SettingsSwitchTile(
               icon: Icons.touch_app_outlined,
-              title: 'Tap to Turn Pages',
-              subtitle:
-                  'Tap screen edges to turn pages, center to show controls',
+              title: l10n.readerTapToTurnPages,
+              subtitle: l10n.readerTapToTurnPagesSubtitle,
               value: readerPrefs.tapToTurnPage,
               onChanged: (val) => prefsNotifier.updateTapToTurnPage(val),
             ),
             SettingsSwitchTile(
               icon: Icons.screen_lock_portrait_outlined,
-              title: 'Keep Screen Awake',
-              subtitle: 'Prevent display from sleeping while reading',
+              title: l10n.readerKeepScreenAwake,
+              subtitle: l10n.readerKeepScreenAwakeSubtitle,
               value: readerPrefs.keepScreenOn,
               onChanged: (val) => prefsNotifier.updateKeepScreenOn(val),
             ),

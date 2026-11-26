@@ -5,6 +5,7 @@ import 'package:shonenx/features/discovery/domain/models/home_section.dart';
 import 'package:shonenx/features/discovery/providers/discovery_prefs_provider.dart';
 import 'package:shonenx/features/discovery/providers/home_layout_provider.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_category.dart';
+import 'package:shonenx/shared/models/content_category.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/providers/content_prefs_provider.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
@@ -37,7 +38,7 @@ class HomeFeedSection {
   String getLocalizedTitle(BuildContext context) {
     final l10n = context.l10n;
     if (isContinueMedia) {
-      return mediaType == MediaType.MANGA
+      return mediaType.contentCategory == ContentCategory.reading
           ? l10n.homeContinueReading
           : l10n.homeContinueWatching;
     }
@@ -47,38 +48,47 @@ class HomeFeedSection {
         mediaType,
       );
     }
-    switch (homeSection?.trackerCategory) {
-      case TrackerCategory.trending:
-        return mediaType == MediaType.MANGA
-            ? l10n.homeTrendingManga
-            : l10n.homeTrendingAnime;
-      case TrackerCategory.popular:
-        return mediaType == MediaType.MANGA
-            ? l10n.homePopularManga
-            : l10n.homePopularAnime;
-      case TrackerCategory.topRated:
-        return mediaType == MediaType.MANGA
-            ? l10n.homeTopRatedManga
-            : l10n.homeTopRatedAnime;
-      case TrackerCategory.recentlyUpdated:
-        return l10n.homeRecentlyUpdated;
-      default:
-        break;
+
+    final category =
+        homeSection?.trackerCategory ?? TrackerCategory.tryFromId(title);
+    if (category != null) {
+      if (mediaType == MediaType.ANIME) {
+        switch (category) {
+          case TrackerCategory.trending:
+            return l10n.homeTrendingAnime;
+          case TrackerCategory.popular:
+            return l10n.homePopularAnime;
+          case TrackerCategory.topRated:
+            return l10n.homeTopRatedAnime;
+          case TrackerCategory.recentlyUpdated:
+            return l10n.homeRecentlyUpdated;
+          case TrackerCategory.popularThisSeason:
+          case TrackerCategory.upcoming:
+            return '${category.id} ${mediaType.pluralDisplayName}';
+        }
+      }
+      if (mediaType == MediaType.MANGA) {
+        switch (category) {
+          case TrackerCategory.trending:
+            return l10n.homeTrendingManga;
+          case TrackerCategory.popular:
+            return l10n.homePopularManga;
+          case TrackerCategory.topRated:
+            return l10n.homeTopRatedManga;
+          case TrackerCategory.recentlyUpdated:
+            return l10n.homeRecentlyUpdated;
+          case TrackerCategory.popularThisSeason:
+          case TrackerCategory.upcoming:
+            return '${category.id} ${mediaType.pluralDisplayName}';
+        }
+      }
+      return category == TrackerCategory.recentlyUpdated
+          ? l10n.homeRecentlyUpdated
+          : '${category.id} ${mediaType.pluralDisplayName}';
     }
+
     final lower = title.toLowerCase();
-    if (lower.contains('trending')) {
-      return mediaType == MediaType.MANGA
-          ? l10n.homeTrendingManga
-          : l10n.homeTrendingAnime;
-    } else if (lower.contains('popular')) {
-      return mediaType == MediaType.MANGA
-          ? l10n.homePopularManga
-          : l10n.homePopularAnime;
-    } else if (lower.contains('top rated')) {
-      return mediaType == MediaType.MANGA
-          ? l10n.homeTopRatedManga
-          : l10n.homeTopRatedAnime;
-    } else if (lower.contains('airing')) {
+    if (lower.contains('airing')) {
       return l10n.homeAiringToday;
     } else if (lower.contains('recent episodes')) {
       return l10n.homeRecentEpisodes;

@@ -12,6 +12,7 @@ import 'package:shonenx/features/tracking/engine/remote_tracker.dart';
 import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
 import 'package:shonenx/features/tracking/providers/tracking_prefs_provider.dart';
 import 'package:shonenx/features/tracking/presentation/widgets/tracker_profile_sheet.dart';
+import 'package:shonenx/shared/models/ui_style_enums.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/shared/widgets/app_dialog.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
@@ -377,6 +378,7 @@ class _TrackingSettingsScreenState
           SettingsSection(
             title: l10n.trackingTrackersSection,
             children: allTrackers.map((tracker) {
+              final cs = theme.colorScheme;
               final isRemote = tracker is RemoteTracker;
               final loadingTracker = ref.watch(authLoadingTrackerProvider);
               final isLoggingIn = isRemote && loadingTracker == tracker.type;
@@ -396,280 +398,346 @@ class _TrackingSettingsScreenState
                         ? localProfile.username
                         : l10n.trackingGuest);
 
+              final badgeRadius = (GlobalUI.uiRoundness * 0.75).clamp(
+                8.0,
+                12.0,
+              );
+              final hasCreds = _hasCredentials(tracker.type);
+
+              Widget leadingWidget;
+              if (isLoggingIn) {
+                leadingWidget = Container(
+                  width: 40,
+                  height: 40,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: cs.primaryContainer.withValues(alpha: 0.45),
+                    borderRadius: BorderRadius.circular(badgeRadius),
+                  ),
+                  child: SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.2,
+                      color: cs.primary,
+                    ),
+                  ),
+                );
+              } else if (isRemote && isLoggedIn) {
+                leadingWidget = Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(badgeRadius),
+                    border: Border.all(
+                      color: isPrimary ? cs.primary : cs.outlineVariant,
+                      width: isPrimary ? 2 : 1,
+                      strokeAlign: BorderSide.strokeAlignOutside,
+                    ),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(badgeRadius),
+                    child: SmartImage(
+                      imageUrl: localProfile?.avatarUrl ?? '',
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => const Center(
+                        child: SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      ),
+                      errorWidget: (context, url, error) =>
+                          const Icon(Icons.person_outline_rounded),
+                    ),
+                  ),
+                );
+              } else if (!isRemote && localProfile?.avatarUrl != null) {
+                leadingWidget = ClipRRect(
+                  borderRadius: BorderRadius.circular(badgeRadius),
+                  child: TrackerAvatarWidget(
+                    imageUrl: localProfile!.avatarUrl,
+                    size: 40,
+                  ),
+                );
+              } else {
+                leadingWidget = Container(
+                  width: 40,
+                  height: 40,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: isPrimary
+                        ? cs.primaryContainer
+                        : cs.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(badgeRadius),
+                  ),
+                  child: isRemote
+                      ? tracker.type.getIconWidget(
+                          size: 21,
+                          color: isPrimary
+                              ? cs.onPrimaryContainer
+                              : cs.onSurfaceVariant,
+                        )
+                      : Icon(
+                          Icons.cloud_off_rounded,
+                          size: 20,
+                          color: isPrimary
+                              ? cs.onPrimaryContainer
+                              : cs.onSurfaceVariant,
+                        ),
+                );
+              }
+
+              Widget trailingWidget;
+              if (isLoggingIn) {
+                trailingWidget = FilledButton.tonalIcon(
+                  style: FilledButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(badgeRadius),
+                    ),
+                  ),
+                  onPressed: null,
+                  icon: SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: cs.onSurfaceVariant,
+                    ),
+                  ),
+                  label: Text(l10n.trackingLoggingIn),
+                );
+              } else if (!isRemote || isLoggedIn) {
+                trailingWidget = Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.key_rounded, size: 20),
+                      onPressed: () => _showCredentialsDialog(tracker.type),
+                      tooltip: l10n.trackingCustomApiCredsTooltip,
+                    ),
+                    const SizedBox(width: 4),
+                    IconButton.filledTonal(
+                      style: IconButton.styleFrom(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(badgeRadius),
+                        ),
+                      ),
+                      onPressed: () => showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        useSafeArea: true,
+                        builder: (_) =>
+                            TrackerProfileSheet(trackerType: tracker.type),
+                      ),
+                      icon: const Icon(Icons.edit_outlined, size: 19),
+                      tooltip: l10n.settingsCustomize,
+                    ),
+                  ],
+                );
+              } else if (!hasCreds) {
+                trailingWidget = FilledButton.icon(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: cs.errorContainer,
+                    foregroundColor: cs.onErrorContainer,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(badgeRadius),
+                    ),
+                  ),
+                  onPressed: () => _showCredentialsDialog(tracker.type),
+                  icon: const Icon(Icons.key_off_rounded, size: 18),
+                  label: Text(l10n.trackingAddCredentials),
+                );
+              } else {
+                trailingWidget = Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.key_rounded, size: 20),
+                      onPressed: () => _showCredentialsDialog(tracker.type),
+                      tooltip: l10n.trackingCustomApiCredsTooltip,
+                    ),
+                    const SizedBox(width: 4),
+                    FilledButton(
+                      style: FilledButton.styleFrom(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(badgeRadius),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                      ),
+                      onPressed: () async {
+                        try {
+                          await ref
+                              .read(authTokensProvider.notifier)
+                              .login(tracker);
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  e.toString().replaceAll('Exception: ', ''),
+                                ),
+                                backgroundColor: cs.error,
+                              ),
+                            );
+                          }
+                        }
+                      },
+                      child: Text(l10n.trackingLogin),
+                    ),
+                  ],
+                );
+              }
+
               return AbsorbPointer(
                 absorbing: prefs.isIncognito || isLoggingIn,
                 child: Opacity(
                   opacity: prefs.isIncognito ? 0.5 : 1.0,
-                  child: Stack(
-                    children: [
-                      if (localProfile?.bannerUrl != null &&
-                          localProfile!.bannerUrl!.isNotEmpty)
-                        Positioned.fill(
-                          child: SmartImage(
-                            imageUrl: localProfile.bannerUrl!,
-                            fit: BoxFit.cover,
-                            color: theme.colorScheme.surface.withValues(
-                              alpha: 0.85,
-                            ),
-                            colorBlendMode: BlendMode.srcOver,
+                  child: SettingsCustomTile(
+                    color: isPrimary
+                        ? Color.alphaBlend(
+                            cs.primary.withValues(alpha: 0.12),
+                            cs.surfaceContainerHigh,
+                          )
+                        : null,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
+                    onTap: isLoggingIn
+                        ? null
+                        : () {
+                            ref
+                                .read(trackingPrefsProvider.notifier)
+                                .setPrimaryTracker(tracker.type);
+                          },
+                    child: Row(
+                      children: [
+                        leadingWidget,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Row(
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      tracker.type.displayName,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: theme.textTheme.titleSmall
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w700,
+                                            color: isPrimary
+                                                ? cs.primary
+                                                : cs.onSurface,
+                                          ),
+                                    ),
+                                  ),
+                                  if (isPrimary) ...[
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 7,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: cs.primaryContainer,
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        l10n.trackingPrimaryBadge
+                                            .replaceAll('(', '')
+                                            .replaceAll(')', '')
+                                            .trim(),
+                                        style: theme.textTheme.labelSmall
+                                            ?.copyWith(
+                                              color: cs.onPrimaryContainer,
+                                              fontWeight: FontWeight.w800,
+                                              fontSize: 10,
+                                              height: 1.1,
+                                            ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                              const SizedBox(height: 3),
+                              if (isLoggingIn)
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    SizedBox(
+                                      width: 12,
+                                      height: 12,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: cs.primary,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      l10n.trackingLoggingIn,
+                                      style: theme.textTheme.bodySmall
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w600,
+                                            color: cs.primary,
+                                          ),
+                                    ),
+                                  ],
+                                )
+                              else
+                                Row(
+                                  children: [
+                                    if (isLoggedIn) ...[
+                                      Icon(
+                                        Icons.check_circle_rounded,
+                                        size: 13,
+                                        color: isPrimary
+                                            ? cs.primary
+                                            : cs.onSurfaceVariant,
+                                      ),
+                                      const SizedBox(width: 4),
+                                    ],
+                                    Flexible(
+                                      child: Text(
+                                        isRemote
+                                            ? (isLoggedIn
+                                                  ? l10n.trackingLoggedInAs(
+                                                      profileName ?? '',
+                                                    )
+                                                  : (!hasCreds
+                                                        ? l10n.trackingMissingApiCreds
+                                                        : l10n.trackingNotLoggedIn))
+                                            : l10n.trackingLoggedInAs(
+                                                profileName ?? '',
+                                              ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: theme.textTheme.bodySmall
+                                            ?.copyWith(
+                                              fontWeight: isLoggedIn
+                                                  ? FontWeight.w600
+                                                  : FontWeight.normal,
+                                              color: !hasCreds
+                                                  ? cs.error
+                                                  : (isPrimary
+                                                        ? cs.onPrimaryContainer
+                                                        : cs.onSurfaceVariant),
+                                            ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                            ],
                           ),
                         ),
-                      ListTile(
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                        ),
-                        selected: isPrimary,
-                        selectedTileColor: theme.colorScheme.primaryContainer
-                            .withValues(alpha: 0.3),
-                        selectedColor: theme.colorScheme.primary,
-                        leading: isRemote
-                            ? isLoggingIn
-                                  ? Container(
-                                      width: 40,
-                                      height: 40,
-                                      alignment: Alignment.center,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: theme
-                                            .colorScheme
-                                            .primaryContainer
-                                            .withValues(alpha: 0.4),
-                                      ),
-                                      child: SizedBox(
-                                        width: 20,
-                                        height: 20,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2.5,
-                                          color: theme.colorScheme.primary,
-                                        ),
-                                      ),
-                                    )
-                                  : isLoggedIn
-                                  ? Container(
-                                      width: 40,
-                                      height: 40,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                          color: theme.colorScheme.primary,
-                                          width: 2,
-                                        ),
-                                      ),
-                                      child: ClipOval(
-                                        child: SmartImage(
-                                          imageUrl:
-                                              localProfile?.avatarUrl ?? '',
-                                          fit: BoxFit.cover,
-                                          placeholder: (context, url) =>
-                                              const CircularProgressIndicator(),
-                                          errorWidget: (context, url, error) =>
-                                              const Icon(Icons.person_outline),
-                                        ),
-                                      ),
-                                    )
-                                  : Padding(
-                                      padding: const EdgeInsets.only(left: 5),
-                                      child: tracker.type.getIconWidget(
-                                        size: 24,
-                                        color: isPrimary
-                                            ? theme.colorScheme.primary
-                                            : theme.colorScheme.onSurface
-                                                  .withValues(alpha: 0.7),
-                                      ),
-                                    )
-                            : (localProfile?.avatarUrl != null
-                                  ? ClipOval(
-                                      child: TrackerAvatarWidget(
-                                        imageUrl: localProfile!.avatarUrl,
-                                        size: 40,
-                                      ),
-                                    )
-                                  : Padding(
-                                      padding: const EdgeInsets.only(left: 5),
-                                      child: Icon(
-                                        Icons.cloud_off,
-                                        color: isPrimary
-                                            ? theme.colorScheme.primary
-                                            : null,
-                                      ),
-                                    )),
-                        title: Text(
-                          '${tracker.type.displayName}${isPrimary ? l10n.trackingPrimaryBadge : ''}',
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        subtitle: isLoggingIn
-                            ? Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  SizedBox(
-                                    width: 12,
-                                    height: 12,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: theme.colorScheme.primary,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    l10n.trackingLoggingIn,
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      color: theme.colorScheme.primary,
-                                    ),
-                                  ),
-                                ],
-                              )
-                            : Text(
-                                isRemote
-                                    ? (isLoggedIn
-                                          ? l10n.trackingLoggedInAs(
-                                              profileName ?? '',
-                                            )
-                                          : (!_hasCredentials(tracker.type)
-                                                ? l10n.trackingMissingApiCreds
-                                                : l10n.trackingNotLoggedIn))
-                                    : l10n.trackingLoggedInAs(profileName ?? ''),
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                  color: !isPrimary
-                                      ? null
-                                      : theme.colorScheme.onPrimaryContainer,
-                                ),
-                              ),
-                        onTap: isLoggingIn
-                            ? null
-                            : () {
-                                ref
-                                    .read(trackingPrefsProvider.notifier)
-                                    .setPrimaryTracker(tracker.type);
-                              },
-                        trailing: isLoggingIn
-                            ? FilledButton.icon(
-                                style: FilledButton.styleFrom(
-                                  backgroundColor:
-                                      theme.colorScheme.surfaceContainerHighest,
-                                ),
-                                onPressed: null,
-                                icon: SizedBox(
-                                  width: 14,
-                                  height: 14,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: theme.colorScheme.onSurfaceVariant,
-                                  ),
-                                ),
-                                label: Text(l10n.trackingLoggingIn),
-                              )
-                            : (!isRemote || isLoggedIn
-                                  ? Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        IconButton(
-                                          icon: const Icon(
-                                            Icons.key_rounded,
-                                            size: 20,
-                                          ),
-                                          onPressed: () =>
-                                              _showCredentialsDialog(
-                                                tracker.type,
-                                              ),
-                                          tooltip:
-                                              l10n.trackingCustomApiCredsTooltip,
-                                        ),
-                                        const SizedBox(width: 4),
-                                        IconButton.filledTonal(
-                                          onPressed: () => showModalBottomSheet(
-                                            context: context,
-                                            isScrollControlled: true,
-                                            useSafeArea: true,
-                                            builder: (_) => TrackerProfileSheet(
-                                              trackerType: tracker.type,
-                                            ),
-                                          ),
-                                          icon: const Icon(
-                                            Icons.edit_outlined,
-                                            size: 20,
-                                          ),
-                                          tooltip: l10n.settingsCustomize,
-                                        ),
-                                      ],
-                                    )
-                                  : Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        if (!_hasCredentials(tracker.type))
-                                          FilledButton.icon(
-                                            style: IconButton.styleFrom(
-                                              backgroundColor:
-                                                  theme.colorScheme.error,
-                                              foregroundColor:
-                                                  theme.colorScheme.onError,
-                                            ),
-                                            onPressed: () =>
-                                                _showCredentialsDialog(
-                                                  tracker.type,
-                                                ),
-                                            icon: const Icon(Icons.key_off),
-                                            label: Text(
-                                              l10n.trackingAddCredentials,
-                                            ),
-                                          )
-                                        else ...[
-                                          IconButton(
-                                            icon: const Icon(
-                                              Icons.key_rounded,
-                                              size: 20,
-                                            ),
-                                            onPressed: () =>
-                                                _showCredentialsDialog(
-                                                  tracker.type,
-                                                ),
-                                            tooltip: l10n
-                                                .trackingCustomApiCredsTooltip,
-                                          ),
-                                          const SizedBox(width: 4),
-                                          FilledButton(
-                                            style: FilledButton.styleFrom(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 16,
-                                                  ),
-                                            ),
-                                            onPressed: () async {
-                                              try {
-                                                await ref
-                                                    .read(
-                                                      authTokensProvider
-                                                          .notifier,
-                                                    )
-                                                    .login(tracker);
-                                              } catch (e) {
-                                                if (context.mounted) {
-                                                  ScaffoldMessenger.of(
-                                                    context,
-                                                  ).showSnackBar(
-                                                    SnackBar(
-                                                      content: Text(
-                                                        e.toString().replaceAll(
-                                                          'Exception: ',
-                                                          '',
-                                                        ),
-                                                      ),
-                                                      backgroundColor: theme
-                                                          .colorScheme
-                                                          .error,
-                                                    ),
-                                                  );
-                                                }
-                                              }
-                                            },
-                                            child: Text(l10n.trackingLogin),
-                                          ),
-                                        ],
-                                      ],
-                                    )),
-                      ),
-                    ],
+                        const SizedBox(width: 10),
+                        trailingWidget,
+                      ],
+                    ),
                   ),
                 ),
               );

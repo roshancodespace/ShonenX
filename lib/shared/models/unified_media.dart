@@ -24,6 +24,21 @@ enum MediaType {
     }
   }
 
+  String get pluralDisplayName {
+    switch (this) {
+      case MediaType.ANIME:
+        return 'Anime';
+      case MediaType.MANGA:
+        return 'Manga';
+      case MediaType.NOVEL:
+        return 'Novels';
+      case MediaType.TV:
+        return 'TV Series';
+      case MediaType.MOVIE:
+        return 'Movies';
+    }
+  }
+
   String get id => name.toLowerCase();
 
   static MediaType fromId(String id) => MediaType.values.firstWhere(

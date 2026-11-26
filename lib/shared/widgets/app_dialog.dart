@@ -1,7 +1,8 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:shonenx/shared/models/ui_style_enums.dart';
+import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 
-class AppDialog extends StatelessWidget {
+class AppDialog extends ConsumerWidget {
   final String? title;
   final Widget? icon;
   final Widget child;
@@ -104,9 +105,16 @@ class AppDialog extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final cs = theme.colorScheme;
     final size = MediaQuery.of(context).size;
+    final isExpressive =
+        ref.watch(uiPrefsProvider.select((p) => p.settingsStyle)) ==
+        SettingsStyle.expressive;
+    final radius = isExpressive
+        ? GlobalUI.uiRoundness.clamp(22.0, 28.0)
+        : GlobalUI.uiRoundness;
 
     return Center(
       child: Material(
@@ -121,8 +129,11 @@ class AppDialog extends StatelessWidget {
             vertical: size.height < 500 ? 16 : 32,
           ),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHigh,
-            borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
+            color: cs.surfaceContainerHigh,
+            borderRadius: BorderRadius.circular(radius),
+            border: isExpressive
+                ? Border.all(color: cs.outlineVariant.withValues(alpha: 0.22))
+                : null,
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.45),

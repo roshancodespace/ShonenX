@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_category.dart';
 import 'package:shonenx/shared/providers/storage_provider.dart';
 import 'package:shonenx/features/discovery/domain/models/home_section.dart';
+import 'package:shonenx/shared/models/content_category.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/features/discovery/providers/discovery_prefs_provider.dart';
 import 'package:shonenx/source_engine/source_engine_provider.dart';
@@ -84,7 +85,8 @@ class UserHomeLayoutNotifier extends Notifier<List<HomeSection>> {
           sections.add(
             HomeSection(
               id: (idCounter++).toString(),
-              title: '${TrackerCategory.trending.label} ${media.displayName}',
+              title:
+                  '${TrackerCategory.trending.id} ${media.pluralDisplayName}',
               type: HomeSectionType.discovery,
               targetMediaType: media,
               trackerCategory: TrackerCategory.trending,
@@ -93,13 +95,30 @@ class UserHomeLayoutNotifier extends Notifier<List<HomeSection>> {
         }
       }
 
-      for (final media in tracker.supportedMediaTypes) {
+      final hasWatching = tracker.supportedMediaTypes.any(
+        (m) => m.contentCategory == ContentCategory.watching,
+      );
+      final hasReading = tracker.supportedMediaTypes.any(
+        (m) => m.contentCategory == ContentCategory.reading,
+      );
+
+      if (hasWatching) {
         sections.add(
           HomeSection(
             id: (idCounter++).toString(),
-            title: 'Continue ${media.displayName}',
+            title: 'Continue Watching',
             type: HomeSectionType.continueMedia,
-            targetMediaType: media,
+            targetMediaType: MediaType.ANIME,
+          ),
+        );
+      }
+      if (hasReading) {
+        sections.add(
+          HomeSection(
+            id: (idCounter++).toString(),
+            title: 'Continue Reading',
+            type: HomeSectionType.continueMedia,
+            targetMediaType: MediaType.MANGA,
           ),
         );
       }

@@ -52,6 +52,23 @@ class UiSettingsScreen extends ConsumerWidget {
             title: l10n.uiSettingsLayoutMotion,
             subtitle: l10n.uiSettingsLayoutMotionSubtitle,
             children: [
+              SettingsSegmentedTile<SettingsStyle>(
+                title: 'UI Style',
+                segments: SettingsStyle.values
+                    .map(
+                      (s) => ButtonSegment<SettingsStyle>(
+                        value: s,
+                        label: Text(s.displayName),
+                      ),
+                    )
+                    .toList(),
+                selected: {prefs.settingsStyle},
+                onSelectionChanged: (set) {
+                  if (set.isNotEmpty) {
+                    notifier.updateSettingsStyle(set.first);
+                  }
+                },
+              ),
               SettingsActionTile(
                 icon: Icons.tune_rounded,
                 title: l10n.uiSettingsSizingTitle,

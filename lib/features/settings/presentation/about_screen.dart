@@ -191,110 +191,122 @@ class AboutScreen extends ConsumerWidget {
               ),
             ],
           ),
-          SettingsSection(
-            title: context.l10n.settingsContributors,
-            children: [
-              contributors.when(
-                loading: () => ListTile(
+          contributors.when(
+            loading: () => SettingsSection(
+              title: context.l10n.settingsContributors,
+              children: [
+                SettingsActionTile(
                   leading: const SizedBox(
                     width: 24,
                     height: 24,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   ),
-                  title: Text(context.l10n.aboutLoadingContributors),
+                  title: context.l10n.aboutLoadingContributors,
+                  onTap: () {},
                 ),
-                error: (_, __) => ListTile(
-                  leading: const Icon(Icons.error_outline),
-                  title: Text(context.l10n.aboutFailedContributors),
+              ],
+            ),
+            error: (_, __) => SettingsSection(
+              title: context.l10n.settingsContributors,
+              children: [
+                SettingsActionTile(
+                  icon: Icons.error_outline,
+                  title: context.l10n.aboutFailedContributors,
+                  onTap: () {},
                 ),
-                data: (contributors) {
-                  final sorted = [...contributors];
+              ],
+            ),
+            data: (contributors) {
+              final sorted = [...contributors];
 
-                  const pinnedUsers = ['roshancodespace', 'Darkx-Dev'];
+              const pinnedUsers = ['roshancodespace', 'darkx-dev'];
 
-                  sorted.sort((a, b) {
-                    final aIndex = pinnedUsers.indexOf(a.login);
-                    final bIndex = pinnedUsers.indexOf(b.login);
+              sorted.sort((a, b) {
+                final aIndex = pinnedUsers.indexOf(a.login.toLowerCase());
+                final bIndex = pinnedUsers.indexOf(b.login.toLowerCase());
 
-                    if (aIndex != -1 && bIndex != -1) {
-                      return aIndex.compareTo(bIndex);
-                    }
-                    if (aIndex != -1) return -1;
-                    if (bIndex != -1) return 1;
+                if (aIndex != -1 && bIndex != -1) {
+                  return aIndex.compareTo(bIndex);
+                }
+                if (aIndex != -1) return -1;
+                if (bIndex != -1) return 1;
 
-                    return b.contributions.compareTo(a.contributions);
-                  });
+                return b.contributions.compareTo(a.contributions);
+              });
 
-                  String roleFor(GithubContributor c) {
-                    switch (c.login) {
-                      case 'roshancodespace':
-                        return 'Founder • Professional Bug Creator';
-                      case 'Darkx-Dev':
-                        return 'Co-Founder • Certified Chaos Engineer';
-                      default:
-                        return context.l10n.aboutContributionsCount(
-                          c.contributions.toString(),
-                        );
-                    }
-                  }
+              String roleFor(GithubContributor c) {
+                switch (c.login.toLowerCase()) {
+                  case 'roshancodespace':
+                    return 'Founder • Professional Bug Creator';
+                  case 'darkx-dev':
+                    return 'Co-Founder • Certified Chaos Engineer';
+                  default:
+                    return context.l10n.aboutContributionsCount(
+                      c.contributions.toString(),
+                    );
+                }
+              }
 
-                  return Column(
-                    children: [
-                      SettingsActionTile(
-                        leading: Stack(
-                          clipBehavior: Clip.none,
-                          children: [
-                            const CircleAvatar(
-                              backgroundImage: NetworkImage(
-                                'https://github.com/roshancodespace.png',
+              return SettingsSection(
+                title: context.l10n.settingsContributors,
+                children: [
+                  SettingsActionTile(
+                    leading: SizedBox(
+                      width: 52,
+                      height: 40,
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        alignment: Alignment.centerLeft,
+                        children: [
+                          const CircleAvatar(
+                            radius: 18,
+                            backgroundImage: NetworkImage(
+                              'https://github.com/roshancodespace.png',
+                            ),
+                          ),
+                          Positioned(
+                            left: 22,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: cs.surfaceContainerHigh,
+                                  width: 2,
+                                ),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const CircleAvatar(
+                                radius: 13,
+                                backgroundImage: NetworkImage(
+                                  'https://github.com/Darkx-Dev.png',
+                                ),
                               ),
                             ),
-                            Positioned(
-                              left: 20,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  border: Border.all(
-                                    color: cs.surface,
-                                    width: 2,
-                                  ),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const CircleAvatar(
-                                  radius: 12,
-                                  backgroundImage: NetworkImage(
-                                    'https://github.com/Darkx-Dev.png',
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        title: 'roshancodespace ⟷ Darkx-Dev',
-                        subtitle:
-                            'One developer pretending to be two contributors',
-                        onTap: () {},
+                          ),
+                        ],
                       ),
-
-                      ...sorted.take(10).map((contributor) {
-                        return SettingsActionTile(
-                          leading: buildAvatar(
-                            contributor.login,
-                            contributor.avatarUrl,
-                            cs,
-                          ),
-                          title: contributor.login,
-                          subtitle: roleFor(contributor),
-                          onTap: () => launchUrl(
-                            Uri.parse(contributor.htmlUrl),
-                            mode: LaunchMode.externalApplication,
-                          ),
-                        );
-                      }),
-                    ],
-                  );
-                },
-              ),
-            ],
+                    ),
+                    title: 'roshancodespace ⟷ Darkx-Dev',
+                    subtitle: 'One developer pretending to be two contributors',
+                    onTap: () {},
+                  ),
+                  ...sorted.take(10).map((contributor) {
+                    return SettingsActionTile(
+                      leading: buildAvatar(
+                        contributor.login,
+                        contributor.avatarUrl,
+                        cs,
+                      ),
+                      title: contributor.login,
+                      subtitle: roleFor(contributor),
+                      onTap: () => launchUrl(
+                        Uri.parse(contributor.htmlUrl),
+                        mode: LaunchMode.externalApplication,
+                      ),
+                    );
+                  }),
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -304,12 +316,12 @@ class AboutScreen extends ConsumerWidget {
   Widget buildAvatar(String login, String avatarUrl, ColorScheme cs) {
     Color? borderColor;
 
-    switch (login) {
+    switch (login.toLowerCase()) {
       case 'roshancodespace':
         borderColor = cs.primary;
         break;
 
-      case 'Darkx-Dev':
+      case 'darkx-dev':
         borderColor = cs.secondary;
         break;
     }

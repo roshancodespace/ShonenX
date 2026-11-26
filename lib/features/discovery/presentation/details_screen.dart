@@ -567,7 +567,7 @@ class _TrackerAppBarButton extends ConsumerWidget {
       style: TextButton.styleFrom(
         backgroundColor: theme.colorScheme.primary,
         foregroundColor: theme.colorScheme.onPrimary,
-        visualDensity: VisualDensity.compact,
+        visualDensity: VisualDensity.comfortable,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.horizontal(
             left: Radius.circular(uiRoundness),

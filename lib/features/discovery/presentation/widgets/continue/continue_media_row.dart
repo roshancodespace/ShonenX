@@ -7,6 +7,7 @@ import 'package:shonenx/features/discovery/presentation/widgets/continue/continu
 import 'package:shonenx/features/discovery/presentation/widgets/rows/horizontal_section.dart';
 import 'package:shonenx/features/history/domain/models/history_entry.dart';
 import 'package:shonenx/features/history/providers/history_provider.dart';
+import 'package:shonenx/shared/models/content_category.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 
 class ContinueMediaRow extends ConsumerWidget {
@@ -17,7 +18,7 @@ class ContinueMediaRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isAnime = type == MediaType.ANIME;
+    final isWatching = type.contentCategory == ContentCategory.watching;
 
     final asyncData = ref.watch(
       historyPerMediaProvider((mediaType: type.id, limit: 10)),
@@ -40,7 +41,7 @@ class ContinueMediaRow extends ConsumerWidget {
       uiPrefsProvider.select((p) => p.isContinueReadingWide(crStyle.name)),
     );
 
-    final layoutHeight = isAnime
+    final layoutHeight = isWatching
         ? cwStyle
               .getLayout(isContinueWatching: true, isWideMode: isCwWide)
               .height
@@ -51,14 +52,16 @@ class ContinueMediaRow extends ConsumerWidget {
     return HorizontalSection(
       title: title,
       height: layoutHeight,
-      emptyText: isAnime ? 'No anime in this list.' : 'No manga in this list.',
+      emptyText: isWatching
+          ? 'No ${type.pluralDisplayName.toLowerCase()} in this list.'
+          : 'No ${type.pluralDisplayName.toLowerCase()} in this list.',
       data: asyncData,
       onMoreTap: () => context.pushContinueHistory(type),
       itemBuilder: (context, dynamic entryDynamic) {
         final entry = entryDynamic as HistoryEntry;
         final progress = entry.total == 0 ? 0.0 : entry.progress / entry.total;
 
-        if (isAnime) {
+        if (isWatching) {
           return ContinueWatchingItem(
             entry: entry,
             progress: progress,

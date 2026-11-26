@@ -5,13 +5,13 @@ import 'package:go_router/go_router.dart';
 import 'package:shonenx/core/router/app_navigator.dart';
 
 import 'package:shonenx/features/discovery/providers/discovery_prefs_provider.dart';
-import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
 import 'package:shonenx/features/tracking/engine/remote_tracker.dart';
 import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
 import 'package:shonenx/shared/models/ui_style_enums.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
+import 'package:shonenx/shared/widgets/m3e_split_button_group.dart';
 import 'package:shonenx/shared/widgets/selection_card_group.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
 import 'package:shonenx/source_engine/source_registry.dart';
@@ -58,8 +58,9 @@ class _DiscoveryModeSheetState extends ConsumerState<DiscoveryModeSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            SettingsSegmentedTile<MetadataMode>(
-              padding: EdgeInsets.zero,
+            M3eSplitButtonGroup<MetadataMode>(
+              expandSegments: true,
+              height: 44,
               segments: const [
                 ButtonSegment(
                   value: MetadataMode.tracker,
@@ -77,7 +78,7 @@ class _DiscoveryModeSheetState extends ConsumerState<DiscoveryModeSheet> {
                 ref.read(discoveryPrefsProvider.notifier).setMode(value.first);
               },
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
 
             if (prefs.mode == MetadataMode.source)
               Padding(

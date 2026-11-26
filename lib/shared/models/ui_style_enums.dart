@@ -209,3 +209,11 @@ enum HomeHeaderStyle {
   final String displayName;
   const HomeHeaderStyle(this.displayName);
 }
+
+enum SettingsStyle {
+  expressive('Expressive'),
+  classic('Normal');
+
+  final String displayName;
+  const SettingsStyle(this.displayName);
+}

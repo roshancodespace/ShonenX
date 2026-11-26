@@ -17,6 +17,7 @@ class UiPrefState {
   final EpisodeViewMode episodeViewMode;
   final NavBarStyle navBarStyle;
   final HomeHeaderStyle homeHeaderStyle;
+  final SettingsStyle settingsStyle;
   final Map<String, bool> cardStyleWideModes;
   final bool showCardRatings;
   final bool showCardGenres;
@@ -31,6 +32,7 @@ class UiPrefState {
     this.episodeViewMode = EpisodeViewMode.classic,
     this.navBarStyle = NavBarStyle.classic,
     this.homeHeaderStyle = HomeHeaderStyle.classic,
+    this.settingsStyle = SettingsStyle.expressive,
     this.cardStyleWideModes = const {},
     this.showCardRatings = true,
     this.showCardGenres = true,
@@ -56,6 +58,7 @@ class UiPrefState {
     EpisodeViewMode? episodeViewMode,
     NavBarStyle? navBarStyle,
     HomeHeaderStyle? homeHeaderStyle,
+    SettingsStyle? settingsStyle,
     Map<String, bool>? cardStyleWideModes,
     bool? showCardRatings,
     bool? showCardGenres,
@@ -71,6 +74,7 @@ class UiPrefState {
       episodeViewMode: episodeViewMode ?? this.episodeViewMode,
       navBarStyle: navBarStyle ?? this.navBarStyle,
       homeHeaderStyle: homeHeaderStyle ?? this.homeHeaderStyle,
+      settingsStyle: settingsStyle ?? this.settingsStyle,
       cardStyleWideModes: cardStyleWideModes ?? this.cardStyleWideModes,
       showCardRatings: showCardRatings ?? this.showCardRatings,
       showCardGenres: showCardGenres ?? this.showCardGenres,
@@ -87,6 +91,7 @@ class UiPrefState {
     'episodeViewMode': episodeViewMode.name,
     'navBarStyle': navBarStyle.name,
     'homeHeaderStyle': homeHeaderStyle.name,
+    'settingsStyle': settingsStyle.name,
     'cardStyleWideModes': cardStyleWideModes,
     'showCardRatings': showCardRatings,
     'showCardGenres': showCardGenres,
@@ -121,6 +126,10 @@ class UiPrefState {
         (e) => e.name == json['homeHeaderStyle'],
         orElse: () => HomeHeaderStyle.classic,
       ),
+      settingsStyle: SettingsStyle.values.firstWhere(
+        (e) => e.name == json['settingsStyle'],
+        orElse: () => SettingsStyle.expressive,
+      ),
       cardStyleWideModes: (json['cardStyleWideModes'] is Map)
           ? Map<String, bool>.from(json['cardStyleWideModes'] as Map)
           : const {},
@@ -146,6 +155,7 @@ class UiPrefState {
         other.episodeViewMode == episodeViewMode &&
         other.navBarStyle == navBarStyle &&
         other.homeHeaderStyle == homeHeaderStyle &&
+        other.settingsStyle == settingsStyle &&
         other.showCardRatings == showCardRatings &&
         other.showCardGenres == showCardGenres &&
         other.showCardYear == showCardYear &&
@@ -162,6 +172,7 @@ class UiPrefState {
     episodeViewMode,
     navBarStyle,
     homeHeaderStyle,
+    settingsStyle,
     cardStyleWideModes,
     showCardRatings,
     showCardGenres,
@@ -265,6 +276,11 @@ class UiPrefsNotifier extends Notifier<UiPrefState> {
 
   void updateHomeHeaderStyle(HomeHeaderStyle style) {
     state = state.copyWith(homeHeaderStyle: style);
+    _saveDb();
+  }
+
+  void updateSettingsStyle(SettingsStyle style) {
+    state = state.copyWith(settingsStyle: style);
     _saveDb();
   }
 

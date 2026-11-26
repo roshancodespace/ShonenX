@@ -255,7 +255,12 @@ class AppBottomSheet extends ConsumerWidget {
     final cs = Theme.of(context).colorScheme;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final hasTilt = ref.watch(uiPrefsProvider.select((p) => p.sheetPhysics));
-    final roundness = GlobalUI.uiRoundness;
+    final isExpressive =
+        ref.watch(uiPrefsProvider.select((p) => p.settingsStyle)) ==
+        SettingsStyle.expressive;
+    final roundness = isExpressive
+        ? GlobalUI.uiRoundness.clamp(22.0, 28.0)
+        : GlobalUI.uiRoundness;
 
     final effectiveShowDragHandle = showDragHandle ?? !isFloating;
     final effectiveBorderRadius =
@@ -268,7 +273,7 @@ class AppBottomSheet extends ConsumerWidget {
         backgroundColor ??
         (isFloating
             ? cs.surfaceContainerHigh.withValues(alpha: 0.9)
-            : cs.surfaceContainer);
+            : (isExpressive ? cs.surfaceContainerLow : cs.surfaceContainer));
 
     final effectiveMargin =
         margin ??

@@ -1,8 +1,12 @@
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'package:shonenx/core/localization/l10n_extension.dart';
+import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
+import 'package:shonenx/shared/widgets/m3e_dropdown.dart';
 import 'package:shonenx/shared/widgets/m3e_slider.dart';
+import 'package:shonenx/shared/widgets/m3e_split_button_group.dart';
 
 const _compactBreakpoint = 400.0;
 const _narrowTileWidth = 360.0;
@@ -95,7 +99,20 @@ TextStyle _sectionLabelStyle(ColorScheme colors) => TextStyle(
   color: colors.primary,
 );
 
-class _IconBadge extends StatelessWidget {
+class _SettingsStyleScope extends InheritedWidget {
+  final SettingsStyle style;
+
+  const _SettingsStyleScope({required this.style, required super.child});
+
+  static SettingsStyle? maybeOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<_SettingsStyleScope>()?.style;
+
+  @override
+  bool updateShouldNotify(_SettingsStyleScope oldWidget) =>
+      style != oldWidget.style;
+}
+
+class _IconBadge extends ConsumerWidget {
   final IconData icon;
   final Color background;
   final Color foreground;
@@ -107,7 +124,13 @@ class _IconBadge extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final style =
+        _SettingsStyleScope.maybeOf(context) ??
+        ref.watch(uiPrefsProvider.select((s) => s.settingsStyle));
+    if (style == SettingsStyle.classic) {
+      return Icon(icon, size: 22, color: Theme.of(context).colorScheme.primary);
+    }
     return SizedBox.square(
       dimension: context._isCompact ? 36 : 40,
       child: DecoratedBox(
@@ -137,7 +160,7 @@ Widget? _leading(
             foreground: foreground ?? colors.onSecondaryContainer,
           ));
 
-class _Tile extends StatefulWidget {
+class _Tile extends ConsumerStatefulWidget {
   final Widget? leading;
   final Widget? title;
   final Widget? subtitle;
@@ -163,10 +186,10 @@ class _Tile extends StatefulWidget {
   });
 
   @override
-  State<_Tile> createState() => _TileState();
+  ConsumerState<_Tile> createState() => _TileState();
 }
 
-class _TileState extends State<_Tile> {
+class _TileState extends ConsumerState<_Tile> {
   bool _pressed = false;
   bool _hovered = false;
   bool _focused = false;
@@ -174,18 +197,32 @@ class _TileState extends State<_Tile> {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    final radius = _pressed
-        ? BorderRadius.circular(_outerRadius)
-        : _GroupPosition.of(context).radius;
+    final style =
+        _SettingsStyleScope.maybeOf(context) ??
+        ref.watch(uiPrefsProvider.select((s) => s.settingsStyle));
+    final isClassic = style == SettingsStyle.classic;
+
+    final radius = isClassic
+        ? BorderRadius.circular(10)
+        : (_pressed
+              ? BorderRadius.circular(_outerRadius)
+              : _GroupPosition.of(context).radius);
     final overlay = _pressed
         ? 0.12
         : (_hovered || _focused)
         ? 0.08
         : 0.0;
-    final base = widget.color ?? colors.surfaceContainerHigh;
+    final base = isClassic
+        ? (widget.color ?? Colors.transparent)
+        : (widget.color ?? colors.surfaceContainerHigh);
     final fill = overlay == 0
         ? base
-        : Color.alphaBlend(colors.onSurface.withValues(alpha: overlay), base);
+        : (base == Colors.transparent
+              ? colors.onSurface.withValues(alpha: overlay)
+              : Color.alphaBlend(
+                  colors.onSurface.withValues(alpha: overlay),
+                  base,
+                ));
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -227,19 +264,26 @@ class _TileState extends State<_Tile> {
                               FocusHighlightMode.traditional,
                     ),
               child: ConstrainedBox(
-                constraints: const BoxConstraints(minHeight: _minTileHeight),
+                constraints: BoxConstraints(
+                  minHeight: isClassic ? 52.0 : _minTileHeight,
+                ),
                 child: Padding(
                   padding:
                       widget.padding ??
-                      EdgeInsets.symmetric(
-                        horizontal: narrow ? 12 : 16,
-                        vertical: 12,
-                      ),
+                      (isClassic
+                          ? const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 8,
+                            )
+                          : EdgeInsets.symmetric(
+                              horizontal: narrow ? 12 : 16,
+                              vertical: 12,
+                            )),
                   child: Row(
                     children: [
                       if (widget.leading != null) ...[
                         widget.leading!,
-                        SizedBox(width: narrow ? 12 : 16),
+                        SizedBox(width: isClassic ? 14 : (narrow ? 12 : 16)),
                       ],
                       Expanded(
                         child: Column(
@@ -256,7 +300,9 @@ class _TileState extends State<_Tile> {
                               SizedBox(width: double.infinity, child: control),
                             ],
                             if (widget.body != null) ...[
-                              const SizedBox(height: 6),
+                              if (widget.title != null ||
+                                  widget.subtitle != null)
+                                const SizedBox(height: 6),
                               SizedBox(
                                 width: double.infinity,
                                 child: widget.body!,
@@ -298,7 +344,7 @@ class _InfoButton extends StatelessWidget {
   }
 }
 
-class SettingsSection extends StatelessWidget {
+class SettingsSection extends ConsumerWidget {
   final String title;
   final String? subtitle;
   final List<Widget> children;
@@ -318,35 +364,46 @@ class SettingsSection extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final colors = Theme.of(context).colorScheme;
+    final style = ref.watch(uiPrefsProvider.select((s) => s.settingsStyle));
+    final isClassic = style == SettingsStyle.classic;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: _headerPadding,
-          child: Text(title.toUpperCase(), style: _sectionLabelStyle(colors)),
-        ),
-        if (subtitle != null)
+    return _SettingsStyleScope(
+      style: style,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: _subtitle(colors, subtitle),
+            padding: isClassic
+                ? const EdgeInsets.fromLTRB(10, 10, 10, 6)
+                : _headerPadding,
+            child: Text(title.toUpperCase(), style: _sectionLabelStyle(colors)),
           ),
-        Padding(
-          padding: _sectionPadding,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              for (var i = 0; i < children.length; i++) ...[
-                if (i > 0) const SizedBox(height: _groupGap),
-                _GroupPosition(position: _positionOf(i), child: children[i]),
+          if (subtitle != null)
+            Padding(
+              padding: isClassic
+                  ? const EdgeInsets.fromLTRB(10, 0, 10, 6)
+                  : const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: _subtitle(colors, subtitle),
+            ),
+          Padding(
+            padding: isClassic
+                ? const EdgeInsets.symmetric(horizontal: 10)
+                : _sectionPadding,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (var i = 0; i < children.length; i++) ...[
+                  if (i > 0 && !isClassic) const SizedBox(height: _groupGap),
+                  _GroupPosition(position: _positionOf(i), child: children[i]),
+                ],
               ],
-            ],
+            ),
           ),
-        ),
-        const SizedBox(height: 16),
-      ],
+          SizedBox(height: isClassic ? 12 : 16),
+        ],
+      ),
     );
   }
 }
@@ -507,7 +564,7 @@ class SettingsActionTile extends StatelessWidget {
   }
 }
 
-class SettingsSegmentedTile<T> extends StatelessWidget {
+class SettingsSegmentedTile<T> extends ConsumerWidget {
   final String? title;
   final List<ButtonSegment<T>> segments;
   final Set<T> selected;
@@ -524,32 +581,60 @@ class SettingsSegmentedTile<T> extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final colors = Theme.of(context).colorScheme;
+    final style =
+        _SettingsStyleScope.maybeOf(context) ??
+        ref.watch(uiPrefsProvider.select((s) => s.settingsStyle));
+    final isClassic = style == SettingsStyle.classic;
 
-    return _Tile(
-      padding: padding,
-      title: title == null
-          ? null
-          : Text(title!, style: _sectionLabelStyle(colors)),
-      control: (narrow) {
-        final button = SegmentedButton<T>(
-          segments: segments,
-          selected: selected,
-          onSelectionChanged: onSelectionChanged,
-          showSelectedIcon: !context._isCompact,
-          style: SegmentedButton.styleFrom(
-            visualDensity: VisualDensity.adaptivePlatformDensity,
-            backgroundColor: colors.surfaceContainerHighest,
-            foregroundColor: colors.onSurfaceVariant,
-            selectedBackgroundColor: colors.primary,
-            selectedForegroundColor: colors.onPrimary,
-            side: BorderSide.none,
-          ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final stackControl =
+            constraints.maxWidth < 540 ||
+            (segments.length >= 3 && constraints.maxWidth < 680);
+
+        Widget buildButton({required bool expanded}) {
+          if (!isClassic) {
+            final group = M3eSplitButtonGroup<T>(
+              segments: segments,
+              selected: selected,
+              onSelectionChanged: onSelectionChanged,
+              expandSegments: expanded,
+            );
+            return expanded
+                ? group
+                : FittedBox(fit: BoxFit.scaleDown, child: group);
+          }
+
+          final button = SegmentedButton<T>(
+            segments: segments,
+            selected: selected,
+            onSelectionChanged: onSelectionChanged,
+            showSelectedIcon: !context._isCompact,
+            style: SegmentedButton.styleFrom(
+              visualDensity: VisualDensity.adaptivePlatformDensity,
+              backgroundColor: colors.surfaceContainerHighest,
+              foregroundColor: colors.onSurfaceVariant,
+              selectedBackgroundColor: colors.primary,
+              selectedForegroundColor: colors.onPrimary,
+              side: BorderSide.none,
+            ),
+          );
+          return expanded
+              ? SizedBox(width: double.infinity, child: button)
+              : FittedBox(fit: BoxFit.scaleDown, child: button);
+        }
+
+        return _Tile(
+          padding: padding,
+          stackWhenNarrow: false,
+          title: title == null
+              ? null
+              : Text(title!, style: _sectionLabelStyle(colors)),
+          body: stackControl ? buildButton(expanded: true) : null,
+          control: stackControl ? null : (_) => buildButton(expanded: false),
         );
-        return narrow
-            ? FittedBox(fit: BoxFit.scaleDown, child: button)
-            : button;
       },
     );
   }
@@ -675,27 +760,59 @@ class _SettingsSliderTileState extends State<SettingsSliderTile> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
+    final leading = _leading(colors, widget.icon, null);
 
     return _Tile(
       stackWhenNarrow: false,
-      leading: _leading(colors, widget.icon, null),
-      title: _title(colors, widget.title),
-      subtitle: _subtitle(colors, widget.subtitle),
-      control: (_) => SettingsValueChip(label: widget.label),
-      body: M3ESlider(
-        focusNode: _effectiveFocusNode,
-        value: widget.value,
-        min: widget.min,
-        max: widget.max,
-        divisions: widget.divisions,
-        label: widget.label,
-        onChanged: widget.onChanged,
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final narrow = constraints.maxWidth < _narrowTileWidth;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  if (leading != null) ...[
+                    leading,
+                    SizedBox(width: narrow ? 12 : 14),
+                  ],
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _title(colors, widget.title),
+                        if (widget.subtitle != null) ...[
+                          const SizedBox(height: 2),
+                          _subtitle(colors, widget.subtitle)!,
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  SettingsValueChip(label: widget.label),
+                ],
+              ),
+              const SizedBox(height: 10),
+              M3ESlider(
+                focusNode: _effectiveFocusNode,
+                value: widget.value,
+                min: widget.min,
+                max: widget.max,
+                divisions: widget.divisions,
+                label: widget.label,
+                onChanged: widget.onChanged,
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 }
 
-class SettingsDropdownTile<T> extends StatelessWidget {
+class SettingsDropdownTile<T> extends ConsumerWidget {
   final IconData icon;
   final String title;
   final String? subtitle;
@@ -718,37 +835,48 @@ class SettingsDropdownTile<T> extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final colors = Theme.of(context).colorScheme;
+    final style =
+        _SettingsStyleScope.maybeOf(context) ??
+        ref.watch(uiPrefsProvider.select((s) => s.settingsStyle));
+    final isClassic = style == SettingsStyle.classic;
 
     return _Tile(
       leading: _leading(colors, icon, null),
       title: _title(colors, title),
       subtitle: _subtitle(colors, subtitle),
       control: (narrow) {
-        final dropdown = Material(
-          color: colors.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(16),
-          clipBehavior: Clip.antiAlias,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<T>(
+        final dropdown = isClassic
+            ? Material(
+                color: colors.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(16),
+                clipBehavior: Clip.antiAlias,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<T>(
+                      value: value,
+                      items: items,
+                      onChanged: onChanged,
+                      isDense: true,
+                      isExpanded: true,
+                      focusColor: Colors.transparent,
+                      icon: const Icon(Icons.expand_more_rounded),
+                      dropdownColor: colors.surfaceContainerHigh,
+                      alignment: AlignmentDirectional.centerStart,
+                      borderRadius: BorderRadius.circular(16),
+                      selectedItemBuilder: selectedItemBuilder,
+                    ),
+                  ),
+                ),
+              )
+            : M3eDropdown<T>(
                 value: value,
                 items: items,
                 onChanged: onChanged,
-                isDense: true,
-                isExpanded: true,
-                focusColor: Colors.transparent,
-                icon: const Icon(Icons.expand_more_rounded),
-                dropdownColor: colors.surfaceContainerHigh,
-                alignment: AlignmentDirectional.centerStart,
-                borderRadius: BorderRadius.circular(16),
                 selectedItemBuilder: selectedItemBuilder,
-              ),
-            ),
-          ),
-        );
+              );
         final info = onInfoCallback == null
             ? null
             : _InfoButton(

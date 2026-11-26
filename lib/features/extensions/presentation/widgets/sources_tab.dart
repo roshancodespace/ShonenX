@@ -14,6 +14,7 @@ import 'package:shonenx/features/settings/presentation/widgets/settings_ui_compo
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/providers/storage_provider.dart';
 import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
+import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
 import 'package:shonenx/source_engine/models/source_setting.dart';
 import 'package:shonenx/source_engine/providers/media_source.dart';
@@ -139,112 +140,47 @@ class _GroupHeaderTile extends ConsumerWidget {
               ? ref.watch(availableMangaSourcesProvider).value
               : ref.watch(availableNovelSourcesProvider).value);
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 10),
-          tileColor: isNsfw ? Colors.red.withValues(alpha: 0.05) : null,
-          leading: SmartImage(
-            imageUrl: groupSources.first.iconUrl ?? '',
-            width: 40,
-            height: 40,
-            fit: BoxFit.cover,
-            errorWidget: (_, __, ___) => const Icon(Icons.extension, size: 40),
-          ),
-          title: Text(
-            name,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w500,
+    return SettingsCustomTile(
+      padding: EdgeInsets.zero,
+      color: isNsfw ? Colors.red.withValues(alpha: 0.05) : null,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 14),
+            leading: SmartImage(
+              imageUrl: groupSources.first.iconUrl ?? '',
+              width: 40,
+              height: 40,
+              fit: BoxFit.cover,
+              errorWidget: (_, __, ___) => const Icon(Icons.extension, size: 40),
             ),
-            overflow: TextOverflow.ellipsis,
-            maxLines: 1,
-          ),
-          subtitle: Text(
-            isNsfw
-                ? '18+ • ${groupSources.length} variants'
-                : '${groupSources.length} variants',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: isNsfw
-                  ? Colors.red.shade400
-                  : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
-              fontWeight: isNsfw ? FontWeight.w600 : null,
+            title: Text(
+              name,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
             ),
-          ),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (isInstalled && isGroupProcessing)
-                const Padding(
-                  padding: EdgeInsets.all(12),
-                  child: SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                )
-              else if (isInstalled) ...[
-                if (groupSources.any((s) => s.hasUpdate))
-                  Padding(
-                    padding: const EdgeInsets.only(right: 6),
-                    child: InkWell(
-                      onTap: () =>
-                          controller.updateVariantGroup(context, name, type),
-                      borderRadius: BorderRadius.circular(12),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.primary.withValues(
-                            alpha: 0.15,
-                          ),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: theme.colorScheme.primary.withValues(
-                              alpha: 0.4,
-                            ),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.arrow_upward_rounded,
-                              size: 13,
-                              color: theme.colorScheme.primary,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              'UPDATE',
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w800,
-                                color: theme.colorScheme.primary,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                IconButton(
-                  visualDensity: VisualDensity.compact,
-                  icon: const Icon(Icons.delete_outline),
-                  onPressed: () => controller.uninstallVariantGroup(
-                    context,
-                    name,
-                    groupSources,
-                    type,
-                  ),
-                ),
-              ] else if (!isInstalled) ...[
-                if (isGroupProcessing)
+            subtitle: Text(
+              isNsfw
+                  ? '18+ • ${groupSources.length} variants'
+                  : '${groupSources.length} variants',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: isNsfw
+                    ? Colors.red.shade400
+                    : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                fontWeight: isNsfw ? FontWeight.w600 : null,
+              ),
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (isInstalled && isGroupProcessing)
                   const Padding(
                     padding: EdgeInsets.all(12),
                     child: SizedBox(
@@ -253,87 +189,155 @@ class _GroupHeaderTile extends ConsumerWidget {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     ),
                   )
-                else
-                  Padding(
-                    padding: const EdgeInsets.only(right: 6),
-                    child: FilledButton.tonalIcon(
-                      onPressed: () => controller.installVariantGroup(
-                        context,
-                        name,
-                        groupSources,
-                      ),
-                      icon: const Icon(Icons.download_rounded, size: 16),
-                      label: const Text(
-                        'Install All',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                        ),
-                      ),
-                      style: FilledButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 0,
-                        ),
-                        minimumSize: const Size(0, 32),
-                      ),
-                    ),
-                  ),
-              ],
-              AnimatedRotation(
-                turns: isExpanded ? 0.5 : 0.0,
-                duration: const Duration(milliseconds: 250),
-                curve: Curves.easeInOutCubic,
-                child: Icon(
-                  Icons.expand_more,
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
-          onTap: onTap,
-        ),
-        AnimatedSize(
-          duration: const Duration(milliseconds: 250),
-          curve: Curves.fastOutSlowIn,
-          alignment: Alignment.topCenter,
-          child: isExpanded
-              ? Padding(
-                  padding: const EdgeInsets.only(
-                    left: 24,
-                    right: 10,
-                    top: 2,
-                    bottom: 6,
-                  ),
-                  child: Container(
-                    padding: const EdgeInsets.only(left: 10),
-                    decoration: BoxDecoration(
-                      border: Border(
-                        left: BorderSide(
-                          color: theme.colorScheme.primary.withValues(
-                            alpha: 0.4,
+                else if (isInstalled) ...[
+                  if (groupSources.any((s) => s.hasUpdate))
+                    Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: InkWell(
+                        onTap: () =>
+                            controller.updateVariantGroup(context, name, type),
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
                           ),
-                          width: 2,
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.primary.withValues(
+                              alpha: 0.15,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: theme.colorScheme.primary.withValues(
+                                alpha: 0.4,
+                              ),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.arrow_upward_rounded,
+                                size: 13,
+                                color: theme.colorScheme.primary,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'UPDATE',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                  color: theme.colorScheme.primary,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                    child: Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: groupSources.map((source) {
-                        return _buildVariantSubItem(
-                          context,
-                          source,
-                          controller,
-                          availableList,
-                        );
-                      }).toList(),
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    icon: const Icon(Icons.delete_outline),
+                    onPressed: () => controller.uninstallVariantGroup(
+                      context,
+                      name,
+                      groupSources,
+                      type,
                     ),
                   ),
-                )
-              : const SizedBox.shrink(),
-        ),
-      ],
+                ] else if (!isInstalled) ...[
+                  if (isGroupProcessing)
+                    const Padding(
+                      padding: EdgeInsets.all(12),
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    )
+                  else
+                    Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: FilledButton.tonalIcon(
+                        onPressed: () => controller.installVariantGroup(
+                          context,
+                          name,
+                          groupSources,
+                        ),
+                        icon: const Icon(Icons.download_rounded, size: 16),
+                        label: const Text(
+                          'Install All',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 0,
+                          ),
+                          minimumSize: const Size(0, 32),
+                        ),
+                      ),
+                    ),
+                ],
+                AnimatedRotation(
+                  turns: isExpanded ? 0.5 : 0.0,
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeInOutCubic,
+                  child: Icon(
+                    Icons.expand_more,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+            onTap: onTap,
+          ),
+          AnimatedSize(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.fastOutSlowIn,
+            alignment: Alignment.topCenter,
+            child: isExpanded
+                ? Padding(
+                    padding: const EdgeInsets.only(
+                      left: 24,
+                      right: 10,
+                      top: 2,
+                      bottom: 10,
+                    ),
+                    child: Container(
+                      padding: const EdgeInsets.only(left: 10),
+                      decoration: BoxDecoration(
+                        border: Border(
+                          left: BorderSide(
+                            color: theme.colorScheme.primary.withValues(
+                              alpha: 0.4,
+                            ),
+                            width: 2,
+                          ),
+                        ),
+                      ),
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: groupSources.map((source) {
+                          return _buildVariantSubItem(
+                            context,
+                            source,
+                            controller,
+                            availableList,
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  )
+                : const SizedBox.shrink(),
+          ),
+        ],
+      ),
     );
   }
 
@@ -916,7 +920,7 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
       child: CustomScrollView(
         slivers: [
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(8, 8, 8, 120),
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 120),
             sliver: SliverList.builder(
               itemCount: sectionWidgets.length,
               itemBuilder: (context, index) => sectionWidgets[index],
@@ -983,8 +987,8 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
           curve: Curves.fastOutSlowIn,
           alignment: Alignment.topCenter,
           child: _isUpdatesExpanded
-              ? Column(
-                  mainAxisSize: MainAxisSize.min,
+              ? SettingsGroup(
+                  padding: EdgeInsets.zero,
                   children: outdatedGroups.keys.map((name) {
                     final groupSources = outdatedGroups[name]!;
                     if (groupSources.length == 1) {
@@ -1044,8 +1048,8 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
           curve: Curves.fastOutSlowIn,
           alignment: Alignment.topCenter,
           child: isLangExpanded
-              ? Column(
-                  mainAxisSize: MainAxisSize.min,
+              ? SettingsGroup(
+                  padding: EdgeInsets.zero,
                   children: sortedNames.map((name) {
                     final groupSources = nameGroups[name]!;
                     if (groupSources.length == 1) {
@@ -1375,54 +1379,49 @@ void showInstallMethodSheet(
   showModalBottomSheet(
     context: context,
     backgroundColor: Colors.transparent,
+    isScrollControlled: true,
     builder: (context) {
-      return Container(
-        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        ),
+      return AppBottomSheet(
+        title: 'Install ${source.name}',
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              'Install ${source.name}',
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'How would you like to install this extension?',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Text(
+                'How would you like to install this extension?',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             ),
-            const SizedBox(height: 24),
-            ListTile(
-              leading: const Icon(Icons.apps_rounded),
-              title: const Text('App (Normal)'),
-              subtitle: const Text('Installs as a standard Android app.'),
-              onTap: () {
-                Navigator.pop(context);
-                (source.bridgeSource as ASource).isPrivate = false;
-                controller.installSource(context, source);
-              },
+            SettingsGroup(
+              padding: EdgeInsets.zero,
+              children: [
+                SettingsActionTile(
+                  icon: Icons.apps_rounded,
+                  title: 'App (Normal)',
+                  subtitle: 'Installs as a standard Android app.',
+                  onTap: () {
+                    Navigator.pop(context);
+                    (source.bridgeSource as ASource).isPrivate = false;
+                    controller.installSource(context, source);
+                  },
+                ),
+                SettingsActionTile(
+                  icon: Icons.security_rounded,
+                  title: 'Private / Internal',
+                  subtitle:
+                      'Installs internally. Does not show up in device settings or launcher.',
+                  onTap: () {
+                    Navigator.pop(context);
+                    (source.bridgeSource as ASource).isPrivate = true;
+                    controller.installSource(context, source);
+                  },
+                ),
+              ],
             ),
-            ListTile(
-              leading: const Icon(Icons.security_rounded),
-              title: const Text('Private / Internal'),
-              subtitle: const Text(
-                'Installs internally. Does not show up in device settings or launcher.',
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                (source.bridgeSource as ASource).isPrivate = true;
-                controller.installSource(context, source);
-              },
-            ),
-            const SizedBox(height: 16),
           ],
         ),
       );

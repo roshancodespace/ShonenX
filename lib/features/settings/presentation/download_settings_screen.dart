@@ -29,50 +29,42 @@ class DownloadSettingsScreen extends ConsumerWidget {
             SettingsSection(
               title: context.l10n.settingsStorage,
               children: [
-                AbsorbPointer(
-                  absorbing: prefs.useOneDM,
-                  child: Opacity(
-                    opacity: prefs.useOneDM ? 0.5 : 1.0,
-                    child: Column(
-                      children: [
-                        SettingsActionTile(
-                          icon: Icons.folder_outlined,
-                          title: context.l10n.settingsLocation,
-                          subtitle: prefs.downloadPath,
-                          onTap: () async {
-                            final String? directoryPath = await FilePicker
-                                .platform
-                                .getDirectoryPath();
-                            if (directoryPath != null &&
-                                directoryPath != prefs.downloadPath) {
-                              if (context.mounted) {
-                                _handleLocationChangeRequest(
-                                  context,
-                                  prefsNotifier,
-                                  prefs.downloadPath,
-                                  directoryPath,
-                                );
-                              }
-                            }
-                          },
-                          trailing: FilledButton.icon(
-                            icon: const Icon(Icons.restore_outlined, size: 18),
-                            label: Text(context.l10n.commonReset),
-                            onPressed: () async {
-                              final targetPath = await prefsNotifier
-                                  .getDefaultDownloadPath();
-                              if (context.mounted) {
-                                _handleLocationChangeRequest(
-                                  context,
-                                  prefsNotifier,
-                                  prefs.downloadPath,
-                                  targetPath,
-                                );
-                              }
-                            },
-                          ),
-                        ),
-                      ],
+                _DisableWhen(
+                  disabled: prefs.useOneDM,
+                  child: SettingsActionTile(
+                    icon: Icons.folder_outlined,
+                    title: context.l10n.settingsLocation,
+                    subtitle: prefs.downloadPath,
+                    onTap: () async {
+                      final String? directoryPath = await FilePicker.platform
+                          .getDirectoryPath();
+                      if (directoryPath != null &&
+                          directoryPath != prefs.downloadPath) {
+                        if (context.mounted) {
+                          _handleLocationChangeRequest(
+                            context,
+                            prefsNotifier,
+                            prefs.downloadPath,
+                            directoryPath,
+                          );
+                        }
+                      }
+                    },
+                    trailing: FilledButton.icon(
+                      icon: const Icon(Icons.restore_outlined, size: 18),
+                      label: Text(context.l10n.commonReset),
+                      onPressed: () async {
+                        final targetPath = await prefsNotifier
+                            .getDefaultDownloadPath();
+                        if (context.mounted) {
+                          _handleLocationChangeRequest(
+                            context,
+                            prefsNotifier,
+                            prefs.downloadPath,
+                            targetPath,
+                          );
+                        }
+                      },
                     ),
                   ),
                 ),
@@ -81,59 +73,40 @@ class DownloadSettingsScreen extends ConsumerWidget {
             SettingsSection(
               title: context.l10n.downloadOrganizationSection,
               children: [
-                AbsorbPointer(
-                  absorbing: prefs.useOneDM,
-                  child: Opacity(
-                    opacity: prefs.useOneDM ? 0.5 : 1.0,
-                    child: Column(
-                      children: [
-                        SettingsSwitchTile(
-                          icon: Icons.create_new_folder_outlined,
-                          title: context.l10n.downloadCreateSubfolders,
-                          subtitle:
-                              context.l10n.downloadCreateSubfoldersSubtitle,
-                          value: prefs.createSubfolders,
-                          onChanged: (val) {
-                            prefsNotifier.setCreateSubfolders(val);
-                          },
-                        ),
-                        SettingsDropdownTile<FileNameFormat>(
-                          icon: Icons.title_outlined,
-                          title: context.l10n.downloadFileNameFormat,
-                          value: prefs.fileNameFormat,
-                          items: FileNameFormat.values
-                              .map(
-                                (f) => DropdownMenuItem(
-                                  value: f,
-                                  child: Text(f.displayName),
-                                ),
-                              )
-                              .toList(),
-                          onChanged: (value) {
-                            if (value != null) {
-                              prefsNotifier.setFileNameFormat(value);
-                            }
-                          },
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.only(
-                            left: 72,
-                            right: 16,
-                            bottom: 16,
-                          ),
-                          child: Text(
-                            context.l10n.downloadPreviewFormat(
-                              _getPreviewFormat(prefs.fileNameFormat),
-                            ),
-                            style: TextStyle(
-                              color: colors.primary,
-                              fontStyle: FontStyle.italic,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ),
-                      ],
+                _DisableWhen(
+                  disabled: prefs.useOneDM,
+                  child: SettingsSwitchTile(
+                    icon: Icons.create_new_folder_outlined,
+                    title: context.l10n.downloadCreateSubfolders,
+                    subtitle: context.l10n.downloadCreateSubfoldersSubtitle,
+                    value: prefs.createSubfolders,
+                    onChanged: (val) {
+                      prefsNotifier.setCreateSubfolders(val);
+                    },
+                  ),
+                ),
+                _DisableWhen(
+                  disabled: prefs.useOneDM,
+                  child: SettingsDropdownTile<FileNameFormat>(
+                    icon: Icons.title_outlined,
+                    title: context.l10n.downloadFileNameFormat,
+                    subtitle: context.l10n.downloadPreviewFormat(
+                      _getPreviewFormat(prefs.fileNameFormat),
                     ),
+                    value: prefs.fileNameFormat,
+                    items: FileNameFormat.values
+                        .map(
+                          (f) => DropdownMenuItem(
+                            value: f,
+                            child: Text(f.displayName),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        prefsNotifier.setFileNameFormat(value);
+                      }
+                    },
                   ),
                 ),
               ],
@@ -141,19 +114,16 @@ class DownloadSettingsScreen extends ConsumerWidget {
             SettingsSection(
               title: context.l10n.downloadNetworkSection,
               children: [
-                AbsorbPointer(
-                  absorbing: prefs.useOneDM,
-                  child: Opacity(
-                    opacity: prefs.useOneDM ? 0.5 : 1.0,
-                    child: SettingsSwitchTile(
-                      icon: Icons.wifi_outlined,
-                      title: context.l10n.downloadWifiOnly,
-                      subtitle: context.l10n.downloadWifiOnlySubtitle,
-                      value: prefs.wifiOnly,
-                      onChanged: (val) {
-                        prefsNotifier.setWifiOnly(val);
-                      },
-                    ),
+                _DisableWhen(
+                  disabled: prefs.useOneDM,
+                  child: SettingsSwitchTile(
+                    icon: Icons.wifi_outlined,
+                    title: context.l10n.downloadWifiOnly,
+                    subtitle: context.l10n.downloadWifiOnlySubtitle,
+                    value: prefs.wifiOnly,
+                    onChanged: (val) {
+                      prefsNotifier.setWifiOnly(val);
+                    },
                   ),
                 ),
                 if (Platform.isAndroid) ...[
@@ -249,40 +219,36 @@ class DownloadSettingsScreen extends ConsumerWidget {
             SettingsSection(
               title: context.l10n.downloadPerformanceSection,
               children: [
-                AbsorbPointer(
-                  absorbing: prefs.useOneDM,
-                  child: Opacity(
-                    opacity: prefs.useOneDM ? 0.5 : 1.0,
-                    child: Column(
-                      children: [
-                        SettingsSliderTile(
-                          icon: Icons.layers_outlined,
-                          title: context.l10n.downloadMaxQueue,
-                          subtitle: context.l10n.downloadMaxQueueSubtitle,
-                          value: prefs.concurrentDownloads.toDouble(),
-                          min: 1,
-                          max: 5,
-                          divisions: 4,
-                          label: prefs.concurrentDownloads.toString(),
-                          onChanged: (val) {
-                            prefsNotifier.setConcurrentDownloads(val.toInt());
-                          },
-                        ),
-                        SettingsSliderTile(
-                          icon: Icons.speed_outlined,
-                          title: context.l10n.downloadMaxSegments,
-                          subtitle: context.l10n.downloadMaxSegmentsSubtitle,
-                          value: prefs.concurrentSegments.toDouble(),
-                          min: 1,
-                          max: 16,
-                          divisions: 15,
-                          label: prefs.concurrentSegments.toString(),
-                          onChanged: (val) {
-                            prefsNotifier.setConcurrentSegments(val.toInt());
-                          },
-                        ),
-                      ],
-                    ),
+                _DisableWhen(
+                  disabled: prefs.useOneDM,
+                  child: SettingsSliderTile(
+                    icon: Icons.layers_outlined,
+                    title: context.l10n.downloadMaxQueue,
+                    subtitle: context.l10n.downloadMaxQueueSubtitle,
+                    value: prefs.concurrentDownloads.toDouble(),
+                    min: 1,
+                    max: 5,
+                    divisions: 4,
+                    label: prefs.concurrentDownloads.toString(),
+                    onChanged: (val) {
+                      prefsNotifier.setConcurrentDownloads(val.toInt());
+                    },
+                  ),
+                ),
+                _DisableWhen(
+                  disabled: prefs.useOneDM,
+                  child: SettingsSliderTile(
+                    icon: Icons.speed_outlined,
+                    title: context.l10n.downloadMaxSegments,
+                    subtitle: context.l10n.downloadMaxSegmentsSubtitle,
+                    value: prefs.concurrentSegments.toDouble(),
+                    min: 1,
+                    max: 16,
+                    divisions: 15,
+                    label: prefs.concurrentSegments.toString(),
+                    onChanged: (val) {
+                      prefsNotifier.setConcurrentSegments(val.toInt());
+                    },
                   ),
                 ),
                 if (Platform.isLinux ||
@@ -359,6 +325,21 @@ class DownloadSettingsScreen extends ConsumerWidget {
         targetPath: targetPath,
         notifier: notifier,
       ),
+    );
+  }
+}
+
+class _DisableWhen extends StatelessWidget {
+  final bool disabled;
+  final Widget child;
+
+  const _DisableWhen({required this.disabled, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    if (!disabled) return child;
+    return IgnorePointer(
+      child: Opacity(opacity: 0.5, child: child),
     );
   }
 }

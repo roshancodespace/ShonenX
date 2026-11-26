@@ -34,12 +34,22 @@ class ResolvedThemeColors {
   final ExclusiveSchemeData? exclusive;
 }
 
+DynamicSchemeVariant toDynamicSchemeVariant(AppThemeVariant variant) =>
+    switch (variant) {
+      AppThemeVariant.classic => DynamicSchemeVariant.tonalSpot,
+      AppThemeVariant.tonalSpot => DynamicSchemeVariant.tonalSpot,
+      AppThemeVariant.fidelity => DynamicSchemeVariant.fidelity,
+      AppThemeVariant.vibrant => DynamicSchemeVariant.vibrant,
+      AppThemeVariant.vivid => DynamicSchemeVariant.expressive,
+    };
+
 ResolvedThemeColors resolveThemeColors(
   ThemePrefsState prefs, {
   required Brightness brightness,
   dynamic dynamicColorScheme,
 }) {
   final isDark = brightness == Brightness.dark;
+  final schemeVariant = toDynamicSchemeVariant(prefs.themeVariant);
   final exclusive = prefs.exclusiveScheme != null
       ? exclusiveSchemes[prefs.exclusiveScheme]
       : null;
@@ -74,6 +84,7 @@ ResolvedThemeColors resolveThemeColors(
     effectiveColorScheme = ColorScheme.fromSeed(
       seedColor: seed,
       brightness: brightness,
+      dynamicSchemeVariant: schemeVariant,
     );
     primaryKey = effectiveColorScheme.primary;
     secondaryKey = effectiveColorScheme.secondary;
@@ -84,6 +95,7 @@ ResolvedThemeColors resolveThemeColors(
     effectiveColorScheme = ColorScheme.fromSeed(
       seedColor: seed,
       brightness: brightness,
+      dynamicSchemeVariant: schemeVariant,
     );
     primaryKey = effectiveColorScheme.primary;
     secondaryKey = effectiveColorScheme.secondary;
@@ -100,6 +112,7 @@ ResolvedThemeColors resolveThemeColors(
     effectiveColorScheme = ColorScheme.fromSeed(
       seedColor: primaryKey,
       brightness: brightness,
+      dynamicSchemeVariant: schemeVariant,
       primary: primaryKey,
       secondary: secondaryKey,
       tertiary: tertiaryKey,
@@ -113,6 +126,7 @@ ResolvedThemeColors resolveThemeColors(
     effectiveColorScheme = ColorScheme.fromSeed(
       seedColor: primaryKey,
       brightness: brightness,
+      dynamicSchemeVariant: schemeVariant,
       primary: colors.primary,
       primaryContainer: colors.primaryContainer,
       secondary: colors.secondary,
@@ -131,6 +145,7 @@ ResolvedThemeColors resolveThemeColors(
     effectiveColorScheme = ColorScheme.fromSeed(
       seedColor: primaryKey,
       brightness: brightness,
+      dynamicSchemeVariant: schemeVariant,
       primary: colors.primary,
       primaryContainer: colors.primaryContainer,
       secondary: colors.secondary,

@@ -651,12 +651,37 @@ class ThemePrefsNotifier extends Notifier<ThemePrefsState> {
   void setCustomColorSeed(int seedArgb) {
     updateTheme(
       (p) => p.copyWith(
+        flexScheme: AppScheme.custom,
         colorSeed: seedArgb,
         clearExclusiveScheme: true,
         clearPrimaryColor: true,
         clearSecondaryColor: true,
         clearTertiaryColor: true,
         clearSurfaceColor: true,
+        useImageColors: false,
+        useDynamic: false,
+      ),
+    );
+  }
+
+  void setCustomPalette({
+    required int primaryArgb,
+    int? secondaryArgb,
+    int? tertiaryArgb,
+    int? surfaceArgb,
+  }) {
+    updateTheme(
+      (p) => p.copyWith(
+        flexScheme: AppScheme.custom,
+        primaryColor: primaryArgb,
+        secondaryColor: secondaryArgb,
+        clearSecondaryColor: secondaryArgb == null,
+        tertiaryColor: tertiaryArgb,
+        clearTertiaryColor: tertiaryArgb == null,
+        surfaceColor: surfaceArgb,
+        clearSurfaceColor: surfaceArgb == null,
+        clearExclusiveScheme: true,
+        clearColorSeed: true,
         useImageColors: false,
         useDynamic: false,
       ),

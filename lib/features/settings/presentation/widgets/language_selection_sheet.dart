@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/localization/l10n_extension.dart';
+import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
 import 'package:shonenx/shared/providers/locale_prefs_provider.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 
@@ -19,75 +20,44 @@ class LanguageSelectionSheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final activeLocale = ref.watch(appLocaleProvider);
-    final cs = Theme.of(context).colorScheme;
     final l10n = context.l10n;
 
-    return ListView(
-      shrinkWrap: true,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // System Default Option
-        _LanguageTile(
-          title: l10n.settingsSystemDefault,
-          subtitle: 'Follow device system language',
-          isSelected: activeLocale == null,
-          onTap: () {
-            ref.read(appLocaleProvider.notifier).setLocale(null);
-            Navigator.of(context).pop();
-          },
-          colorScheme: cs,
+        SettingsGroup(
+          padding: EdgeInsets.zero,
+          children: [
+            SettingsSelectionTile(
+              title: l10n.settingsSystemDefault,
+              subtitle: 'Follow device system language',
+              isSelected: activeLocale == null,
+              onSelect: () {
+                ref.read(appLocaleProvider.notifier).setLocale(null);
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
         ),
-        const Divider(height: 16),
-        ...kSupportedAppLanguages.map(
-          (lang) => _LanguageTile(
-            title: lang.nativeName,
-            subtitle: lang.englishName,
-            isSelected: activeLocale?.languageCode == lang.code,
-            onTap: () {
-              ref.read(appLocaleProvider.notifier).setLocale(lang.locale);
-              Navigator.of(context).pop();
-            },
-            colorScheme: cs,
-          ),
+        const SizedBox(height: 12),
+        SettingsGroup(
+          padding: EdgeInsets.zero,
+          children: kSupportedAppLanguages
+              .map(
+                (lang) => SettingsSelectionTile(
+                  title: lang.nativeName,
+                  subtitle: lang.englishName,
+                  isSelected: activeLocale?.languageCode == lang.code,
+                  onSelect: () {
+                    ref.read(appLocaleProvider.notifier).setLocale(lang.locale);
+                    Navigator.of(context).pop();
+                  },
+                ),
+              )
+              .toList(),
         ),
       ],
-    );
-  }
-}
-
-class _LanguageTile extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final bool isSelected;
-  final VoidCallback onTap;
-  final ColorScheme colorScheme;
-
-  const _LanguageTile({
-    required this.title,
-    required this.subtitle,
-    required this.isSelected,
-    required this.onTap,
-    required this.colorScheme,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      title: Text(
-        title,
-        style: TextStyle(
-          fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-          color: isSelected ? colorScheme.primary : colorScheme.onSurface,
-        ),
-      ),
-      subtitle: Text(
-        subtitle,
-        style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
-      ),
-      trailing: isSelected
-          ? Icon(Icons.check_circle_rounded, color: colorScheme.primary)
-          : null,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      onTap: onTap,
     );
   }
 }

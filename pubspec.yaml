@@ -83,6 +83,7 @@ dependencies:
   material_ui: ^1.11.1
   cupertino_ui: ^1.1.7
   material_3_expressive: ^1.2.3
+  flex_color_picker: ^4.0.0
 
 dependency_overrides:
   flutter_inappwebview: 6.2.0-beta.2

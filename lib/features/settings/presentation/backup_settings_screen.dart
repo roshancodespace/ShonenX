@@ -233,64 +233,11 @@ class _BackupSettingsScreenState extends ConsumerState<BackupSettingsScreen> {
             ],
           ),
 
-          const Divider(height: 24, indent: 16, endIndent: 16),
-
           // ── Export ──
           SettingsSection(
             title: l10n.backupExportSection,
             subtitle: l10n.backupExportSectionSubtitle,
             children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 2,
-                ),
-                child: Row(
-                  children: [
-                    if (_existingCounts != null)
-                      Text(
-                        l10n.backupLocalRecordsCount(
-                          _totalRecordsCount.toString(),
-                        ),
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: cs.onSurfaceVariant,
-                        ),
-                      ),
-                    const Spacer(),
-                    TextButton(
-                      style: TextButton.styleFrom(
-                        visualDensity: VisualDensity.compact,
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _exportCategories.addAll(BackupCategory.values);
-                        });
-                      },
-                      child: Text(
-                        l10n.historySelectAll,
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                    ),
-                    TextButton(
-                      style: TextButton.styleFrom(
-                        visualDensity: VisualDensity.compact,
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _exportCategories.clear();
-                        });
-                      },
-                      child: Text(
-                        l10n.commonClear,
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
               for (final cat in BackupCategory.values)
                 SettingsSwitchTile(
                   icon: cat.icon,
@@ -303,45 +250,81 @@ class _BackupSettingsScreenState extends ConsumerState<BackupSettingsScreen> {
                         : _exportCategories.remove(cat);
                   }),
                 ),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10.0,
-                  vertical: 8.0,
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: FilledButton.icon(
-                        onPressed: _exporting
-                            ? null
-                            : () => _export(share: false),
-                        icon: _exporting
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : const Icon(Icons.save_outlined),
-                        label: Text(
-                          _exporting
-                              ? l10n.backupExporting
-                              : l10n.backupSaveBackup,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    IconButton.filledTonal(
-                      onPressed: _exporting ? null : () => _export(share: true),
-                      icon: const Icon(Icons.share_outlined),
-                      tooltip: l10n.backupShareBackup,
-                    ),
-                  ],
-                ),
-              ),
             ],
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Row(
+              children: [
+                if (_existingCounts != null)
+                  Text(
+                    l10n.backupLocalRecordsCount(_totalRecordsCount.toString()),
+                    style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+                  ),
+                const Spacer(),
+                TextButton(
+                  style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _exportCategories.addAll(BackupCategory.values);
+                    });
+                  },
+                  child: Text(
+                    l10n.historySelectAll,
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ),
+                TextButton(
+                  style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _exportCategories.clear();
+                    });
+                  },
+                  child: Text(
+                    l10n.commonClear,
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: _exporting ? null : () => _export(share: false),
+                    icon: _exporting
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Icon(Icons.save_outlined),
+                    label: Text(
+                      _exporting ? l10n.backupExporting : l10n.backupSaveBackup,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton.filledTonal(
+                  onPressed: _exporting ? null : () => _export(share: true),
+                  icon: const Icon(Icons.share_outlined),
+                  tooltip: l10n.backupShareBackup,
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 40),
         ],

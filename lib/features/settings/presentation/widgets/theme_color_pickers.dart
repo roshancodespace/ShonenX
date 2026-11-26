@@ -3,11 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/localization/l10n_extension.dart';
 import 'package:shonenx/core/theme/exclusive_schemes.dart';
 import 'package:shonenx/core/theme/standard_schemes.dart';
-import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
 import 'package:shonenx/features/settings/presentation/widgets/theme_palette_showcase.dart';
 import 'package:shonenx/features/settings/presentation/widgets/theme_variant_swatch_preview.dart';
 import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
+import 'package:shonenx/shared/widgets/selection_card_group.dart';
 
 void showStandardSchemePicker(
   BuildContext context,
@@ -163,24 +163,23 @@ class _ThemeVariantPicker extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return ListView.builder(
-      shrinkWrap: true,
-      itemCount: AppThemeVariant.values.length,
-      itemBuilder: (context, index) {
-        final variant = AppThemeVariant.values[index];
-        final isSelected = currentVariant == variant;
-
-        return SettingsSelectionTile(
-          leading: ThemeVariantSwatchPreview(
-            variant: variant,
-            isDark: Theme.of(context).brightness == Brightness.dark,
-          ),
-          title: variant.displayName,
-          subtitle: variant.subtitle,
-          isSelected: isSelected,
-          onSelect: () => onSelected(variant),
-        );
-      },
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      child: SelectionCardGroup(
+        children: AppThemeVariant.values.map((variant) {
+          final isSelected = currentVariant == variant;
+          return SelectionCardTile(
+            leading: ThemeVariantSwatchPreview(
+              variant: variant,
+              isDark: Theme.of(context).brightness == Brightness.dark,
+            ),
+            title: variant.displayName,
+            subtitle: variant.subtitle,
+            isSelected: isSelected,
+            onTap: () => onSelected(variant),
+          );
+        }).toList(),
+      ),
     );
   }
 }

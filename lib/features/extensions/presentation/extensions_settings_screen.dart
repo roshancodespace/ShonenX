@@ -10,8 +10,10 @@ import 'package:shonenx/features/extensions/providers/extensions_provider.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
+import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
+import 'package:shonenx/shared/widgets/m3e_split_button_group.dart';
 import 'package:shonenx/source_engine/source_registry.dart';
 
 import 'widgets/extension_guide_sheet.dart';
@@ -442,48 +444,59 @@ class _ExtensionsSettingsScreenState
     final roundness = ref.watch(
       themePrefsProvider.select((s) => s.uiRoundness),
     );
+    final settingsStyle = ref.watch(
+      uiPrefsProvider.select((s) => s.settingsStyle),
+    );
     final availableStr = totalAvailable > 99
         ? '99+'
         : totalAvailable.toString();
+    final segments = [
+      ButtonSegment<bool>(
+        value: true,
+        icon: const Icon(Icons.download_done_rounded, size: 18),
+        label: Text(
+          context.l10n.extensionsInstalledCount(totalInstalled.toString()),
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+        ),
+      ),
+      ButtonSegment<bool>(
+        value: false,
+        icon: const Icon(Icons.explore_outlined, size: 18),
+        label: Text(
+          context.l10n.extensionsGetExtensionsCount(availableStr),
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+        ),
+      ),
+    ];
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      child: SegmentedButton<bool>(
-        showSelectedIcon: true,
-        segments: [
-          ButtonSegment<bool>(
-            value: true,
-            icon: const Icon(Icons.download_done_rounded, size: 18),
-            label: Text(
-              context.l10n.extensionsInstalledCount(totalInstalled.toString()),
-              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+      child: settingsStyle == SettingsStyle.classic
+          ? SegmentedButton<bool>(
+              showSelectedIcon: true,
+              segments: segments,
+              selected: {_isInstalledMode},
+              onSelectionChanged: (newSelection) {
+                setState(() => _isInstalledMode = newSelection.first);
+              },
+              style: ButtonStyle(
+                visualDensity: VisualDensity.compact,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                shape: WidgetStatePropertyAll(
+                  RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(roundness * 0.75),
+                  ),
+                ),
+              ),
+            )
+          : M3eSplitButtonGroup<bool>(
+              segments: segments,
+              selected: {_isInstalledMode},
+              expandSegments: true,
+              onSelectionChanged: (newSelection) {
+                setState(() => _isInstalledMode = newSelection.first);
+              },
             ),
-          ),
-          ButtonSegment<bool>(
-            value: false,
-            icon: const Icon(Icons.explore_outlined, size: 18),
-            label: Text(
-              context.l10n.extensionsGetExtensionsCount(availableStr),
-              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
-            ),
-          ),
-        ],
-        selected: {_isInstalledMode},
-        onSelectionChanged: (newSelection) {
-          setState(() {
-            _isInstalledMode = newSelection.first;
-          });
-        },
-        style: ButtonStyle(
-          visualDensity: VisualDensity.compact,
-          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          shape: WidgetStatePropertyAll(
-            RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(roundness * 0.75),
-            ),
-          ),
-        ),
-      ),
     );
   }
 
@@ -703,50 +716,53 @@ class _ExtensionsSettingsScreenState
                     ),
                   ),
                   const SizedBox(height: 12),
-                  ...engines.map((e) {
-                    final id = e.$1;
-                    final title = e.$2;
-                    final desc = e.$3;
-                    final isRuntimeEngine = [
-                      'mangayomi',
-                      'aniyomi',
-                      'cloudstream',
-                      'kotatsu',
-                      'sora',
-                    ].contains(id);
+                  SettingsGroup(
+                    padding: EdgeInsets.zero,
+                    children: engines.map((e) {
+                      final id = e.$1;
+                      final title = e.$2;
+                      final desc = e.$3;
+                      final isRuntimeEngine = [
+                        'mangayomi',
+                        'aniyomi',
+                        'cloudstream',
+                        'kotatsu',
+                        'sora',
+                      ].contains(id);
 
-                    final isEnabled =
-                        enabled.contains(id) &&
-                        (!isRuntimeEngine || isRuntimeReady);
+                      final isEnabled =
+                          enabled.contains(id) &&
+                          (!isRuntimeEngine || isRuntimeReady);
 
-                    return SettingsSwitchTile(
-                      icon: e.$4,
-                      title: title,
-                      subtitle: desc,
-                      value: isEnabled,
-                      onChanged: (val) {
-                        if (val && isRuntimeEngine) {
-                          if (!isRuntimeReady) {
-                            showRuntimeSetupSheet(
-                              context,
-                              ref,
-                              onComplete: () {
-                                notifier.toggleManager(id, true);
-                                ref.invalidate(availableAnimeSourcesProvider);
-                                ref.invalidate(availableMangaSourcesProvider);
-                                ref.invalidate(availableNovelSourcesProvider);
-                              },
-                            );
-                            return;
+                      return SettingsSwitchTile(
+                        icon: e.$4,
+                        title: title,
+                        subtitle: desc,
+                        value: isEnabled,
+                        onChanged: (val) {
+                          if (val && isRuntimeEngine) {
+                            if (!isRuntimeReady) {
+                              showRuntimeSetupSheet(
+                                context,
+                                ref,
+                                onComplete: () {
+                                  notifier.toggleManager(id, true);
+                                  ref.invalidate(availableAnimeSourcesProvider);
+                                  ref.invalidate(availableMangaSourcesProvider);
+                                  ref.invalidate(availableNovelSourcesProvider);
+                                },
+                              );
+                              return;
+                            }
                           }
-                        }
-                        notifier.toggleManager(id, val);
-                        ref.invalidate(availableAnimeSourcesProvider);
-                        ref.invalidate(availableMangaSourcesProvider);
-                        ref.invalidate(availableNovelSourcesProvider);
-                      },
-                    );
-                  }),
+                          notifier.toggleManager(id, val);
+                          ref.invalidate(availableAnimeSourcesProvider);
+                          ref.invalidate(availableMangaSourcesProvider);
+                          ref.invalidate(availableNovelSourcesProvider);
+                        },
+                      );
+                    }).toList(),
+                  ),
                   const SizedBox(height: 16),
                 ],
               ),

@@ -36,6 +36,9 @@ class _M3eDropdownState<T> extends State<M3eDropdown<T>>
   Size _triggerSize = Size.zero;
   bool _openAbove = false;
   bool _isOpen = false;
+  double _menuWidth = 180.0;
+  double _menuMaxHeight = 280.0;
+  double _horizontalOffset = 0.0;
 
   @override
   void initState() {
@@ -71,11 +74,33 @@ class _M3eDropdownState<T> extends State<M3eDropdown<T>>
     final renderBox = context.findRenderObject() as RenderBox?;
     if (renderBox != null && renderBox.hasSize) {
       final offset = renderBox.localToGlobal(Offset.zero);
-      final screenH = MediaQuery.sizeOf(context).height;
-      final spaceBelow = screenH - (offset.dy + renderBox.size.height);
-      final estimatedMenuH = math.min(widget.items.length * 48.0 + 16.0, 280.0);
+      final media = MediaQuery.of(context);
+      final screenW = media.size.width;
+      final screenH = media.size.height;
+      final minLeft = media.padding.left + 12.0;
+      final maxRight = screenW - media.padding.right - 12.0;
+      final maxAllowedW = math.max(120.0, maxRight - minLeft);
+
       _triggerSize = renderBox.size;
-      _openAbove = spaceBelow < estimatedMenuH && offset.dy > spaceBelow;
+      _menuWidth = math.min(math.max(_triggerSize.width, 180.0), maxAllowedW);
+
+      var dx = 0.0;
+      if (offset.dx + _menuWidth > maxRight) {
+        dx = maxRight - _menuWidth - offset.dx;
+      }
+      if (offset.dx + dx < minLeft) {
+        dx = minLeft - offset.dx;
+      }
+      _horizontalOffset = dx;
+
+      final spaceBelow =
+          screenH - media.padding.bottom - 12.0 - (offset.dy + _triggerSize.height);
+      final spaceAbove = offset.dy - (media.padding.top + 12.0);
+      final estimatedMenuH = math.min(widget.items.length * 48.0 + 16.0, 280.0);
+      _openAbove = spaceBelow < estimatedMenuH && spaceAbove > spaceBelow;
+
+      final availableH = _openAbove ? spaceAbove : spaceBelow;
+      _menuMaxHeight = math.min(280.0, math.max(120.0, availableH - 6.0));
     }
 
     setState(() => _isOpen = true);
@@ -154,8 +179,6 @@ class _M3eDropdownState<T> extends State<M3eDropdown<T>>
       child: OverlayPortal(
         controller: _overlayController,
         overlayChildBuilder: (overlayContext) {
-          final menuWidth = math.max(_triggerSize.width, 180.0);
-
           return Stack(
             children: [
               Positioned.fill(
@@ -173,7 +196,7 @@ class _M3eDropdownState<T> extends State<M3eDropdown<T>>
                 followerAnchor: _openAbove
                     ? Alignment.bottomLeft
                     : Alignment.topLeft,
-                offset: Offset(0, _openAbove ? -6 : 6),
+                offset: Offset(_horizontalOffset, _openAbove ? -6 : 6),
                 child: FadeTransition(
                   opacity: _expandAnim,
                   child: ScaleTransition(
@@ -187,8 +210,8 @@ class _M3eDropdownState<T> extends State<M3eDropdown<T>>
                     child: Material(
                       color: Colors.transparent,
                       child: Container(
-                        width: menuWidth,
-                        constraints: const BoxConstraints(maxHeight: 280),
+                        width: _menuWidth,
+                        constraints: BoxConstraints(maxHeight: _menuMaxHeight),
                         padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
                           color: cs.surfaceContainerHigh,

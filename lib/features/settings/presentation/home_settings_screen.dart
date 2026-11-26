@@ -143,48 +143,52 @@ class HomeSettingsScreen extends ConsumerWidget {
                   }
                 }
 
-                return SettingsSwitchTile(
+                return SettingsGroupItem(
                   key: ValueKey(section.id),
-                  leading: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      ReorderableDragStartListener(
-                        index: index,
-                        child: MouseRegion(
-                          cursor: SystemMouseCursors.click,
-                          child: Icon(
-                            Icons.drag_indicator_rounded,
-                            color: theme.colorScheme.onSurfaceVariant,
+                  index: index,
+                  count: homeSections.length,
+                  child: SettingsSwitchTile(
+                    leading: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ReorderableDragStartListener(
+                          index: index,
+                          child: MouseRegion(
+                            cursor: SystemMouseCursors.click,
+                            child: Icon(
+                              Icons.drag_indicator_rounded,
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Icon(
-                        getSectionIcon(),
-                        color: isDisabled
-                            ? theme.colorScheme.onSurfaceVariant.withValues(
-                                alpha: 0.5,
-                              )
-                            : theme.colorScheme.primary,
-                      ),
-                    ],
+                        const SizedBox(width: 8),
+                        Icon(
+                          getSectionIcon(),
+                          color: isDisabled
+                              ? theme.colorScheme.onSurfaceVariant.withValues(
+                                  alpha: 0.5,
+                                )
+                              : theme.colorScheme.primary,
+                        ),
+                      ],
+                    ),
+                    title: section.title,
+                    subtitle: getSubtitle(),
+                    value: !isDisabled,
+                    onChanged: (value) => ref
+                        .read(userHomeLayoutProvider.notifier)
+                        .updateSection(section.copyWith(disabled: !value)),
+                    onInfoCallback: () {
+                      showModalBottomSheet(
+                        context: context,
+                        useSafeArea: true,
+                        builder: (_) => _SectionOptionsSheet(
+                          section: section,
+                          existingSections: homeSections,
+                        ),
+                      );
+                    },
                   ),
-                  title: section.title,
-                  subtitle: getSubtitle(),
-                  value: !isDisabled,
-                  onChanged: (value) => ref
-                      .read(userHomeLayoutProvider.notifier)
-                      .updateSection(section.copyWith(disabled: !value)),
-                  onInfoCallback: () {
-                    showModalBottomSheet(
-                      context: context,
-                      useSafeArea: true,
-                      builder: (_) => _SectionOptionsSheet(
-                        section: section,
-                        existingSections: homeSections,
-                      ),
-                    );
-                  },
                 );
               },
             ),
@@ -231,9 +235,8 @@ class _SectionOptionsSheet extends ConsumerWidget {
     final l10n = context.l10n;
     return AppBottomSheet(
       title: l10n.homeSectionOptions,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      child: SettingsGroup(
+        padding: EdgeInsets.zero,
         children: [
           SettingsActionTile(
             icon: Icons.edit_rounded,
@@ -505,208 +508,185 @@ class _SectionFormSheetState extends ConsumerState<_SectionFormSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (!_isEditing) ...[
-            DropdownButtonFormField<HomeSectionType>(
-              initialValue: _selectedType,
-              decoration: InputDecoration(
-                labelText: l10n.homeSectionType,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              items: [
-                DropdownMenuItem(
-                  value: HomeSectionType.discovery,
-                  child: Row(
-                    children: [
-                      const Icon(Icons.explore_outlined, size: 20),
-                      const SizedBox(width: 8),
-                      Text(l10n.homeDiscoveryFeed),
-                      if (availableCats.isEmpty)
-                        Text(
-                          l10n.homeAllAdded,
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.error,
-                            fontSize: 12,
+          SettingsGroup(
+            padding: EdgeInsets.zero,
+            children: [
+              if (!_isEditing)
+                SettingsDropdownTile<HomeSectionType>(
+                  icon: Icons.view_agenda_outlined,
+                  title: l10n.homeSectionType,
+                  value: _selectedType,
+                  items: [
+                    DropdownMenuItem(
+                      value: HomeSectionType.discovery,
+                      child: Row(
+                        children: [
+                          const Icon(Icons.explore_outlined, size: 18),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              l10n.homeDiscoveryFeed,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
-                        ),
-                    ],
-                  ),
-                ),
-                DropdownMenuItem(
-                  value: HomeSectionType.continueMedia,
-                  child: Row(
-                    children: [
-                      const Icon(Icons.play_circle_outline, size: 20),
-                      const SizedBox(width: 8),
-                      Text(l10n.homeContinueProgress),
-                      if (!isContinueValid)
-                        Text(
-                          l10n.homeAlreadyAdded,
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.error,
-                            fontSize: 12,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                DropdownMenuItem(
-                  value: HomeSectionType.libraryStatus,
-                  child: Row(
-                    children: [
-                      const Icon(Icons.collections_bookmark_outlined, size: 20),
-                      const SizedBox(width: 8),
-                      Text(l10n.homeLibraryList),
-                      if (availableStats.isEmpty)
-                        Text(
-                          l10n.homeAllAdded,
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.error,
-                            fontSize: 12,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ],
-              onChanged: (val) {
-                if (val != null) {
-                  setState(() {
-                    _selectedType = val;
-                    _updateFormState();
-                  });
-                }
-              },
-            ),
-            const SizedBox(height: 16),
-          ],
-
-          DropdownButtonFormField<MediaType>(
-            initialValue: _selectedMediaType,
-            decoration: InputDecoration(
-              labelText: l10n.homeMediaType,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            items: availableMediaTypes
-                .map(
-                  (t) => DropdownMenuItem(value: t, child: Text(t.displayName)),
-                )
-                .toList(),
-            onChanged: (val) {
-              if (val != null) {
-                setState(() {
-                  _selectedMediaType = val;
-                  _updateFormState();
-                });
-              }
-            },
-          ),
-          const SizedBox(height: 16),
-
-          if (_selectedType == HomeSectionType.discovery) ...[
-            DropdownButtonFormField<TrackerCategory>(
-              initialValue: _selectedCategory,
-              decoration: InputDecoration(
-                labelText: l10n.homeCategory,
-                helperText: isSourceMode
-                    ? l10n.homeCategoriesLockedHelper
-                    : null,
-                helperStyle: isSourceMode
-                    ? TextStyle(color: Theme.of(context).colorScheme.tertiary)
-                    : null,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              items: availableCats
-                  .map(
-                    (cat) =>
-                        DropdownMenuItem(value: cat, child: Text(cat.label)),
-                  )
-                  .toList(),
-              onChanged: isSourceMode
-                  ? null
-                  : (val) {
-                      if (val != null) {
-                        setState(() {
-                          _selectedCategory = val;
-                          _updateAutoTitle();
-                        });
-                      }
-                    },
-            ),
-            const SizedBox(height: 16),
-          ],
-
-          if (_selectedType == HomeSectionType.libraryStatus) ...[
-            DropdownButtonFormField<TrackedStatus>(
-              initialValue: _selectedStatus,
-              decoration: InputDecoration(
-                labelText: l10n.homeListToDisplay,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              items: availableStats
-                  .map(
-                    (e) => DropdownMenuItem(
-                      value: e,
-                      child: Text(e.getLabelForMedia(_selectedMediaType)),
+                        ],
+                      ),
                     ),
-                  )
-                  .toList(),
-              onChanged: (val) {
-                setState(() {
-                  _selectedStatus = val;
-                  _updateAutoTitle();
-                });
-              },
-            ),
-            const SizedBox(height: 16),
-            DropdownButtonFormField<TrackerType?>(
-              initialValue: _targetTracker,
-              decoration: InputDecoration(
-                labelText: l10n.homeDataSource,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                    DropdownMenuItem(
+                      value: HomeSectionType.continueMedia,
+                      child: Row(
+                        children: [
+                          const Icon(Icons.play_circle_outline, size: 18),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              l10n.homeContinueProgress,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    DropdownMenuItem(
+                      value: HomeSectionType.libraryStatus,
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.collections_bookmark_outlined,
+                            size: 18,
+                          ),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              l10n.homeLibraryList,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  onChanged: (val) {
+                    if (val != null) {
+                      setState(() {
+                        _selectedType = val;
+                        _updateFormState();
+                      });
+                    }
+                  },
                 ),
+              SettingsDropdownTile<MediaType>(
+                icon: Icons.perm_media_outlined,
+                title: l10n.homeMediaType,
+                value: _selectedMediaType,
+                items: availableMediaTypes
+                    .map(
+                      (t) => DropdownMenuItem(
+                        value: t,
+                        child: Text(t.displayName),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (val) {
+                  if (val != null) {
+                    setState(() {
+                      _selectedMediaType = val;
+                      _updateFormState();
+                    });
+                  }
+                },
               ),
-              items: [
-                DropdownMenuItem(
-                  value: null,
-                  child: Text(l10n.homeAutoDefault),
+              if (_selectedType == HomeSectionType.discovery &&
+                  _selectedCategory != null)
+                SettingsDropdownTile<TrackerCategory>(
+                  icon: Icons.category_outlined,
+                  title: l10n.homeCategory,
+                  subtitle: isSourceMode
+                      ? l10n.homeCategoriesLockedHelper
+                      : null,
+                  value: _selectedCategory!,
+                  items: availableCats
+                      .map(
+                        (cat) => DropdownMenuItem(
+                          value: cat,
+                          child: Text(cat.label),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: isSourceMode
+                      ? null
+                      : (val) {
+                          if (val != null) {
+                            setState(() {
+                              _selectedCategory = val;
+                              _updateAutoTitle();
+                            });
+                          }
+                        },
                 ),
-                ...TrackerType.values.map(
-                  (t) => DropdownMenuItem(value: t, child: Text(t.displayName)),
+              if (_selectedType == HomeSectionType.libraryStatus) ...[
+                if (_selectedStatus != null)
+                  SettingsDropdownTile<TrackedStatus>(
+                    icon: Icons.bookmark_border_rounded,
+                    title: l10n.homeListToDisplay,
+                    value: _selectedStatus!,
+                    items: availableStats
+                        .map(
+                          (e) => DropdownMenuItem(
+                            value: e,
+                            child: Text(e.getLabelForMedia(_selectedMediaType)),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (val) {
+                      setState(() {
+                        _selectedStatus = val;
+                        _updateAutoTitle();
+                      });
+                    },
+                  ),
+                SettingsDropdownTile<TrackerType?>(
+                  icon: Icons.sync_rounded,
+                  title: l10n.homeDataSource,
+                  value: _targetTracker,
+                  items: [
+                    DropdownMenuItem(
+                      value: null,
+                      child: Text(l10n.homeAutoDefault),
+                    ),
+                    ...TrackerType.values.map(
+                      (t) => DropdownMenuItem(
+                        value: t,
+                        child: Text(t.displayName),
+                      ),
+                    ),
+                  ],
+                  onChanged: (val) => setState(() => _targetTracker = val),
                 ),
               ],
-              onChanged: (val) => setState(() => _targetTracker = val),
-            ),
-            const SizedBox(height: 16),
-          ],
-
-          TextField(
-            controller: _titleController,
-            decoration: InputDecoration(
-              labelText: l10n.homeSectionTitle,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+              SettingsCustomTile(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                child: TextField(
+                  controller: _titleController,
+                  decoration: InputDecoration(
+                    labelText: l10n.homeSectionTitle,
+                    border: InputBorder.none,
+                    isDense: true,
+                    suffixIcon: _titleController.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear, size: 20),
+                            onPressed: () {
+                              _titleController.clear();
+                              setState(() => _titleModified = true);
+                            },
+                          )
+                        : null,
+                  ),
+                  onChanged: (_) => setState(() => _titleModified = true),
+                  onSubmitted: (_) => _submit(),
+                ),
               ),
-              suffixIcon: _titleController.text.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(Icons.clear, size: 20),
-                      onPressed: () {
-                        _titleController.clear();
-                        setState(() => _titleModified = true);
-                      },
-                    )
-                  : null,
-            ),
-            onChanged: (_) => setState(() => _titleModified = true),
-            onSubmitted: (_) => _submit(),
+            ],
           ),
 
           const SizedBox(height: 16),

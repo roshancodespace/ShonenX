@@ -344,6 +344,97 @@ class _InfoButton extends StatelessWidget {
   }
 }
 
+class SettingsGroupItem extends ConsumerWidget {
+  final int index;
+  final int count;
+  final Widget child;
+  final EdgeInsetsGeometry? padding;
+
+  const SettingsGroupItem({
+    super.key,
+    required this.index,
+    required this.count,
+    required this.child,
+    this.padding,
+  });
+
+  _Position _positionOf() {
+    if (count <= 1) return _Position.single;
+    if (index == 0) return _Position.first;
+    if (index == count - 1) return _Position.last;
+    return _Position.middle;
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final style = ref.watch(uiPrefsProvider.select((s) => s.settingsStyle));
+    final isClassic = style == SettingsStyle.classic;
+
+    return _SettingsStyleScope(
+      style: style,
+      child: Padding(
+        padding:
+            padding ??
+            (isClassic
+                ? const EdgeInsets.symmetric(horizontal: 10)
+                : EdgeInsets.fromLTRB(
+                    12,
+                    0,
+                    12,
+                    index < count - 1 ? _groupGap : 0,
+                  )),
+        child: _GroupPosition(position: _positionOf(), child: child),
+      ),
+    );
+  }
+}
+
+class SettingsGroup extends ConsumerWidget {
+  final List<Widget> children;
+  final EdgeInsetsGeometry? padding;
+
+  const SettingsGroup({
+    super.key,
+    required this.children,
+    this.padding,
+  });
+
+  _Position _positionOf(int index) {
+    if (children.length == 1) return _Position.single;
+    if (index == 0) return _Position.first;
+    if (index == children.length - 1) return _Position.last;
+    return _Position.middle;
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (children.isEmpty) return const SizedBox.shrink();
+    final style = ref.watch(uiPrefsProvider.select((s) => s.settingsStyle));
+    final isClassic = style == SettingsStyle.classic;
+
+    return _SettingsStyleScope(
+      style: style,
+      child: Padding(
+        padding:
+            padding ??
+            (isClassic
+                ? const EdgeInsets.symmetric(horizontal: 10)
+                : _sectionPadding),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (var i = 0; i < children.length; i++) ...[
+              if (i > 0 && !isClassic) const SizedBox(height: _groupGap),
+              _GroupPosition(position: _positionOf(i), child: children[i]),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class SettingsSection extends ConsumerWidget {
   final String title;
   final String? subtitle;
@@ -355,13 +446,6 @@ class SettingsSection extends ConsumerWidget {
     this.subtitle,
     required this.children,
   });
-
-  _Position _positionOf(int index) {
-    if (children.length == 1) return _Position.single;
-    if (index == 0) return _Position.first;
-    if (index == children.length - 1) return _Position.last;
-    return _Position.middle;
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -387,20 +471,7 @@ class SettingsSection extends ConsumerWidget {
                   : const EdgeInsets.fromLTRB(16, 0, 16, 8),
               child: _subtitle(colors, subtitle),
             ),
-          Padding(
-            padding: isClassic
-                ? const EdgeInsets.symmetric(horizontal: 10)
-                : _sectionPadding,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                for (var i = 0; i < children.length; i++) ...[
-                  if (i > 0 && !isClassic) const SizedBox(height: _groupGap),
-                  _GroupPosition(position: _positionOf(i), child: children[i]),
-                ],
-              ],
-            ),
-          ),
+          SettingsGroup(children: children),
           SizedBox(height: isClassic ? 12 : 16),
         ],
       ),

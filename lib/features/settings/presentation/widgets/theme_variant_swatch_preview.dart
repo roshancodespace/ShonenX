@@ -15,16 +15,18 @@ class ThemeVariantSwatchPreview extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final activeIsDark = Theme.of(context).brightness == Brightness.dark;
-    final prefs = ref.watch(themePrefsProvider);
+    final prefs = ref
+        .watch(themePrefsProvider)
+        .copyWith(themeVariant: variant);
     final resolved = resolveThemeColors(
       prefs,
       brightness: activeIsDark ? Brightness.dark : Brightness.light,
       dynamicColorScheme: prefs.useDynamic ? Theme.of(context).colorScheme : null,
     );
 
-    final Color previewPrimary = resolved.primaryKey;
-    final Color previewSecondary = resolved.secondaryKey;
-    final Color previewTertiary = resolved.tertiaryKey;
+    final Color previewPrimary = resolved.colorScheme.primary;
+    final Color previewSecondary = resolved.colorScheme.secondary;
+    final Color previewTertiary = resolved.colorScheme.tertiary;
 
     return CircleAvatar(
       radius: 18,

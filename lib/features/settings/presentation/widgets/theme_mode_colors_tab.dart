@@ -5,6 +5,7 @@ import 'package:shonenx/core/theme/exclusive_schemes.dart';
 import 'package:shonenx/core/theme/standard_schemes.dart';
 import 'package:shonenx/core/theme/theme_color_resolver.dart';
 import 'package:shonenx/features/settings/presentation/widgets/preset_gallery_sheet.dart';
+import 'package:shonenx/features/settings/presentation/widgets/scheme_creator_sheet.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
 import 'package:shonenx/features/settings/presentation/widgets/theme_color_pickers.dart';
 import 'package:shonenx/features/settings/presentation/widgets/theme_palette_showcase.dart';
@@ -109,6 +110,16 @@ class ThemeModeColorsTab extends ConsumerWidget {
               onChanged: (v) => notifier.updateTheme(
                 (p) => p.copyWith(useDynamic: v, clearExclusiveScheme: v),
               ),
+            ),
+            SettingsActionTile(
+              icon: Icons.colorize_rounded,
+              title: 'Custom Scheme Creator',
+              subtitle:
+                  (themePrefs.colorSeed != null ||
+                      themePrefs.primaryColor != null)
+                  ? 'Active custom scheme ($sourceName)'
+                  : 'Create your own seed or custom palette',
+              onTap: () => SchemeCreatorSheet.show(context),
             ),
             SettingsActionTile(
               icon: Icons.palette_outlined,

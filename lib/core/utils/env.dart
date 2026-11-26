@@ -21,6 +21,8 @@ class Env {
     'SIMKL_CLIENT_SECRET',
   );
 
+  static const TRAKT_CLIENT_ID = String.fromEnvironment('TRAKT_CLIENT_ID');
+
   // helpers
   static List<String> get ANILIST_CLIENT_ID_LIST =>
       ANILIST_CLIENT_ID.split('|');
@@ -37,4 +39,6 @@ class Env {
 
   static List<String> get SIMKL_CLIENT_SECRET_LIST =>
       SIMKL_CLIENT_SECRET.split('|');
+
+  static List<String> get TRAKT_CLIENT_ID_LIST => TRAKT_CLIENT_ID.split('|');
 }

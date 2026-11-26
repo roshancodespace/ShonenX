@@ -185,6 +185,7 @@ jobs:
             "MAL_CLIENT_SECRET": "${{ secrets.MAL_CLIENT_SECRET }}",
             "SIMKL_CLIENT_ID": "${{ secrets.SIMKL_CLIENT_ID }}",
             "SIMKL_CLIENT_SECRET": "${{ secrets.SIMKL_CLIENT_SECRET }}",
+            "TRAKT_CLIENT_ID": "${{ secrets.TRAKT_CLIENT_ID }}",
             "COMMENTUM_API_URL": "${{ secrets.COMMENTUM_API_URL }}",
             "RELEASE_REPO": "roshancodespace/ShonenX"
           }
@@ -262,6 +263,7 @@ jobs:
             "MAL_CLIENT_SECRET": "${{ secrets.MAL_CLIENT_SECRET }}",
             "SIMKL_CLIENT_ID": "${{ secrets.SIMKL_CLIENT_ID }}",
             "SIMKL_CLIENT_SECRET": "${{ secrets.SIMKL_CLIENT_SECRET }}",
+            "TRAKT_CLIENT_ID": "${{ secrets.TRAKT_CLIENT_ID }}",
             "COMMENTUM_API_URL": "${{ secrets.COMMENTUM_API_URL }}",
             "RELEASE_REPO": "roshancodespace/ShonenX"
           }
@@ -400,6 +402,7 @@ jobs:
             "MAL_CLIENT_SECRET": "${{ secrets.MAL_CLIENT_SECRET }}",
             "SIMKL_CLIENT_ID": "${{ secrets.SIMKL_CLIENT_ID }}",
             "SIMKL_CLIENT_SECRET": "${{ secrets.SIMKL_CLIENT_SECRET }}",
+            "TRAKT_CLIENT_ID": "${{ secrets.TRAKT_CLIENT_ID }}",
             "COMMENTUM_API_URL": "${{ secrets.COMMENTUM_API_URL }}",
             "RELEASE_REPO": "roshancodespace/ShonenX"
           }
@@ -494,6 +497,7 @@ jobs:
             "MAL_CLIENT_SECRET": "${{ secrets.MAL_CLIENT_SECRET }}",
             "SIMKL_CLIENT_ID": "${{ secrets.SIMKL_CLIENT_ID }}",
             "SIMKL_CLIENT_SECRET": "${{ secrets.SIMKL_CLIENT_SECRET }}",
+            "TRAKT_CLIENT_ID": "${{ secrets.TRAKT_CLIENT_ID }}",
             "COMMENTUM_API_URL": "${{ secrets.COMMENTUM_API_URL }}",
             "RELEASE_REPO": "roshancodespace/ShonenX"
           }
@@ -567,6 +571,7 @@ jobs:
             "MAL_CLIENT_SECRET": "${{ secrets.MAL_CLIENT_SECRET }}",
             "SIMKL_CLIENT_ID": "${{ secrets.SIMKL_CLIENT_ID }}",
             "SIMKL_CLIENT_SECRET": "${{ secrets.SIMKL_CLIENT_SECRET }}",
+            "TRAKT_CLIENT_ID": "${{ secrets.TRAKT_CLIENT_ID }}",
             "COMMENTUM_API_URL": "${{ secrets.COMMENTUM_API_URL }}",
             "RELEASE_REPO": "roshancodespace/ShonenX"
           }

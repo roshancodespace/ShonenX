@@ -42,6 +42,8 @@ class _TrackingSettingsScreenState
         return Env.MAL_CLIENT_ID.isNotEmpty;
       case TrackerType.simkl:
         return Env.SIMKL_CLIENT_ID.isNotEmpty;
+      case TrackerType.trakt:
+        return Env.TRAKT_CLIENT_ID.isNotEmpty;
       default:
         return true;
     }
@@ -90,11 +92,13 @@ class _TrackingSettingsScreenState
                 ),
                 const SizedBox(height: 2),
                 SelectableText(
-                  prefs.authMode == TrackerAuthMode.browser ||
-                          (prefs.authMode == TrackerAuthMode.auto &&
-                              (Platform.isWindows || Platform.isLinux))
-                      ? 'http://localhost:43824/success?code=1337'
-                      : 'shonenx://callback',
+                  type == TrackerType.trakt
+                      ? 'https://roshancodespace.github.io/ShonenX/oauth/trakt/callback'
+                      : (prefs.authMode == TrackerAuthMode.browser ||
+                                (prefs.authMode == TrackerAuthMode.auto &&
+                                    (Platform.isWindows || Platform.isLinux))
+                            ? 'http://localhost:43824/success?code=1337'
+                            : 'shonenx://callback'),
                   style: TextStyle(
                     fontSize: 11,
                     fontFamily: 'monospace',

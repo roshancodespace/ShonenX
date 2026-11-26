@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ShonenX — Trakt Authorization</title>
+  <style>
+    :root {
+      color-scheme: dark light;
+    }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 24px;
+      background: #0f1115;
+      color: #f3f4f6;
+      text-align: center;
+    }
+    .card {
+      max-width: 420px;
+      padding: 28px 24px;
+      border-radius: 16px;
+      background: #181b22;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    h1 {
+      font-size: 1.25rem;
+      margin: 0 0 8px;
+    }
+    p {
+      font-size: 0.95rem;
+      color: #9ca3af;
+      margin: 0 0 20px;
+      line-height: 1.5;
+    }
+    a.btn {
+      display: inline-block;
+      padding: 10px 18px;
+      border-radius: 10px;
+      background: #ed1c24;
+      color: #ffffff;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1 id="title">Returning to ShonenX…</h1>
+    <p id="desc">Completing your Trakt sign-in. If the app does not open automatically, tap the button below.</p>
+    <a id="fallback" class="btn" href="shonenx://callback">Open ShonenX</a>
+  </div>
+  <script>
+    (function () {
+      var search = window.location.search || '';
+      var params = new URLSearchParams(search);
+      var state = params.get('state') || '';
+      var error = params.get('error');
+
+      if (error) {
+        document.getElementById('title').textContent = 'Authorization Cancelled';
+        document.getElementById('desc').textContent = params.get('error_description') || 'Trakt authorization was not completed.';
+      }
+
+      var target = state.indexOf('desktop_') === 0
+        ? 'http://localhost:43824/success' + search
+        : 'shonenx://callback' + search;
+
+      document.getElementById('fallback').setAttribute('href', target);
+      window.location.replace(target);
+    })();
+  </script>
+</body>
+</html>
+

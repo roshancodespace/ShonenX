@@ -353,12 +353,17 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
   }
 
   Widget _buildVideoLayer(VideoEngine engine, PlayerState playerState) {
-    return Center(
+    return SizedBox.expand(
       child: Offstage(
         offstage: playerState.isLoading,
         child: Screenshot(
           controller: _screenshotController,
-          child: engine.buildVideoView(),
+          child: Consumer(
+            builder: (context, ref, _) {
+              final fit = ref.watch(playerPrefsProvider.select((s) => s.fit));
+              return engine.buildVideoView(fit: fit);
+            },
+          ),
         ),
       ),
     );

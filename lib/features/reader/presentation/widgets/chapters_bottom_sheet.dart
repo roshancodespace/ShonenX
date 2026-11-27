@@ -11,6 +11,10 @@ import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
 
 import 'grouped_chapter_tile.dart';
+import 'package:shonenx/shared/widgets/app_button.dart';
+import 'package:shonenx/shared/widgets/app_card_group.dart';
+import 'package:shonenx/shared/widgets/app_chip.dart';
+import 'package:shonenx/shared/widgets/app_empty_state.dart';
 import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 class ChaptersBottomSheet extends ConsumerStatefulWidget {
@@ -67,40 +71,23 @@ class _ChaptersBottomSheetState extends ConsumerState<ChaptersBottomSheet> {
           return Column(
             children: [
               Padding(
-                padding: const EdgeInsets.only(left: 4, right: 4, bottom: 12),
+                padding: const EdgeInsets.fromLTRB(4, 0, 4, 12),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      '${sortedNumbers.length} Chapters',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        color: theme.colorScheme.onSurfaceVariant,
-                        fontSize: 13.5,
-                      ),
+                    AppChip(
+                      icon: Icons.menu_book_rounded,
+                      label: '${sortedNumbers.length} Chapters',
                     ),
-                    TextButton.icon(
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                      ),
+                    AppButton(
+                      label: _isAscending ? 'Oldest First' : 'Newest First',
+                      icon: _isAscending
+                          ? Icons.arrow_upward_rounded
+                          : Icons.arrow_downward_rounded,
+                      variant: AppButtonVariant.tonal,
+                      size: AppButtonSize.small,
                       onPressed: () =>
                           setState(() => _isAscending = !_isAscending),
-                      icon: Icon(
-                        _isAscending
-                            ? Icons.arrow_upward_rounded
-                            : Icons.arrow_downward_rounded,
-                        size: 16,
-                      ),
-                      label: Text(
-                        _isAscending ? 'Oldest First' : 'Newest First',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 13,
-                        ),
-                      ),
                     ),
                   ],
                 ),
@@ -124,145 +111,84 @@ class _ChaptersBottomSheetState extends ConsumerState<ChaptersBottomSheet> {
                       final ep = eps.first;
                       final isCurrent = ep.id == widget.currentEpisode.id;
 
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        decoration: BoxDecoration(
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: AppCardSurface(
                           color: isCurrent
                               ? theme.colorScheme.primaryContainer.withValues(
                                   alpha: 0.45,
                                 )
-                              : theme.colorScheme.surfaceContainerHighest
-                                    .withValues(alpha: 0.35),
-                          borderRadius: BorderRadius.circular(
-                            GlobalUI.uiRoundness,
+                              : null,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
                           ),
-                          border: isCurrent
-                              ? Border.all(
-                                  color: theme.colorScheme.primary,
-                                  width: 1.5,
-                                )
-                              : Border.all(
-                                  color: theme.colorScheme.outlineVariant
-                                      .withValues(alpha: 0.3),
-                                  width: 1,
-                                ),
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(
-                            GlobalUI.uiRoundness,
+                          onTap: () => _handleEpisodeSelection(
+                            context,
+                            ref,
+                            ep,
+                            isCurrent,
                           ),
-                          child: InkWell(
-                            onTap: () => _handleEpisodeSelection(
-                              context,
-                              ref,
-                              ep,
-                              isCurrent,
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 12,
-                              ),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
                                       children: [
-                                        Row(
-                                          children: [
-                                            Flexible(
-                                              child: Text(
-                                                ep.title ?? chapterTitle,
-                                                style: TextStyle(
-                                                  fontWeight: isCurrent
-                                                      ? FontWeight.w800
-                                                      : FontWeight.w600,
-                                                  fontSize: 14.5,
-                                                  color: isCurrent
-                                                      ? theme
-                                                            .colorScheme
-                                                            .onPrimaryContainer
-                                                      : theme
-                                                            .colorScheme
-                                                            .onSurface,
-                                                ),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ),
-                                            if (ep.scanlator != null) ...[
-                                              const SizedBox(width: 8),
-                                              Container(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                      horizontal: 7,
-                                                      vertical: 2,
-                                                    ),
-                                                decoration: BoxDecoration(
-                                                  color: theme
-                                                      .colorScheme
-                                                      .primary
-                                                      .withValues(alpha: 0.15),
-                                                  borderRadius:
-                                                      BorderRadius.circular(
-                                                        100,
-                                                      ),
-                                                ),
-                                                child: Text(
-                                                  ep.scanlator!,
-                                                  style: TextStyle(
-                                                    fontSize: 11,
-                                                    fontWeight: FontWeight.w700,
-                                                    color: theme
+                                        Flexible(
+                                          child: Text(
+                                            ep.title ?? chapterTitle,
+                                            style: TextStyle(
+                                              fontWeight: isCurrent
+                                                  ? FontWeight.w800
+                                                  : FontWeight.w600,
+                                              fontSize: 14.5,
+                                              color: isCurrent
+                                                  ? theme
                                                         .colorScheme
-                                                        .primary,
-                                                  ),
-                                                  maxLines: 1,
-                                                  overflow:
-                                                      TextOverflow.ellipsis,
-                                                ),
-                                              ),
-                                            ],
-                                          ],
+                                                        .onPrimaryContainer
+                                                  : theme.colorScheme.onSurface,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
                                         ),
-                                        if (isCurrent) ...[
-                                          const SizedBox(height: 4),
-                                          Container(
+                                        if (ep.scanlator != null) ...[
+                                          const SizedBox(width: 8),
+                                          AppChip(
+                                            label: ep.scanlator!,
                                             padding: const EdgeInsets.symmetric(
-                                              horizontal: 6,
-                                              vertical: 2,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: theme.colorScheme.primary,
-                                              borderRadius:
-                                                  BorderRadius.circular(6),
-                                            ),
-                                            child: Text(
-                                              'CURRENT',
-                                              style: TextStyle(
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.w800,
-                                                color:
-                                                    theme.colorScheme.onPrimary,
-                                                letterSpacing: 0.5,
-                                              ),
+                                              horizontal: 8,
+                                              vertical: 3,
                                             ),
                                           ),
                                         ],
                                       ],
                                     ),
-                                  ),
-                                  if (isCurrent)
-                                    Icon(
-                                      Icons.check_circle_rounded,
-                                      color: theme.colorScheme.primary,
-                                      size: 20,
-                                    ),
-                                ],
+                                    if (isCurrent) ...[
+                                      const SizedBox(height: 6),
+                                      const AppChip(
+                                        label: 'CURRENT',
+                                        selected: true,
+                                        showCheckmark: false,
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 2,
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
                               ),
-                            ),
+                              if (isCurrent)
+                                Icon(
+                                  Icons.check_circle_rounded,
+                                  color: theme.colorScheme.primary,
+                                  size: 20,
+                                ),
+                            ],
                           ),
                         ),
                       );
@@ -292,11 +218,14 @@ class _ChaptersBottomSheetState extends ConsumerState<ChaptersBottomSheet> {
         },
         loading: () => const Padding(
           padding: EdgeInsets.all(32.0),
-          child: Center(child: AppProgressIndicator(type: AppProgressType.circular)),
+          child: Center(
+            child: AppProgressIndicator(type: AppProgressType.circular),
+          ),
         ),
-        error: (err, _) => Padding(
-          padding: const EdgeInsets.all(32.0),
-          child: Center(child: Text('Error: $err')),
+        error: (err, _) => AppEmptyState(
+          icon: Icons.error_outline_rounded,
+          title: 'Failed to load chapters',
+          subtitle: '$err',
         ),
       ),
     );

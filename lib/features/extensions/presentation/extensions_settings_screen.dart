@@ -12,8 +12,10 @@ import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
+import 'package:shonenx/shared/widgets/app_chip.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
 import 'package:shonenx/shared/widgets/app_button_group.dart';
+import 'package:shonenx/shared/widgets/m3e_dropdown.dart';
 import 'package:shonenx/source_engine/source_registry.dart';
 
 import 'widgets/extension_guide_sheet.dart';
@@ -188,7 +190,7 @@ class _ExtensionsSettingsScreenState
     final totalAvailable = countAvailableAnime + countAvailableManga;
 
     return PreferredSize(
-      preferredSize: const Size.fromHeight(130),
+      preferredSize: const Size.fromHeight(138),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -207,35 +209,34 @@ class _ExtensionsSettingsScreenState
   }
 
   Widget _buildFilterBar() {
-    final cs = Theme.of(context).colorScheme;
-    final roundness = ref.watch(
-      themePrefsProvider.select((s) => s.uiRoundness),
-    );
-
-    return SizedBox(
-      height: 40,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              _buildEngineCapsule(cs, roundness),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            _buildEngineDropdown(),
+            const SizedBox(width: 8),
+            _buildLanguageDropdown(),
+            if (_selectedEngineFilter != 'All' ||
+                _selectedLangFilter != 'All') ...[
               const SizedBox(width: 8),
-              _buildLanguageCapsule(cs, roundness),
-              if (_selectedEngineFilter != 'All' ||
-                  _selectedLangFilter != 'All') ...[
-                const SizedBox(width: 8),
-                _buildResetCapsule(cs, roundness),
-              ],
+              AppChip(
+                icon: Icons.close_rounded,
+                label: context.l10n.commonReset,
+                onTap: () => setState(() {
+                  _selectedEngineFilter = 'All';
+                  _selectedLangFilter = 'All';
+                }),
+              ),
             ],
-          ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildEngineCapsule(ColorScheme cs, double roundness) {
+  Widget _buildEngineDropdown() {
     const engines = [
       'All',
       'Mangayomi',
@@ -244,199 +245,66 @@ class _ExtensionsSettingsScreenState
       'Kotatsu',
       'Sora',
     ];
-    final isAll = _selectedEngineFilter == 'All';
 
-    return PopupMenuButton<String>(
-      initialValue: _selectedEngineFilter,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(roundness),
-      ),
-      onSelected: (val) => setState(() => _selectedEngineFilter = val),
-      itemBuilder: (context) {
-        return engines.map((e) {
-          final isSelected = _selectedEngineFilter == e;
-          return PopupMenuItem<String>(
-            value: e,
-            child: Row(
-              children: [
-                Icon(
-                  isSelected
-                      ? Icons.radio_button_checked_rounded
-                      : Icons.radio_button_unchecked_rounded,
-                  size: 18,
-                  color: isSelected ? cs.primary : cs.onSurfaceVariant,
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  e == 'All' ? context.l10n.extensionsAllEngines : e,
-                  style: TextStyle(
-                    fontWeight: isSelected
-                        ? FontWeight.bold
-                        : FontWeight.normal,
-                    color: isSelected ? cs.primary : cs.onSurface,
-                  ),
-                ),
-              ],
-            ),
-          );
-        }).toList();
+    return M3eDropdown<String>(
+      value: _selectedEngineFilter,
+      isExpanded: false,
+      compact: true,
+      hint: context.l10n.extensionsAllEngines,
+      onChanged: (val) {
+        if (val != null) {
+          setState(() => _selectedEngineFilter = val);
+        }
       },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: isAll
-              ? cs.surfaceContainerHighest.withValues(alpha: 0.5)
-              : cs.primaryContainer,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isAll
-                ? Colors.transparent
-                : cs.primary.withValues(alpha: 0.5),
+      items: engines.map((e) {
+        return DropdownMenuItem<String>(
+          value: e,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.extension_rounded, size: 16),
+              const SizedBox(width: 6),
+              Text(e == 'All' ? context.l10n.extensionsAllEngines : e),
+            ],
           ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.extension_rounded,
-              size: 16,
-              color: isAll ? cs.onSurfaceVariant : cs.onPrimaryContainer,
-            ),
-            const SizedBox(width: 6),
-            Text(
-              isAll ? context.l10n.extensionsAllEngines : _selectedEngineFilter,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: isAll ? FontWeight.w500 : FontWeight.bold,
-                color: isAll ? cs.onSurfaceVariant : cs.onPrimaryContainer,
-              ),
-            ),
-            const SizedBox(width: 4),
-            Icon(
-              Icons.keyboard_arrow_down_rounded,
-              size: 16,
-              color: isAll ? cs.onSurfaceVariant : cs.onPrimaryContainer,
-            ),
-          ],
-        ),
-      ),
+        );
+      }).toList(),
     );
   }
 
-  Widget _buildLanguageCapsule(ColorScheme cs, double roundness) {
+  Widget _buildLanguageDropdown() {
     final sortedLangs = ExtensionsService.getAvailableLanguages();
-    final isAll = _selectedLangFilter == 'All';
+    final safeValue = sortedLangs.contains(_selectedLangFilter)
+        ? _selectedLangFilter
+        : 'All';
 
-    return PopupMenuButton<String>(
-      initialValue: _selectedLangFilter,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(roundness),
-      ),
-      onSelected: (val) => setState(() => _selectedLangFilter = val),
-      itemBuilder: (context) {
-        return sortedLangs.map((l) {
-          final isSelected = _selectedLangFilter == l;
-          return PopupMenuItem<String>(
-            value: l,
-            child: Row(
-              children: [
-                Icon(
-                  isSelected
-                      ? Icons.radio_button_checked_rounded
-                      : Icons.radio_button_unchecked_rounded,
-                  size: 18,
-                  color: isSelected ? cs.primary : cs.onSurfaceVariant,
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  l == 'All'
-                      ? context.l10n.extensionsAllLanguages
-                      : l.toUpperCase(),
-                  style: TextStyle(
-                    fontWeight: isSelected
-                        ? FontWeight.bold
-                        : FontWeight.normal,
-                    color: isSelected ? cs.primary : cs.onSurface,
-                  ),
-                ),
-              ],
-            ),
-          );
-        }).toList();
+    return M3eDropdown<String>(
+      value: safeValue,
+      isExpanded: false,
+      compact: true,
+      hint: context.l10n.extensionsAllLanguages,
+      onChanged: (val) {
+        if (val != null) {
+          setState(() => _selectedLangFilter = val);
+        }
       },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: isAll
-              ? cs.surfaceContainerHighest.withValues(alpha: 0.5)
-              : cs.primaryContainer,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isAll
-                ? Colors.transparent
-                : cs.primary.withValues(alpha: 0.5),
+      items: sortedLangs.map((l) {
+        return DropdownMenuItem<String>(
+          value: l,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.language_rounded, size: 16),
+              const SizedBox(width: 6),
+              Text(
+                l == 'All'
+                    ? context.l10n.extensionsAllLanguages
+                    : l.toUpperCase(),
+              ),
+            ],
           ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.language_rounded,
-              size: 16,
-              color: isAll ? cs.onSurfaceVariant : cs.onPrimaryContainer,
-            ),
-            const SizedBox(width: 6),
-            Text(
-              isAll
-                  ? context.l10n.extensionsAllLanguages
-                  : _selectedLangFilter.toUpperCase(),
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: isAll ? FontWeight.w500 : FontWeight.bold,
-                color: isAll ? cs.onSurfaceVariant : cs.onPrimaryContainer,
-              ),
-            ),
-            const SizedBox(width: 4),
-            Icon(
-              Icons.keyboard_arrow_down_rounded,
-              size: 16,
-              color: isAll ? cs.onSurfaceVariant : cs.onPrimaryContainer,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildResetCapsule(ColorScheme cs, double roundness) {
-    return InkWell(
-      onTap: () => setState(() {
-        _selectedEngineFilter = 'All';
-        _selectedLangFilter = 'All';
-      }),
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: cs.errorContainer.withValues(alpha: 0.6),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.close_rounded, size: 14, color: cs.onErrorContainer),
-            const SizedBox(width: 4),
-            Text(
-              context.l10n.commonReset,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: cs.onErrorContainer,
-              ),
-            ),
-          ],
-        ),
-      ),
+        );
+      }).toList(),
     );
   }
 

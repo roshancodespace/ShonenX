@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:shonenx/core/localization/l10n_extension.dart';
 import 'package:shonenx/features/settings/presentation/reader_settings_screen.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
+import 'package:shonenx/shared/widgets/app_button_group.dart';
+import 'package:shonenx/shared/widgets/app_chip.dart';
 
 import 'reader_theme_info.dart';
 
@@ -21,7 +23,7 @@ class ReaderAppBar extends StatelessWidget implements PreferredSizeWidget {
   });
 
   @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+  Size get preferredSize => const Size.fromHeight(64);
 
   @override
   Widget build(BuildContext context) {
@@ -35,15 +37,12 @@ class ReaderAppBar extends StatelessWidget implements PreferredSizeWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Flexible(
               child: Container(
-                padding: const EdgeInsets.only(
-                  left: 6,
-                  right: 16,
-                  top: 6,
-                  bottom: 6,
-                ),
+                height: 44,
+                padding: const EdgeInsets.only(left: 4, right: 6),
                 decoration: BoxDecoration(
                   color: themeInfo.appBarBg,
                   borderRadius: BorderRadius.circular(uiRoundness),
@@ -64,27 +63,27 @@ class ReaderAppBar extends StatelessWidget implements PreferredSizeWidget {
                           alpha: 0.08,
                         ),
                         padding: EdgeInsets.zero,
-                        minimumSize: const Size(32, 32),
+                        minimumSize: const Size(34, 34),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(
-                            (uiRoundness - 4).clamp(0.0, uiRoundness),
+                            (uiRoundness - 4).clamp(4.0, uiRoundness),
                           ),
                         ),
                       ),
                       onPressed: context.pop,
                       icon: Icon(
-                        Icons.arrow_back_ios_new,
+                        Icons.arrow_back_ios_new_rounded,
                         color: themeInfo.textColor,
-                        size: 18,
+                        size: 17,
                       ),
                       tooltip: context.l10n.commonBack,
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 10),
                     Flexible(
                       child: Text(
                         mediaTitle,
                         style: TextStyle(
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w700,
                           color: themeInfo.textColor,
                           fontSize: 13.5,
                         ),
@@ -92,27 +91,14 @@ class ReaderAppBar extends StatelessWidget implements PreferredSizeWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Container(
+                    const SizedBox(width: 10),
+                    AppChip(
+                      label: 'Ch. $displayChapter',
+                      selected: true,
+                      showCheckmark: false,
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.primary.withValues(alpha: 0.18),
-                        borderRadius: BorderRadius.circular(
-                          (uiRoundness - 4).clamp(0.0, uiRoundness),
-                        ),
-                      ),
-                      child: Text(
-                        'Ch. $displayChapter',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w800,
-                          color: Theme.of(context).colorScheme.primary,
-                          fontSize: 12.5,
-                        ),
+                        horizontal: 10,
+                        vertical: 4,
                       ),
                     ),
                   ],
@@ -120,42 +106,22 @@ class ReaderAppBar extends StatelessWidget implements PreferredSizeWidget {
               ),
             ),
             const SizedBox(width: 12),
-            Container(
-              decoration: BoxDecoration(
-                color: themeInfo.appBarBg,
-                borderRadius: BorderRadius.circular(uiRoundness),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.15),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
+            AppActionButtonGroup(
+              outlined: false,
+              height: 44,
+              backgroundColor: themeInfo.appBarBg,
+              foregroundColor: themeInfo.textColor,
+              items: [
+                AppActionItem(
+                  icon: Icons.tune_rounded,
+                  tooltip: context.l10n.readerSettings,
+                  onTap: () => AppBottomSheet.show(
+                    context: context,
+                    title: context.l10n.readerSettings,
+                    child: const ReaderSettingsContent(),
                   ),
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    style: IconButton.styleFrom(
-                      minimumSize: const Size(42, 42),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(uiRoundness),
-                      ),
-                    ),
-                    icon: Icon(
-                      Icons.tune_rounded,
-                      color: themeInfo.textColor,
-                      size: 20,
-                    ),
-                    tooltip: context.l10n.readerSettings,
-                    onPressed: () => AppBottomSheet.show(
-                      context: context,
-                      title: context.l10n.readerSettings,
-                      child: const ReaderSettingsContent(),
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ],
         ),

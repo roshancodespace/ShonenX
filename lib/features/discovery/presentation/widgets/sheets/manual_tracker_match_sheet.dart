@@ -131,19 +131,25 @@ class _ManualTrackerMatchSheetState
           TextField(
             controller: _controller,
             decoration: InputDecoration(
-              labelText: 'Search Anime',
-              border: const OutlineInputBorder(),
+              labelText:
+                  'Search ${widget.type == MediaType.MANGA ? 'Manga' : 'Anime'}',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
               suffixIcon: _isLoading
                   ? const Padding(
                       padding: EdgeInsets.all(12.0),
                       child: SizedBox(
                         width: 20,
                         height: 20,
-                        child: AppProgressIndicator(type: AppProgressType.circular, strokeWidth: 2),
+                        child: AppProgressIndicator(
+                          type: AppProgressType.circular,
+                          strokeWidth: 2,
+                        ),
                       ),
                     )
                   : IconButton(
-                      icon: const Icon(Icons.search),
+                      icon: const Icon(Icons.search_rounded),
                       onPressed: () => _search(_controller.text),
                     ),
             ),

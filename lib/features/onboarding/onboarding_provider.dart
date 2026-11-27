@@ -26,3 +26,30 @@ class OnboardingNotifier extends Notifier<bool> {
 final onboardingProvider = NotifierProvider<OnboardingNotifier, bool>(() {
   return OnboardingNotifier();
 });
+
+class PrivacyPolicyNotifier extends Notifier<bool> {
+  static const _key = 'privacy_policy_accepted';
+
+  @override
+  bool build() {
+    final prefs = ref.watch(sharedPreferencesProvider);
+    return prefs.getBool(_key) ?? false;
+  }
+
+  Future<void> accept() async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    await prefs.setBool(_key, true);
+    state = true;
+  }
+
+  Future<void> reset() async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    await prefs.setBool(_key, false);
+    state = false;
+  }
+}
+
+final privacyPolicyAcceptedProvider =
+    NotifierProvider<PrivacyPolicyNotifier, bool>(() {
+      return PrivacyPolicyNotifier();
+    });

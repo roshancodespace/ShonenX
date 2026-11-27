@@ -4,6 +4,8 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
+import 'package:shonenx/shared/widgets/app_button.dart';
+import 'package:shonenx/shared/widgets/app_card_group.dart';
 import 'extension_beginner_sheet.dart';
 import 'runtime_setup_sheet.dart';
 
@@ -42,7 +44,7 @@ class ExtensionGuideSheet extends ConsumerWidget {
               isRuntimeReady,
               roundness,
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
             Text(
               'QUICK STEPS',
               style: textTheme.labelSmall?.copyWith(
@@ -52,68 +54,59 @@ class ExtensionGuideSheet extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 10),
-            _buildGuideStep(
-              context: context,
-              stepNumber: '1',
-              title: 'Add Repositories & Install',
-              description:
-                  'Add repository URLs to discover and install external extensions from supported runtime engines (Mangayomi, Aniyomi, CloudStream, etc.).',
-              icon: Icons.add_circle_outline_rounded,
-              roundness: roundness,
-            ),
-            _buildGuideStep(
-              context: context,
-              stepNumber: '2',
-              title: 'Pin Your Default Source',
-              description:
-                  'Tap the pin icon on any installed extension or inbuilt source to set it as your default streaming or reading provider.',
-              icon: Icons.push_pin_outlined,
-              roundness: roundness,
-            ),
-            _buildGuideStep(
-              context: context,
-              stepNumber: '3',
-              title: 'Filter by Engine & Language',
-              description:
-                  'Use the capsule pills right above the tabs to organize sources by specific language or extension engine.',
-              icon: Icons.filter_list_rounded,
-              roundness: roundness,
+            AppCardGroup(
+              padding: EdgeInsets.zero,
+              children: [
+                _buildGuideStep(
+                  context: context,
+                  stepNumber: '1',
+                  title: 'Add Repositories & Install',
+                  description:
+                      'Add repository URLs to discover and install external extensions from supported runtime engines (Mangayomi, Aniyomi, CloudStream, etc.).',
+                  icon: Icons.add_circle_outline_rounded,
+                  roundness: roundness,
+                ),
+                _buildGuideStep(
+                  context: context,
+                  stepNumber: '2',
+                  title: 'Pin Your Default Source',
+                  description:
+                      'Tap the pin icon on any installed extension or inbuilt source to set it as your default streaming or reading provider.',
+                  icon: Icons.push_pin_outlined,
+                  roundness: roundness,
+                ),
+                _buildGuideStep(
+                  context: context,
+                  stepNumber: '3',
+                  title: 'Filter by Engine & Language',
+                  description:
+                      'Use the capsule pills right above the tabs to organize sources by specific language or extension engine.',
+                  icon: Icons.filter_list_rounded,
+                  roundness: roundness,
+                ),
+              ],
             ),
             const SizedBox(height: 20),
-            FilledButton.tonalIcon(
+            AppButton(
+              label: 'Interactive Beginner Guide',
+              icon: Icons.help_outline_rounded,
+              variant: AppButtonVariant.tonal,
+              size: AppButtonSize.medium,
+              isExpanded: true,
               onPressed: () {
                 Navigator.pop(context);
                 ExtensionBeginnerSheet.show(context);
               },
-              style: FilledButton.styleFrom(
-                backgroundColor: cs.errorContainer,
-                foregroundColor: cs.onErrorContainer,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(roundness),
-                ),
-              ),
-              icon: const Icon(Icons.help_outline_rounded),
-              label: const Text(
-                'Retarded? Interactive Beginner Guide',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
             ),
             const SizedBox(height: 10),
-            FilledButton(
+            AppButton(
+              label: 'Got it!',
+              variant: AppButtonVariant.primary,
+              size: AppButtonSize.medium,
+              isExpanded: true,
               onPressed: () => Navigator.pop(context),
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(roundness),
-                ),
-              ),
-              child: const Text(
-                'Got it!',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
           ],
         ),
       ),
@@ -128,58 +121,60 @@ class ExtensionGuideSheet extends ConsumerWidget {
     bool isRuntimeReady,
     double roundness,
   ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    return AppCardGroup(
+      padding: EdgeInsets.zero,
       children: [
-        Row(
-          children: [
-            Icon(
-              isRuntimeReady ? Icons.verified_rounded : Icons.memory_rounded,
-              color: isRuntimeReady ? Colors.green : cs.primary,
-              size: 24,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    isRuntimeReady
-                        ? 'Extension Runtime Active'
-                        : 'Extension Runtime Required',
-                    style: textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: isRuntimeReady ? Colors.green : cs.primary,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    isRuntimeReady
-                        ? 'External engines (Mangayomi, Aniyomi, CloudStream, etc.) are connected via runtime bridge.'
-                        : 'Set up the runtime bridge to enable external extension engines.',
-                    style: textTheme.labelSmall?.copyWith(
-                      color: cs.onSurfaceVariant,
-                    ),
-                  ),
-                ],
+        AppCardSurface(
+          color: isRuntimeReady
+              ? Colors.green.withValues(alpha: 0.1)
+              : cs.primaryContainer.withValues(alpha: 0.35),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Row(
+            children: [
+              Icon(
+                isRuntimeReady ? Icons.verified_rounded : Icons.memory_rounded,
+                color: isRuntimeReady ? Colors.green : cs.primary,
+                size: 24,
               ),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                showRuntimeSetupSheet(context, ref);
-              },
-              style: TextButton.styleFrom(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(roundness * 0.5),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isRuntimeReady
+                          ? 'Extension Runtime Active'
+                          : 'Extension Runtime Required',
+                      style: textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: isRuntimeReady ? Colors.green : cs.primary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      isRuntimeReady
+                          ? 'External engines (Mangayomi, Aniyomi, CloudStream, etc.) are connected via runtime bridge.'
+                          : 'Set up the runtime bridge to enable external extension engines.',
+                      style: textTheme.labelSmall?.copyWith(
+                        color: cs.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              child: Text(isRuntimeReady ? 'Manage' : 'Setup Now'),
-            ),
-          ],
+              const SizedBox(width: 8),
+              AppButton(
+                label: isRuntimeReady ? 'Manage' : 'Setup',
+                variant: AppButtonVariant.tonal,
+                size: AppButtonSize.small,
+                onPressed: () {
+                  Navigator.pop(context);
+                  showRuntimeSetupSheet(context, ref);
+                },
+              ),
+            ],
+          ),
         ),
-        const SizedBox(height: 12),
-        const Divider(height: 1),
       ],
     );
   }
@@ -195,17 +190,17 @@ class ExtensionGuideSheet extends ConsumerWidget {
     final cs = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+    return AppCardSurface(
+      padding: const EdgeInsets.all(14),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 32,
-            height: 32,
+            width: 30,
+            height: 30,
             decoration: BoxDecoration(
               color: cs.primaryContainer,
-              borderRadius: BorderRadius.circular(roundness * 0.5),
+              borderRadius: BorderRadius.circular(10),
             ),
             alignment: Alignment.center,
             child: Text(
@@ -216,7 +211,7 @@ class ExtensionGuideSheet extends ConsumerWidget {
               ),
             ),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

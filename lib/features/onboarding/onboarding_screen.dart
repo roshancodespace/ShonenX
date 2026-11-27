@@ -33,8 +33,14 @@ import 'package:shonenx/features/discord/presentation/widgets/discord_rpc_previe
 import 'package:shonenx/features/discord/providers/discord_provider.dart';
 import 'package:shonenx/features/discord/providers/discord_rpc_provider.dart';
 import 'package:shonenx/features/extensions/presentation/widgets/runtime_setup_sheet.dart';
+import 'package:shonenx/features/settings/presentation/widgets/preset_gallery_sheet.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
+import 'package:shonenx/shared/widgets/app_button.dart';
+import 'package:shonenx/shared/widgets/app_button_group.dart';
+import 'package:shonenx/shared/widgets/app_card_group.dart';
+import 'package:shonenx/shared/widgets/app_chip.dart';
 import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
+import 'package:shonenx/shared/widgets/privacy_policy_dialog.dart';
 
 enum _CardTarget { browse, watching, reading }
 
@@ -63,7 +69,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       _isDesktop || _isAndroidTv || _isTablet(context);
 
   int _totalPagesFor(BuildContext context) =>
-      8 + (_shouldShowExperimentalUiStep(context) ? 1 : 0) + (_isMobile ? 1 : 0);
+      8 +
+      (_shouldShowExperimentalUiStep(context) ? 1 : 0) +
+      (_isMobile ? 1 : 0);
 
   @override
   void initState() {
@@ -75,6 +83,16 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final isTv = await DeviceInfo.isAndroidTv();
     if (mounted && isTv) {
       setState(() => _isAndroidTv = true);
+    }
+  }
+
+  void _previousPage() {
+    if (_pageController.hasClients && _currentIndex > 0) {
+      _pageController.animateToPage(
+        _currentIndex - 1,
+        duration: const Duration(milliseconds: 450),
+        curve: Curves.fastOutSlowIn,
+      );
     }
   }
 
@@ -96,7 +114,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     }
   }
 
-  void _finishOnboarding() {
+  Future<void> _finishOnboarding() async {
+    if (!ref.read(privacyPolicyAcceptedProvider)) {
+      await showPrivacyPolicyDialog(context, ref);
+      if (!mounted || !ref.read(privacyPolicyAcceptedProvider)) return;
+    }
     ref.read(onboardingProvider.notifier).completeOnboarding();
     if (mounted) {
       context.goHome();
@@ -191,11 +213,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     );
   }
 
-  Widget _buildBottomControls(
-    ThemeData theme,
-    ColorScheme cs,
-    int totalPages,
-  ) {
+  Widget _buildBottomControls(ThemeData theme, ColorScheme cs, int totalPages) {
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 600),
@@ -208,9 +226,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 children: List.generate(totalPages, (index) {
                   return AnimatedContainer(
                     duration: const Duration(milliseconds: 300),
-                    margin: const EdgeInsets.only(right: 8),
-                    height: 8,
-                    width: _currentIndex == index ? 32 : 8,
+                    margin: const EdgeInsets.only(right: 6),
+                    height: 7,
+                    width: _currentIndex == index ? 24 : 7,
                     decoration: BoxDecoration(
                       color: _currentIndex == index
                           ? cs.primary
@@ -220,29 +238,33 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   );
                 }),
               ),
-              FilledButton(
-                onPressed: _nextPage,
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 32,
-                    vertical: 16,
-                  ),
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                ),
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 300),
-                  child: Text(
-                    _currentIndex == totalPages - 1 ? 'Get Started' : 'Next',
-                    key: ValueKey(_currentIndex == totalPages - 1),
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 16,
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_currentIndex > 0) ...[
+                    AppButton(
+                      label: 'Back',
+                      variant: AppButtonVariant.outlined,
+                      size: AppButtonSize.medium,
+                      onPressed: _previousPage,
                     ),
+                    const SizedBox(width: 10),
+                  ],
+                  AppButton(
+                    label: _currentIndex == totalPages - 1
+                        ? 'Get Started'
+                        : 'Next',
+                    trailing: Icon(
+                      _currentIndex == totalPages - 1
+                          ? Icons.check_rounded
+                          : Icons.arrow_forward_rounded,
+                      size: 18,
+                    ),
+                    variant: AppButtonVariant.primary,
+                    size: AppButtonSize.medium,
+                    onPressed: _nextPage,
                   ),
-                ),
+                ],
               ),
             ],
           ),
@@ -266,37 +288,37 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       customWidget: Padding(
         padding: const EdgeInsets.only(top: 24, left: 24, right: 24),
         child: Wrap(
-          alignment: WrapAlignment.center,
-          spacing: 12,
-          runSpacing: 12,
-          children: [
-            FilledButton.icon(
-              onPressed: () => launchUrl(
-                Uri.parse('https://discord.gg/Fp6HRPCsqe'),
-                mode: LaunchMode.externalApplication,
-              ),
-              icon: const SvgIcon(
-                '''<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
+              alignment: WrapAlignment.center,
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                FilledButton.icon(
+                  onPressed: () => launchUrl(
+                    Uri.parse('https://discord.gg/Fp6HRPCsqe'),
+                    mode: LaunchMode.externalApplication,
+                  ),
+                  icon: const SvgIcon(
+                    '''<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
                     <path d="M0 0h24v24H0z" fill="none" />
                     <path fill="currentColor" d="M18.59 5.89c-1.23-.57-2.54-.99-3.92-1.23c-.17.3-.37.71-.5 1.04c-1.46-.22-2.91-.22-4.34 0c-.14-.33-.34-.74-.51-1.04c-1.38.24-2.69.66-3.92 1.23c-2.48 3.74-3.15 7.39-2.82 10.98c1.65 1.23 3.24 1.97 4.81 2.46c.39-.53.73-1.1 1.03-1.69c-.57-.21-1.11-.48-1.62-.79c.14-.1.27-.21.4-.31c3.13 1.46 6.52 1.46 9.61 0c.13.11.26.21.4.31c-.51.31-1.06.57-1.62.79c.3.59.64 1.16 1.03 1.69c1.57-.49 3.17-1.23 4.81-2.46c.39-4.17-.67-7.78-2.82-10.98Zm-9.75 8.78c-.94 0-1.71-.87-1.71-1.94s.75-1.94 1.71-1.94s1.72.87 1.71 1.94c0 1.06-.75 1.94-1.71 1.94m6.31 0c-.94 0-1.71-.87-1.71-1.94s.75-1.94 1.71-1.94s1.72.87 1.71 1.94c0 1.06-.75 1.94-1.71 1.94" />
                   </svg>
                 ''',
-                size: 30,
-                color: Colors.white,
-              ),
-              label: const Text('Discord'),
-              style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFF5865F2),
-                foregroundColor: Colors.white,
-              ),
-            ),
-            FilledButton.icon(
-              onPressed: () => launchUrl(
-                Uri.parse('https://github.com/roshancodespace/shonenx'),
-                mode: LaunchMode.externalApplication,
-              ),
-              icon: const SvgIcon(
-                '''<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 16 16">
+                    size: 30,
+                    color: Colors.white,
+                  ),
+                  label: const Text('Discord'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFF5865F2),
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+                FilledButton.icon(
+                  onPressed: () => launchUrl(
+                    Uri.parse('https://github.com/roshancodespace/shonenx'),
+                    mode: LaunchMode.externalApplication,
+                  ),
+                  icon: const SvgIcon(
+                    '''<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 16 16">
                     <path d="M0 0h16v16H0z" fill="none" />
                     <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
                       <path d="m5.75 14.25s-.5-2 .5-3c0 0-2 0-3.5-1.5s-1-4.5 0-5.5c-.5-1.5.5-2.5.5-2.5s1.5 0 2.5 1c1-.5 3.5-.5 4.5 0 1-1 2.5-1 2.5-1s1 1 .5 2.5c1 1 1.5 4 0 5.5s-3.5 1.5-3.5 1.5c1 1 .5 3 .5 3" />
@@ -304,36 +326,36 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     </g>
                   </svg>
                 ''',
-                size: 24,
-                color: Colors.white,
-              ),
-              label: const Text('GitHub'),
-              style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFF24292E),
-                foregroundColor: Colors.white,
-              ),
-            ),
-            FilledButton.icon(
-              onPressed: () => launchUrl(
-                Uri.parse('https://buymeacoffee.com/roshan.codespace'),
-                mode: LaunchMode.externalApplication,
-              ),
-              icon: const SvgIcon(
-                '''<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 512 512">
+                    size: 24,
+                    color: Colors.white,
+                  ),
+                  label: const Text('GitHub'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFF24292E),
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+                FilledButton.icon(
+                  onPressed: () => launchUrl(
+                    Uri.parse('https://buymeacoffee.com/roshan.codespace'),
+                    mode: LaunchMode.externalApplication,
+                  ),
+                  icon: const SvgIcon(
+                    '''<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 512 512">
                     <path d="M0 0h512v512H0z" fill="none" />
                     <path fill="#fd0" d="M268.4 236.5c-18.4 7.9-39.3 16.8-66.3 16.8c-11.3 0-22.6-1.6-33.5-4.6l18.7 192.1c.7 8 4.3 15.5 10.2 21s13.7 8.5 21.7 8.5c0 0 26.5 1.4 35.4 1.4c9.5 0 38.1-1.4 38.1-1.4c8.1 0 15.8-3 21.7-8.5s9.6-12.9 10.2-21l20-212.2c-9-3.1-18-5.1-28.2-5.1c-17.4-.1-31.6 6-48 13" />
                     <path fill="#0d0c22" d="m431.3 136.8l-2.8-14.2c-2.5-12.7-8.3-24.8-21.4-29.4c-4.2-1.5-9-2.1-12.2-5.2s-4.2-7.8-4.9-12.2c-1.4-8.1-2.7-16.1-4.1-24.2c-1.2-6.9-2.2-14.7-5.4-21c-4.1-8.5-12.7-13.5-21.2-16.8c-4.4-1.6-8.8-3-13.4-4.1C324.6 4.1 302.2 2 280.3.8c-26.3-1.5-52.7-1-78.9 1.3c-19.5 1.8-40.1 3.9-58.7 10.7c-6.8 2.5-13.8 5.4-18.9 10.7c-6.3 6.4-8.4 16.4-3.8 24.4c3.3 5.7 8.9 9.7 14.8 12.4q11.55 5.1 24 7.8c22.9 5.1 46.7 7.1 70.1 7.9c26 1 52 .2 77.8-2.5c6.4-.7 12.8-1.5 19.1-2.5c7.5-1.2 12.3-11 10.1-17.8c-2.6-8.2-9.8-11.3-17.8-10.1c-1.2.2-2.4.4-3.5.5l-.9.1c-2.7.3-5.4.7-8.2 1c-5.6.6-11.3 1.1-16.9 1.5c-12.7.9-25.4 1.3-38 1.3c-12.5 0-24.9-.4-37.4-1.2c-5.7-.4-11.3-.8-17-1.4c-2.6-.3-5.1-.6-7.7-.9l-2.4-.3l-.5-.1l-2.5-.4c-5.2-.8-10.3-1.7-15.4-2.8c-.5-.1-1-.4-1.3-.8s-.5-.9-.5-1.5c0-.5.2-1 .5-1.5c.3-.4.8-.7 1.3-.8h.1c4.4-.9 8.9-1.7 13.4-2.5c1.5-.2 3-.5 4.5-.7c2.8-.2 5.6-.7 8.4-1c24.3-2.5 48.7-3.4 73.1-2.6c11.8.3 23.7 1 35.5 2.2c2.5.3 5.1.5 7.6.8c1 .1 1.9.3 2.9.4l2 .3c5.7.8 11.4 1.9 17 3.1c8.4 1.8 19.1 2.4 22.8 11.6c1.2 2.9 1.7 6.1 2.4 9.2l.8 3.9v.2c2 9.2 3.9 18.4 5.9 27.6q.15 1.05 0 2.1c-.1.7-.4 1.3-.8 1.9s-.9 1-1.5 1.4s-1.3.6-1.9.7h-.1l-1.2.2l-1.2.2c-3.8.5-7.6 1-11.3 1.4c-7.5.8-14.9 1.6-22.4 2.2c-14.9 1.2-29.7 2-44.7 2.4q-11.4.3-22.8.3c-30.2 0-60.4-1.8-90.5-5.3c-3.3-.4-6.5-.8-9.8-1.2c2.5.3-1.8-.2-2.7-.4c-2.1-.3-4.1-.6-6.2-.9c-6.9-1-13.8-2.3-20.8-3.4c-8.4-1.4-16.4-.7-23.9 3.4c-6.2 3.4-11.2 8.6-14.4 14.9c-3.3 6.8-4.2 14.1-5.7 21.4s-3.7 15.1-2.9 22.5c1.9 16.1 13.1 29.1 29.2 32c15.2 2.8 30.5 5 45.8 6.9c60.2 7.4 121 8.3 181.4 2.6l14.7-1.5c1.5-.2 3.1 0 4.5.5q2.25.75 3.9 2.4t2.4 3.9c.5 1.5.7 3 .5 4.5l-1.5 14.9c-3.1 30-6.2 60.1-9.2 90.1c-3.2 31.5-6.4 63.1-9.7 94.6c-.9 8.9-1.8 17.8-2.8 26.6c-.9 8.7-1 17.8-2.7 26.4c-2.6 13.6-11.8 21.9-25.2 25c-12.3 2.8-24.9 4.3-37.5 4.4c-14 .1-27.9-.5-41.9-.5c-14.9.1-33.2-1.3-44.7-12.4c-10.1-9.8-11.5-25-12.9-38.2c-1.8-17.5-3.7-35-5.5-52.4L158 284.7l-6.6-62.9c-.1-1-.2-2.1-.3-3.1c-.8-7.5-6.1-14.8-14.5-14.5c-7.2.3-15.3 6.4-14.5 14.5l4.9 46.6l10 96.4c2.9 27.4 5.7 54.8 8.6 82.2c.6 5.2 1.1 10.5 1.6 15.8c3.1 28.7 25.1 44.1 52.2 48.5c15.8 2.5 32.1 3.1 48.1 3.3c20.6.3 41.4 1.1 61.7-2.6c30-5.5 52.6-25.6 55.8-56.7c.9-9 1.8-18 2.8-27c3.1-29.7 6.1-59.4 9.1-89.2l10-97.1l4.6-44.5c.2-2.2 1.2-4.3 2.7-5.9s3.5-2.7 5.7-3.2c8.6-1.7 16.8-4.5 22.9-11.1c10-10.1 11.9-23.7 8.5-37.4m-323.1 9.6c.1-.1-.1 1.1-.2 1.6c-.1-.8 0-1.5.2-1.6m.8 6.5c.1 0 .3.2.5.6c-.3-.4-.6-.6-.5-.6m.8 1.1c.3.5.5.8 0 0m1.7 1.3l.1.1s-.1 0-.1-.1m288.2-2c-3.1 2.9-7.7 4.3-12.3 5c-51.5 7.6-103.8 11.5-155.9 9.8c-37.3-1.3-74.2-5.4-111.1-10.6c-3.6-.5-7.5-1.2-10-3.8c-4.7-5-2.4-15.2-1.2-21.2c1.1-5.6 3.3-13 9.9-13.8c10.3-1.2 22.3 3.1 32.6 4.7c12.3 1.9 24.7 3.4 37.1 4.5c52.9 4.8 106.7 4.1 159.4-3c9.6-1.3 19.2-2.8 28.7-4.5c8.5-1.5 17.9-4.4 23 4.4c3.5 6 4 14 3.4 20.8c-.1 2.9-1.4 5.7-3.6 7.7" />
                   </svg>
                 ''',
-              ),
-              label: const Text('Support'),
-              style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFFFFDD00),
-                foregroundColor: Colors.black87,
-              ),
+                  ),
+                  label: const Text('Support'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFFFFDD00),
+                    foregroundColor: Colors.black87,
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
       ),
     );
   }
@@ -350,45 +372,37 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         padding: const EdgeInsets.only(top: 24),
         child: Column(
           children: [
-            SizedBox(
-              width: 340,
-              child: SegmentedButton<int>(
-                segments: const [
-                  ButtonSegment(
-                    value: 0,
-                    icon: Icon(Icons.tv_rounded),
-                    label: Text('Anime'),
-                  ),
-                  ButtonSegment(
-                    value: 1,
-                    icon: Icon(Icons.auto_stories_rounded),
-                    label: Text('Manga'),
-                  ),
-                  ButtonSegment(
-                    value: 2,
-                    icon: Icon(Icons.auto_awesome_rounded),
-                    label: Text('Both'),
-                  ),
-                ],
-                selected: {_selectedContentFocus},
-                onSelectionChanged: (Set<int> newSelection) {
-                  final val = newSelection.first;
-                  setState(() => _selectedContentFocus = val);
-                  ref
-                      .read(userHomeLayoutProvider.notifier)
-                      .setupHomeLayoutForContentPreference(
-                        includeAnime: val == 0 || val == 2,
-                        includeManga: val == 1 || val == 2,
-                      );
-                },
-                showSelectedIcon: false,
-                style: SegmentedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 12,
-                  ),
+            AppButtonGroup<int>(
+              segments: const [
+                ButtonSegment(
+                  value: 0,
+                  icon: Icon(Icons.tv_rounded, size: 18),
+                  label: Text('Anime'),
                 ),
-              ),
+                ButtonSegment(
+                  value: 1,
+                  icon: Icon(Icons.auto_stories_rounded, size: 18),
+                  label: Text('Manga'),
+                ),
+                ButtonSegment(
+                  value: 2,
+                  icon: Icon(Icons.auto_awesome_rounded, size: 18),
+                  label: Text('Both'),
+                ),
+              ],
+              selected: {_selectedContentFocus},
+              onSelectionChanged: (Set<int> newSelection) {
+                final val = newSelection.first;
+                setState(() => _selectedContentFocus = val);
+                ref
+                    .read(userHomeLayoutProvider.notifier)
+                    .setupHomeLayoutForContentPreference(
+                      includeAnime: val == 0 || val == 2,
+                      includeManga: val == 1 || val == 2,
+                    );
+              },
+              expandSegments: true,
+              height: 44,
             ),
             const SizedBox(height: 20),
             AnimatedSwitcher(
@@ -431,8 +445,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     return _buildPageLayout(
       title: 'Choose Your Vibe',
       description: isDark
-          ? 'Set your theme mode, pick your signature accent color, and enable pitch-black AMOLED.'
-          : 'Set your theme mode and pick your signature accent color.',
+          ? 'Set your theme mode, pick an accent color, or explore full curated presets.'
+          : 'Set your theme mode, pick an accent color, or explore full curated presets.',
       icon: Icons.palette_rounded,
       theme: theme,
       cs: cs,
@@ -440,39 +454,34 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         padding: const EdgeInsets.only(top: 16),
         child: Column(
           children: [
-            SizedBox(
-              width: 260,
-              child: SegmentedButton<ThemeMode>(
-                segments: const [
-                  ButtonSegment(
-                    value: ThemeMode.system,
-                    icon: Icon(Icons.brightness_auto_rounded),
-                    tooltip: 'System',
-                  ),
-                  ButtonSegment(
-                    value: ThemeMode.light,
-                    icon: Icon(Icons.light_mode_rounded),
-                    tooltip: 'Light',
-                  ),
-                  ButtonSegment(
-                    value: ThemeMode.dark,
-                    icon: Icon(Icons.dark_mode_rounded),
-                    tooltip: 'Dark',
-                  ),
-                ],
-                selected: {themePrefs.themeMode},
-                onSelectionChanged: (Set<ThemeMode> newSelection) {
-                  notifier.updateTheme(
-                    (p) => p.copyWith(themeMode: newSelection.first),
-                  );
-                },
-                showSelectedIcon: false,
-                style: SegmentedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+            AppButtonGroup<ThemeMode>(
+              segments: const [
+                ButtonSegment(
+                  value: ThemeMode.system,
+                  icon: Icon(Icons.brightness_auto_rounded, size: 18),
+                  label: Text('System'),
                 ),
-              ),
+                ButtonSegment(
+                  value: ThemeMode.light,
+                  icon: Icon(Icons.light_mode_rounded, size: 18),
+                  label: Text('Light'),
+                ),
+                ButtonSegment(
+                  value: ThemeMode.dark,
+                  icon: Icon(Icons.dark_mode_rounded, size: 18),
+                  label: Text('Dark'),
+                ),
+              ],
+              selected: {themePrefs.themeMode},
+              onSelectionChanged: (Set<ThemeMode> newSelection) {
+                notifier.updateTheme(
+                  (p) => p.copyWith(themeMode: newSelection.first),
+                );
+              },
+              expandSegments: true,
+              height: 42,
             ),
-            const SizedBox(height: 28),
+            const SizedBox(height: 20),
 
             Wrap(
               spacing: 16,
@@ -573,6 +582,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     )
                   : const SizedBox.shrink(),
             ),
+            const SizedBox(height: 20),
+            AppButton(
+              label: 'Browse Theme Presets',
+              icon: Icons.auto_awesome_rounded,
+              variant: AppButtonVariant.tonal,
+              size: AppButtonSize.medium,
+              onPressed: () => PresetGallerySheet.show(context),
+            ),
           ],
         ),
       ),
@@ -618,6 +635,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final isManga = _selectedContentFocus == 1;
     final isWatching = effectiveTarget == _CardTarget.watching;
     final isReading = effectiveTarget == _CardTarget.reading;
+    final canToggleWide =
+        currentStyle != MediaCardStyle.compact &&
+        currentStyle != MediaCardStyle.cinematic &&
+        currentStyle != MediaCardStyle.wideBanner;
 
     final layout = currentStyle.getScaledLayout(
       scale,
@@ -666,7 +687,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         media: UnifiedMedia(
           id: 'onboarding_preview',
           type: isManga ? MediaType.MANGA : MediaType.ANIME,
-          title: MediaTitle(english: "Frieren: Beyond Journey's End"),
+          title: const MediaTitle(english: "Frieren: Beyond Journey's End"),
           cover: 'https://cdn.myanimelist.net/images/anime/1015/138006.jpg',
           format: isManga ? 'Manga' : 'TV',
           score: 9.1,
@@ -684,9 +705,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
     return _buildPageLayout(
       title: 'Card Presentation Style',
-      description: effectiveTarget == _CardTarget.watching
+      description: isWatching
           ? 'Customize how continue watching anime episode cards look on your feed.'
-          : (effectiveTarget == _CardTarget.reading
+          : (isReading
                 ? 'Customize how continue reading manga chapter cards look on your feed.'
                 : 'Customize how anime and manga discovery cards look throughout the app.'),
       icon: Icons.dashboard_outlined,
@@ -696,43 +717,34 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         padding: const EdgeInsets.only(top: 16),
         child: Column(
           children: [
-            SizedBox(
-              width: availableTargets.length == 3 ? 370 : 310,
-              child: SegmentedButton<_CardTarget>(
-                segments: [
-                  const ButtonSegment(
-                    value: _CardTarget.browse,
-                    icon: Icon(Icons.grid_view_rounded, size: 16),
-                    label: Text('Browse'),
-                  ),
-                  if (_selectedContentFocus != 1)
-                    const ButtonSegment(
-                      value: _CardTarget.watching,
-                      icon: Icon(Icons.play_circle_outline_rounded, size: 16),
-                      label: Text('Watching'),
-                    ),
-                  if (_selectedContentFocus != 0)
-                    const ButtonSegment(
-                      value: _CardTarget.reading,
-                      icon: Icon(Icons.auto_stories_rounded, size: 16),
-                      label: Text('Reading'),
-                    ),
-                ],
-                selected: {effectiveTarget},
-                onSelectionChanged: (set) {
-                  setState(() => _selectedCardTarget = set.first);
-                },
-                showSelectedIcon: false,
-                style: SegmentedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 10,
-                  ),
+            AppButtonGroup<_CardTarget>(
+              segments: [
+                const ButtonSegment(
+                  value: _CardTarget.browse,
+                  icon: Icon(Icons.grid_view_rounded, size: 16),
+                  label: Text('Browse'),
                 ),
-              ),
+                if (_selectedContentFocus != 1)
+                  const ButtonSegment(
+                    value: _CardTarget.watching,
+                    icon: Icon(Icons.play_circle_outline_rounded, size: 16),
+                    label: Text('Watching'),
+                  ),
+                if (_selectedContentFocus != 0)
+                  const ButtonSegment(
+                    value: _CardTarget.reading,
+                    icon: Icon(Icons.auto_stories_rounded, size: 16),
+                    label: Text('Reading'),
+                  ),
+              ],
+              selected: {effectiveTarget},
+              onSelectionChanged: (set) {
+                setState(() => _selectedCardTarget = set.first);
+              },
+              expandSegments: true,
+              height: 40,
             ),
             const SizedBox(height: 16),
-
             SizedBox(
               height: 250,
               child: Center(
@@ -744,24 +756,20 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               ),
             ),
             const SizedBox(height: 16),
-
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
+            AppChipGroup(
               alignment: WrapAlignment.center,
-              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 ...styles.map((s) {
                   final isSelected = currentStyle == s.$1;
-                  return ChoiceChip(
-                    avatar: Icon(s.$3, size: 16),
-                    label: Text(s.$2),
+                  return AppChip(
+                    icon: s.$3,
+                    label: s.$2,
                     selected: isSelected,
                     onSelected: (selected) {
                       if (selected) {
-                        if (effectiveTarget == _CardTarget.watching) {
+                        if (isWatching) {
                           uiNotifier.updateContinueWatchingStyle(s.$1);
-                        } else if (effectiveTarget == _CardTarget.reading) {
+                        } else if (isReading) {
                           uiNotifier.updateContinueReadingStyle(s.$1);
                         } else {
                           uiNotifier.updateCardStyle(s.$1);
@@ -770,25 +778,25 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     },
                   );
                 }),
-                FilterChip(
-                  avatar: Icon(
-                    isWide
+                if (canToggleWide)
+                  AppChip(
+                    icon: isWide
                         ? Icons.table_rows_rounded
                         : Icons.crop_portrait_rounded,
-                    size: 16,
+                    label: isWide ? 'Wide Mode' : 'Portrait Mode',
+                    selected: isWide,
+                    onSelected: (_) {
+                      if (isWatching) {
+                        uiNotifier.toggleContinueWatchingWide(
+                          currentStyle.name,
+                        );
+                      } else if (isReading) {
+                        uiNotifier.toggleContinueReadingWide(currentStyle.name);
+                      } else {
+                        uiNotifier.toggleMediaCardWide(currentStyle.name);
+                      }
+                    },
                   ),
-                  label: Text(isWide ? 'Wide Mode' : 'Portrait Mode'),
-                  selected: isWide,
-                  onSelected: (_) {
-                    if (effectiveTarget == _CardTarget.watching) {
-                      uiNotifier.toggleContinueWatchingWide(currentStyle.name);
-                    } else if (effectiveTarget == _CardTarget.reading) {
-                      uiNotifier.toggleContinueReadingWide(currentStyle.name);
-                    } else {
-                      uiNotifier.toggleMediaCardWide(currentStyle.name);
-                    }
-                  },
-                ),
               ],
             ),
           ],
@@ -862,58 +870,46 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            SegmentedButton<MetadataMode>(
+            AppButtonGroup<MetadataMode>(
               segments: const [
                 ButtonSegment(
                   value: MetadataMode.tracker,
                   label: Text('Tracker Feeds'),
-                  icon: Icon(Icons.cloud_rounded),
+                  icon: Icon(Icons.cloud_rounded, size: 18),
                 ),
                 ButtonSegment(
                   value: MetadataMode.source,
                   label: Text('Source Mode'),
-                  icon: Icon(Icons.extension_rounded),
+                  icon: Icon(Icons.extension_rounded, size: 18),
                 ),
               ],
               selected: {discPrefs.mode},
               onSelectionChanged: (val) {
                 ref.read(discoveryPrefsProvider.notifier).setMode(val.first);
               },
+              expandSegments: true,
+              height: 44,
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
             Text(
               isTrackerMode
                   ? '• Tracker Mode: Shows discovery rows (Trending, Popular, etc.) powered by AniList/MAL metadata.'
                   : '• Source Mode: Directly queries installed extension sources for discovery rows on your home feed.',
               style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
 
-            Text(
-              'CONTINUE SECTION',
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: cs.primary,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 1.1,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
+            AppChipGroup(
+              title: 'CONTINUE SECTION',
+              grouped: true,
               children: [
-                FilterChip(
-                  avatar: const Icon(
-                    Icons.play_circle_outline_rounded,
-                    size: 16,
-                  ),
-                  label: Text(
-                    isMangaMode
-                        ? 'Continue Reading'
-                        : (isBothMode
-                              ? 'Continue Watching & Reading'
-                              : 'Continue Watching'),
-                  ),
+                AppChip(
+                  icon: Icons.play_circle_outline_rounded,
+                  label: isMangaMode
+                      ? 'Continue Reading'
+                      : (isBothMode
+                            ? 'Continue Watching & Reading'
+                            : 'Continue Watching'),
                   selected: hasContinue,
                   onSelected: (val) {
                     if (val) {
@@ -965,31 +961,19 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 12),
 
-            Text(
-              'LIBRARY SECTIONS (BY STATUS)',
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: cs.primary,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 1.1,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
+            AppChipGroup(
+              title: 'LIBRARY SECTIONS (BY STATUS)',
+              grouped: true,
               children: selectableStatuses.map((status) {
                 final isSelected = hasLibraryStatus(status);
                 final label = isMangaMode
                     ? status.getLabelForMedia(MediaType.MANGA)
                     : status.getLabelForMedia(MediaType.ANIME);
-                return FilterChip(
-                  avatar: const Icon(
-                    Icons.collections_bookmark_rounded,
-                    size: 16,
-                  ),
-                  label: Text(label),
+                return AppChip(
+                  icon: Icons.collections_bookmark_rounded,
+                  label: label,
                   selected: isSelected,
                   onSelected: (val) {
                     if (val) {
@@ -1019,60 +1003,44 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 );
               }).toList(),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 12),
 
-            Text(
-              'TRACKER DISCOVERY CATEGORIES',
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: isTrackerMode
-                    ? cs.primary
-                    : cs.onSurface.withValues(alpha: 0.38),
-                fontWeight: FontWeight.w800,
-                letterSpacing: 1.1,
-              ),
-            ),
-            const SizedBox(height: 8),
             if (!isTrackerMode)
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: cs.surfaceContainerHighest.withValues(alpha: 0.4),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: cs.outlineVariant.withValues(alpha: 0.5),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.extension_outlined,
-                      size: 20,
-                      color: cs.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        'In Source Mode, discovery sections are dynamically loaded from active extensions. Switch to Tracker Feeds to customize tracker categories.',
-                        style: TextStyle(
-                          fontSize: 12,
+              AppCardGroup(
+                padding: EdgeInsets.zero,
+                children: [
+                  AppCardSurface(
+                    padding: const EdgeInsets.all(14),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.extension_outlined,
+                          size: 20,
                           color: cs.onSurfaceVariant,
                         ),
-                      ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'In Source Mode, discovery sections are dynamically loaded from active extensions. Switch to Tracker Feeds to customize tracker categories.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: cs.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               )
             else
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
+              AppChipGroup(
+                title: 'TRACKER DISCOVERY CATEGORIES',
+                grouped: true,
                 children: [
-                  FilterChip(
-                    avatar: const Icon(
-                      Icons.local_fire_department_rounded,
-                      size: 16,
-                    ),
-                    label: Text('Trending $defaultLabel'),
+                  AppChip(
+                    icon: Icons.local_fire_department_rounded,
+                    label: 'Trending $defaultLabel',
                     selected: hasTrending,
                     onSelected: (val) {
                       if (val) {
@@ -1096,9 +1064,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     },
                   ),
                   if (!isMangaMode)
-                    FilterChip(
-                      avatar: const Icon(Icons.rocket_launch_rounded, size: 16),
-                      label: Text('Upcoming $defaultLabel'),
+                    AppChip(
+                      icon: Icons.rocket_launch_rounded,
+                      label: 'Upcoming $defaultLabel',
                       selected: hasUpcoming,
                       onSelected: (val) {
                         if (val) {
@@ -1122,9 +1090,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         }
                       },
                     ),
-                  FilterChip(
-                    avatar: const Icon(Icons.emoji_events_rounded, size: 16),
-                    label: Text('Popular $defaultLabel'),
+                  AppChip(
+                    icon: Icons.emoji_events_rounded,
+                    label: 'Popular $defaultLabel',
                     selected: hasPopular,
                     onSelected: (val) {
                       if (val) {
@@ -1147,9 +1115,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       }
                     },
                   ),
-                  FilterChip(
-                    avatar: const Icon(Icons.star_rounded, size: 16),
-                    label: Text('Top Rated $defaultLabel'),
+                  AppChip(
+                    icon: Icons.star_rounded,
+                    label: 'Top Rated $defaultLabel',
                     selected: hasTopRated,
                     onSelected: (val) {
                       if (val) {
@@ -1182,7 +1150,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   Widget _buildExperimentalUiPage(ThemeData theme, ColorScheme cs) {
     final useNewUi = ref.watch(uiPrefsProvider.select((s) => s.useNewUi));
-    final radius = GlobalUI.uiRoundness.clamp(12.0, 24.0);
 
     return _buildPageLayout(
       title: 'Experimental TV UI',
@@ -1193,24 +1160,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       cs: cs,
       customWidget: Padding(
         padding: const EdgeInsets.only(top: 24),
-        child: Column(
+        child: AppCardGroup(
+          padding: EdgeInsets.zero,
           children: [
-            Container(
-              decoration: BoxDecoration(
-                color: useNewUi
-                    ? cs.primaryContainer.withValues(alpha: 0.45)
-                    : cs.surfaceContainerHigh,
-                borderRadius: BorderRadius.circular(radius),
-                border: Border.all(
-                  color: useNewUi
-                      ? cs.primary.withValues(alpha: 0.5)
-                      : cs.outlineVariant.withValues(alpha: 0.25),
-                ),
-              ),
+            AppCardSurface(
+              color: useNewUi
+                  ? cs.primaryContainer.withValues(alpha: 0.45)
+                  : null,
+              padding: EdgeInsets.zero,
               child: SwitchListTile(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(radius),
-                ),
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 6,
@@ -1222,14 +1180,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     color: useNewUi
                         ? cs.primaryContainer
                         : cs.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(
-                      (radius * 0.7).clamp(8.0, 16.0),
-                    ),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   alignment: Alignment.center,
                   child: Icon(
                     Icons.space_dashboard_rounded,
-                    color: useNewUi ? cs.onPrimaryContainer : cs.onSurfaceVariant,
+                    color: useNewUi
+                        ? cs.onPrimaryContainer
+                        : cs.onSurfaceVariant,
                   ),
                 ),
                 title: const Text(
@@ -1251,16 +1209,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 },
               ),
             ),
-            const SizedBox(height: 12),
-            Container(
+            AppCardSurface(
               padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: cs.surfaceContainerLow,
-                borderRadius: BorderRadius.circular(radius),
-                border: Border.all(
-                  color: cs.outlineVariant.withValues(alpha: 0.25),
-                ),
-              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -1289,11 +1239,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(
-                        Icons.tune_rounded,
-                        size: 18,
-                        color: cs.primary,
-                      ),
+                      Icon(Icons.tune_rounded, size: 18, color: cs.primary),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
@@ -1319,8 +1265,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   Widget _buildTrackersPage(ThemeData theme, ColorScheme cs) {
     final authTokens = ref.watch(authTokensProvider).value ?? {};
     final allTrackers = ref.watch(availableTrackersProvider);
-    final radius = GlobalUI.uiRoundness.clamp(12.0, 24.0);
-    final badgeRadius = (radius * 0.7).clamp(8.0, 16.0);
+    final trackers = allTrackers.whereType<RemoteTracker>().toList();
 
     return _buildPageLayout(
       title: 'Sync Your Progress',
@@ -1331,142 +1276,120 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       cs: cs,
       customWidget: Padding(
         padding: const EdgeInsets.only(top: 24),
-        child: Column(
-          children: allTrackers.whereType<RemoteTracker>().map((tracker) {
+        child: AppCardGroup(
+          padding: EdgeInsets.zero,
+          children: trackers.map((tracker) {
             final isLoggedIn = authTokens.containsKey(tracker.type);
             final profile = tracker.type.getProfile(ref);
             final profileName = profile?.username;
 
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: isLoggedIn
-                      ? cs.primaryContainer.withValues(alpha: 0.35)
-                      : cs.surfaceContainerHigh,
-                  borderRadius: BorderRadius.circular(radius),
-                  border: Border.all(
-                    color: isLoggedIn
-                        ? cs.primary.withValues(alpha: 0.45)
-                        : cs.outlineVariant.withValues(alpha: 0.25),
+            return AppCardSurface(
+              color: isLoggedIn
+                  ? cs.primaryContainer.withValues(alpha: 0.35)
+                  : null,
+              padding: const EdgeInsets.all(14),
+              child: Row(
+                children: [
+                  Container(
+                    width: 46,
+                    height: 46,
+                    decoration: BoxDecoration(
+                      color: isLoggedIn
+                          ? cs.primaryContainer
+                          : cs.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    alignment: Alignment.center,
+                    child: isLoggedIn
+                        ? SmartImage(
+                            imageUrl: profile?.avatarUrl ?? '',
+                            width: 46,
+                            height: 46,
+                            fit: BoxFit.cover,
+                            placeholder: (context, url) => const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: AppProgressIndicator(
+                                type: AppProgressType.circular,
+                                strokeWidth: 2,
+                              ),
+                            ),
+                            errorWidget: (context, url, error) => Icon(
+                              Icons.person_rounded,
+                              color: cs.onPrimaryContainer,
+                            ),
+                          )
+                        : tracker.type.getIconWidget(
+                            color: cs.onSurface,
+                            size: 24,
+                          ),
                   ),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: isLoggedIn
-                            ? cs.primaryContainer
-                            : cs.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(badgeRadius),
-                      ),
-                      clipBehavior: Clip.antiAlias,
-                      alignment: Alignment.center,
-                      child: isLoggedIn
-                          ? SmartImage(
-                              imageUrl: profile?.avatarUrl ?? '',
-                              width: 48,
-                              height: 48,
-                              fit: BoxFit.cover,
-                              placeholder: (context, url) => const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: AppProgressIndicator(type: AppProgressType.circular, strokeWidth: 2),
-                              ),
-                              errorWidget: (context, url, error) => Icon(
-                                Icons.person_rounded,
-                                color: cs.onPrimaryContainer,
-                              ),
-                            )
-                          : tracker.type.getIconWidget(
-                              color: cs.onSurface,
-                              size: 26,
-                            ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            tracker.type.displayName,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 15,
-                            ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          tracker.type.displayName,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
                           ),
-                          const SizedBox(height: 2),
-                          Row(
-                            children: [
-                              if (isLoggedIn) ...[
-                                Icon(
-                                  Icons.check_circle_rounded,
-                                  size: 14,
-                                  color: cs.primary,
-                                ),
-                                const SizedBox(width: 4),
-                              ],
-                              Flexible(
-                                child: Text(
-                                  isLoggedIn
-                                      ? 'Connected as ${profileName ?? 'User'}'
-                                      : 'Not connected',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: 12.5,
-                                    color: isLoggedIn
-                                        ? cs.primary
-                                        : cs.onSurfaceVariant,
-                                    fontWeight: isLoggedIn
-                                        ? FontWeight.w600
-                                        : FontWeight.normal,
-                                  ),
-                                ),
+                        ),
+                        const SizedBox(height: 2),
+                        Row(
+                          children: [
+                            if (isLoggedIn) ...[
+                              Icon(
+                                Icons.check_circle_rounded,
+                                size: 14,
+                                color: cs.primary,
                               ),
+                              const SizedBox(width: 4),
                             ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    FilledButton.tonalIcon(
-                      style: FilledButton.styleFrom(
-                        backgroundColor: isLoggedIn
-                            ? cs.errorContainer
-                            : cs.primary,
-                        foregroundColor: isLoggedIn
-                            ? cs.onErrorContainer
-                            : cs.onPrimary,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(badgeRadius),
+                            Flexible(
+                              child: Text(
+                                isLoggedIn
+                                    ? 'Connected as ${profileName ?? 'User'}'
+                                    : 'Not connected',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 12.5,
+                                  color: isLoggedIn
+                                      ? cs.primary
+                                      : cs.onSurfaceVariant,
+                                  fontWeight: isLoggedIn
+                                      ? FontWeight.w600
+                                      : FontWeight.normal,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 10,
-                        ),
-                      ),
-                      onPressed: () {
-                        if (isLoggedIn) {
-                          ref.read(authTokensProvider.notifier).logout(tracker);
-                        } else {
-                          ref.read(authTokensProvider.notifier).login(tracker);
-                        }
-                      },
-                      icon: Icon(
-                        isLoggedIn ? Icons.logout_rounded : Icons.login_rounded,
-                        size: 17,
-                      ),
-                      label: Text(
-                        isLoggedIn ? 'Unlink' : 'Link',
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(width: 10),
+                  AppButton(
+                    label: isLoggedIn ? 'Unlink' : 'Link',
+                    icon: isLoggedIn
+                        ? Icons.logout_rounded
+                        : Icons.login_rounded,
+                    variant: isLoggedIn
+                        ? AppButtonVariant.destructive
+                        : AppButtonVariant.primary,
+                    size: AppButtonSize.small,
+                    onPressed: () {
+                      if (isLoggedIn) {
+                        ref.read(authTokensProvider.notifier).logout(tracker);
+                      } else {
+                        ref.read(authTokensProvider.notifier).login(tracker);
+                      }
+                    },
+                  ),
+                ],
               ),
             );
           }).toList(),
@@ -1498,78 +1421,67 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         padding: const EdgeInsets.only(top: 16),
         child: Column(
           children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+            AppCardGroup(
+              padding: EdgeInsets.zero,
+              children: [
+                AppCardSurface(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.info_outline, color: cs.primary, size: 20),
-                      const SizedBox(width: 8),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.info_outline_rounded,
+                            color: cs.primary,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Extension Ecosystems',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: cs.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
                       Text(
-                        'Extension Ecosystems',
+                        '• External Runtime Engines: Connect to Mangayomi, Aniyomi, CloudStream, Kotatsu, and Sora via the extension runtime bridge.\n• Inbuilt Sources: ShonenX also comes with custom native sources directly integrated into the app.\n\nNote: ShonenX uses a minimal customized fork of AnymeXExtensionRuntimeBridge originally created by RyanYuuki.',
                         style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: cs.primary,
+                          fontSize: 13,
+                          color: cs.onSurfaceVariant,
+                          height: 1.4,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '• External Runtime Engines: Connect to Mangayomi, Aniyomi, CloudStream, Kotatsu, and Sora via the extension runtime bridge.\n• Inbuilt Sources: ShonenX also comes with custom native sources directly integrated into the app.\n\nNote: ShonenX uses a minimal customized fork of AnymeXExtensionRuntimeBridge originally created by RyanYuuki.',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: cs.onSurfaceVariant,
-                      height: 1.4,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
-            SizedBox(
-              width: double.maxFinite,
-              child: OutlinedButton.icon(
-                onPressed: () => setState(() {
-                  showRuntimeSetupSheet(
-                    context,
-                    ref,
-                    onComplete: () {
-                      if (mounted) setState(() {});
-                    },
-                  );
-                }),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-                icon: Icon(
-                  isRuntimeReady
-                      ? Icons.check_circle_rounded
-                      : Icons.download_rounded,
-                  color: isRuntimeReady ? Colors.green : cs.primary,
-                ),
-                label: Text(
-                  isRuntimeReady
-                      ? 'Runtime Bridge Installed'
-                      : 'Setup Aniyomi & CloudStream',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: isRuntimeReady ? Colors.green : cs.primary,
-                  ),
-                ),
-              ),
+            AppButton(
+              label: isRuntimeReady
+                  ? 'Runtime Bridge Installed'
+                  : 'Setup Aniyomi & CloudStream',
+              icon: isRuntimeReady
+                  ? Icons.check_circle_rounded
+                  : Icons.download_rounded,
+              variant: isRuntimeReady
+                  ? AppButtonVariant.tonal
+                  : AppButtonVariant.outlined,
+              size: AppButtonSize.medium,
+              isExpanded: true,
+              onPressed: () => setState(() {
+                showRuntimeSetupSheet(
+                  context,
+                  ref,
+                  onComplete: () {
+                    if (mounted) setState(() {});
+                  },
+                );
+              }),
             ),
           ],
         ),

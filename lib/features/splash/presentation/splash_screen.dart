@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/router/app_navigator.dart';
 import 'package:shonenx/app_init.dart';
 import 'package:shonenx/features/onboarding/onboarding_provider.dart';
+import 'package:shonenx/shared/widgets/privacy_policy_dialog.dart';
 import 'package:shonenx/features/splash/presentation/splash_quotes.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
 import 'package:shonenx/shared/widgets/svg_icon.dart';
@@ -109,23 +110,28 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
           _status = 'Ready';
         });
 
-        final pendingLink = AppInit.pendingDeepLink;
-        if (pendingLink != null) {
-          AppInit.pendingDeepLink = null;
-          final onboardingComplete = ref.read(onboardingProvider);
-          if (onboardingComplete) {
-            context.goHome();
+        final onboardingComplete = ref.read(onboardingProvider);
+        if (onboardingComplete && !ref.read(privacyPolicyAcceptedProvider)) {
+          await showPrivacyPolicyDialog(context, ref);
+        }
+
+        if (mounted) {
+          final pendingLink = AppInit.pendingDeepLink;
+          if (pendingLink != null) {
+            AppInit.pendingDeepLink = null;
+            if (onboardingComplete) {
+              context.goHome();
+            } else {
+              context.goOnboarding();
+            }
+            context.pushSettings();
+            context.pushPendingLink(pendingLink);
           } else {
-            context.goOnboarding();
-          }
-          context.pushSettings();
-          context.pushPendingLink(pendingLink);
-        } else {
-          final onboardingComplete = ref.read(onboardingProvider);
-          if (onboardingComplete) {
-            context.goHome();
-          } else {
-            context.goOnboarding();
+            if (onboardingComplete) {
+              context.goHome();
+            } else {
+              context.goOnboarding();
+            }
           }
         }
       }

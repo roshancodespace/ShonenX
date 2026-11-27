@@ -138,13 +138,14 @@ class SmartImage extends StatelessWidget {
           progressIndicatorBuilder: progressIndicatorBuilder,
           color: color,
           colorBlendMode: colorBlendMode,
-          placeholder:
-              placeholder ??
-              (_, __) => Container(
-                width: safeWidth,
-                height: safeHeight,
-                color: cs.surfaceContainerHighest.withValues(alpha: 0.35),
-              ),
+          placeholder: progressIndicatorBuilder != null
+              ? null
+              : (placeholder ??
+                    (_, _) => Container(
+                      width: safeWidth,
+                      height: safeHeight,
+                      color: cs.surfaceContainerHighest.withValues(alpha: 0.35),
+                    )),
           errorWidget: errorWidget ?? (_, __, ___) => fallback,
         ),
       );

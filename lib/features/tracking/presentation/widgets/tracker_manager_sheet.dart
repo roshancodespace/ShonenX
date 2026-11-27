@@ -16,6 +16,9 @@ import 'package:shonenx/features/tracking/providers/tracker_link_provider.dart';
 import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
+import 'package:shonenx/shared/widgets/app_button.dart';
+import 'package:shonenx/shared/widgets/app_button_group.dart';
+import 'package:shonenx/shared/widgets/app_card_group.dart';
 import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 class TrackerManagerSheet extends ConsumerWidget {
@@ -30,30 +33,28 @@ class TrackerManagerSheet extends ConsumerWidget {
 
     return AppBottomSheet(
       title: 'Manage Trackers',
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ...activeTrackers.map((tracker) {
-            final type = tracker.type;
-            final isRemote = tracker is RemoteTracker;
-            final isLinked = isRemote ? trackerLinks.containsKey(type) : true;
-            final isAuthenticated = type.isAuthenticated(ref) || !isRemote;
+      child: AppCardGroup(
+        padding: EdgeInsets.zero,
+        children: activeTrackers.map((tracker) {
+          final type = tracker.type;
+          final isRemote = tracker is RemoteTracker;
+          final isLinked = isRemote ? trackerLinks.containsKey(type) : true;
+          final isAuthenticated = type.isAuthenticated(ref) || !isRemote;
 
-            if (isLinked) {
-              return _LinkedTrackerRow(
-                media: media,
-                trackerMapping: isRemote ? trackerLinks[type] : null,
-                tracker: tracker,
-              );
-            }
+          if (isLinked) {
+            return _LinkedTrackerRow(
+              media: media,
+              trackerMapping: isRemote ? trackerLinks[type] : null,
+              tracker: tracker,
+            );
+          }
 
-            if (isAuthenticated) {
-              return _AvailableTrackerRow(media: media, tracker: tracker);
-            }
+          if (isAuthenticated) {
+            return _AvailableTrackerRow(media: media, tracker: tracker);
+          }
 
-            return _LoginTrackerRow(tracker: tracker);
-          }),
-        ],
+          return _LoginTrackerRow(tracker: tracker);
+        }).toList(),
       ),
     );
   }
@@ -70,32 +71,8 @@ class _AvailableTrackerRow extends StatelessWidget {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
 
-    return ListTile(
-      minTileHeight: 40,
-      leading: Container(
-        width: 42,
-        height: 42,
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: cs.surfaceContainerHighest,
-        ),
-        child: tracker.type.getIconWidget(size: 20, color: cs.onSurfaceVariant),
-      ),
-      title: Text(
-        tracker.type.displayName,
-        style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
-      ),
-      subtitle: Padding(
-        padding: const EdgeInsets.only(top: 4),
-        child: Text(
-          'Tap to link anime',
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: cs.onSurfaceVariant.withValues(alpha: 0.78),
-          ),
-        ),
-      ),
-      trailing: Icon(Icons.chevron_right_rounded, color: cs.onSurfaceVariant),
+    return AppCardSurface(
+      padding: EdgeInsets.zero,
       onTap: () {
         if (tracker is RemoteTracker) {
           showModalBottomSheet(
@@ -111,6 +88,33 @@ class _AvailableTrackerRow extends StatelessWidget {
           );
         }
       },
+      child: ListTile(
+        minTileHeight: 40,
+        leading: Container(
+          width: 42,
+          height: 42,
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: cs.surfaceContainerHighest,
+          ),
+          child: tracker.type.getIconWidget(size: 20, color: cs.onSurfaceVariant),
+        ),
+        title: Text(
+          tracker.type.displayName,
+          style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
+        ),
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Text(
+            'Tap to link ${media.type == MediaType.MANGA ? 'manga' : 'anime'}',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: cs.onSurfaceVariant.withValues(alpha: 0.78),
+            ),
+          ),
+        ),
+        trailing: Icon(Icons.chevron_right_rounded, color: cs.onSurfaceVariant),
+      ),
     );
   }
 }
@@ -125,47 +129,45 @@ class _LoginTrackerRow extends ConsumerWidget {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
 
-    return ListTile(
-      minTileHeight: 40,
-      leading: Container(
-        width: 42,
-        height: 42,
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: cs.surfaceContainerHighest,
+    return AppCardSurface(
+      padding: EdgeInsets.zero,
+      child: ListTile(
+        minTileHeight: 40,
+        leading: Container(
+          width: 42,
+          height: 42,
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: cs.surfaceContainerHighest,
+          ),
+          child: tracker.type.getIconWidget(size: 20, color: cs.onSurfaceVariant),
         ),
-        child: tracker.type.getIconWidget(size: 20, color: cs.onSurfaceVariant),
-      ),
-      title: Text(
-        tracker.type.displayName,
-        style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
-      ),
-      subtitle: Padding(
-        padding: const EdgeInsets.only(top: 4),
-        child: Text(
-          'Login required',
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: cs.onSurfaceVariant.withValues(alpha: 0.78),
+        title: Text(
+          tracker.type.displayName,
+          style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
+        ),
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Text(
+            'Login required',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: cs.onSurfaceVariant.withValues(alpha: 0.78),
+            ),
           ),
         ),
-      ),
-      trailing: FilledButton.tonal(
-        onPressed: () {
-          if (tracker is RemoteTracker) {
-            ref
-                .read(authTokensProvider.notifier)
-                .login(tracker as RemoteTracker);
-          }
-        },
-        style: FilledButton.styleFrom(
-          minimumSize: const Size(0, 42),
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(999),
-          ),
+        trailing: AppButton(
+          label: 'Login',
+          variant: AppButtonVariant.tonal,
+          size: AppButtonSize.small,
+          onPressed: () {
+            if (tracker is RemoteTracker) {
+              ref
+                  .read(authTokensProvider.notifier)
+                  .login(tracker as RemoteTracker);
+            }
+          },
         ),
-        child: const Text('Login'),
       ),
     );
   }
@@ -222,57 +224,45 @@ class _LinkedTrackerRow extends ConsumerWidget {
                           },
                   ),
                   const SizedBox(height: 24),
-                  FilledButton(
-                    onPressed: isDeleting
-                        ? null
-                        : () async {
-                            setState(() {
-                              isDeleting = true;
-                            });
+                  AppButton(
+                    label: 'Remove Connection',
+                    variant: AppButtonVariant.destructive,
+                    size: AppButtonSize.large,
+                    isExpanded: true,
+                    isLoading: isDeleting,
+                    onPressed: () async {
+                      setState(() {
+                        isDeleting = true;
+                      });
 
-                            if (deleteRemote) {
-                              try {
-                                await tracker.removeEntry(
-                                  trackingId:
-                                      trackerMapping?.trackingId ?? media.id,
-                                  mediaType: media.type,
-                                );
-                              } catch (_) {}
-                            }
+                      if (deleteRemote) {
+                        try {
+                          await tracker.removeEntry(
+                            trackingId:
+                                trackerMapping?.trackingId ?? media.id,
+                            mediaType: media.type,
+                          );
+                        } catch (_) {}
+                      }
 
-                            ref
-                                .read(trackerLinkProvider(media.id).notifier)
-                                .removeLink(tracker.type);
+                      ref
+                          .read(trackerLinkProvider(media.id).notifier)
+                          .removeLink(tracker.type);
 
-                            if (isLocal) {
-                              ref.invalidate(
-                                mediaTrackingProvider(
-                                  TrackingQuery(tracker.type, media),
-                                ),
-                              );
-                            }
+                      if (isLocal) {
+                        ref.invalidate(
+                          mediaTrackingProvider(
+                            TrackingQuery(tracker.type, media),
+                          ),
+                        );
+                      }
 
-                            ref.invalidate(cloudLibraryProvider);
+                      ref.invalidate(cloudLibraryProvider);
 
-                            if (context.mounted) {
-                              context.pop();
-                            }
-                          },
-                    style: FilledButton.styleFrom(
-                      backgroundColor: Theme.of(context).colorScheme.error,
-                      foregroundColor: Theme.of(context).colorScheme.onError,
-                      minimumSize: const Size.fromHeight(50),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                    ),
-                    child: isDeleting
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: AppProgressIndicator(type: AppProgressType.circular, strokeWidth: 2),
-                          )
-                        : const Text('Remove Connection'),
+                      if (context.mounted) {
+                        context.pop();
+                      }
+                    },
                   ),
                 ],
               ),
@@ -300,56 +290,22 @@ class _LinkedTrackerRow extends ConsumerWidget {
         );
       },
       error: (_, __) {
-        return ListTile(
-          minTileHeight: 40,
-          leading: Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: cs.errorContainer,
-            ),
-            child: Center(
-              child: tracker.type.getIconWidget(
-                size: 20,
-                color: cs.onErrorContainer,
-              ),
-            ),
-          ),
-          title: Text(
-            tracker.type.displayName,
-            style: theme.textTheme.bodyLarge?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          subtitle: const Text('Failed to load'),
-          trailing: _TrackerActionButton(
-            icon: Icons.refresh_rounded,
-            onTap: () {
-              ref.invalidate(
-                mediaTrackingProvider(TrackingQuery(tracker.type, media)),
-              );
-            },
-          ),
-        );
-      },
-      data: (listItem) {
-        final isRemote = tracker is RemoteTracker;
-
-        if (listItem == null) {
-          return ListTile(
+        return AppCardSurface(
+          padding: EdgeInsets.zero,
+          child: ListTile(
             minTileHeight: 40,
             leading: Container(
               width: 42,
               height: 42,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: cs.surfaceContainerHighest,
+                color: cs.errorContainer,
               ),
-              child: Icon(
-                Icons.cloud_off_rounded,
-                size: 20,
-                color: cs.onSurfaceVariant,
+              child: Center(
+                child: tracker.type.getIconWidget(
+                  size: 20,
+                  color: cs.onErrorContainer,
+                ),
               ),
             ),
             title: Text(
@@ -358,10 +314,148 @@ class _LinkedTrackerRow extends ConsumerWidget {
                 fontWeight: FontWeight.w600,
               ),
             ),
+            subtitle: const Text('Failed to load'),
+            trailing: AppActionButtonGroup(
+              height: 36,
+              items: [
+                AppActionItem(
+                  icon: Icons.refresh_rounded,
+                  tooltip: 'Retry',
+                  onTap: () {
+                    ref.invalidate(
+                      mediaTrackingProvider(TrackingQuery(tracker.type, media)),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+      data: (listItem) {
+        final isRemote = tracker is RemoteTracker;
+
+        if (listItem == null) {
+          return AppCardSurface(
+            padding: EdgeInsets.zero,
+            child: ListTile(
+              minTileHeight: 40,
+              leading: Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: cs.surfaceContainerHighest,
+                ),
+                child: Icon(
+                  Icons.cloud_off_rounded,
+                  size: 20,
+                  color: cs.onSurfaceVariant,
+                ),
+              ),
+              title: Text(
+                tracker.type.displayName,
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              subtitle: Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  'Not in list',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: cs.onSurfaceVariant.withValues(alpha: 0.78),
+                  ),
+                ),
+              ),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (isRemote) ...[
+                    AppActionButtonGroup(
+                      height: 36,
+                      items: [
+                        AppActionItem(
+                          icon: Icons.swap_horiz_rounded,
+                          tooltip: 'Relink',
+                          onTap: () {
+                            showModalBottomSheet(
+                              context: context,
+                              isScrollControlled: true,
+                              useSafeArea: true,
+                              builder: (_) => LinkTrackerSheet(
+                                primaryMediaId: media.id,
+                                mediaType: media.type,
+                                initialSearchQuery:
+                                    media.title.getPreferedTitle,
+                                tracker: tracker as RemoteTracker,
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  AppButton(
+                    label: 'Add',
+                    variant: AppButtonVariant.tonal,
+                    size: AppButtonSize.small,
+                    onPressed: () {
+                      final blankItem = TrackedListItem(
+                        status: TrackedStatus.unknown,
+                        progress: 0,
+                        score: 0,
+                      );
+
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        useSafeArea: true,
+                        builder: (_) => EditTrackerSheet(
+                          media: media,
+                          initialItem: blankItem,
+                          tracker: tracker,
+                          trackingId: trackerMapping?.trackingId,
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        return AppCardSurface(
+          padding: EdgeInsets.zero,
+          child: ListTile(
+            minTileHeight: 40,
+            leading: Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: cs.primaryContainer,
+              ),
+              child: Center(
+                child: tracker.type.getIconWidget(
+                  size: 20,
+                  color: cs.onPrimaryContainer,
+                ),
+              ),
+            ),
+            title: Text(
+              tracker.type.displayName,
+              style: theme.textTheme.bodyLarge?.copyWith(
+                fontWeight: FontWeight.w600,
+                height: 1.1,
+              ),
+            ),
             subtitle: Padding(
               padding: const EdgeInsets.only(top: 4),
               child: Text(
-                'Not in list',
+                '${media.type == MediaType.MANGA ? "Ch" : "Ep"} ${listItem.progress.toInt()} • ${listItem.status.getLabelForMedia(media.type)}',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: cs.onSurfaceVariant.withValues(alpha: 0.78),
                 ),
@@ -370,176 +464,58 @@ class _LinkedTrackerRow extends ConsumerWidget {
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (isRemote) ...[
-                  _TrackerActionButton(
-                    icon: Icons.swap_horiz_rounded,
-                    onTap: () {
-                      showModalBottomSheet(
-                        context: context,
-                        isScrollControlled: true,
-                        useSafeArea: true,
-                        builder: (_) => LinkTrackerSheet(
-                          primaryMediaId: media.id,
-                          mediaType: media.type,
-                          initialSearchQuery: media.title.getPreferedTitle,
-                          tracker: tracker as RemoteTracker,
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(width: 8),
-                ],
-                FilledButton.tonal(
+                AppActionButtonGroup(
+                  height: 36,
+                  items: [
+                    AppActionItem(
+                      icon: Icons.link_off_rounded,
+                      tooltip: 'Unlink',
+                      onTap: () => _removeTracker(context, ref),
+                    ),
+                    if (isRemote)
+                      AppActionItem(
+                        icon: Icons.swap_horiz_rounded,
+                        tooltip: 'Relink',
+                        onTap: () {
+                          showModalBottomSheet(
+                            context: context,
+                            isScrollControlled: true,
+                            useSafeArea: true,
+                            builder: (_) => LinkTrackerSheet(
+                              primaryMediaId: media.id,
+                              mediaType: media.type,
+                              initialSearchQuery: media.title.getPreferedTitle,
+                              tracker: tracker as RemoteTracker,
+                            ),
+                          );
+                        },
+                      ),
+                  ],
+                ),
+                const SizedBox(width: 8),
+                AppButton(
+                  label: 'Edit',
+                  variant: AppButtonVariant.tonal,
+                  size: AppButtonSize.small,
                   onPressed: () {
-                    final blankItem = TrackedListItem(
-                      status: TrackedStatus.unknown,
-                      progress: 0,
-                      score: 0,
-                    );
-
                     showModalBottomSheet(
                       context: context,
                       isScrollControlled: true,
                       useSafeArea: true,
                       builder: (_) => EditTrackerSheet(
                         media: media,
-                        initialItem: blankItem,
+                        initialItem: listItem,
                         tracker: tracker,
                         trackingId: trackerMapping?.trackingId,
                       ),
                     );
                   },
-                  style: FilledButton.styleFrom(
-                    minimumSize: const Size(0, 42),
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                  ),
-                  child: const Text('Add'),
                 ),
               ],
             ),
-          );
-        }
-
-        return ListTile(
-          minTileHeight: 40,
-          leading: Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: cs.primaryContainer,
-            ),
-            child: Center(
-              child: tracker.type.getIconWidget(
-                size: 20,
-                color: cs.onPrimaryContainer,
-              ),
-            ),
-          ),
-          title: Text(
-            tracker.type.displayName,
-            style: theme.textTheme.bodyLarge?.copyWith(
-              fontWeight: FontWeight.w600,
-              height: 1.1,
-            ),
-          ),
-          subtitle: Padding(
-            padding: const EdgeInsets.only(top: 4),
-            child: Text(
-              '${media.type == MediaType.MANGA ? "Ch" : "Ep"} ${listItem.progress.toInt()} • ${listItem.status.getLabelForMedia(media.type)}',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: cs.onSurfaceVariant.withValues(alpha: 0.78),
-              ),
-            ),
-          ),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _TrackerActionButton(
-                icon: Icons.link_off_rounded,
-                color: cs.error,
-                onTap: () => _removeTracker(context, ref),
-              ),
-              if (isRemote) ...[
-                const SizedBox(width: 6),
-                _TrackerActionButton(
-                  icon: Icons.swap_horiz_rounded,
-                  onTap: () {
-                    showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      useSafeArea: true,
-                      builder: (_) => LinkTrackerSheet(
-                        primaryMediaId: media.id,
-                        mediaType: media.type,
-                        initialSearchQuery: media.title.getPreferedTitle,
-                        tracker: tracker as RemoteTracker,
-                      ),
-                    );
-                  },
-                ),
-              ],
-              const SizedBox(width: 8),
-              FilledButton.tonal(
-                onPressed: () {
-                  showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    useSafeArea: true,
-                    builder: (_) => EditTrackerSheet(
-                      media: media,
-                      initialItem: listItem,
-                      tracker: tracker,
-                      trackingId: trackerMapping?.trackingId,
-                    ),
-                  );
-                },
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size(0, 42),
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                ),
-                child: const Text('Edit'),
-              ),
-            ],
           ),
         );
       },
-    );
-  }
-}
-
-class _TrackerActionButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-  final Color? color;
-
-  const _TrackerActionButton({
-    required this.icon,
-    required this.onTap,
-    this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    return IconButton(
-      onPressed: onTap,
-      style: IconButton.styleFrom(
-        minimumSize: const Size(42, 42),
-        maximumSize: const Size(42, 42),
-        padding: EdgeInsets.zero,
-        backgroundColor: cs.surfaceContainerHighest.withValues(alpha: 0.7),
-        foregroundColor: color ?? cs.onSurfaceVariant,
-        shape: const CircleBorder(),
-      ),
-      icon: Icon(icon, size: 20),
     );
   }
 }

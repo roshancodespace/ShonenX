@@ -11,6 +11,7 @@ class M3eDropdown<T> extends StatefulWidget {
   final DropdownButtonBuilder? selectedItemBuilder;
   final String hint;
   final bool isExpanded;
+  final bool compact;
 
   const M3eDropdown({
     super.key,
@@ -20,6 +21,7 @@ class M3eDropdown<T> extends StatefulWidget {
     this.selectedItemBuilder,
     this.hint = 'Choose an option',
     this.isExpanded = true,
+    this.compact = false,
   });
 
   @override
@@ -137,7 +139,7 @@ class _M3eDropdownState<T> extends State<M3eDropdown<T>>
         overflow: TextOverflow.ellipsis,
         style: TextStyle(
           color: cs.onSurface,
-          fontSize: 14,
+          fontSize: widget.compact ? 12.5 : 14,
           fontWeight: FontWeight.w600,
         ),
         child: selectedItem.child,
@@ -150,7 +152,7 @@ class _M3eDropdownState<T> extends State<M3eDropdown<T>>
       overflow: TextOverflow.ellipsis,
       style: TextStyle(
         color: cs.onSurfaceVariant,
-        fontSize: 14,
+        fontSize: widget.compact ? 12.5 : 14,
         fontWeight: FontWeight.w500,
       ),
     );
@@ -267,7 +269,9 @@ class _M3eDropdownState<T> extends State<M3eDropdown<T>>
             onTap: enabled ? _toggleMenu : null,
             borderRadius: BorderRadius.circular(24),
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 11, 12, 11),
+              padding: widget.compact
+                  ? const EdgeInsets.fromLTRB(11, 6, 8, 6)
+                  : const EdgeInsets.fromLTRB(16, 11, 12, 11),
               child: Row(
                 mainAxisSize: widget.isExpanded
                     ? MainAxisSize.max
@@ -277,14 +281,14 @@ class _M3eDropdownState<T> extends State<M3eDropdown<T>>
                     Expanded(child: _buildSelectedDisplay(cs))
                   else
                     Flexible(child: _buildSelectedDisplay(cs)),
-                  const SizedBox(width: 8),
+                  SizedBox(width: widget.compact ? 4 : 8),
                   AnimatedRotation(
                     turns: _isOpen ? 0.5 : 0.0,
                     duration: const Duration(milliseconds: 200),
                     curve: Curves.easeOutCubic,
                     child: Icon(
                       Icons.keyboard_arrow_down_rounded,
-                      size: 20,
+                      size: widget.compact ? 16 : 20,
                       color: cs.onSurfaceVariant,
                     ),
                   ),

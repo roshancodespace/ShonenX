@@ -8,6 +8,8 @@ import 'package:get/get.dart';
 import 'package:shonenx/core/network/http_client.dart';
 import 'package:shonenx/features/updates/models/github_release.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
+import 'package:shonenx/shared/widgets/app_button.dart';
+import 'package:shonenx/shared/widgets/app_card_group.dart';
 import 'package:shonenx/source_engine/source_registry.dart';
 import 'package:shonenx/features/extensions/providers/runtime_update_provider.dart';
 import 'package:shonenx/source_engine/utils/source_invalidation.dart';
@@ -314,10 +316,13 @@ class _RuntimeSetupSheetState extends ConsumerState<RuntimeSetupSheet> {
                       style: TextStyle(color: cs.error, fontSize: 13),
                     ),
                     const SizedBox(height: 16),
-                    FilledButton.icon(
+                    AppButton(
+                      label: 'Retry Setup',
+                      icon: Icons.refresh_rounded,
+                      variant: AppButtonVariant.primary,
+                      size: AppButtonSize.medium,
+                      isExpanded: true,
                       onPressed: () => _startSetup(force: true),
-                      icon: const Icon(Icons.refresh_rounded),
-                      label: const Text('Retry Setup'),
                     ),
                   ],
                 );
@@ -327,47 +332,58 @@ class _RuntimeSetupSheetState extends ConsumerState<RuntimeSetupSheet> {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Row(
+                    AppCardGroup(
+                      padding: EdgeInsets.zero,
                       children: [
-                        const Icon(
-                          Icons.check_circle_rounded,
-                          color: Colors.green,
-                          size: 24,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                        AppCardSurface(
+                          color: Colors.green.withValues(alpha: 0.1),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 12,
+                          ),
+                          child: Row(
                             children: [
-                              const Text(
-                                'Runtime Installed & Active',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.green,
-                                  fontSize: 15,
+                              const Icon(
+                                Icons.check_circle_rounded,
+                                color: Colors.green,
+                                size: 24,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Runtime Installed & Active',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.green,
+                                        fontSize: 15,
+                                      ),
+                                    ),
+                                    Text(
+                                      'v${bridge.AnymeXRuntimeBridge.installedVersion}',
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.green,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                              Text(
-                                'v${bridge.AnymeXRuntimeBridge.installedVersion}',
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.green,
+                              AppButton(
+                                label: 'Releases',
+                                icon: Icons.open_in_new_rounded,
+                                variant: AppButtonVariant.text,
+                                size: AppButtonSize.small,
+                                onPressed: () => launchUrl(
+                                  Uri.parse(
+                                    'https://github.com/RyanYuuki/AnymeXExtensionRuntimeBridge/releases',
+                                  ),
+                                  mode: LaunchMode.externalApplication,
                                 ),
                               ),
                             ],
-                          ),
-                        ),
-                        TextButton.icon(
-                          onPressed: () => launchUrl(
-                            Uri.parse(
-                              'https://github.com/RyanYuuki/AnymeXExtensionRuntimeBridge/releases',
-                            ),
-                            mode: LaunchMode.externalApplication,
-                          ),
-                          icon: const Icon(Icons.open_in_new_rounded, size: 14),
-                          label: const Text(
-                            'Releases',
-                            style: TextStyle(fontSize: 12),
                           ),
                         ),
                       ],
@@ -390,59 +406,42 @@ class _RuntimeSetupSheetState extends ConsumerState<RuntimeSetupSheet> {
                             Row(
                               children: [
                                 Expanded(
-                                  child: OutlinedButton.icon(
+                                  child: AppButton(
+                                    label: updateVersion != null
+                                        ? 'Update (v$updateVersion)'
+                                        : 'Force Update',
+                                    icon: Icons.system_update_alt_rounded,
+                                    variant: updateVersion != null
+                                        ? AppButtonVariant.tonal
+                                        : AppButtonVariant.outlined,
+                                    size: AppButtonSize.medium,
+                                    isExpanded: true,
                                     onPressed: () => _startSetup(
                                       force: true,
                                       version: updateVersion,
-                                    ),
-                                    icon: const Icon(
-                                      Icons.system_update_alt_rounded,
-                                    ),
-                                    label: Text(
-                                      updateVersion != null
-                                          ? 'Update Available (v$updateVersion)'
-                                          : 'Force Update',
-                                    ),
-                                    style: OutlinedButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 12,
-                                      ),
-                                      foregroundColor: updateVersion != null
-                                          ? cs.primary
-                                          : null,
-                                      side: updateVersion != null
-                                          ? BorderSide(color: cs.primary)
-                                          : null,
                                     ),
                                   ),
                                 ),
                                 const SizedBox(width: 12),
                                 Expanded(
-                                  child: OutlinedButton.icon(
+                                  child: AppButton(
+                                    label: 'Select Release',
+                                    icon: Icons.list_alt_rounded,
+                                    variant: AppButtonVariant.outlined,
+                                    size: AppButtonSize.medium,
+                                    isExpanded: true,
                                     onPressed: _selectRelease,
-                                    icon: const Icon(Icons.list_alt_rounded),
-                                    label: const Text('Select Release'),
-                                    style: OutlinedButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 12,
-                                      ),
-                                    ),
                                   ),
                                 ),
                               ],
                             ),
                             const SizedBox(height: 12),
-                            SizedBox(
-                              width: double.infinity,
-                              child: FilledButton(
-                                onPressed: () => Navigator.pop(context),
-                                style: FilledButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 12,
-                                  ),
-                                ),
-                                child: const Text('Done'),
-                              ),
+                            AppButton(
+                              label: 'Done',
+                              variant: AppButtonVariant.primary,
+                              size: AppButtonSize.medium,
+                              isExpanded: true,
+                              onPressed: () => Navigator.pop(context),
                             ),
                           ],
                         );
@@ -455,44 +454,37 @@ class _RuntimeSetupSheetState extends ConsumerState<RuntimeSetupSheet> {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  FilledButton.icon(
+                  AppButton(
+                    label: 'Download & Setup Runtime',
+                    icon: Icons.download_rounded,
+                    variant: AppButtonVariant.primary,
+                    size: AppButtonSize.medium,
+                    isExpanded: true,
                     onPressed: () => _startSetup(),
-                    style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                    ),
-                    icon: const Icon(Icons.download_rounded),
-                    label: const Text(
-                      'Download & Setup Runtime',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                      ),
-                    ),
                   ),
                   const SizedBox(height: 12),
                   Row(
                     children: [
                       if (Platform.isAndroid) ...[
                         Expanded(
-                          child: OutlinedButton.icon(
+                          child: AppButton(
+                            label: 'Select APK',
+                            icon: Icons.folder_open_rounded,
+                            variant: AppButtonVariant.outlined,
+                            size: AppButtonSize.small,
+                            isExpanded: true,
                             onPressed: _pickLocalApk,
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                            ),
-                            icon: const Icon(
-                              Icons.folder_open_rounded,
-                              size: 18,
-                            ),
-                            label: const Text(
-                              'Select APK',
-                              style: TextStyle(fontSize: 13),
-                            ),
                           ),
                         ),
                         const SizedBox(width: 10),
                       ],
                       Expanded(
-                        child: OutlinedButton.icon(
+                        child: AppButton(
+                          label: 'Scan Disk',
+                          icon: Icons.search_rounded,
+                          variant: AppButtonVariant.outlined,
+                          size: AppButtonSize.small,
+                          isExpanded: true,
                           onPressed: () async {
                             controller.updateStatus("Scanning disk...");
                             await bridge
@@ -513,14 +505,6 @@ class _RuntimeSetupSheetState extends ConsumerState<RuntimeSetupSheet> {
                               widget.onComplete?.call();
                             }
                           },
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                          ),
-                          icon: const Icon(Icons.search_rounded, size: 18),
-                          label: const Text(
-                            'Scan Disk',
-                            style: TextStyle(fontSize: 13),
-                          ),
                         ),
                       ),
                     ],

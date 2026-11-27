@@ -12,6 +12,11 @@ import 'package:shonenx/features/history/providers/history_provider.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
+import 'package:shonenx/shared/widgets/app_button.dart';
+import 'package:shonenx/shared/widgets/app_button_group.dart';
+import 'package:shonenx/shared/widgets/app_card_group.dart';
+import 'package:shonenx/shared/widgets/app_chip.dart';
+import 'package:shonenx/shared/widgets/app_empty_state.dart';
 import 'package:shonenx/core/utils/responsive.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/continue/continue_watching_card.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/continue/continue_reading_card.dart';
@@ -78,24 +83,26 @@ class _ContinueHistoryScreenState extends ConsumerState<ContinueHistoryScreen> {
     AppBottomSheet.show(
       context: context,
       title: title,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+      child: AppCardGroup(
+        padding: EdgeInsets.zero,
         children: [
-          ListTile(
-            leading: const Icon(Icons.play_arrow_rounded),
-            title: Text(
-              isAnime
-                  ? context.l10n.homeContinueWatching
-                  : context.l10n.homeContinueReading,
-            ),
+          AppCardSurface(
+            padding: EdgeInsets.zero,
             onTap: () {
               Navigator.pop(context);
               context.pushContinueHistoryItem(widget.type, id);
             },
+            child: ListTile(
+              leading: const Icon(Icons.play_arrow_rounded),
+              title: Text(
+                isAnime
+                    ? context.l10n.homeContinueWatching
+                    : context.l10n.homeContinueReading,
+              ),
+            ),
           ),
-          ListTile(
-            leading: const Icon(Icons.info_outline),
-            title: Text(context.l10n.historyOpenDetails),
+          AppCardSurface(
+            padding: EdgeInsets.zero,
             onTap: () {
               Navigator.pop(context);
               context.pushDetails(
@@ -108,10 +115,13 @@ class _ContinueHistoryScreenState extends ConsumerState<ContinueHistoryScreen> {
                 ),
               );
             },
+            child: ListTile(
+              leading: const Icon(Icons.info_outline_rounded),
+              title: Text(context.l10n.historyOpenDetails),
+            ),
           ),
-          ListTile(
-            leading: const Icon(Icons.checklist),
-            title: Text(context.l10n.historySelectItems),
+          AppCardSurface(
+            padding: EdgeInsets.zero,
             onTap: () {
               Navigator.pop(context);
               setState(() {
@@ -119,13 +129,13 @@ class _ContinueHistoryScreenState extends ConsumerState<ContinueHistoryScreen> {
                 _selectedIds.add(id);
               });
             },
-          ),
-          ListTile(
-            leading: const Icon(Icons.delete_outline, color: Colors.red),
-            title: Text(
-              context.l10n.commonRemove,
-              style: const TextStyle(color: Colors.red),
+            child: ListTile(
+              leading: const Icon(Icons.checklist_rounded),
+              title: Text(context.l10n.historySelectItems),
             ),
+          ),
+          AppCardSurface(
+            padding: EdgeInsets.zero,
             onTap: () async {
               final messenger = ScaffoldMessenger.of(this.context);
               Navigator.pop(context);
@@ -136,6 +146,16 @@ class _ContinueHistoryScreenState extends ConsumerState<ContinueHistoryScreen> {
                 );
               }
             },
+            child: ListTile(
+              leading: Icon(
+                Icons.delete_outline_rounded,
+                color: Theme.of(context).colorScheme.error,
+              ),
+              title: Text(
+                context.l10n.commonRemove,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            ),
           ),
         ],
       ),
@@ -178,7 +198,12 @@ class _ContinueHistoryScreenState extends ConsumerState<ContinueHistoryScreen> {
           ),
           if (_isSelectionMode) ...[
             const SizedBox(width: 8),
-            TextButton(
+            AppButton(
+              label: _selectedIds.length == filtered.length
+                  ? context.l10n.historyDeselectAll
+                  : context.l10n.historySelectAll,
+              variant: AppButtonVariant.tonal,
+              size: AppButtonSize.small,
               onPressed: () {
                 setState(() {
                   if (_selectedIds.length == filtered.length) {
@@ -190,11 +215,6 @@ class _ContinueHistoryScreenState extends ConsumerState<ContinueHistoryScreen> {
                   }
                 });
               },
-              child: Text(
-                _selectedIds.length == filtered.length
-                    ? context.l10n.historyDeselectAll
-                    : context.l10n.historySelectAll,
-              ),
             ),
           ],
         ],
@@ -226,33 +246,49 @@ class _ContinueHistoryScreenState extends ConsumerState<ContinueHistoryScreen> {
           ? context.l10n.historySelectItemsToDelete
           : context.l10n.historyPickUpWhereYouLeftOff,
       actions: [
-        if (_isSelectionMode) ...[
-          IconButton(
-            icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-            tooltip: context.l10n.historyDeleteSelected,
-            onPressed: _selectedIds.isEmpty
-                ? null
-                : () => _deleteSelected(isAnime),
+        Padding(
+          padding: const EdgeInsets.only(right: 8),
+          child: AppActionButtonGroup(
+            height: 36,
+            items: _isSelectionMode
+                ? [
+                    AppActionItem(
+                      icon: Icons.delete_outline_rounded,
+                      tooltip: context.l10n.historyDeleteSelected,
+                      onTap: () {
+                        if (_selectedIds.isNotEmpty) {
+                          _deleteSelected(isAnime);
+                        }
+                      },
+                    ),
+                    AppActionItem(
+                      icon: Icons.close_rounded,
+                      tooltip: context.l10n.historyCancelSelection,
+                      onTap: () => setState(() {
+                        _isSelectionMode = false;
+                        _selectedIds.clear();
+                      }),
+                    ),
+                  ]
+                : [
+                    AppActionItem(
+                      icon: Icons.checklist_rounded,
+                      tooltip: context.l10n.historySelectItems,
+                      onTap: () => setState(() => _isSelectionMode = true),
+                    ),
+                  ],
           ),
-          IconButton(
-            icon: const Icon(Icons.close),
-            tooltip: context.l10n.historyCancelSelection,
-            onPressed: () => setState(() {
-              _isSelectionMode = false;
-              _selectedIds.clear();
-            }),
-          ),
-        ] else ...[
-          IconButton(
-            icon: const Icon(Icons.checklist),
-            tooltip: context.l10n.historySelectItems,
-            onPressed: () => setState(() => _isSelectionMode = true),
-          ),
-        ],
+        ),
       ],
       body: historyAsync.when(
-        loading: () => const Center(child: AppProgressIndicator(type: AppProgressType.circular)),
-        error: (err, _) => Center(child: Text(err.toString())),
+        loading: () => const Center(
+          child: AppProgressIndicator(type: AppProgressType.circular),
+        ),
+        error: (err, _) => AppEmptyState(
+          icon: Icons.error_outline_rounded,
+          title: 'Failed to load history',
+          subtitle: err.toString(),
+        ),
         data: (entries) {
           final filtered = _searchQuery.isEmpty
               ? entries
@@ -262,7 +298,13 @@ class _ContinueHistoryScreenState extends ConsumerState<ContinueHistoryScreen> {
                 }).toList();
 
           if (entries.isEmpty) {
-            return Center(child: Text(context.l10n.historyEmpty));
+            return AppEmptyState(
+              icon: isAnime
+                  ? Icons.play_circle_outline_rounded
+                  : Icons.auto_stories_rounded,
+              title: context.l10n.historyEmpty,
+              subtitle: context.l10n.historyPickUpWhereYouLeftOff,
+            );
           }
 
           return Column(
@@ -270,9 +312,17 @@ class _ContinueHistoryScreenState extends ConsumerState<ContinueHistoryScreen> {
               _buildSearchAndSelectionHeader(filtered, isAnime),
               Expanded(
                 child: filtered.isEmpty
-                    ? const Center(child: Text('No matching history items.'))
+                    ? const AppEmptyState(
+                        icon: Icons.search_off_rounded,
+                        title: 'No matching history items',
+                        subtitle: 'Try a different search query.',
+                      )
                     : GridView.builder(
-                        padding: const EdgeInsets.all(10),
+                        clipBehavior: Clip.none,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 16,
+                        ),
                         gridDelegate: SliverGridDelegateWithMinCrossAxisExtent(
                           minCrossAxisExtent: layout.width,
                           childAspectRatio: layout.aspectRatio,
@@ -291,17 +341,27 @@ class _ContinueHistoryScreenState extends ConsumerState<ContinueHistoryScreen> {
                           final isSelected = _selectedIds.contains(id);
 
                           return Stack(
+                            fit: StackFit.expand,
                             children: [
-                              AnimatedScale(
-                                scale: _isSelectionMode && !isSelected
-                                    ? 0.95
-                                    : 1.0,
-                                duration: const Duration(milliseconds: 200),
+                              AnimatedContainer(
+                                duration: const Duration(milliseconds: 180),
+                                curve: Curves.easeOutCubic,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(
+                                    GlobalUI.uiRoundness,
+                                  ),
+                                  border: _isSelectionMode && isSelected
+                                      ? Border.all(
+                                          color: theme.colorScheme.primary,
+                                          width: 2.5,
+                                        )
+                                      : null,
+                                ),
                                 child: AnimatedOpacity(
                                   opacity: _isSelectionMode && !isSelected
-                                      ? 0.6
+                                      ? 0.65
                                       : 1.0,
-                                  duration: const Duration(milliseconds: 200),
+                                  duration: const Duration(milliseconds: 180),
                                   child: MediaCard(
                                     media: UnifiedMedia(
                                       id: id,
@@ -352,28 +412,47 @@ class _ContinueHistoryScreenState extends ConsumerState<ContinueHistoryScreen> {
                               ),
                               if (_isSelectionMode)
                                 Positioned(
-                                  top: 8,
-                                  right: 8,
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      color: isSelected
-                                          ? theme.colorScheme.primary
-                                          : Colors.black54,
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: Colors.white,
-                                        width: 1.5,
+                                  top: 10,
+                                  right: 10,
+                                  child: IgnorePointer(
+                                    child: AnimatedContainer(
+                                      duration: const Duration(
+                                        milliseconds: 180,
                                       ),
-                                    ),
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(4.0),
-                                      child: Icon(
-                                        isSelected
-                                            ? Icons.check
-                                            : Icons.circle_outlined,
-                                        size: 16,
-                                        color: Colors.white,
+                                      width: 26,
+                                      height: 26,
+                                      decoration: BoxDecoration(
+                                        color: isSelected
+                                            ? theme.colorScheme.primary
+                                            : Colors.black.withValues(
+                                                alpha: 0.45,
+                                              ),
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: isSelected
+                                              ? theme.colorScheme.onPrimary
+                                              : Colors.white.withValues(
+                                                  alpha: 0.9,
+                                                ),
+                                          width: 1.8,
+                                        ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withValues(
+                                              alpha: 0.25,
+                                            ),
+                                            blurRadius: 6,
+                                          ),
+                                        ],
                                       ),
+                                      child: isSelected
+                                          ? Icon(
+                                              Icons.check_rounded,
+                                              size: 16,
+                                              color:
+                                                  theme.colorScheme.onPrimary,
+                                            )
+                                          : null,
                                     ),
                                   ),
                                 ),
@@ -418,11 +497,23 @@ class _ContinueHistoryItemsScreenState
 
     return AppScaffold(
       body: historyAsync.when(
-        loading: () => const Center(child: AppProgressIndicator(type: AppProgressType.circular)),
-        error: (err, _) => Center(child: Text(err.toString())),
+        loading: () => const Center(
+          child: AppProgressIndicator(type: AppProgressType.circular),
+        ),
+        error: (err, _) => AppEmptyState(
+          icon: Icons.error_outline_rounded,
+          title: 'Failed to load history',
+          subtitle: err.toString(),
+        ),
         data: (entries) {
           if (entries.isEmpty) {
-            return const Center(child: Text('No history found.'));
+            return AppEmptyState(
+              icon: isAnime
+                  ? Icons.play_circle_outline_rounded
+                  : Icons.auto_stories_rounded,
+              title: 'No history found',
+              subtitle: context.l10n.historyPickUpWhereYouLeftOff,
+            );
           }
 
           final prefsAsync = ref.watch(uiPrefsProvider);
@@ -474,13 +565,25 @@ class _ContinueHistoryItemsScreenState
                 backgroundColor: Colors.transparent,
                 elevation: 0,
                 iconTheme: const IconThemeData(color: Colors.white),
-                leading: IconButton(
-                  icon: const Icon(Icons.arrow_back_ios_new_rounded),
-                  onPressed: () {
-                    if (context.canPop()) {
-                      context.pop();
-                    }
-                  },
+                leadingWidth: 64,
+                leading: Center(
+                  child: AppActionButtonGroup(
+                    outlined: false,
+                    height: 38,
+                    backgroundColor: Colors.black.withValues(alpha: 0.45),
+                    foregroundColor: Colors.white,
+                    items: [
+                      AppActionItem(
+                        icon: Icons.arrow_back_ios_new_rounded,
+                        tooltip: context.l10n.commonBack,
+                        onTap: () {
+                          if (context.canPop()) {
+                            context.pop();
+                          }
+                        },
+                      ),
+                    ],
+                  ),
                 ),
                 flexibleSpace: FlexibleSpaceBar(
                   background: Stack(
@@ -526,20 +629,19 @@ class _ContinueHistoryItemsScreenState
                               overflow: TextOverflow.ellipsis,
                             ),
                             const SizedBox(height: 12),
-                            Row(
+                            AppChipGroup(
                               children: [
-                                _buildStatBadge(
-                                  context,
-                                  Icons.play_circle_outline,
-                                  isAnime
+                                AppChip(
+                                  icon: isAnime
+                                      ? Icons.play_circle_outline_rounded
+                                      : Icons.auto_stories_rounded,
+                                  label: isAnime
                                       ? '$totalWatched Episodes'
                                       : '$totalWatched Chapters',
                                 ),
-                                const SizedBox(width: 8),
-                                _buildStatBadge(
-                                  context,
-                                  Icons.timer_outlined,
-                                  totalTimeStr,
+                                AppChip(
+                                  icon: Icons.timer_outlined,
+                                  label: totalTimeStr,
                                 ),
                               ],
                             ),
@@ -551,15 +653,18 @@ class _ContinueHistoryItemsScreenState
                 ),
               ),
               SliverPadding(
-                padding: const EdgeInsets.all(10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 16,
+                ),
                 sliver: SliverGrid(
                   gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
                     maxCrossAxisExtent: isWideMode
                         ? layout.width * 1.5
                         : layout.width * 1.2,
                     childAspectRatio: layout.width / layout.height,
-                    mainAxisSpacing: 10,
-                    crossAxisSpacing: 10,
+                    mainAxisSpacing: 14,
+                    crossAxisSpacing: 14,
                   ),
                   delegate: SliverChildBuilderDelegate((context, index) {
                     final entry = entries[index];
@@ -591,32 +696,6 @@ class _ContinueHistoryItemsScreenState
             ],
           );
         },
-      ),
-    );
-  }
-
-  Widget _buildStatBadge(BuildContext context, IconData icon, String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.white24),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: Colors.white70),
-          const SizedBox(width: 4),
-          Text(
-            text,
-            style: const TextStyle(
-              fontSize: 12,
-              color: Colors.white,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
       ),
     );
   }

@@ -202,6 +202,29 @@ void showContinueWatchingSheet(
         entry: _previewHistoryEntry,
       );
     },
+    togglesBuilder: (ctx, r, uiState) {
+      final n = r.read(uiPrefsProvider.notifier);
+      final current = uiState.continueWatchingStyle;
+      final canToggleWide =
+          current != MediaCardStyle.compact &&
+          current != MediaCardStyle.cinematic &&
+          current != MediaCardStyle.wideBanner;
+      if (!canToggleWide) return const SizedBox.shrink();
+      final isWide = uiState.isContinueWatchingWide(current.name);
+      return FilterChip(
+        avatar: Icon(
+          isWide ? Icons.table_rows_rounded : Icons.grid_view_rounded,
+          size: 16,
+        ),
+        label: Text(
+          isWide
+              ? ctx.l10n.pickerWideModeChip
+              : ctx.l10n.pickerPortraitModeChip,
+        ),
+        selected: isWide,
+        onSelected: (_) => n.toggleContinueWatchingWide(current.name),
+      );
+    },
   );
 }
 
@@ -224,6 +247,29 @@ void showContinueReadingSheet(
         style: style,
         progress: 0.72,
         entry: _previewReadHistoryEntry,
+      );
+    },
+    togglesBuilder: (ctx, r, uiState) {
+      final n = r.read(uiPrefsProvider.notifier);
+      final current = uiState.continueReadingStyle;
+      final canToggleWide =
+          current != MediaCardStyle.compact &&
+          current != MediaCardStyle.cinematic &&
+          current != MediaCardStyle.wideBanner;
+      if (!canToggleWide) return const SizedBox.shrink();
+      final isWide = uiState.isContinueReadingWide(current.name);
+      return FilterChip(
+        avatar: Icon(
+          isWide ? Icons.table_rows_rounded : Icons.grid_view_rounded,
+          size: 16,
+        ),
+        label: Text(
+          isWide
+              ? ctx.l10n.pickerWideModeChip
+              : ctx.l10n.pickerPortraitModeChip,
+        ),
+        selected: isWide,
+        onSelected: (_) => n.toggleContinueReadingWide(current.name),
       );
     },
   );

@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -14,6 +15,7 @@ import 'package:shonenx/features/discord/presentation/discord_login_page.dart';
 import 'package:shonenx/features/onboarding/onboarding_provider.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
+import 'package:shonenx/shared/widgets/privacy_policy_dialog.dart';
 
 class DebugSettingsScreen extends ConsumerWidget {
   const DebugSettingsScreen({super.key});
@@ -71,23 +73,49 @@ class DebugSettingsScreen extends ConsumerWidget {
 
           SettingsSection(
             title: 'App State & Onboarding',
-            child: SettingsActionTile(
-              icon: Icons.restart_alt_rounded,
-              title: 'Reset Onboarding Status',
-              subtitle: 'Mark onboarding as incomplete and launch screen',
-              onTap: () {
-                ref.read(onboardingProvider.notifier).resetOnboarding();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: const Text('Onboarding status reset!'),
-                    action: SnackBarAction(
-                      label: 'Launch Now',
-                      onPressed: () => context.goOnboarding(),
+            children: [
+              SettingsActionTile(
+                icon: Icons.restart_alt_rounded,
+                title: 'Reset Onboarding Status',
+                subtitle: 'Mark onboarding as incomplete and launch screen',
+                onTap: () {
+                  ref.read(onboardingProvider.notifier).resetOnboarding();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text('Onboarding status reset!'),
+                      action: SnackBarAction(
+                        label: 'Launch Now',
+                        onPressed: () => context.goOnboarding(),
+                      ),
                     ),
-                  ),
-                );
-              },
-            ),
+                  );
+                },
+              ),
+              if (kDebugMode)
+                SettingsActionTile(
+                  icon: Icons.privacy_tip_outlined,
+                  title: 'Reset Privacy Policy Acceptance',
+                  subtitle:
+                      'Current: ${ref.watch(privacyPolicyAcceptedProvider) ? 'Accepted' : 'Not Accepted'} — tap to reset',
+                  onTap: () async {
+                    if (!kDebugMode) return;
+                    await ref
+                        .read(privacyPolicyAcceptedProvider.notifier)
+                        .reset();
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: const Text('Privacy policy acceptance reset!'),
+                        action: SnackBarAction(
+                          label: 'Test Dialog',
+                          onPressed: () =>
+                              showPrivacyPolicyDialog(context, ref),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+            ],
           ),
 
           SettingsSection(

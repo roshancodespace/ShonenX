@@ -9,6 +9,9 @@ import 'package:shonenx/features/tracking/engine/remote_tracker.dart';
 import 'package:shonenx/features/tracking/providers/tracker_link_provider.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
+import 'package:shonenx/shared/widgets/app_button.dart';
+import 'package:shonenx/shared/widgets/app_card_group.dart';
+import 'package:shonenx/shared/widgets/app_empty_state.dart';
 import 'package:shonenx/source_engine/models/tracker_search_result.dart';
 import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
@@ -107,19 +110,25 @@ class _LinkTrackerSheetState extends ConsumerState<LinkTrackerSheet> {
           TextField(
             controller: _controller,
             decoration: InputDecoration(
-              labelText: 'Search Anime',
-              border: const OutlineInputBorder(),
+              labelText:
+                  'Search ${widget.mediaType == MediaType.MANGA ? 'Manga' : 'Anime'}',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
               suffixIcon: _isLoading
                   ? const Padding(
                       padding: EdgeInsets.all(12.0),
                       child: SizedBox(
                         width: 20,
                         height: 20,
-                        child: AppProgressIndicator(type: AppProgressType.circular, strokeWidth: 2),
+                        child: AppProgressIndicator(
+                          type: AppProgressType.circular,
+                          strokeWidth: 2,
+                        ),
                       ),
                     )
                   : IconButton(
-                      icon: const Icon(Icons.search),
+                      icon: const Icon(Icons.search_rounded),
                       onPressed: () => _search(_controller.text),
                     ),
             ),
@@ -128,51 +137,66 @@ class _LinkTrackerSheetState extends ConsumerState<LinkTrackerSheet> {
           ),
           const SizedBox(height: 16),
 
-          // Results Area
           if (_results != null && _results!.isEmpty && !_isLoading)
-            const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Center(child: Text('No results found')),
+            const AppEmptyState(
+              icon: Icons.search_off_rounded,
+              title: 'No results found',
+              subtitle: 'Try a different title or alternative spelling.',
             ),
 
           if (_results != null && _results!.isNotEmpty)
             Flexible(
-              child: ListView.separated(
-                shrinkWrap: true,
-                itemCount: _results!.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 8),
-                itemBuilder: (context, index) {
-                  final result = _results![index];
-
-                  return ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: result.cover != null
-                        ? ClipRRect(
-                            borderRadius: BorderRadius.circular(6),
-                            child: SmartImage(
-                              imageUrl: result.cover!,
-                              width: 40,
-                              height: 60,
-                              fit: BoxFit.cover,
+              child: SingleChildScrollView(
+                child: AppCardGroup(
+                  padding: EdgeInsets.zero,
+                  children: _results!.map((result) {
+                    return AppCardSurface(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      onTap: () => _onSelect(result),
+                      child: Row(
+                        children: [
+                          result.cover != null
+                              ? ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: SmartImage(
+                                    imageUrl: result.cover!,
+                                    width: 42,
+                                    height: 60,
+                                    fit: BoxFit.cover,
+                                  ),
+                                )
+                              : const SizedBox(
+                                  width: 42,
+                                  height: 60,
+                                  child: Icon(Icons.movie_creation_outlined),
+                                ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              result.title.getPreferedTitle,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                              ),
                             ),
-                          )
-                        : const SizedBox(
-                            width: 40,
-                            height: 60,
-                            child: Icon(Icons.movie_creation_outlined),
                           ),
-                    title: Text(
-                      result.title.getPreferedTitle,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                    trailing: FilledButton.tonal(
-                      onPressed: () => _onSelect(result),
-                      child: const Text('Link'),
-                    ),
-                  );
-                },
+                          const SizedBox(width: 10),
+                          AppButton(
+                            label: 'Link',
+                            variant: AppButtonVariant.tonal,
+                            size: AppButtonSize.small,
+                            onPressed: () => _onSelect(result),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
               ),
             ),
         ],

@@ -8,6 +8,10 @@ import 'package:shonenx/shared/providers/preset_provider.dart';
 import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
+import 'package:shonenx/shared/widgets/app_button_group.dart';
+import 'package:shonenx/shared/widgets/app_card_group.dart';
+import 'package:shonenx/shared/widgets/app_chip.dart';
+import 'package:shonenx/shared/widgets/app_empty_state.dart';
 
 class PresetGallerySheet extends ConsumerStatefulWidget {
   const PresetGallerySheet({super.key});
@@ -38,106 +42,33 @@ class _PresetGallerySheetState extends ConsumerState<PresetGallerySheet> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            InkWell(
-              onTap: () => setState(() => _selectedSegment = 0),
-              borderRadius: BorderRadius.circular(50),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 7,
-                ),
-                decoration: BoxDecoration(
-                  color: _selectedSegment == 0
-                      ? theme.colorScheme.primary
-                      : theme.colorScheme.surfaceContainerHighest.withValues(
-                          alpha: 0.4,
-                        ),
-                  borderRadius: BorderRadius.circular(50),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.auto_awesome_rounded,
-                      size: 14,
-                      color: _selectedSegment == 0
-                          ? theme.colorScheme.onPrimary
-                          : theme.colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      l10n.presetsCuratedCount(
-                        BuiltInPresets.all.length.toString(),
-                      ),
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: _selectedSegment == 0
-                            ? FontWeight.bold
-                            : FontWeight.w500,
-                        color: _selectedSegment == 0
-                            ? theme.colorScheme.onPrimary
-                            : theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
+        AppButtonGroup<int>(
+          segments: [
+            ButtonSegment(
+              value: 0,
+              icon: const Icon(Icons.auto_awesome_rounded, size: 16),
+              label: Text(
+                l10n.presetsCuratedCount(BuiltInPresets.all.length.toString()),
               ),
             ),
-            InkWell(
-              onTap: () => setState(() => _selectedSegment = 1),
-              borderRadius: BorderRadius.circular(50),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 7,
-                ),
-                decoration: BoxDecoration(
-                  color: _selectedSegment == 1
-                      ? theme.colorScheme.primary
-                      : theme.colorScheme.surfaceContainerHighest.withValues(
-                          alpha: 0.4,
-                        ),
-                  borderRadius: BorderRadius.circular(50),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.dashboard_customize_rounded,
-                      size: 14,
-                      color: _selectedSegment == 1
-                          ? theme.colorScheme.onPrimary
-                          : theme.colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      l10n.presetsCustomCount(
-                        presetState.customPresets.length.toString(),
-                      ),
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: _selectedSegment == 1
-                            ? FontWeight.bold
-                            : FontWeight.w500,
-                        color: _selectedSegment == 1
-                            ? theme.colorScheme.onPrimary
-                            : theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
+            ButtonSegment(
+              value: 1,
+              icon: const Icon(Icons.dashboard_customize_rounded, size: 16),
+              label: Text(
+                l10n.presetsCustomCount(
+                  presetState.customPresets.length.toString(),
                 ),
               ),
             ),
           ],
+          selected: {_selectedSegment},
+          onSelectionChanged: (set) =>
+              setState(() => _selectedSegment = set.first),
+          expandSegments: true,
+          height: 40,
         ),
         const SizedBox(height: 12),
-        _buildDynamicMarketplaceActions(context, ref, theme),
+        _buildDynamicMarketplaceActions(context, ref),
         const SizedBox(height: 14),
         Flexible(
           child: ListView(
@@ -155,21 +86,29 @@ class _PresetGallerySheetState extends ConsumerState<PresetGallerySheet> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                ...BuiltInPresets.all.map(
-                  (preset) => _PresetCard(
-                    preset: preset,
-                    isActive: false,
-                    onTap: () {
-                      notifier.applyPreset(preset);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(l10n.presetsLoadedSnack(preset.name)),
-                          behavior: SnackBarBehavior.floating,
+                AppCardGroup(
+                  padding: EdgeInsets.zero,
+                  children: BuiltInPresets.all
+                      .map(
+                        (preset) => _PresetCard(
+                          preset: preset,
+                          isActive: presetState.activePresetId == preset.id,
+                          onTap: () {
+                            notifier.applyPreset(preset);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  l10n.presetsLoadedSnack(preset.name),
+                                ),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          },
+                          onExport: () =>
+                              _showExportDialog(context, ref, preset),
                         ),
-                      );
-                    },
-                    onExport: () => _showExportDialog(context, ref, preset),
-                  ),
+                      )
+                      .toList(),
                 ),
               ] else ...[
                 Text(
@@ -182,63 +121,39 @@ class _PresetGallerySheetState extends ConsumerState<PresetGallerySheet> {
                 ),
                 const SizedBox(height: 8),
                 if (presetState.customPresets.isEmpty)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 32,
-                      horizontal: 20,
-                    ),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.surfaceContainerHighest
-                          .withValues(alpha: 0.35),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Column(
-                      children: [
-                        Icon(
-                          Icons.dashboard_customize_outlined,
-                          size: 36,
-                          color: theme.colorScheme.onSurfaceVariant.withValues(
-                            alpha: 0.6,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          l10n.presetsNoCustomTitle,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          l10n.presetsNoCustomSubtitle,
-                          textAlign: TextAlign.center,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
+                  AppEmptyState(
+                    icon: Icons.dashboard_customize_outlined,
+                    title: l10n.presetsNoCustomTitle,
+                    subtitle: l10n.presetsNoCustomSubtitle,
                   )
                 else
-                  ...presetState.customPresets.map(
-                    (preset) => _PresetCard(
-                      preset: preset,
-                      isActive: false,
-                      isCustom: true,
-                      onTap: () {
-                        notifier.applyPreset(preset);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(l10n.presetsLoadedSnack(preset.name)),
-                            behavior: SnackBarBehavior.floating,
+                  AppCardGroup(
+                    padding: EdgeInsets.zero,
+                    children: presetState.customPresets
+                        .map(
+                          (preset) => _PresetCard(
+                            preset: preset,
+                            isActive: presetState.activePresetId == preset.id,
+                            isCustom: true,
+                            onTap: () {
+                              notifier.applyPreset(preset);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    l10n.presetsLoadedSnack(preset.name),
+                                  ),
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            },
+                            onExport: () =>
+                                _showExportDialog(context, ref, preset),
+                            onDelete: () {
+                              notifier.deleteCustomPreset(preset.id);
+                            },
                           ),
-                        );
-                      },
-                      onExport: () => _showExportDialog(context, ref, preset),
-                      onDelete: () {
-                        notifier.deleteCustomPreset(preset.id);
-                      },
-                    ),
+                        )
+                        .toList(),
                   ),
               ],
             ],
@@ -248,120 +163,23 @@ class _PresetGallerySheetState extends ConsumerState<PresetGallerySheet> {
     );
   }
 
-  Widget _buildDynamicMarketplaceActions(
-    BuildContext context,
-    WidgetRef ref,
-    ThemeData theme,
-  ) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      crossAxisAlignment: WrapCrossAlignment.center,
+  Widget _buildDynamicMarketplaceActions(BuildContext context, WidgetRef ref) {
+    return AppChipGroup(
       children: [
-        InkWell(
+        AppChip(
+          icon: Icons.bookmark_add_rounded,
+          label: context.l10n.presetsSnapshotCurrent,
           onTap: () => _showSaveDialog(context, ref),
-          borderRadius: BorderRadius.circular(50),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest.withValues(
-                alpha: 0.45,
-              ),
-              borderRadius: BorderRadius.circular(50),
-              border: Border.all(
-                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.bookmark_add_rounded,
-                  size: 15,
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  context.l10n.presetsSnapshotCurrent,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
         ),
-        InkWell(
+        AppChip(
+          icon: Icons.file_download_outlined,
+          label: context.l10n.presetsImportJson,
           onTap: () => _showImportDialog(context, ref),
-          borderRadius: BorderRadius.circular(50),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest.withValues(
-                alpha: 0.45,
-              ),
-              borderRadius: BorderRadius.circular(50),
-              border: Border.all(
-                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.file_download_outlined,
-                  size: 15,
-                  color: theme.colorScheme.primary,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  context.l10n.presetsImportJson,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: theme.colorScheme.onSurface,
-                  ),
-                ),
-              ],
-            ),
-          ),
         ),
-        InkWell(
+        AppChip(
+          icon: Icons.share_outlined,
+          label: context.l10n.presetsExport,
           onTap: () => _showExportDialog(context, ref),
-          borderRadius: BorderRadius.circular(50),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest.withValues(
-                alpha: 0.45,
-              ),
-              borderRadius: BorderRadius.circular(50),
-              border: Border.all(
-                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.share_outlined,
-                  size: 15,
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  context.l10n.presetsExport,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
         ),
       ],
     );
@@ -725,68 +543,65 @@ class _PresetCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return ListTile(
+    return AppCardSurface(
+      color: isActive
+          ? theme.colorScheme.primaryContainer.withValues(alpha: 0.35)
+          : null,
+      padding: EdgeInsets.zero,
       onTap: onTap,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      selected: isActive,
-      selectedTileColor: theme.colorScheme.primary.withValues(alpha: 0.1),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      leading: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: preset.previewColors.take(3).map((c) {
-          return Container(
-            width: 16,
-            height: 16,
-            margin: const EdgeInsets.only(right: 4),
-            decoration: BoxDecoration(
-              color: Color(c),
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+        leading: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: preset.previewColors.take(3).map((c) {
+            return Container(
+              width: 16,
+              height: 16,
+              margin: const EdgeInsets.only(right: 4),
+              decoration: BoxDecoration(
+                color: Color(c),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: theme.colorScheme.outlineVariant.withValues(
+                    alpha: 0.4,
+                  ),
+                ),
               ),
-            ),
-          );
-        }).toList(),
-      ),
-      title: Text(
-        preset.name,
-        style: TextStyle(
-          fontWeight: isActive ? FontWeight.bold : FontWeight.w600,
-          color: isActive ? theme.colorScheme.primary : null,
+            );
+          }).toList(),
         ),
-      ),
-      subtitle: Text(
-        '${preset.cardStyle.displayName} • ${preset.author}',
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: TextStyle(
-          fontSize: 12,
-          color: theme.colorScheme.onSurfaceVariant,
-        ),
-      ),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          IconButton(
-            icon: Icon(
-              Icons.share_outlined,
-              color: theme.colorScheme.primary,
-              size: 19,
-            ),
-            tooltip: context.l10n.presetsExportShareTooltip,
-            onPressed: onExport,
+        title: Text(
+          preset.name,
+          style: TextStyle(
+            fontWeight: isActive ? FontWeight.bold : FontWeight.w600,
+            color: isActive ? theme.colorScheme.primary : null,
           ),
-          if (isCustom && onDelete != null)
-            IconButton(
-              icon: Icon(
-                Icons.delete_outline,
-                color: theme.colorScheme.error,
-                size: 19,
-              ),
-              tooltip: context.l10n.presetsDeleteTooltip,
-              onPressed: onDelete,
+        ),
+        subtitle: Text(
+          '${preset.cardStyle.displayName} • ${preset.author}',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 12,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        trailing: AppActionButtonGroup(
+          height: 34,
+          items: [
+            AppActionItem(
+              icon: Icons.share_outlined,
+              tooltip: context.l10n.presetsExportShareTooltip,
+              onTap: onExport,
             ),
-        ],
+            if (isCustom && onDelete != null)
+              AppActionItem(
+                icon: Icons.delete_outline_rounded,
+                tooltip: context.l10n.presetsDeleteTooltip,
+                onTap: onDelete!,
+              ),
+          ],
+        ),
       ),
     );
   }

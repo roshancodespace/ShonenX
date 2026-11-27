@@ -1,5 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:shonenx/core/localization/l10n_extension.dart';
+import 'package:shonenx/shared/widgets/app_button_group.dart';
 import 'package:shonenx/shared/widgets/app_slider.dart';
 
 class ReaderBottomOverlay extends StatefulWidget {
@@ -61,163 +62,138 @@ class _ReaderBottomOverlayState extends State<ReaderBottomOverlay> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Prev chapter + prev page
-                  _buildPillContainer(
-                    children: [
-                      _navButton(
+                  AppActionButtonGroup(
+                    outlined: false,
+                    height: 42,
+                    backgroundColor: widget.appBarBg,
+                    foregroundColor: widget.textColor,
+                    items: [
+                      AppActionItem(
                         icon: Icons.skip_previous_rounded,
-                        size: 20,
-                        onPressed: widget.hasPrevChapter
-                            ? widget.onPrevChapter
-                            : null,
                         tooltip: context.l10n.readerPreviousChapter,
+                        onTap: widget.hasPrevChapter
+                            ? widget.onPrevChapter
+                            : () {},
                       ),
-                      _navButton(
+                      AppActionItem(
                         icon: Icons.chevron_left_rounded,
-                        size: 22,
-                        onPressed: widget.currentPage > 0
-                            ? () => widget.onPageChanged(widget.currentPage - 1)
-                            : null,
                         tooltip: context.l10n.readerPreviousPage,
+                        onTap: widget.currentPage > 0
+                            ? () => widget.onPageChanged(widget.currentPage - 1)
+                            : () {},
                       ),
                     ],
                   ),
-                  _buildPillContainer(
-                    children: [
-                      _navButton(
+                  AppActionButtonGroup(
+                    outlined: false,
+                    height: 42,
+                    backgroundColor: widget.appBarBg,
+                    foregroundColor: widget.textColor,
+                    items: [
+                      AppActionItem(
                         icon: Icons.chevron_right_rounded,
-                        size: 22,
-                        onPressed: widget.currentPage < maxPage
-                            ? () => widget.onPageChanged(widget.currentPage + 1)
-                            : null,
                         tooltip: context.l10n.readerNextPage,
+                        onTap: widget.currentPage < maxPage
+                            ? () => widget.onPageChanged(widget.currentPage + 1)
+                            : () {},
                       ),
-                      _navButton(
+                      AppActionItem(
                         icon: Icons.skip_next_rounded,
-                        size: 20,
-                        onPressed: widget.hasNextChapter
-                            ? widget.onNextChapter
-                            : null,
                         tooltip: context.l10n.readerNextChapter,
+                        onTap: widget.hasNextChapter
+                            ? widget.onNextChapter
+                            : () {},
                       ),
-                      _navButton(
+                      AppActionItem(
                         icon: Icons.format_list_bulleted_rounded,
-                        size: 18,
-                        onPressed: widget.onChaptersTap,
                         tooltip: context.l10n.readerChaptersList,
+                        onTap: widget.onChaptersTap,
                       ),
                     ],
                   ),
                 ],
               ),
-              const SizedBox(height: 5),
-              _buildPillContainer(
+              const SizedBox(height: 8),
+              Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
-                  vertical: 6,
+                  vertical: 8,
                 ),
-                children: [
-                  Text(
-                    '$displayPage',
-                    style: TextStyle(
-                      color: _draggingPage != null
-                          ? theme.colorScheme.primary
-                          : widget.textColor.withValues(alpha: 0.85),
-                      fontWeight: FontWeight.w700,
-                      fontSize: 12,
+                decoration: BoxDecoration(
+                  color: widget.appBarBg,
+                  borderRadius: BorderRadius.circular(widget.uiRoundness),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.15),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: AppSlider(
-                      value: sliderValue,
-                      min: 0,
-                      max: maxPage.toDouble(),
-                      divisions: widget.totalPages > 1
-                          ? widget.totalPages - 1
-                          : 1,
-                      trackHeight: 6.0,
-                      trackGap: 4.0,
-                      thumbHeight: 22.0,
-                      activeTrackColor: theme.colorScheme.primary,
-                      inactiveTrackColor: widget.textColor.withValues(
-                        alpha: 0.14,
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(minWidth: 28),
+                      child: Text(
+                        '$displayPage',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: _draggingPage != null
+                              ? theme.colorScheme.primary
+                              : widget.textColor.withValues(alpha: 0.9),
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12.5,
+                        ),
                       ),
-                      thumbColor: theme.colorScheme.primary,
-                      showStopIndicator: false,
-                      onChanged: (value) {
-                        setState(() => _draggingPage = value.toInt());
-                        widget.onPageChanged(value.toInt());
-                      },
-                      onChangeEnd: (value) {
-                        setState(() => _draggingPage = null);
-                        widget.onPageChanged(value.toInt());
-                      },
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    '${widget.totalPages}',
-                    style: TextStyle(
-                      color: widget.textColor.withValues(alpha: 0.6),
-                      fontWeight: FontWeight.w700,
-                      fontSize: 12,
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: AppSlider(
+                        value: sliderValue,
+                        min: 0,
+                        max: maxPage.toDouble(),
+                        divisions: widget.totalPages > 1
+                            ? widget.totalPages - 1
+                            : 1,
+                        trackHeight: 6.0,
+                        trackGap: 4.0,
+                        thumbHeight: 22.0,
+                        activeTrackColor: theme.colorScheme.primary,
+                        inactiveTrackColor: widget.textColor.withValues(
+                          alpha: 0.14,
+                        ),
+                        thumbColor: theme.colorScheme.primary,
+                        showStopIndicator: false,
+                        onChanged: (value) {
+                          setState(() => _draggingPage = value.toInt());
+                          widget.onPageChanged(value.toInt());
+                        },
+                        onChangeEnd: (value) {
+                          setState(() => _draggingPage = null);
+                          widget.onPageChanged(value.toInt());
+                        },
+                      ),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(minWidth: 28),
+                      child: Text(
+                        '${widget.totalPages}',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: widget.textColor.withValues(alpha: 0.6),
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12.5,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildPillContainer({
-    required List<Widget> children,
-    EdgeInsetsGeometry padding = const EdgeInsets.symmetric(
-      horizontal: 4,
-      vertical: 4,
-    ),
-  }) {
-    return Container(
-      padding: padding,
-      decoration: BoxDecoration(
-        color: widget.appBarBg,
-        borderRadius: BorderRadius.circular(widget.uiRoundness),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(mainAxisSize: MainAxisSize.min, children: children),
-    );
-  }
-
-  Widget _navButton({
-    required IconData icon,
-    required double size,
-    required VoidCallback? onPressed,
-    required String tooltip,
-  }) {
-    return IconButton(
-      style: IconButton.styleFrom(
-        minimumSize: const Size(38, 38),
-        padding: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(
-            (widget.uiRoundness - 4).clamp(0.0, widget.uiRoundness),
-          ),
-        ),
-      ),
-      onPressed: onPressed,
-      icon: Icon(icon, size: size),
-      color: widget.textColor,
-      disabledColor: widget.textColor.withValues(alpha: 0.2),
-      tooltip: tooltip,
     );
   }
 }

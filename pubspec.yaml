@@ -98,11 +98,6 @@ dependency_overrides:
       url: https://github.com/EchoEllet/flutter_secure_storage.git
       path: flutter_secure_storage_linux
       ref: feat/linux-rewrite
-  media_kit_libs_android_video:
-    git:
-      url: https://github.com/media-kit/media-kit.git
-      ref: main
-      path: ./libs/android/media_kit_libs_android_video
 
 dev_dependencies:
   flutter_test:

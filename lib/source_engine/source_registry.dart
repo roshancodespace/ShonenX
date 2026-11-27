@@ -161,9 +161,13 @@ final availableAnimeSourcesProvider = FutureProvider<List<SourceInfo>>(
       final worker2 = ever(bridgeManager.availableAnimeExtensions, (_) {
         ref.invalidateSelf();
       });
+      final worker3 = ever(bridge.AnymeXRuntimeBridge.controller.isReady, (_) {
+        ref.invalidateSelf();
+      });
       ref.onDispose(() {
         worker1.dispose();
         worker2.dispose();
+        worker3.dispose();
       });
       final extensionsRaw = bridgeManager.installedAnimeExtensions.where((ext) {
         final mId = (ext.managerId ?? bridge.getSourceManager(ext).id)
@@ -235,9 +239,13 @@ final availableMangaSourcesProvider = FutureProvider<List<SourceInfo>>(
       final worker2 = ever(bridgeManager.availableMangaExtensions, (_) {
         ref.invalidateSelf();
       });
+      final worker3 = ever(bridge.AnymeXRuntimeBridge.controller.isReady, (_) {
+        ref.invalidateSelf();
+      });
       ref.onDispose(() {
         worker1.dispose();
         worker2.dispose();
+        worker3.dispose();
       });
       final extensionsRaw = bridgeManager.installedMangaExtensions.where((ext) {
         final mId = (ext.managerId ?? bridge.getSourceManager(ext).id)

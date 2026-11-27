@@ -147,7 +147,7 @@ class SmartImage extends StatelessWidget {
       return _applyEffects(
         CachedNetworkImage(
           imageUrl: cleanUrl,
-          httpHeaders: finalHeaders.isEmpty ? null : finalHeaders,
+          httpHeaders: finalHeaders,
           width: safeWidth,
           height: safeHeight,
           fit: fit,

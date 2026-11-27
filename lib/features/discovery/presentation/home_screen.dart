@@ -21,7 +21,9 @@ import 'package:shonenx/features/discovery/presentation/widgets/header/home_head
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
+import 'package:shonenx/source_engine/source_registry.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -141,7 +143,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   child: Center(child: Text(context.l10n.homeNoActiveSections)),
                 ),
               )
-            else
+            else ...[
               SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
@@ -166,6 +168,68 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   childCount: activeSections.length,
                 ),
               ),
+              Consumer(
+                builder: (context, ref, _) {
+                  final discPrefs = ref.watch(discoveryPrefsProvider);
+                  if (discPrefs.mode != MetadataMode.source) {
+                    return const SliverToBoxAdapter(child: SizedBox.shrink());
+                  }
+                  final hasSourceSections = activeSections.any(
+                    (s) => s.sourceInfo != null,
+                  );
+                  if (hasSourceSections) {
+                    return const SliverToBoxAdapter(child: SizedBox.shrink());
+                  }
+                  final animeLoading = ref.watch(
+                    availableAnimeSourcesProvider.select((s) => s.isLoading),
+                  );
+                  final mangaLoading = ref.watch(
+                    availableMangaSourcesProvider.select((s) => s.isLoading),
+                  );
+                  if (discPrefs.activeSources.isNotEmpty ||
+                      animeLoading ||
+                      mangaLoading) {
+                    return const SliverToBoxAdapter(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(vertical: 48),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            AppProgressIndicator(
+                              type: AppProgressType.circular,
+                            ),
+                            SizedBox(height: 12),
+                            Text('Loading sources...'),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+                  return SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 48,
+                        horizontal: 24,
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text(
+                            'No discovery sources selected.',
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 12),
+                          FilledButton.tonal(
+                            onPressed: () => DiscoveryModeSheet.show(context),
+                            child: const Text('Select Sources'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
 
             const SliverToBoxAdapter(child: SizedBox(height: 100)),
           ],

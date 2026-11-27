@@ -4,7 +4,6 @@ import 'dart:isolate';
 
 import 'package:archive/archive.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 import 'package:shonenx/core/network/network_config.dart';
 import 'package:shonenx/core/network/session_manager.dart';
@@ -264,16 +263,23 @@ class DownloadManagerNotifier extends AsyncNotifier<DownloadManagerNotifier> {
         return dbChain;
       }
 
-      Future<http.Response> fetchWithRetry(String url, Map<String, String> reqHeaders) async {
+      Future<HttpResponse> fetchWithRetry(
+        String url,
+        Map<String, String> reqHeaders,
+      ) async {
         Object? lastErr;
+        final client = ref.read(httpClientProvider);
         for (int attempt = 0; attempt < 3; attempt++) {
           if (_cancelledMangaTasks.contains(dbTaskId)) {
             throw Exception('Cancelled');
           }
           try {
-            final resp = await http
-                .get(Uri.parse(url), headers: reqHeaders)
-                .timeout(const Duration(seconds: 30));
+            final resp = await client.get(
+              url,
+              headers: reqHeaders,
+              cacheDuration: Duration.zero,
+              suppressLogs: true,
+            );
             if (resp.statusCode >= 200 && resp.statusCode < 300) {
               return resp;
             }

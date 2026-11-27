@@ -14,6 +14,7 @@ import 'package:shonenx/shared/providers/security_prefs_provider.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
 import 'package:shonenx/shared/widgets/confirmation_bottom_sheet.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 class SecuritySettingsScreen extends ConsumerWidget {
   const SecuritySettingsScreen({super.key});
@@ -182,64 +183,59 @@ class SecuritySettingsScreen extends ConsumerWidget {
                 ),
 
                 if (isMobile)
-                  bioCapabilityAsync.when(
+                  ...bioCapabilityAsync.when(
                     data: (capability) {
                       final isSupported = capability.canAuthenticate;
-                      return Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          SettingsSwitchTile(
-                            icon: Icons.fingerprint_rounded,
-                            title: context.l10n.securityBiometricUnlock,
-                            subtitle: capability.hardwareDescription,
-                            value: prefs.useBiometrics && isSupported,
-                            onChanged: isSupported
-                                ? (useBio) async {
-                                    if (useBio) {
-                                      // Authenticate once to confirm biometric enrollment works
-                                      final securityService = ref.read(
-                                        securityServiceProvider,
-                                      );
-                                      final success = await securityService
-                                          .authenticateBiometrics(
-                                            reason: context
-                                                .l10n
-                                                .securityConfirmBiometricsReason,
-                                          );
-                                      if (success) {
-                                        await ref
-                                            .read(
-                                              securityPrefsProvider.notifier,
-                                            )
-                                            .setUseBiometrics(true);
-                                      }
-                                    } else {
+                      return [
+                        SettingsSwitchTile(
+                          icon: Icons.fingerprint_rounded,
+                          title: context.l10n.securityBiometricUnlock,
+                          subtitle: capability.hardwareDescription,
+                          value: prefs.useBiometrics && isSupported,
+                          onChanged: isSupported
+                              ? (useBio) async {
+                                  if (useBio) {
+                                    // Authenticate once to confirm biometric enrollment works
+                                    final securityService = ref.read(
+                                      securityServiceProvider,
+                                    );
+                                    final success = await securityService
+                                        .authenticateBiometrics(
+                                          reason: context
+                                              .l10n
+                                              .securityConfirmBiometricsReason,
+                                        );
+                                    if (success) {
                                       await ref
                                           .read(securityPrefsProvider.notifier)
-                                          .setUseBiometrics(false);
+                                          .setUseBiometrics(true);
                                     }
+                                  } else {
+                                    await ref
+                                        .read(securityPrefsProvider.notifier)
+                                        .setUseBiometrics(false);
                                   }
-                                : null,
+                                }
+                              : null,
+                        ),
+                        if (prefs.useBiometrics && isSupported)
+                          SettingsSwitchTile(
+                            icon: Icons.flash_on_outlined,
+                            title: context.l10n.securityAutoPromptBiometrics,
+                            subtitle: context
+                                .l10n
+                                .securityAutoPromptBiometricsSubtitle,
+                            value: prefs.autoPromptBiometrics,
+                            onChanged: (val) {
+                              ref
+                                  .read(securityPrefsProvider.notifier)
+                                  .setAutoPromptBiometrics(val);
+                            },
                           ),
-                          if (prefs.useBiometrics && isSupported)
-                            SettingsSwitchTile(
-                              icon: Icons.flash_on_outlined,
-                              title: context.l10n.securityAutoPromptBiometrics,
-                              subtitle: context
-                                  .l10n
-                                  .securityAutoPromptBiometricsSubtitle,
-                              value: prefs.autoPromptBiometrics,
-                              onChanged: (val) {
-                                ref
-                                    .read(securityPrefsProvider.notifier)
-                                    .setAutoPromptBiometrics(val);
-                              },
-                            ),
-                        ],
-                      );
+                      ];
                     },
-                    loading: () => const SizedBox.shrink(),
-                    error: (_, __) => const SizedBox.shrink(),
+                    loading: () => const [],
+                    error: (_, __) => const [],
                   ),
 
                 SettingsDropdownTile<LockTimeout>(
@@ -362,25 +358,21 @@ class SecuritySettingsScreen extends ConsumerWidget {
           // Network & DNS (DoH) Section
           SettingsSection(
             title: context.l10n.securityNetworkDnsSection,
-            children: [
-              SettingsDropdownTile<DohProvider>(
-                icon: Icons.dns_outlined,
-                title: context.l10n.securityDohTitle,
-                subtitle: dohPrefs.provider.description,
-                value: dohPrefs.provider,
-                items: DohProvider.values
-                    .map(
-                      (e) => DropdownMenuItem(value: e, child: Text(e.title)),
-                    )
-                    .toList(),
-                onChanged: (val) {
-                  if (val != null) {
-                    ref.read(dohPrefsProvider.notifier).setProvider(val);
-                  }
-                },
-                onInfoCallback: () => _showDohInfoSheet(context, ref),
-              ),
-            ],
+            child: SettingsDropdownTile<DohProvider>(
+              icon: Icons.dns_outlined,
+              title: context.l10n.securityDohTitle,
+              subtitle: dohPrefs.provider.description,
+              value: dohPrefs.provider,
+              items: DohProvider.values
+                  .map((e) => DropdownMenuItem(value: e, child: Text(e.title)))
+                  .toList(),
+              onChanged: (val) {
+                if (val != null) {
+                  ref.read(dohPrefsProvider.notifier).setProvider(val);
+                }
+              },
+              onInfoCallback: () => _showDohInfoSheet(context, ref),
+            ),
           ),
 
           // Quick Actions Section
@@ -580,7 +572,7 @@ class _DohTestWidgetState extends ConsumerState<_DohTestWidget> {
                     ? const SizedBox(
                         width: 16,
                         height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        child: AppProgressIndicator(type: AppProgressType.circular, strokeWidth: 2),
                       )
                     : const Icon(Icons.speed_rounded, size: 18),
                 label: Text(

@@ -93,19 +93,10 @@ class _SchemePicker extends ConsumerWidget {
         )
         .toList();
 
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      itemCount: items.length,
-      itemBuilder: (context, index) {
-        final item = items[index];
-        return ThemePaletteTile(
-          item: item,
-          isSelected: currentScheme.name == item.id,
-          onTap: () => onSelected(AppScheme.values.byName(item.id)),
-        );
-      },
+    return _SchemeGridPicker(
+      items: items,
+      selectedId: currentScheme.name,
+      onSelected: (item) => onSelected(AppScheme.values.byName(item.id)),
     );
   }
 }
@@ -133,17 +124,46 @@ class _ExclusiveSchemePicker extends ConsumerWidget {
         )
         .toList();
 
-    return ListView.builder(
+    return _SchemeGridPicker(
+      items: items,
+      selectedId: currentKey,
+      onSelected: (item) => onSelected(item.id),
+    );
+  }
+}
+
+class _SchemeGridPicker extends StatelessWidget {
+  const _SchemeGridPicker({
+    required this.items,
+    required this.selectedId,
+    required this.onSelected,
+  });
+
+  final List<ThemePaletteItem> items;
+  final String? selectedId;
+  final ValueChanged<ThemePaletteItem> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return GridView.builder(
       shrinkWrap: true,
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.symmetric(vertical: 8),
+      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: 220,
+        mainAxisExtent: 102,
+        crossAxisSpacing: 8,
+        mainAxisSpacing: 8,
+      ),
       itemCount: items.length,
       itemBuilder: (context, index) {
         final item = items[index];
-        return ThemePaletteTile(
+        return ThemePaletteCard(
           item: item,
-          isSelected: currentKey == item.id,
-          onTap: () => onSelected(item.id),
+          isSelected: selectedId == item.id,
+          onTap: () => onSelected(item),
+          width: double.infinity,
+          height: 102,
         );
       },
     );

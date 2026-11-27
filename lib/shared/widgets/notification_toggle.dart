@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/shared/providers/notification_provider.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 class NotificationToggle extends ConsumerWidget {
   final String type;
@@ -45,7 +46,7 @@ class NotificationToggle extends ConsumerWidget {
           ? const SizedBox(
               width: 20,
               height: 20,
-              child: CircularProgressIndicator(strokeWidth: 2),
+              child: AppProgressIndicator(type: AppProgressType.circular, strokeWidth: 2),
             )
           : Icon(
               state.isScheduled

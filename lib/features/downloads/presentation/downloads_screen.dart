@@ -13,6 +13,11 @@ import 'package:shonenx/features/downloads/providers/download_prefs_provider.dar
 import 'package:shonenx/features/downloads/providers/download_provider.dart';
 import 'package:shonenx/core/services/one_dm_service.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
+import 'package:shonenx/shared/widgets/app_button.dart';
+import 'package:shonenx/shared/widgets/app_card_group.dart';
+import 'package:shonenx/shared/widgets/app_empty_state.dart';
+import 'package:shonenx/shared/widgets/app_icon_button.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
 
 sealed class OfflineItem {
@@ -72,28 +77,25 @@ class DownloadsScreen extends ConsumerWidget {
             // Queue Tab
             tasksAsync.when(
               loading: () => const Center(
-                child: CircularProgressIndicator(strokeWidth: 2),
+                child: AppProgressIndicator(type: AppProgressType.circular, strokeWidth: 2),
               ),
               error: (err, _) => Center(child: Text('Error: $err')),
               data: (tasks) {
                 if (tasks.isEmpty) {
-                  return _EmptyState(
+                  return AppEmptyState(
                     icon: Icons.download_for_offline_outlined,
                     title: context.l10n.downloadsQueueEmpty,
                     subtitle: context.l10n.downloadsQueueEmptySubtitle,
                   );
                 }
-                return ListView.separated(
-                  padding: const EdgeInsets.only(bottom: 80),
-                  itemCount: tasks.length,
-                  separatorBuilder: (_, __) => Divider(
-                    height: 1,
-                    indent: 72,
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.outlineVariant.withValues(alpha: 0.4),
+                return SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.only(top: 10, bottom: 80),
+                  child: AppCardGroup(
+                    children: [
+                      for (final task in tasks) _DownloadTile(task: task),
+                    ],
                   ),
-                  itemBuilder: (context, i) => _DownloadTile(task: tasks[i]),
                 );
               },
             ),
@@ -189,185 +191,149 @@ class _DownloadTileState extends ConsumerState<_DownloadTile> {
     final isDone = status == DownloadStatus.completed;
     final isCanceled = status == DownloadStatus.canceled;
     final isFailed = status == DownloadStatus.failed;
+    final statusColor = _statusColor(status, colors);
 
-    return InkWell(
+    return AppCardSurface(
       onTap: isFailed ? () => _showErrorDetailsSheet(context, ref, task) : null,
-      borderRadius: BorderRadius.circular(8),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // Status icon
-            SizedBox(
-              width: 40,
-              height: 40,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  if (status == DownloadStatus.downloading)
-                    CircularProgressIndicator(
-                      value: task.totalBytes > 0 ? task.progress : null,
-                      strokeWidth: 2.5,
-                      color: colors.primary,
-                      backgroundColor: colors.primary.withValues(alpha: 0.12),
-                    ),
-                  Icon(
-                    _statusIcon(status),
-                    size: 24,
-                    color: _statusColor(status, colors),
-                  ),
-                ],
-              ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: 40,
+            height: 40,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                if (status == DownloadStatus.downloading)
+                  AppProgressIndicator(type: AppProgressType.circular, value: task.totalBytes > 0 ? task.progress : null, strokeWidth: 2.5, color: colors.primary, trackColor: colors.primary.withValues(alpha: 0.14)),
+                Icon(_statusIcon(status), size: 22, color: statusColor),
+              ],
             ),
-            const SizedBox(width: 12),
-            // Text content
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    task.fileName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  task.fileName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14.5,
                   ),
-                  const SizedBox(height: 3),
-                  Text(
-                    _buildStatusText(),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: isFailed ? colors.error : colors.onSurfaceVariant,
-                      fontWeight: isFailed ? FontWeight.w500 : null,
-                    ),
-                  ),
-                  if (isFailed &&
-                      task.errorReason != null &&
-                      task.errorReason!.isNotEmpty) ...[
-                    const SizedBox(height: 6),
-                    GestureDetector(
-                      onTap: () => _showErrorDetailsSheet(context, ref, task),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colors.errorContainer.withValues(alpha: 0.35),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(
-                            color: colors.error.withValues(alpha: 0.3),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.info_outline_rounded,
-                              size: 13,
-                              color: colors.error,
-                            ),
-                            const SizedBox(width: 5),
-                            Flexible(
-                              child: Text(
-                                task.errorReason!,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: theme.textTheme.labelSmall?.copyWith(
-                                  color: colors.error,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 3),
-                            Icon(
-                              Icons.chevron_right_rounded,
-                              size: 14,
-                              color: colors.error,
-                            ),
-                          ],
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        _primaryMetaText(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: isFailed
+                              ? colors.error
+                              : colors.onSurfaceVariant,
                         ),
                       ),
                     ),
+                    if (_secondaryMetaText() != null) ...[
+                      const SizedBox(width: 8),
+                      Text(
+                        _secondaryMetaText()!,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: status == DownloadStatus.downloading
+                              ? colors.primary
+                              : colors.onSurfaceVariant,
+                          fontWeight: status == DownloadStatus.downloading
+                              ? FontWeight.w600
+                              : null,
+                        ),
+                      ),
+                    ],
                   ],
-                  if (!isDone && !isCanceled) ...[
-                    const SizedBox(height: 8),
-                    LinearProgressIndicator(
-                      value: task.totalBytes > 0 ? task.progress : null,
-                      minHeight: 2,
-                      borderRadius: BorderRadius.circular(2),
-                      backgroundColor: colors.surfaceContainerHighest
-                          .withValues(alpha: 0.5),
-                      color: _progressColor(status, colors),
-                    ),
-                  ],
+                ),
+                if (!isDone && !isCanceled) ...[
+                  const SizedBox(height: 10),
+                  AppProgressIndicator(type: AppProgressType.linear, value: task.totalBytes > 0 ? task.progress : null, height: 3.5, style: (status == DownloadStatus.downloading) ? AppProgressStyle.wavy : AppProgressStyle.classic, color: _progressColor(status, colors), trackColor: colors.surfaceContainerHighest.withValues(
+                      alpha: 0.55,
+                    )),
                 ],
-              ),
+                if (isFailed &&
+                    task.errorReason != null &&
+                    task.errorReason!.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    task.errorReason!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: colors.error,
+                    ),
+                  ),
+                ],
+              ],
             ),
-            const SizedBox(width: 8),
-            if (isDone)
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.check_rounded,
-                    size: 20,
-                    color: Colors.green,
-                  ),
-                  const SizedBox(width: 8),
-                  _IconBtn(
-                    icon: Icons.delete_outline_rounded,
-                    color: colors.error,
+          ),
+          const SizedBox(width: 8),
+          if (isDone)
+            AppIconButton(
+              icon: const Icon(Icons.delete_outline_rounded),
+              foregroundColor: colors.error,
+              radius: 999,
+              onPressed: () => ref
+                  .read(downloadManagerProvider.notifier)
+                  .cancelDownload(task.id),
+            )
+          else
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (status == DownloadStatus.downloading ||
+                    status == DownloadStatus.pending)
+                  AppIconButton(
+                    icon: const Icon(Icons.pause_rounded),
+                    foregroundColor: colors.onSurfaceVariant,
+                    radius: 999,
                     onPressed: () => ref
                         .read(downloadManagerProvider.notifier)
-                        .cancelDownload(task.id),
+                        .pauseDownload(task.id),
                   ),
-                ],
-              )
-            else
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (status == DownloadStatus.downloading ||
-                      status == DownloadStatus.pending)
-                    _IconBtn(
-                      icon: Icons.pause_rounded,
-                      onPressed: () => ref
-                          .read(downloadManagerProvider.notifier)
-                          .pauseDownload(task.id),
-                    ),
-                  if (status == DownloadStatus.failed)
-                    _IconBtn(
-                      icon: Icons.refresh_rounded,
-                      color: colors.primary,
-                      onPressed: () => ref
-                          .read(downloadManagerProvider.notifier)
-                          .startDownload(task),
-                    )
-                  else if (status == DownloadStatus.paused ||
-                      status == DownloadStatus.canceled)
-                    _IconBtn(
-                      icon: Icons.play_arrow_rounded,
-                      onPressed: () => ref
-                          .read(downloadManagerProvider.notifier)
-                          .startDownload(task),
-                    ),
-                  const SizedBox(width: 4),
-                  _IconBtn(
-                    icon: Icons.close_rounded,
-                    color: colors.error,
+                if (status == DownloadStatus.failed)
+                  AppIconButton(
+                    icon: const Icon(Icons.refresh_rounded),
+                    foregroundColor: colors.primary,
+                    radius: 999,
                     onPressed: () => ref
                         .read(downloadManagerProvider.notifier)
-                        .cancelDownload(task.id),
+                        .startDownload(task),
+                  )
+                else if (status == DownloadStatus.paused ||
+                    status == DownloadStatus.canceled)
+                  AppIconButton(
+                    icon: const Icon(Icons.play_arrow_rounded),
+                    foregroundColor: colors.onSurfaceVariant,
+                    radius: 999,
+                    onPressed: () => ref
+                        .read(downloadManagerProvider.notifier)
+                        .startDownload(task),
                   ),
-                ],
-              ),
-          ],
-        ),
+                const SizedBox(width: 2),
+                AppIconButton(
+                  icon: const Icon(Icons.close_rounded),
+                  foregroundColor: colors.error,
+                  radius: 999,
+                  onPressed: () => ref
+                      .read(downloadManagerProvider.notifier)
+                      .cancelDownload(task.id),
+                ),
+              ],
+            ),
+        ],
       ),
     );
   }
@@ -548,9 +514,10 @@ class _DownloadTileState extends ConsumerState<_DownloadTile> {
           Row(
             children: [
               Expanded(
-                child: FilledButton.icon(
-                  icon: const Icon(Icons.refresh_rounded, size: 18),
-                  label: const Text('Resume Download'),
+                child: AppButton(
+                  label: 'Resume Download',
+                  icon: Icons.refresh_rounded,
+                  isExpanded: true,
                   onPressed: () {
                     Navigator.of(context).pop();
                     ref
@@ -561,9 +528,13 @@ class _DownloadTileState extends ConsumerState<_DownloadTile> {
               ),
               const SizedBox(width: 8),
               if (Platform.isAndroid) ...[
-                IconButton.filledTonal(
-                  icon: const Icon(Icons.open_in_new_rounded, size: 18),
+                AppIconButton(
+                  icon: const Icon(Icons.open_in_new_rounded),
                   tooltip: 'Download via 1DM',
+                  size: 44,
+                  radius: 999,
+                  backgroundColor: colors.secondaryContainer,
+                  foregroundColor: colors.onSecondaryContainer,
                   onPressed: () async {
                     Navigator.of(context).pop();
                     await OneDMService.instance.download(
@@ -575,13 +546,13 @@ class _DownloadTileState extends ConsumerState<_DownloadTile> {
                 ),
                 const SizedBox(width: 8),
               ],
-              IconButton.outlined(
-                icon: Icon(
-                  Icons.delete_outline_rounded,
-                  size: 18,
-                  color: colors.error,
-                ),
+              AppIconButton(
+                icon: const Icon(Icons.delete_outline_rounded),
                 tooltip: 'Cancel & Delete',
+                size: 44,
+                radius: 999,
+                backgroundColor: colors.errorContainer,
+                foregroundColor: colors.onErrorContainer,
                 onPressed: () {
                   Navigator.of(context).pop();
                   ref
@@ -661,57 +632,60 @@ class _DownloadTileState extends ConsumerState<_DownloadTile> {
     _ => c.primary,
   };
 
-  String _buildStatusText() {
+  String _primaryMetaText() {
     final task = widget.task;
-    final name =
-        task.status.name[0].toUpperCase() + task.status.name.substring(1);
     if (task.status == DownloadStatus.completed) {
-      final segText = task.totalSegments > 0
-          ? ' (${task.totalSegments} seg)'
-          : '';
-      return '$name · ${_mb(task.totalBytes > 0 ? task.totalBytes : task.downloadedBytes)} MB$segText';
+      final sizeMb = _mb(
+        task.totalBytes > 0 ? task.totalBytes : task.downloadedBytes,
+      );
+      return '$sizeMb MB';
     }
     if (task.status == DownloadStatus.failed) {
-      final pct = (task.progress * 100).toStringAsFixed(0);
-      final mbText = task.totalBytes > 0
-          ? '${_mb(task.downloadedBytes)}/${_mb(task.totalBytes)} MB'
-          : '${_mb(task.downloadedBytes)} MB';
-      return 'Failed ($pct% · $mbText saved) · Tap for details';
+      return 'Failed · Tap for details';
     }
     if (task.status == DownloadStatus.canceled) {
-      return name;
+      return 'Canceled';
     }
-    final isHls =
-        task.isM3u8 || task.url.contains('.m3u8') || task.totalSegments > 0;
-    if (isHls && task.totalSegments > 0) {
-      final pct = (task.progress * 100).toStringAsFixed(0);
-      final totalMb = task.totalBytes > 0 ? '/${_mb(task.totalBytes)}' : '';
-      return '$name · $pct% (${task.downloadedSegments}/${task.totalSegments} seg) · ${_mb(task.downloadedBytes)}$totalMb MB $_etaText';
+    if (task.status == DownloadStatus.pending) {
+      return 'Queued';
     }
     if (task.totalBytes > 0) {
-      final pct = (task.progress * 100).toStringAsFixed(0);
-      return '$name · $pct% · ${_mb(task.downloadedBytes)}/${_mb(task.totalBytes)} MB $_etaText';
+      return '${_mb(task.downloadedBytes)} / ${_mb(task.totalBytes)} MB';
     }
-    return '$name · ${_mb(task.downloadedBytes)} MB $_etaText';
+    if (task.totalSegments > 0) {
+      return '${task.downloadedSegments} / ${task.totalSegments} seg';
+    }
+    return '${_mb(task.downloadedBytes)} MB';
   }
 
-  String get _etaText {
-    if (widget.task.status != DownloadStatus.downloading || _speedBps <= 0) {
-      return '';
-    }
-    if (widget.task.totalBytes > 0) {
-      final remainingBytes =
-          widget.task.totalBytes - widget.task.downloadedBytes;
-      if (remainingBytes <= 0) {
-        return '· ${_formatSpeed(_speedBps)}';
+  String? _secondaryMetaText() {
+    final task = widget.task;
+    if (task.status == DownloadStatus.paused) {
+      if (task.totalBytes > 0 || task.totalSegments > 0) {
+        return '${(task.progress * 100).toStringAsFixed(0)}% · Paused';
       }
-      final seconds = remainingBytes / _speedBps;
-      if (seconds.isInfinite || seconds.isNaN) {
-        return '· ${_formatSpeed(_speedBps)}';
-      }
-      return '· ${_formatSpeed(_speedBps)} · ${_formatDuration(Duration(seconds: seconds.toInt()))}';
+      return 'Paused';
     }
-    return '· ${_formatSpeed(_speedBps)}';
+    if (task.status == DownloadStatus.downloading) {
+      final parts = <String>[];
+      if (task.totalBytes > 0 || task.totalSegments > 0) {
+        parts.add('${(task.progress * 100).toStringAsFixed(0)}%');
+      }
+      if (_speedBps > 0) {
+        parts.add(_formatSpeed(_speedBps));
+        if (task.totalBytes > 0) {
+          final remaining = task.totalBytes - task.downloadedBytes;
+          if (remaining > 0) {
+            final secs = remaining / _speedBps;
+            if (!secs.isInfinite && !secs.isNaN) {
+              parts.add(_formatDuration(Duration(seconds: secs.toInt())));
+            }
+          }
+        }
+      }
+      return parts.isEmpty ? null : parts.join(' · ');
+    }
+    return null;
   }
 
   String _formatSpeed(double speedBps) {
@@ -819,59 +793,53 @@ class _DownloadedFilesTabState extends ConsumerState<_DownloadedFilesTab> {
     required String message,
     required Future<void> Function() onDelete,
   }) {
-    final colors = Theme.of(context).colorScheme;
-
-    showModalBottomSheet(
+    AppBottomSheet.show(
       context: context,
+      title: title,
       useRootNavigator: true,
-      builder: (sheetContext) {
-        return AppBottomSheet(
-          title: title,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(message, style: Theme.of(context).textTheme.bodyMedium),
+          const SizedBox(height: 24),
+          Row(
             children: [
-              Text(message, style: Theme.of(context).textTheme.bodyMedium),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(
-                    child: FilledButton.tonal(
-                      onPressed: () => Navigator.pop(sheetContext),
-                      child: const Text('Cancel'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: FilledButton(
-                      style: FilledButton.styleFrom(
-                        backgroundColor: colors.error,
-                        foregroundColor: colors.onError,
-                      ),
-                      onPressed: () async {
-                        final messenger = ScaffoldMessenger.of(context);
-                        try {
-                          await onDelete();
-                          if (sheetContext.mounted) {
-                            Navigator.pop(sheetContext);
-                          }
-                        } catch (e) {
-                          if (mounted) {
-                            messenger.showSnackBar(
-                              SnackBar(content: Text('Failed to delete: $e')),
-                            );
-                          }
-                        }
-                      },
-                      child: const Text('Delete'),
-                    ),
-                  ),
-                ],
+              Expanded(
+                child: AppButton(
+                  label: 'Cancel',
+                  variant: AppButtonVariant.tonal,
+                  isExpanded: true,
+                  onPressed: () =>
+                      Navigator.of(context, rootNavigator: true).pop(),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: AppButton(
+                  label: 'Delete',
+                  variant: AppButtonVariant.destructive,
+                  isExpanded: true,
+                  onPressed: () async {
+                    final messenger = ScaffoldMessenger.of(context);
+                    final nav = Navigator.of(context, rootNavigator: true);
+                    try {
+                      await onDelete();
+                      nav.pop();
+                    } catch (e) {
+                      if (mounted) {
+                        messenger.showSnackBar(
+                          SnackBar(content: Text('Failed to delete: $e')),
+                        );
+                      }
+                    }
+                  },
+                ),
               ),
             ],
           ),
-        );
-      },
+        ],
+      ),
     );
   }
 
@@ -913,7 +881,7 @@ class _DownloadedFilesTabState extends ConsumerState<_DownloadedFilesTab> {
       future: _itemsFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator(strokeWidth: 2));
+          return const Center(child: AppProgressIndicator(type: AppProgressType.circular, strokeWidth: 2));
         }
         if (snapshot.hasError) {
           return Center(child: Text('Error: ${snapshot.error}'));
@@ -921,64 +889,71 @@ class _DownloadedFilesTabState extends ConsumerState<_DownloadedFilesTab> {
 
         final items = snapshot.data ?? [];
         if (items.isEmpty) {
-          return const _EmptyState(
+          return const AppEmptyState(
             icon: Icons.video_library_outlined,
             title: 'No downloaded files',
             subtitle: 'Downloaded episodes will appear here.',
           );
         }
 
-        return ListView.builder(
-          padding: const EdgeInsets.only(bottom: 80, top: 8),
-          itemCount: items.length,
-          itemBuilder: (context, i) {
-            final item = items[i];
-
-            if (item is OfflineFolder) {
-              final sizeStr = (item.totalSizeBytes / (1024 * 1024))
-                  .toStringAsFixed(1);
-              return Theme(
-                data: theme.copyWith(dividerColor: Colors.transparent),
-                child: ExpansionTile(
-                  leading: Icon(
-                    Icons.folder_open_rounded,
-                    color: colors.primary,
-                    size: 28,
-                  ),
-                  title: Text(
-                    item.name,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  subtitle: Text(
-                    '${item.files.length} episodes · $sizeStr MB',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colors.onSurfaceVariant,
-                    ),
-                  ),
-                  childrenPadding: const EdgeInsets.only(left: 16),
-                  children: [
-                    for (final fileItem in item.files)
-                      _buildFileTile(context, fileItem, theme, colors),
-                    const SizedBox(height: 8),
-                    TextButton.icon(
-                      onPressed: () => _confirmDeleteFolder(context, item),
-                      icon: const Icon(Icons.delete_outline_rounded, size: 18),
-                      label: const Text('Delete Folder'),
-                      style: TextButton.styleFrom(
-                        foregroundColor: colors.error,
+        return SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.only(bottom: 80, top: 10),
+          child: AppCardGroup(
+            children: items.map((item) {
+              if (item is OfflineFolder) {
+                final sizeStr = (item.totalSizeBytes / (1024 * 1024))
+                    .toStringAsFixed(1);
+                return AppCardSurface(
+                  child: Theme(
+                    data: theme.copyWith(dividerColor: Colors.transparent),
+                    child: ExpansionTile(
+                      leading: Icon(
+                        Icons.folder_open_rounded,
+                        color: colors.primary,
+                        size: 26,
                       ),
+                      title: Text(
+                        item.name,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      subtitle: Text(
+                        '${item.files.length} episodes · $sizeStr MB',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colors.onSurfaceVariant,
+                        ),
+                      ),
+                      childrenPadding: const EdgeInsets.only(left: 12),
+                      children: [
+                        for (final fileItem in item.files)
+                          _buildFileTile(context, fileItem, theme, colors),
+                        const SizedBox(height: 8),
+                        Padding(
+                          padding: const EdgeInsets.only(right: 12, bottom: 12),
+                          child: Align(
+                            alignment: Alignment.centerRight,
+                            child: AppButton(
+                              label: 'Delete Folder',
+                              icon: Icons.delete_outline_rounded,
+                              variant: AppButtonVariant.destructive,
+                              size: AppButtonSize.small,
+                              onPressed: () =>
+                                  _confirmDeleteFolder(context, item),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 12),
-                  ],
-                ),
-              );
-            } else if (item is OfflineFile) {
-              return _buildFileTile(context, item, theme, colors);
-            }
-            return const SizedBox();
-          },
+                  ),
+                );
+              } else if (item is OfflineFile) {
+                return _buildFileTile(context, item, theme, colors);
+              }
+              return const SizedBox.shrink();
+            }).toList(),
+          ),
         );
       },
     );
@@ -992,163 +967,90 @@ class _DownloadedFilesTabState extends ConsumerState<_DownloadedFilesTab> {
   ) {
     final sizeStr = (item.sizeBytes / (1024 * 1024)).toStringAsFixed(1);
 
-    return InkWell(
+    return AppCardSurface(
       onTap: () => _openFile(item.file),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Row(
-          children: [
-            Icon(
-              Icons.play_circle_outline_rounded,
-              size: 24,
-              color: colors.primary,
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    item.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '$sizeStr MB',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colors.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            PopupMenuButton<String>(
-              icon: Icon(
-                Icons.more_vert_rounded,
-                color: colors.onSurfaceVariant,
-                size: 20,
-              ),
-              onSelected: (val) {
-                if (val == 'play') _openFile(item.file);
-                if (val == 'external') _openExternal(item.file);
-                if (val == 'delete') _confirmDeleteFile(context, item);
-              },
-              itemBuilder: (_) => [
-                const PopupMenuItem(
-                  value: 'play',
-                  child: Row(
-                    children: [
-                      Icon(Icons.play_arrow_rounded, size: 20),
-                      SizedBox(width: 12),
-                      Text('Play in ShonenX'),
-                    ],
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          Icon(
+            Icons.play_circle_outline_rounded,
+            size: 24,
+            color: colors.primary,
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  item.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
-                const PopupMenuItem(
-                  value: 'external',
-                  child: Row(
-                    children: [
-                      Icon(Icons.open_in_new_rounded, size: 20),
-                      SizedBox(width: 12),
-                      Text('Play Externally'),
-                    ],
-                  ),
-                ),
-                const PopupMenuDivider(),
-                PopupMenuItem(
-                  value: 'delete',
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.delete_outline_rounded,
-                        size: 20,
-                        color: colors.error,
-                      ),
-                      const SizedBox(width: 12),
-                      Text('Delete', style: TextStyle(color: colors.error)),
-                    ],
+                const SizedBox(height: 2),
+                Text(
+                  '$sizeStr MB',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colors.onSurfaceVariant,
                   ),
                 ),
               ],
             ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ─── Shared Widgets ───────────────────────────────────────────────────────────
-
-/// Flat icon button — no background, just ripple.
-class _IconBtn extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onPressed;
-  final Color? color;
-
-  const _IconBtn({required this.icon, required this.onPressed, this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    final iconColor = color ?? Theme.of(context).colorScheme.onSurfaceVariant;
-    return IconButton(
-      icon: Icon(icon, size: 20),
-      color: iconColor,
-      style: IconButton.styleFrom(
-        minimumSize: const Size(36, 36),
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      ),
-      onPressed: onPressed,
-    );
-  }
-}
-
-class _EmptyState extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-
-  const _EmptyState({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(40),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 48, color: colors.onSurfaceVariant),
-            const SizedBox(height: 16),
-            Text(
-              title,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+          ),
+          PopupMenuButton<String>(
+            icon: Icon(
+              Icons.more_vert_rounded,
+              color: colors.onSurfaceVariant,
+              size: 20,
             ),
-            const SizedBox(height: 6),
-            Text(
-              subtitle,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: colors.onSurfaceVariant,
-                height: 1.5,
+            onSelected: (val) {
+              if (val == 'play') _openFile(item.file);
+              if (val == 'external') _openExternal(item.file);
+              if (val == 'delete') _confirmDeleteFile(context, item);
+            },
+            itemBuilder: (_) => [
+              const PopupMenuItem(
+                value: 'play',
+                child: Row(
+                  children: [
+                    Icon(Icons.play_arrow_rounded, size: 20),
+                    SizedBox(width: 12),
+                    Text('Play in ShonenX'),
+                  ],
+                ),
               ),
-            ),
-          ],
-        ),
+              const PopupMenuItem(
+                value: 'external',
+                child: Row(
+                  children: [
+                    Icon(Icons.open_in_new_rounded, size: 20),
+                    SizedBox(width: 12),
+                    Text('Play Externally'),
+                  ],
+                ),
+              ),
+              const PopupMenuDivider(),
+              PopupMenuItem(
+                value: 'delete',
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.delete_outline_rounded,
+                      size: 20,
+                      color: colors.error,
+                    ),
+                    const SizedBox(width: 12),
+                    Text('Delete', style: TextStyle(color: colors.error)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

@@ -5,6 +5,7 @@ import 'package:shonenx/features/discovery/providers/episodes_provider.dart';
 import 'package:shonenx/features/player/engine/video_engine.dart';
 import 'package:shonenx/features/player/presentation/widgets/player_controls.dart';
 import 'package:shonenx/features/player/providers/player_controller.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 class CenterControls extends ConsumerStatefulWidget {
   final bool showControls;
@@ -63,11 +64,9 @@ class _CenterControlsState extends ConsumerState<CenterControls> {
           children: [
             if (isBuffering)
               Center(
-                child: CircularProgressIndicator(
-                  constraints: const BoxConstraints(
-                    minHeight: 80,
-                    minWidth: 80,
-                  ),
+                child: AppProgressIndicator(
+                  type: AppProgressType.circular,
+                  size: 80,
                   strokeWidth: 5,
                   color: theme.colorScheme.primary,
                 ),

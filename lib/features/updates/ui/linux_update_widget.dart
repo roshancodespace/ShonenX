@@ -5,6 +5,9 @@ import 'package:material_ui/material_ui.dart';
 import 'package:shonenx/features/updates/models/github_release.dart';
 import 'package:shonenx/features/updates/services/update_service.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
+import 'package:shonenx/shared/widgets/app_button.dart';
+import 'package:shonenx/shared/widgets/app_icon_button.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 class LinuxUpdateWidget extends StatefulWidget {
   final GitHubRelease? release;
@@ -123,8 +126,23 @@ class _LinuxUpdateWidgetState extends State<LinuxUpdateWidget> {
 
       if (clean.isEmpty) continue;
 
-      // Filter out pure curl progress hash lines
-      if (clean.replaceAll(RegExp(r'[#\s]'), '').isEmpty) {
+      // Filter out curl progress bar artifacts (#==#, ##O#-#, etc.)
+      if (clean.contains('##') ||
+          clean.contains('#=#') ||
+          RegExp(r'^[#=\-O\s\d.%]+$').hasMatch(clean)) {
+        // Still try extracting percentage before skipping
+        final pctOnly = RegExp(
+          r'(\d{1,3}(?:\.\d+)?)\s*%',
+        ).firstMatch(clean);
+        if (pctOnly != null) {
+          final pct = double.tryParse(pctOnly.group(1) ?? '');
+          if (pct != null) {
+            setState(() {
+              _downloadProgress = (pct / 100.0).clamp(0.0, 1.0);
+              _statusMessage = 'Downloading: ${pct.toStringAsFixed(1)}%';
+            });
+          }
+        }
         continue;
       }
 
@@ -172,7 +190,6 @@ class _LinuxUpdateWidgetState extends State<LinuxUpdateWidget> {
       _downloadProgress = 0.0;
       _statusMessage = 'Starting update...';
       _logs.clear();
-      _showLogs = true;
     });
 
     final targetVersion = widget.release?.tagName ?? 'latest';
@@ -389,56 +406,62 @@ class _LinuxUpdateWidgetState extends State<LinuxUpdateWidget> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Clean info row matching AndroidUpdateWidget
-        Row(
-          children: [
-            Icon(Icons.terminal_rounded, size: 30, color: cs.primary),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'ShonenX ${widget.release?.tagName ?? 'Linux Update'}',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: cs.surfaceContainerHigh,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.terminal_rounded, size: 30, color: cs.primary),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'ShonenX ${widget.release?.tagName ?? 'Linux Update'}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Linux 64-bit • Quick Update',
-                    style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
-                  ),
-                ],
-              ),
-            ),
-            if (_logs.isNotEmpty)
-              IconButton(
-                icon: Icon(
-                  _showLogs
-                      ? Icons.expand_less_rounded
-                      : Icons.terminal_rounded,
-                  size: 20,
-                  color: cs.onSurfaceVariant,
+                    const SizedBox(height: 2),
+                    Text(
+                      'Linux 64-bit • Quick Update',
+                      style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+                    ),
+                  ],
                 ),
-                tooltip: _showLogs ? 'Hide Logs' : 'Show Logs',
-                onPressed: () {
-                  setState(() {
-                    _showLogs = !_showLogs;
-                  });
-                },
               ),
-          ],
+              if (_logs.isNotEmpty)
+                AppIconButton(
+                  icon: Icon(
+                    _showLogs
+                        ? Icons.expand_less_rounded
+                        : Icons.terminal_rounded,
+                  ),
+                  tooltip: _showLogs ? 'Hide Logs' : 'Show Logs',
+                  radius: 999,
+                  backgroundColor: cs.surfaceContainerHighest.withValues(
+                    alpha: 0.45,
+                  ),
+                  foregroundColor: cs.onSurfaceVariant,
+                  onPressed: () {
+                    setState(() {
+                      _showLogs = !_showLogs;
+                    });
+                  },
+                ),
+            ],
+          ),
         ),
         const SizedBox(height: 16),
 
         // Smooth progress bar
         if (_isUpdating) ...[
-          LinearProgressIndicator(
-            value: _downloadProgress > 0 ? _downloadProgress : null,
-            borderRadius: BorderRadius.circular(4),
-          ),
+          AppProgressIndicator(type: AppProgressType.linear, value: _downloadProgress > 0 ? _downloadProgress : null),
           const SizedBox(height: 8),
         ],
 
@@ -452,39 +475,42 @@ class _LinuxUpdateWidgetState extends State<LinuxUpdateWidget> {
           textAlign: TextAlign.center,
         ),
 
-        // Inline log console (only visible when updating/requested, clean minimal surface)
+        // Inline log console (collapsed by default, styled with theme tokens)
         if (_showLogs && _logs.isNotEmpty) ...[
           const SizedBox(height: 12),
           Container(
-            height: 120,
-            padding: const EdgeInsets.all(10),
+            height: 140,
+            padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: const Color(0xFF0F1419),
-              borderRadius: BorderRadius.circular(8),
+              color: cs.surfaceContainerLowest,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: cs.outlineVariant.withValues(alpha: 0.25),
+              ),
             ),
             child: ListView.builder(
               controller: _scrollController,
               itemCount: _logs.length,
               itemBuilder: (context, index) {
                 final line = _logs[index];
-                Color color = const Color(0xFFF8F8F2);
+                Color color = cs.onSurfaceVariant;
                 if (line.contains('[+]')) {
-                  color = const Color(0xFF50FA7B);
+                  color = cs.primary;
                 } else if (line.contains('[!]')) {
-                  color = const Color(0xFFFF5555);
+                  color = cs.error;
                 } else if (line.contains('[*]')) {
-                  color = const Color(0xFF8BE9FD);
+                  color = cs.onSurface;
                 }
 
                 return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 1),
+                  padding: const EdgeInsets.symmetric(vertical: 2),
                   child: Text(
                     line,
                     style: TextStyle(
                       color: color,
                       fontFamily: 'monospace',
-                      fontSize: 11,
-                      height: 1.3,
+                      fontSize: 11.5,
+                      height: 1.35,
                     ),
                   ),
                 );
@@ -497,25 +523,34 @@ class _LinuxUpdateWidgetState extends State<LinuxUpdateWidget> {
 
         // Primary action buttons
         if (_updateSuccess) ...[
-          FilledButton.icon(
+          AppButton(
+            label: 'Restart ShonenX',
+            icon: Icons.restart_alt_rounded,
+            isExpanded: true,
             onPressed: _restartApp,
-            icon: const Icon(Icons.restart_alt_rounded),
-            label: const Text('Restart ShonenX'),
           ),
         ] else if (_hasError) ...[
-          FilledButton.icon(
+          AppButton(
+            label: 'Retry Update',
+            icon: Icons.refresh_rounded,
+            variant: AppButtonVariant.tonal,
+            isExpanded: true,
             onPressed: _startUpdate,
-            icon: const Icon(Icons.refresh_rounded),
-            label: const Text('Retry Update'),
           ),
         ] else if (!_isUpdating) ...[
-          FilledButton.icon(
+          AppButton(
+            label: 'Update Now',
+            icon: Icons.system_update_alt_rounded,
+            isExpanded: true,
             onPressed: _startUpdate,
-            icon: const Icon(Icons.system_update_alt_rounded),
-            label: const Text('Update Now'),
           ),
         ] else ...[
-          OutlinedButton(onPressed: _cancelUpdate, child: const Text('Cancel')),
+          AppButton(
+            label: 'Cancel',
+            variant: AppButtonVariant.outlined,
+            isExpanded: true,
+            onPressed: _cancelUpdate,
+          ),
         ],
       ],
     );

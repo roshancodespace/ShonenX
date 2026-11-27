@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/features/player/domain/aniskip_prefs.dart';
 import 'package:shonenx/features/player/engine/video_engine.dart';
+import 'package:shonenx/shared/widgets/app_slider.dart';
 
 class ProgressBar extends ConsumerWidget {
   final List<AniSkipStamp> aniSkips;
@@ -24,6 +25,8 @@ class ProgressBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final cs = Theme.of(context).colorScheme;
+
     return ListenableBuilder(
       listenable: Listenable.merge([
         engine.positionNotifier,
@@ -35,61 +38,59 @@ class ProgressBar extends ConsumerWidget {
         final duration = engine.durationNotifier.value;
         final buffer = engine.bufferNotifier.value;
 
-        return SizedBox(
-          height: 36,
-          child: Builder(
-            builder: (context) {
-              final pos = position.inMilliseconds / 1000.0;
-              final dur = duration.inMilliseconds / 1000.0;
-              final bfr = buffer.inMilliseconds / 1000.0;
+        final dur = duration.inMilliseconds / 1000.0;
+        final safeMax = dur > 0 ? dur : 1.0;
+        final pos = (position.inMilliseconds / 1000.0).clamp(0.0, safeMax);
+        final bfr = (buffer.inMilliseconds / 1000.0).clamp(0.0, safeMax);
+        final current = (draggingValue ?? pos).clamp(0.0, safeMax);
 
-              final current = draggingValue ?? pos;
+        final markers = dur > 0
+            ? aniSkips
+                  .map(
+                    (s) => AppSliderMarker(
+                      start: s.startTime / safeMax,
+                      end: s.endTime / safeMax,
+                      color: ProgressBarPainter._defaultSkipColor(
+                        s.type,
+                      ).withValues(alpha: 0.75),
+                    ),
+                  )
+                  .toList()
+            : const <AppSliderMarker>[];
 
-              return GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onHorizontalDragStart: (details) {
-                  final dx = details.localPosition.dx;
-                  final value = (dx / context.size!.width) * dur;
-                  onDragStart(value.clamp(0, dur));
-                },
-                onHorizontalDragUpdate: (details) {
-                  final dx = details.localPosition.dx;
-                  final value = (dx / context.size!.width) * dur;
-                  onChanged(value.clamp(0, dur));
-                },
-                onHorizontalDragEnd: (_) {
-                  final value = draggingValue ?? pos;
-                  engine
-                      .seekTo(Duration(milliseconds: (value * 1000).toInt()))
-                      .then((_) => onDragEnd(value));
-                },
-                child: Consumer(
-                  builder: (context, ref, child) {
-                    return CustomPaint(
-                      size: const Size(double.infinity, 40),
-                      painter: ProgressBarPainter(
-                        skipStamps: aniSkips,
-                        totalDuration: dur,
-                        progress: current,
-                        buffer: bfr,
-                        thumbColor: Theme.of(
-                          context,
-                        ).colorScheme.onPrimaryContainer,
-                        progressColor: Theme.of(
-                          context,
-                        ).colorScheme.primaryContainer,
-                        bufferColor: Theme.of(
-                          context,
-                        ).colorScheme.primaryContainer.withValues(alpha: 0.5),
-                        baseColor: Theme.of(
-                          context,
-                        ).colorScheme.primaryContainer.withValues(alpha: 0.2),
-                      ),
-                    );
-                  },
-                ),
-              );
-            },
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: SizedBox(
+            height: 36,
+            child: AppSlider(
+              value: current,
+              secondaryTrackValue: bfr,
+              min: 0.0,
+              max: safeMax,
+              trackHeight: 8.0,
+              trackGap: 6.0,
+              thumbHeight: 24.0,
+              activeTrackColor: cs.primaryContainer,
+              secondaryActiveTrackColor: cs.primaryContainer.withValues(
+                alpha: 0.5,
+              ),
+              inactiveTrackColor: cs.primaryContainer.withValues(alpha: 0.2),
+              thumbColor: cs.onPrimaryContainer,
+              showStopIndicator: false,
+              padding: EdgeInsets.zero,
+              markers: markers,
+              onChangeStart: dur > 0 ? onDragStart : null,
+              onChanged: dur > 0 ? onChanged : null,
+              onChangeEnd: dur > 0
+                  ? (value) {
+                      engine
+                          .seekTo(
+                            Duration(milliseconds: (value * 1000).toInt()),
+                          )
+                          .then((_) => onDragEnd(value));
+                    }
+                  : null,
+            ),
           ),
         );
       },

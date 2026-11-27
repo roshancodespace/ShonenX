@@ -10,6 +10,7 @@ import 'package:shonenx/features/settings/presentation/widgets/settings_ui_compo
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
 import 'package:shonenx/shared/widgets/svg_icon.dart';
 import 'package:shonenx/shared/widgets/app_dialog.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 class DownloadSettingsScreen extends ConsumerWidget {
   const DownloadSettingsScreen({super.key});
@@ -277,7 +278,7 @@ class DownloadSettingsScreen extends ConsumerWidget {
             ),
           ],
         ),
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(child: AppProgressIndicator(type: AppProgressType.circular)),
         error: (err, stack) => Center(child: Text('Error: $err')),
       ),
     );

@@ -14,6 +14,7 @@ import 'package:shonenx/features/settings/presentation/widgets/subtitle_settings
 import 'package:shonenx/features/settings/presentation/widgets/subtitle_translation_settings_sheet.dart';
 import 'package:shonenx/shared/models/video_stream.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
+import 'package:shonenx/shared/widgets/m3e_split_button_group.dart';
 
 class TopControls extends ConsumerWidget {
   final bool showControls;
@@ -125,74 +126,72 @@ class TopControls extends ConsumerWidget {
         ),
         const SizedBox(width: 8),
       ],
-      if (showComments && !isCompact) ...[
-        PlayerIconButton(
-          icon: Icons.comment_outlined,
-          size: 22,
-          padding: const EdgeInsets.all(8.0),
-          tooltip: 'Comments',
-          onTap: onComments!,
-        ),
-        const SizedBox(width: 4),
-      ],
-      if (!isCompact) ...[
-        PlayerIconButton(
-          icon: switch (ref.watch(playerPrefsProvider.select((s) => s.fit))) {
-            BoxFit.contain => Icons.fit_screen_rounded,
-            BoxFit.cover => Icons.aspect_ratio_rounded,
-            _ => Icons.fullscreen_exit_rounded,
-          },
-          size: 22,
-          padding: const EdgeInsets.all(8.0),
-          tooltip: 'Aspect Ratio',
-          onTap: () {
-            ref.read(playerPrefsProvider.notifier).cycleFit();
-            final newFit = ref.read(playerPrefsProvider).fit;
-            final label = switch (newFit) {
-              BoxFit.contain => 'Fit Screen (Contain)',
-              BoxFit.cover => 'Fill Screen (Cover)',
-              _ => 'Stretch (Fill)',
-            };
-            ScaffoldMessenger.of(context).clearSnackBars();
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Video Fit: $label'),
-                duration: const Duration(milliseconds: 1200),
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
-          },
-        ),
-        const SizedBox(width: 4),
-        PlayerIconButton(
-          icon: Icons.camera_alt_outlined,
-          size: 22,
-          padding: const EdgeInsets.all(8.0),
-          tooltip: 'Screenshot',
-          onTap: () async {
-            final result = await ref
-                .read(playerControllerProvider.notifier)
-                .takeAndShareScreenshot();
-            if (context.mounted && result.message != 'Save cancelled') {
-              ScaffoldMessenger.of(context).clearSnackBars();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(result.message),
-                  behavior: SnackBarBehavior.floating,
-                  duration: const Duration(seconds: 3),
-                ),
-              );
-            }
-          },
-        ),
-        const SizedBox(width: 4),
-      ],
-      PlayerIconButton(
-        icon: Icons.settings_outlined,
-        size: 22,
-        padding: const EdgeInsets.all(8.0),
-        tooltip: 'Player Settings',
-        onTap: () => _showUnifiedSettingsSheet(context, ref, isCompact),
+      M3eActionButtonGroup(
+        outlined: true,
+        height: 36,
+        foregroundColor: Colors.white,
+        borderColor: Colors.white30,
+        items: [
+          if (showComments && !isCompact)
+            M3eActionItem(
+              icon: Icons.comment_outlined,
+              tooltip: 'Comments',
+              onTap: onComments!,
+            ),
+          if (!isCompact) ...[
+            M3eActionItem(
+              icon: switch (ref.watch(
+                playerPrefsProvider.select((s) => s.fit),
+              )) {
+                BoxFit.contain => Icons.fit_screen_rounded,
+                BoxFit.cover => Icons.aspect_ratio_rounded,
+                _ => Icons.fullscreen_exit_rounded,
+              },
+              tooltip: 'Aspect Ratio',
+              onTap: () {
+                ref.read(playerPrefsProvider.notifier).cycleFit();
+                final newFit = ref.read(playerPrefsProvider).fit;
+                final label = switch (newFit) {
+                  BoxFit.contain => 'Fit Screen (Contain)',
+                  BoxFit.cover => 'Fill Screen (Cover)',
+                  _ => 'Stretch (Fill)',
+                };
+                ScaffoldMessenger.of(context).clearSnackBars();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Video Fit: $label'),
+                    duration: const Duration(milliseconds: 1200),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              },
+            ),
+            M3eActionItem(
+              icon: Icons.camera_alt_outlined,
+              tooltip: 'Screenshot',
+              onTap: () async {
+                final result = await ref
+                    .read(playerControllerProvider.notifier)
+                    .takeAndShareScreenshot();
+                if (context.mounted && result.message != 'Save cancelled') {
+                  ScaffoldMessenger.of(context).clearSnackBars();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(result.message),
+                      behavior: SnackBarBehavior.floating,
+                      duration: const Duration(seconds: 3),
+                    ),
+                  );
+                }
+              },
+            ),
+          ],
+          M3eActionItem(
+            icon: Icons.settings_outlined,
+            tooltip: 'Player Settings',
+            onTap: () => _showUnifiedSettingsSheet(context, ref, isCompact),
+          ),
+        ],
       ),
     ];
 

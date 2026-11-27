@@ -37,15 +37,13 @@ class UiSettingsScreen extends ConsumerWidget {
         children: [
           SettingsSection(
             title: l10n.uiSettingsExperimental,
-            children: [
-              SettingsSwitchTile(
-                icon: Icons.tv_rounded,
-                title: l10n.uiSettingsExperimentalTvTitle,
-                subtitle: l10n.uiSettingsExperimentalTvSubtitle,
-                value: prefs.useNewUi,
-                onChanged: (val) => notifier.setUseNewUi(val),
-              ),
-            ],
+            child: SettingsSwitchTile(
+              icon: Icons.tv_rounded,
+              title: l10n.uiSettingsExperimentalTvTitle,
+              subtitle: l10n.uiSettingsExperimentalTvSubtitle,
+              value: prefs.useNewUi,
+              onChanged: (val) => notifier.setUseNewUi(val),
+            ),
           ),
 
           SettingsSection(
@@ -93,18 +91,16 @@ class UiSettingsScreen extends ConsumerWidget {
 
           SettingsSection(
             title: l10n.uiSettingsHomeScreen,
-            children: [
-              SettingsActionTile(
-                icon: Icons.view_headline_rounded,
-                title: l10n.uiSettingsHeaderStyleTitle,
-                subtitle: l10n.uiSettingsHeaderStyleSubtitle,
-                trailing: SettingsValueChip(
-                  label: prefs.homeHeaderStyle.displayName,
-                ),
-                onTap: () =>
-                    showHomeHeaderStyleSheet(context, ref, notifier, theme),
+            child: SettingsActionTile(
+              icon: Icons.view_headline_rounded,
+              title: l10n.uiSettingsHeaderStyleTitle,
+              subtitle: l10n.uiSettingsHeaderStyleSubtitle,
+              trailing: SettingsValueChip(
+                label: prefs.homeHeaderStyle.displayName,
               ),
-            ],
+              onTap: () =>
+                  showHomeHeaderStyleSheet(context, ref, notifier, theme),
+            ),
           ),
 
           SettingsSection(
@@ -144,34 +140,26 @@ class UiSettingsScreen extends ConsumerWidget {
 
           SettingsSection(
             title: l10n.uiSettingsEpisodes,
-            children: [
-              SettingsActionTile(
-                icon: Icons.view_list_rounded,
-                title: l10n.uiSettingsEpisodeViewTitle,
-                subtitle: l10n.uiSettingsEpisodeViewSubtitle,
-                trailing: SettingsValueChip(
-                  label: prefs.episodeViewMode.displayName,
-                ),
-                onTap: () =>
-                    showEpisodeModeSheet(context, ref, notifier, theme),
+            child: SettingsActionTile(
+              icon: Icons.view_list_rounded,
+              title: l10n.uiSettingsEpisodeViewTitle,
+              subtitle: l10n.uiSettingsEpisodeViewSubtitle,
+              trailing: SettingsValueChip(
+                label: prefs.episodeViewMode.displayName,
               ),
-            ],
+              onTap: () => showEpisodeModeSheet(context, ref, notifier, theme),
+            ),
           ),
 
           SettingsSection(
             title: l10n.uiSettingsNavigationBar,
-            children: [
-              SettingsActionTile(
-                icon: Icons.navigation_rounded,
-                title: l10n.uiSettingsNavBarTitle,
-                subtitle: l10n.uiSettingsNavBarSubtitle,
-                trailing: SettingsValueChip(
-                  label: prefs.navBarStyle.displayName,
-                ),
-                onTap: () =>
-                    showNavBarStyleSheet(context, ref, notifier, theme),
-              ),
-            ],
+            child: SettingsActionTile(
+              icon: Icons.navigation_rounded,
+              title: l10n.uiSettingsNavBarTitle,
+              subtitle: l10n.uiSettingsNavBarSubtitle,
+              trailing: SettingsValueChip(label: prefs.navBarStyle.displayName),
+              onTap: () => showNavBarStyleSheet(context, ref, notifier, theme),
+            ),
           ),
         ],
       ),

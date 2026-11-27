@@ -34,6 +34,7 @@ import 'package:shonenx/features/tv_mode/presentation/screens/tv_details_screen.
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/shared/widgets/app_icon_button.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 class DetailsScreen extends ConsumerStatefulWidget {
   final String tag;
@@ -203,7 +204,7 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen>
                                 displayMedia.banner ?? displayMedia.cover ?? '',
                             fit: BoxFit.cover,
                             placeholder: (_, __) => const Center(
-                              child: CircularProgressIndicator(),
+                              child: AppProgressIndicator(type: AppProgressType.circular),
                             ),
                             errorWidget: (_, __, ___) =>
                                 const Center(child: Icon(Icons.error)),
@@ -646,15 +647,9 @@ class _DownloadAppBarButton extends ConsumerWidget {
               SizedBox(
                 width: 22,
                 height: 22,
-                child: CircularProgressIndicator(
-                  value: averageProgress,
-                  strokeWidth: 2.0,
-                  strokeCap: StrokeCap.round,
-                  backgroundColor: colorScheme.primaryContainer.withValues(
+                child: AppProgressIndicator(type: AppProgressType.circular, value: averageProgress, strokeWidth: 2.0, trackColor: colorScheme.primaryContainer.withValues(
                     alpha: 0.12,
-                  ),
-                  color: colorScheme.onPrimaryContainer,
-                ),
+                  ), color: colorScheme.onPrimaryContainer),
               ),
               const Icon(Icons.download_rounded, size: 16),
             ],

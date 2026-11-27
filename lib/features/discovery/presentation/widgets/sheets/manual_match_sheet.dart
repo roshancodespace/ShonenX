@@ -10,6 +10,7 @@ import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/shared/widgets/manual_match_list.dart';
 import 'package:shonenx/source_engine/source_engine_provider.dart';
 import 'package:shonenx/source_engine/utils/media_type_extensions.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 class ManualMatchSheet extends ConsumerStatefulWidget {
   final String mediaTitle;
@@ -118,7 +119,7 @@ class _ManualMatchSheetState extends ConsumerState<ManualMatchSheet> {
                       child: SizedBox(
                         width: 20,
                         height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        child: AppProgressIndicator(type: AppProgressType.circular, strokeWidth: 2),
                       ),
                     )
                   : IconButton(

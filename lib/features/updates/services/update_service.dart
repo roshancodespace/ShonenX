@@ -162,6 +162,7 @@ class UpdateService {
           .map((item) => GitHubRelease.fromJson(item as Map<String, dynamic>))
           .where((r) => !r.draft)
           .where((r) => prefs.includePrerelease || !r.prerelease)
+          .where((r) => r.hasCompatibleAsset)
           .toList();
 
       if (releases.isEmpty) {

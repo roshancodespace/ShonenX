@@ -13,6 +13,7 @@ import 'package:shonenx/shared/widgets/app_dialog.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
 import 'package:shonenx/source_engine/source_engine_provider.dart';
 import 'package:shonenx/source_engine/utils/media_type_extensions.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 class TvManualMatchDialog {
   static Future<void> show(
@@ -234,7 +235,7 @@ class _TvManualMatchContentState extends ConsumerState<_TvManualMatchContent> {
                       child: SizedBox(
                         width: 18,
                         height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        child: AppProgressIndicator(type: AppProgressType.circular, strokeWidth: 2),
                       ),
                     )
                   : IconButton(
@@ -273,7 +274,7 @@ class _TvManualMatchContentState extends ConsumerState<_TvManualMatchContent> {
           child: SizedBox(
             width: 30,
             height: 30,
-            child: CircularProgressIndicator(strokeWidth: 2.5),
+            child: AppProgressIndicator(type: AppProgressType.circular, strokeWidth: 2.5),
           ),
         ),
       );

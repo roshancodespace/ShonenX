@@ -1,5 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:shonenx/core/localization/l10n_extension.dart';
+import 'package:shonenx/shared/widgets/app_slider.dart';
 
 class ReaderBottomOverlay extends StatefulWidget {
   final int currentPage;
@@ -128,40 +129,30 @@ class _ReaderBottomOverlayState extends State<ReaderBottomOverlay> {
                   ),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: SliderTheme(
-                      data: SliderTheme.of(context).copyWith(
-                        trackHeight: 3,
-                        thumbShape: const RoundSliderThumbShape(
-                          enabledThumbRadius: 6,
-                        ),
-                        overlayShape: const RoundSliderOverlayShape(
-                          overlayRadius: 14,
-                        ),
-                        activeTrackColor: theme.colorScheme.primary,
-                        inactiveTrackColor: widget.textColor.withValues(
-                          alpha: 0.12,
-                        ),
-                        thumbColor: theme.colorScheme.primary,
-                        overlayColor: theme.colorScheme.primary.withValues(
-                          alpha: 0.2,
-                        ),
+                    child: AppSlider(
+                      value: sliderValue,
+                      min: 0,
+                      max: maxPage.toDouble(),
+                      divisions: widget.totalPages > 1
+                          ? widget.totalPages - 1
+                          : 1,
+                      trackHeight: 6.0,
+                      trackGap: 4.0,
+                      thumbHeight: 22.0,
+                      activeTrackColor: theme.colorScheme.primary,
+                      inactiveTrackColor: widget.textColor.withValues(
+                        alpha: 0.14,
                       ),
-                      child: Slider(
-                        value: sliderValue,
-                        min: 0,
-                        max: maxPage.toDouble(),
-                        divisions: widget.totalPages > 1
-                            ? widget.totalPages - 1
-                            : 1,
-                        onChanged: (value) {
-                          setState(() => _draggingPage = value.toInt());
-                          widget.onPageChanged(value.toInt());
-                        },
-                        onChangeEnd: (value) {
-                          setState(() => _draggingPage = null);
-                          widget.onPageChanged(value.toInt());
-                        },
-                      ),
+                      thumbColor: theme.colorScheme.primary,
+                      showStopIndicator: false,
+                      onChanged: (value) {
+                        setState(() => _draggingPage = value.toInt());
+                        widget.onPageChanged(value.toInt());
+                      },
+                      onChangeEnd: (value) {
+                        setState(() => _draggingPage = null);
+                        widget.onPageChanged(value.toInt());
+                      },
                     ),
                   ),
                   const SizedBox(width: 8),

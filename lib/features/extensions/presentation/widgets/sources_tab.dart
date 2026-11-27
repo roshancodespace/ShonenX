@@ -22,6 +22,7 @@ import 'package:shonenx/source_engine/source_engine_provider.dart';
 import 'package:shonenx/source_engine/source_registry.dart';
 import 'extension_beginner_sheet.dart';
 import 'runtime_setup_sheet.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 class _LangHeaderTile extends StatelessWidget {
   final String lang;
@@ -186,7 +187,7 @@ class _GroupHeaderTile extends ConsumerWidget {
                     child: SizedBox(
                       width: 20,
                       height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                      child: AppProgressIndicator(type: AppProgressType.circular, strokeWidth: 2),
                     ),
                   )
                 else if (isInstalled) ...[
@@ -253,7 +254,7 @@ class _GroupHeaderTile extends ConsumerWidget {
                       child: SizedBox(
                         width: 20,
                         height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        child: AppProgressIndicator(type: AppProgressType.circular, strokeWidth: 2),
                       ),
                     )
                   else
@@ -462,7 +463,7 @@ class _GroupHeaderTile extends ConsumerWidget {
                           child: SizedBox(
                             width: 16,
                             height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
+                            child: AppProgressIndicator(type: AppProgressType.circular, strokeWidth: 2),
                           ),
                         )
                       : IconButton(
@@ -658,7 +659,7 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
           );
           return _buildContent(context, unified);
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(child: AppProgressIndicator(type: AppProgressType.circular)),
         error: (error, _) => Center(child: Text('Error: $error')),
       );
     } else {
@@ -1240,7 +1241,7 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
                 child: SizedBox(
                   width: 20,
                   height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+                  child: AppProgressIndicator(type: AppProgressType.circular, strokeWidth: 2),
                 ),
               )
             else ...[
@@ -1305,7 +1306,7 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
                     child: SizedBox(
                       width: 20,
                       height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                      child: AppProgressIndicator(type: AppProgressType.circular, strokeWidth: 2),
                     ),
                   )
                 : FilledButton.tonalIcon(

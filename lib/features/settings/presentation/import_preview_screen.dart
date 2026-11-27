@@ -6,6 +6,7 @@ import 'package:shonenx/shared/providers/backup_provider.dart';
 import 'package:shonenx/core/services/backup_service.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 class ImportPreviewScreen extends ConsumerStatefulWidget {
   final BackupManifest manifest;
@@ -82,7 +83,7 @@ class _ImportPreviewScreenState extends ConsumerState<ImportPreviewScreen> {
     return AppScaffold(
       title: l10n.backupImportPreviewTitle,
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: AppProgressIndicator(type: AppProgressType.circular))
           : ListView(
               padding: const EdgeInsets.only(bottom: 50),
               children: [
@@ -150,7 +151,7 @@ class _ImportPreviewScreenState extends ConsumerState<ImportPreviewScreen> {
                       ? const SizedBox(
                           width: 20,
                           height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                          child: AppProgressIndicator(type: AppProgressType.circular, strokeWidth: 2),
                         )
                       : null,
                 ),

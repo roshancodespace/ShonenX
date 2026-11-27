@@ -18,9 +18,13 @@ import 'package:shonenx/features/settings/presentation/widgets/subtitle_translat
 import 'package:shonenx/shared/models/video_server.dart';
 import 'package:shonenx/shared/models/video_stream.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
+import 'package:shonenx/shared/widgets/m3e_split_button_group.dart';
+import 'package:shonenx/shared/widgets/selection_card_group.dart';
+import 'package:shonenx/shared/widgets/selection_card_group.dart';
 import 'package:shonenx/shared/widgets/app_sheet_action.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:window_manager/window_manager.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 class BottomControls extends ConsumerStatefulWidget {
   final bool showControls;
@@ -255,35 +259,29 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
     required AudioTrack? activeAudioTrack,
     required int actualAudioCount,
   }) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Lock controls button
-        PlayerIconButton(
+    final subCount = widget.playerState.subtitles.length - 1;
+    final hasSub =
+        widget.playerState.subtitles.isNotEmpty &&
+        widget.playerState.activeSubtitle != null;
+
+    return M3eActionButtonGroup(
+      outlined: true,
+      height: 36,
+      foregroundColor: Colors.white,
+      borderColor: Colors.white30,
+      items: [
+        M3eActionItem(
           icon: Icons.lock_outline_rounded,
+          tooltip: 'Lock Controls',
           onTap: () => widget.onToggleLockControls(),
         ),
-
-        // Subtitle picker
-        if (widget.playerState.subtitles.isNotEmpty) ...[
-          const SizedBox(width: 12),
-          PlayerBottomSheetTrigger<SubtitleTrack>(
-            value: widget.playerState.activeSubtitle,
-            items: widget.playerState.subtitles,
-            itemLabel: (s) => s.language,
-            subtitleBuilder: (s) {
-              final label = s.label?.trim();
-              if (label == null ||
-                  label.isEmpty ||
-                  label.toLowerCase() == 'auto' ||
-                  label.toLowerCase() == 'default') {
-                return null;
-              }
-              return label;
-            },
-            onChanged: (v) {
-              widget.controller.changeSubtitle(v);
-            },
+        if (widget.playerState.subtitles.isNotEmpty)
+          M3eActionItem(
+            icon: hasSub
+                ? Icons.subtitles_outlined
+                : Icons.subtitles_off_outlined,
+            tooltip: 'Subtitles',
+            badge: subCount > 0 ? '$subCount' : null,
             onTap: () => _showSubtitleSelector(context),
             onLongPress: () {
               showModalBottomSheet(
@@ -291,81 +289,32 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
                 isScrollControlled: true,
                 backgroundColor: Colors.transparent,
                 constraints: const BoxConstraints(maxWidth: double.infinity),
-                builder: (context) {
-                  return const SubtitleSettingsSheet();
-                },
+                builder: (context) => const SubtitleSettingsSheet(),
               );
             },
-            actions: [
-              AppSheetAction(
-                tooltip: 'Customize Subtitles',
-                isPrimary: true,
-                icon: Icons.tune_rounded,
-                onTap: () {
-                  Navigator.of(context).pop();
-                  showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    backgroundColor: Colors.transparent,
-                    constraints: const BoxConstraints(
-                      maxWidth: double.infinity,
-                    ),
-                    builder: (context) => const SubtitleSettingsSheet(),
-                  );
-                },
-              ),
-            ],
-            isDisabled: widget.playerState.subtitles.isEmpty,
-            withBadge: false,
-            displayText: 'Subtitles',
-            displayWidget: Badge(
-              label: Text((widget.playerState.subtitles.length - 1).toString()),
-              isLabelVisible: widget.playerState.subtitles.isNotEmpty,
-              backgroundColor: widget.theme.colorScheme.primary,
-              textColor: widget.theme.colorScheme.onPrimary,
-              child:
-                  widget.playerState.subtitles.isEmpty ||
-                      widget.playerState.activeSubtitle == null
-                  ? Icon(
-                      Icons.subtitles_off_outlined,
-                      color: widget.playerState.subtitles.isEmpty
-                          ? Colors.white54
-                          : Colors.white,
-                    )
-                  : const Icon(Icons.subtitles_outlined, color: Colors.white),
-            ),
           ),
-        ],
-
-        // Audio track picker
-        if (actualAudioCount > 0) ...[
-          const SizedBox(width: 12),
-          PlayerBottomSheetTrigger<AudioTrack>(
-            value: activeAudioTrack,
-            items: audioTracks,
-            itemLabel: (s) => s.label,
-            onChanged: (v) {
-              widget.controller.changeAudioTrack(v);
+        if (actualAudioCount > 0)
+          M3eActionItem(
+            icon: activeAudioTrack?.id == 'no'
+                ? Icons.volume_off_outlined
+                : Icons.audiotrack_outlined,
+            tooltip: 'Audio',
+            badge: '$actualAudioCount',
+            onTap: () {
+              AppBottomSheet.showSelector<AudioTrack>(
+                context: context,
+                title: 'Audio',
+                items: audioTracks,
+                selectedValue: activeAudioTrack,
+                itemLabel: (s) => s.label,
+                onChanged: (v) => widget.controller.changeAudioTrack(v),
+              );
             },
-            withBadge: false,
-            displayText: 'Audio',
-            displayWidget: Badge(
-              label: Text(actualAudioCount.toString()),
-              isLabelVisible: actualAudioCount > 0,
-              backgroundColor: widget.theme.colorScheme.primary,
-              textColor: widget.theme.colorScheme.onPrimary,
-              child: activeAudioTrack?.id == 'no'
-                  ? const Icon(Icons.volume_off_outlined, color: Colors.white)
-                  : const Icon(Icons.audiotrack_outlined, color: Colors.white),
-            ),
           ),
-        ],
-
-        // Episodes panel button
-        if (widget.mode is PlayerModeOnline) ...[
-          const SizedBox(width: 12),
-          PlayerIconButton(
+        if (widget.mode is PlayerModeOnline)
+          M3eActionItem(
             icon: Icons.format_list_bulleted_rounded,
+            tooltip: 'Episodes',
             onTap: () {
               if (widget.onShowEpisodePanel != null) {
                 widget.onShowEpisodePanel!();
@@ -374,7 +323,6 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
               }
             },
           ),
-        ],
       ],
     );
   }
@@ -542,20 +490,22 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
                 );
               },
             ),
-            _buildSubtitleTile(offOption, activeSub == offOption),
-            const SizedBox(height: 8),
+            SelectionCardGroup(
+              children: [
+                _buildSubtitleTile(offOption, activeSub == offOption),
+                for (final entry in groups.entries)
+                  if (entry.value.length == 1)
+                    _buildSubtitleTile(
+                      entry.value.first,
+                      activeSub == entry.value.first,
+                      title: entry.key,
+                      subtitle: entry.value.first.label,
+                    ),
+              ],
+            ),
             for (final entry in groups.entries)
-              if (entry.value.length == 1)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: _buildSubtitleTile(
-                    entry.value.first,
-                    activeSub == entry.value.first,
-                    title: entry.key,
-                    subtitle: entry.value.first.label,
-                  ),
-                )
-              else
+              if (entry.value.length > 1) ...[
+                const SizedBox(height: 8),
                 Theme(
                   data: Theme.of(
                     context,
@@ -573,24 +523,26 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
                             : theme.colorScheme.onSurface,
                       ),
                     ),
-                    childrenPadding: const EdgeInsets.only(left: 12),
+                    childrenPadding: const EdgeInsets.only(left: 12, bottom: 4),
                     children: [
-                      for (int i = 0; i < entry.value.length; i++)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 4),
-                          child: _buildSubtitleTile(
-                            entry.value[i],
-                            activeSub == entry.value[i],
-                            title: _resolveSubtitleItemTitle(
+                      SelectionCardGroup(
+                        children: [
+                          for (int i = 0; i < entry.value.length; i++)
+                            _buildSubtitleTile(
                               entry.value[i],
-                              i,
-                              entry.value,
+                              activeSub == entry.value[i],
+                              title: _resolveSubtitleItemTitle(
+                                entry.value[i],
+                                i,
+                                entry.value,
+                              ),
                             ),
-                          ),
-                        ),
+                        ],
+                      ),
                     ],
                   ),
                 ),
+              ],
           ],
         ),
       ),
@@ -624,7 +576,6 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
     String? title,
     String? subtitle,
   }) {
-    final theme = Theme.of(context);
     final cleanSubtitle =
         (subtitle != null &&
             subtitle.trim().isNotEmpty &&
@@ -635,40 +586,10 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
         ? subtitle.trim()
         : null;
 
-    return ListTile(
-      selected: isSelected,
-      selectedTileColor: theme.colorScheme.primary.withValues(alpha: 0.1),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      leading: isSelected
-          ? Icon(
-              Icons.radio_button_checked_rounded,
-              color: theme.colorScheme.primary,
-            )
-          : Icon(
-              Icons.radio_button_unchecked_rounded,
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-      title: Text(
-        title ?? item.language,
-        style: TextStyle(
-          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-          color: isSelected
-              ? theme.colorScheme.primary
-              : theme.colorScheme.onSurface,
-        ),
-      ),
-      subtitle: cleanSubtitle != null
-          ? Text(
-              cleanSubtitle,
-              style: TextStyle(
-                fontSize: 12,
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            )
-          : null,
-      trailing: isSelected
-          ? Icon(Icons.check_rounded, color: theme.colorScheme.primary)
-          : null,
+    return SelectionCardTile(
+      title: title ?? item.language,
+      subtitle: cleanSubtitle,
+      isSelected: isSelected,
       onTap: () {
         widget.controller.changeSubtitle(item);
         Navigator.of(context).pop();
@@ -677,7 +598,6 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
   }
 
   void _showServerSelector(BuildContext context) {
-    final theme = Theme.of(context);
     final activeServer = widget.playerState.activeServer;
 
     final groups = <ServerType, List<VideoServer>>{};
@@ -697,71 +617,27 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            for (final type in sortedGroupKeys) ...[
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-                child: Text(
-                  type.displayName.toUpperCase(),
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: theme.colorScheme.primary,
-                    letterSpacing: 1.0,
-                  ),
-                ),
+            for (int gi = 0; gi < sortedGroupKeys.length; gi++) ...[
+              if (gi > 0) const SizedBox(height: 14),
+              SelectionCardGroup(
+                title: sortedGroupKeys[gi].displayName.toUpperCase(),
+                children: [
+                  for (final server in groups[sortedGroupKeys[gi]]!)
+                    SelectionCardTile(
+                      title: server.name,
+                      subtitle: server.id,
+                      isSelected: activeServer == server,
+                      onTap: () {
+                        widget.controller.changeServer(server);
+                        Navigator.of(context).pop();
+                      },
+                    ),
+                ],
               ),
-              for (final server in groups[type]!)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: _buildServerTile(server, activeServer == server),
-                ),
             ],
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildServerTile(VideoServer item, bool isSelected) {
-    final theme = Theme.of(context);
-    return ListTile(
-      selected: isSelected,
-      selectedTileColor: theme.colorScheme.primary.withValues(alpha: 0.1),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      leading: isSelected
-          ? Icon(
-              Icons.radio_button_checked_rounded,
-              color: theme.colorScheme.primary,
-            )
-          : Icon(
-              Icons.radio_button_unchecked_rounded,
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-      title: Text(
-        item.name,
-        style: TextStyle(
-          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-          color: isSelected
-              ? theme.colorScheme.primary
-              : theme.colorScheme.onSurface,
-        ),
-      ),
-      subtitle: Text(
-        item.id,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: TextStyle(
-          fontSize: 12,
-          color: theme.colorScheme.onSurfaceVariant,
-        ),
-      ),
-      trailing: isSelected
-          ? Icon(Icons.check_rounded, color: theme.colorScheme.primary)
-          : null,
-      onTap: () {
-        widget.controller.changeServer(item);
-        Navigator.of(context).pop();
-      },
     );
   }
 
@@ -788,7 +664,7 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
                         playerControllerProvider.select((s) => s.activeEpisode),
                       );
                       if (currentEpisode == null) {
-                        return const Center(child: CircularProgressIndicator());
+                        return const Center(child: AppProgressIndicator(type: AppProgressType.circular));
                       }
                       return EpisodeListPanel(
                         media: (widget.mode as PlayerModeOnline).media,

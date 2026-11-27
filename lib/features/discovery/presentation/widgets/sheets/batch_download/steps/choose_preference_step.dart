@@ -6,6 +6,7 @@ import 'package:shonenx/core/utils/subtitle_extractor.dart';
 import 'package:shonenx/shared/models/video_stream.dart';
 
 import '../batch_download_sheet.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 class ChoosePreferenceStep extends StatelessWidget {
   final BatchDownloadSheetState state;
@@ -99,7 +100,7 @@ class ChoosePreferenceStep extends StatelessWidget {
                   const Center(
                     child: Padding(
                       padding: EdgeInsets.all(16),
-                      child: CircularProgressIndicator(),
+                      child: AppProgressIndicator(type: AppProgressType.circular),
                     ),
                   )
                 else if (state.availableServers!.isEmpty)
@@ -190,7 +191,7 @@ class ChoosePreferenceStep extends StatelessWidget {
                   const Center(
                     child: Padding(
                       padding: EdgeInsets.all(16),
-                      child: CircularProgressIndicator(),
+                      child: AppProgressIndicator(type: AppProgressType.circular),
                     ),
                   )
                 else if (state.streamsError != null)
@@ -258,7 +259,7 @@ class ChoosePreferenceStep extends StatelessWidget {
                       child: SizedBox(
                         width: 20,
                         height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        child: AppProgressIndicator(type: AppProgressType.circular, strokeWidth: 2),
                       ),
                     ),
                   )

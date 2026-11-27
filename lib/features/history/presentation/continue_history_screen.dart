@@ -15,6 +15,7 @@ import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/core/utils/responsive.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/continue/continue_watching_card.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/continue/continue_reading_card.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 class ContinueHistoryScreen extends ConsumerStatefulWidget {
   final MediaType type;
@@ -250,7 +251,7 @@ class _ContinueHistoryScreenState extends ConsumerState<ContinueHistoryScreen> {
         ],
       ],
       body: historyAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(child: AppProgressIndicator(type: AppProgressType.circular)),
         error: (err, _) => Center(child: Text(err.toString())),
         data: (entries) {
           final filtered = _searchQuery.isEmpty
@@ -417,7 +418,7 @@ class _ContinueHistoryItemsScreenState
 
     return AppScaffold(
       body: historyAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(child: AppProgressIndicator(type: AppProgressType.circular)),
         error: (err, _) => Center(child: Text(err.toString())),
         data: (entries) {
           if (entries.isEmpty) {

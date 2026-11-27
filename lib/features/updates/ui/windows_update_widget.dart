@@ -7,6 +7,8 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:shonenx/features/updates/models/github_release.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
+import 'package:shonenx/shared/widgets/app_button.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 class WindowsUpdateWidget extends StatefulWidget {
   final GitHubRelease release;
@@ -268,7 +270,7 @@ class _WindowsUpdateWidgetState extends State<WindowsUpdateWidget> {
     if (_isLoadingAsset) {
       return const Padding(
         padding: EdgeInsets.all(24),
-        child: Center(child: CircularProgressIndicator()),
+        child: Center(child: AppProgressIndicator(type: AppProgressType.circular)),
       );
     }
 
@@ -276,48 +278,51 @@ class _WindowsUpdateWidgetState extends State<WindowsUpdateWidget> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Simple clean header row matching Android updater style
-        Row(
-          children: [
-            Icon(
-              Icons.window_rounded,
-              size: 30,
-              color: const Color(0xFF0078D4),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _bestAsset?.name ?? 'ShonenX Windows Installer',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    _bestAsset != null
-                        ? '${(_bestAsset!.size / (1024 * 1024)).toStringAsFixed(1)} MB • Windows 64-bit'
-                        : 'No compatible installer',
-                    style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
-                  ),
-                ],
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: cs.surfaceContainerHigh,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.window_rounded,
+                size: 30,
+                color: Color(0xFF0078D4),
               ),
-            ),
-          ],
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _bestAsset?.name ?? 'ShonenX Windows Installer',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _bestAsset != null
+                          ? '${(_bestAsset!.size / (1024 * 1024)).toStringAsFixed(1)} MB • Windows 64-bit'
+                          : 'No compatible installer',
+                      style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 16),
 
         // Progress bar
         if (_isDownloading) ...[
-          LinearProgressIndicator(
-            value: _progress > 0 ? _progress : null,
-            borderRadius: BorderRadius.circular(4),
-          ),
+          AppProgressIndicator(type: AppProgressType.linear, value: _progress > 0 ? _progress : null),
           const SizedBox(height: 8),
         ],
 
@@ -334,7 +339,10 @@ class _WindowsUpdateWidgetState extends State<WindowsUpdateWidget> {
 
         // Action buttons
         if (_installerLaunched) ...[
-          FilledButton.icon(
+          AppButton(
+            label: 'Exit ShonenX & Install',
+            icon: Icons.exit_to_app_rounded,
+            isExpanded: true,
             onPressed: () {
               if (widget.isPreview) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -348,11 +356,12 @@ class _WindowsUpdateWidgetState extends State<WindowsUpdateWidget> {
                 exit(0);
               }
             },
-            icon: const Icon(Icons.exit_to_app_rounded),
-            label: const Text('Exit ShonenX & Install'),
           ),
           const SizedBox(height: 8),
-          OutlinedButton(
+          AppButton(
+            label: 'Relaunch Installer',
+            variant: AppButtonVariant.outlined,
+            isExpanded: true,
             onPressed: () {
               if (_downloadedFile != null) {
                 _launchInstaller(_downloadedFile!);
@@ -364,24 +373,28 @@ class _WindowsUpdateWidgetState extends State<WindowsUpdateWidget> {
                 );
               }
             },
-            child: const Text('Relaunch Installer'),
           ),
         ] else if (_errorMessage != null) ...[
-          FilledButton.icon(
+          AppButton(
+            label: 'Retry Download',
+            icon: Icons.refresh_rounded,
+            variant: AppButtonVariant.tonal,
+            isExpanded: true,
             onPressed: _startDownloadAndInstall,
-            icon: const Icon(Icons.refresh_rounded),
-            label: const Text('Retry Download'),
           ),
         ] else if (!_isDownloading && _bestAsset != null) ...[
-          FilledButton.icon(
+          AppButton(
+            label: 'Download & Install',
+            icon: Icons.download_rounded,
+            isExpanded: true,
             onPressed: _startDownloadAndInstall,
-            icon: const Icon(Icons.download_rounded),
-            label: const Text('Download & Install'),
           ),
         ] else if (_isDownloading) ...[
-          OutlinedButton(
+          AppButton(
+            label: 'Cancel',
+            variant: AppButtonVariant.outlined,
+            isExpanded: true,
             onPressed: _cancelDownload,
-            child: const Text('Cancel'),
           ),
         ],
       ],

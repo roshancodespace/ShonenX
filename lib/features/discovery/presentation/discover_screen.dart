@@ -23,6 +23,7 @@ import 'package:shonenx/shared/widgets/unified_search_bar.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
 import 'package:shonenx/source_engine/source_engine_provider.dart';
 import 'package:shonenx/source_engine/utils/media_type_extensions.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 class DiscoverScreen extends ConsumerStatefulWidget {
   final String? initialQuery;
@@ -1015,7 +1016,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
         child: SizedBox(
           width: 24,
           height: 24,
-          child: CircularProgressIndicator(strokeWidth: 2.5),
+          child: AppProgressIndicator(type: AppProgressType.circular, strokeWidth: 2.5),
         ),
       ),
       error: (e, _) => Center(child: Text('Failed to load sources: $e')),
@@ -1223,7 +1224,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
           child: SizedBox(
             width: 16,
             height: 16,
-            child: CircularProgressIndicator(strokeWidth: 2),
+            child: AppProgressIndicator(type: AppProgressType.circular, strokeWidth: 2),
           ),
         ),
       ),
@@ -1365,7 +1366,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
                 child: SizedBox(
                   width: 24,
                   height: 24,
-                  child: CircularProgressIndicator(strokeWidth: 2.5),
+                  child: AppProgressIndicator(type: AppProgressType.circular, strokeWidth: 2.5),
                 ),
               ),
             ),

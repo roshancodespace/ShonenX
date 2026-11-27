@@ -10,7 +10,9 @@ import 'package:shonenx/shared/models/video_server.dart';
 import 'package:shonenx/shared/models/video_stream.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
+import 'package:shonenx/shared/widgets/app_button.dart';
 import 'package:shonenx/shared/widgets/marquee_text.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 export 'bottom_controls.dart';
 export 'center_controls.dart';
@@ -269,7 +271,6 @@ class PlayerSkipSegmentButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final label = switch (skip.type) {
       SkipType.opening => 'Skip Opening',
       SkipType.ending => 'Skip Ending',
@@ -278,17 +279,17 @@ class PlayerSkipSegmentButton extends StatelessWidget {
       SkipType.recap => 'Skip Recap',
     };
 
-    return PlayerActionButton(
-      leading: const Icon(Icons.skip_next_rounded),
-      displayText: label,
-      onTap: () async {
+    return AppButton(
+      label: label,
+      icon: Icons.skip_next_rounded,
+      variant: AppButtonVariant.tonal,
+      size: AppButtonSize.small,
+      onPressed: () async {
         await engine.seekTo(Duration(seconds: skip.endTime.ceil()));
         if (skip.type == SkipType.ending || skip.type == SkipType.mixedEnding) {
           controller.triggerEndingSkipCooldown();
         }
       },
-      defaultAccentColor: theme.colorScheme.onSecondary,
-      defaultBackgroundColor: theme.colorScheme.secondary,
     );
   }
 }
@@ -309,27 +310,25 @@ class PlayerNextEpisodeButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return PlayerActionButton(
+    return AppButton(
+      label: 'Next Episode',
+      variant: AppButtonVariant.tonal,
+      size: AppButtonSize.small,
       leading: Stack(
         alignment: Alignment.center,
         children: [
           if (autoNext)
-            SizedBox(
-              width: 24,
-              height: 24,
-              child: CircularProgressIndicator(
-                value: progress,
-                strokeWidth: 2,
-                color: theme.colorScheme.onSecondary,
-              ),
+            AppProgressIndicator(
+              type: AppProgressType.circular,
+              value: progress,
+              size: 20,
+              strokeWidth: 2,
+              color: theme.colorScheme.onSecondaryContainer,
             ),
-          const Icon(Icons.skip_next_rounded, size: 18),
+          const Icon(Icons.skip_next_rounded, size: 16),
         ],
       ),
-      displayText: 'Next Episode',
-      onTap: onTap,
-      defaultAccentColor: theme.colorScheme.onSecondary,
-      defaultBackgroundColor: theme.colorScheme.secondary,
+      onPressed: onTap,
     );
   }
 }
@@ -347,13 +346,12 @@ class PlayerQuickSkipButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return PlayerActionButton(
-      leading: const Icon(Icons.skip_next_rounded),
-      displayText: '+$skipDuration s',
-      onTap: onTap,
-      defaultAccentColor: theme.colorScheme.onSecondary,
-      defaultBackgroundColor: theme.colorScheme.secondary,
+    return AppButton(
+      label: '+$skipDuration s',
+      icon: Icons.skip_next_rounded,
+      variant: AppButtonVariant.tonal,
+      size: AppButtonSize.small,
+      onPressed: onTap,
     );
   }
 }

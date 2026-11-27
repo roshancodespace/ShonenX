@@ -189,39 +189,34 @@ class MediaKitAdvancedSettings extends ConsumerWidget {
           const SizedBox(height: 12),
           SettingsSection(
             title: 'Subtitle Engine',
-            children: [
-              SettingsSwitchTile(
-                icon: Icons.closed_caption_outlined,
-                title: 'Native libass rendering',
-                value: prefs.libassEnabled,
-                onChanged: (v) =>
-                    notifier.updatePrefs(prefs.copyWith(libassEnabled: v)),
-              ),
-            ],
+            child: SettingsSwitchTile(
+              icon: Icons.closed_caption_outlined,
+              title: 'Native libass rendering',
+              value: prefs.libassEnabled,
+              onChanged: (v) =>
+                  notifier.updatePrefs(prefs.copyWith(libassEnabled: v)),
+            ),
           ),
           const SizedBox(height: 12),
           SettingsSection(
             title: 'Raw',
-            children: [
-              SettingsActionTile(
-                icon: Icons.code_rounded,
-                title: 'MPV Configuration Overrides',
-                subtitle: prefs.rawConfiguration.isEmpty
-                    ? 'Inject raw MPV options'
-                    : '${prefs.rawConfiguration.split("\n").length} overrides active',
-                onTap: () {
-                  RawConfigOverrideSheet.show(
-                    context: context,
-                    title: 'MPV Raw Configuration',
-                    initialValue: prefs.rawConfiguration,
-                    hintText: 'e.g.\ndemuxer-max-bytes=100M\ncache=yes',
-                    onSave: (val) => notifier.updatePrefs(
-                      prefs.copyWith(rawConfiguration: val),
-                    ),
-                  );
-                },
-              ),
-            ],
+            child: SettingsActionTile(
+              icon: Icons.code_rounded,
+              title: 'MPV Configuration Overrides',
+              subtitle: prefs.rawConfiguration.isEmpty
+                  ? 'Inject raw MPV options'
+                  : '${prefs.rawConfiguration.split("\n").length} overrides active',
+              onTap: () {
+                RawConfigOverrideSheet.show(
+                  context: context,
+                  title: 'MPV Raw Configuration',
+                  initialValue: prefs.rawConfiguration,
+                  hintText: 'e.g.\ndemuxer-max-bytes=100M\ncache=yes',
+                  onSave: (val) =>
+                      notifier.updatePrefs(prefs.copyWith(rawConfiguration: val)),
+                );
+              },
+            ),
           ),
           const SizedBox(height: 8),
         ],

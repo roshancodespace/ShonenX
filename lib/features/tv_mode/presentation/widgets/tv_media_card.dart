@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:shonenx/features/tv_mode/presentation/widgets/tv_smart_image.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/shared/widgets/app_focus_hover.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 class TvMediaCard extends StatelessWidget {
   final String title;
@@ -277,12 +278,7 @@ class TvMediaCard extends StatelessWidget {
                   left: 0,
                   right: 0,
                   bottom: 0,
-                  child: LinearProgressIndicator(
-                    value: progressFraction,
-                    minHeight: active ? 4.0 : 3.0,
-                    backgroundColor: Colors.white.withValues(alpha: 0.2),
-                    valueColor: AlwaysStoppedAnimation<Color>(cs.primary),
-                  ),
+                  child: AppProgressIndicator(type: AppProgressType.linear, value: progressFraction, height: active ? 4.0 : 3.0, trackColor: Colors.white.withValues(alpha: 0.2), color: cs.primary),
                 ),
 
               // Focus Outline Border

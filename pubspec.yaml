@@ -82,6 +82,7 @@ dependencies:
   
   material_ui: ^1.11.1
   cupertino_ui: ^1.1.7
+  cupertino_icons: ^1.0.8
   material_3_expressive: ^1.2.3
   flex_color_picker: ^4.0.0
 

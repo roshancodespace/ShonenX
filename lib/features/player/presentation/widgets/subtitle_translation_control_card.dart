@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:shonenx/features/player/domain/subtitle_translation_models.dart';
 import 'package:shonenx/features/player/providers/subtitle_translation_provider.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 class SubtitleTranslationControlCard extends StatelessWidget {
   final RuntimeTranslationState translationState;
@@ -135,12 +136,9 @@ class SubtitleTranslationControlCard extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(2),
-                child: LinearProgressIndicator(
-                  value: translationState.progress > 0
+                child: AppProgressIndicator(type: AppProgressType.linear, value: translationState.progress > 0
                       ? translationState.progress
-                      : null,
-                  minHeight: 2,
-                ),
+                      : null, height: 2),
               ),
             ),
         ],

@@ -22,6 +22,7 @@ import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
 import 'package:shonenx/features/tracking/providers/tracking_prefs_provider.dart';
 import 'package:shonenx/features/episode_metadata/providers/episode_metadata_providers.dart';
 import 'package:shonenx/features/tv_mode/presentation/widgets/tv_episode_list_panel.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 export 'episode_tiles.dart';
 
@@ -218,11 +219,7 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
                 shape: BoxShape.circle,
               ),
               padding: const EdgeInsets.all(14),
-              child: CircularProgressIndicator(
-                strokeWidth: 3,
-                strokeCap: StrokeCap.round,
-                color: cs.primary,
-              ),
+              child: AppProgressIndicator(type: AppProgressType.circular, strokeWidth: 3, color: cs.primary),
             ),
             if (message != null && message.isNotEmpty) ...[
               const SizedBox(height: 14),
@@ -259,7 +256,7 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
           ? const SizedBox(
               width: 16,
               height: 16,
-              child: CircularProgressIndicator(strokeWidth: 2),
+              child: AppProgressIndicator(type: AppProgressType.circular, strokeWidth: 2),
             )
           : const Icon(Icons.refresh_rounded, size: 18),
       label: Text(isBusy ? busyLabel : label),

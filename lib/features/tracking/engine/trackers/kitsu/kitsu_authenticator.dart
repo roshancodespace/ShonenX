@@ -4,6 +4,7 @@ import 'package:shonenx/core/network/http_client.dart';
 import 'package:shonenx/core/router/app_router.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
 import 'package:shonenx/shared/widgets/app_dialog.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 class KitsuAuthenticator implements Authenticator {
   @override
@@ -186,7 +187,7 @@ class _KitsuLoginFormState extends State<_KitsuLoginForm> {
                   ? const SizedBox(
                       width: 16,
                       height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                      child: AppProgressIndicator(type: AppProgressType.circular, strokeWidth: 2),
                     )
                   : const Text('Login'),
             ),

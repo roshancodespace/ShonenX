@@ -14,6 +14,7 @@ import 'package:shonenx/features/tracking/engine/remote_tracker.dart';
 import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 final _sheetScheduleProvider = FutureProvider.autoDispose
     .family<List<AiringSchedule>, UnifiedMedia>((ref, media) async {
@@ -360,7 +361,7 @@ class _NotificationSubscriptionSheetState
                               );
                             },
                             loading: () => const Center(
-                              child: CircularProgressIndicator(),
+                              child: AppProgressIndicator(type: AppProgressType.circular),
                             ),
                             error: (e, st) => Center(
                               child: Text(

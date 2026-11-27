@@ -9,6 +9,8 @@ import 'package:shonenx/features/tracking/engine/tracking_service.dart';
 import 'package:shonenx/features/tracking/providers/media_tracking_provider.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
+import 'package:shonenx/shared/widgets/app_slider.dart';
 
 class EditTrackerSheet extends ConsumerStatefulWidget {
   final UnifiedMedia media;
@@ -276,11 +278,14 @@ class _EditTrackerSheetState extends ConsumerState<EditTrackerSheet> {
               ),
             ],
           ),
-          Slider(
+          AppSlider(
             value: _score,
             min: 0,
             max: 10,
             divisions: 100,
+            trackHeight: 8.0,
+            thumbHeight: 24.0,
+            showStopIndicator: false,
             onChanged: (val) => setState(() => _score = val),
           ),
           const SizedBox(height: 24),
@@ -290,10 +295,7 @@ class _EditTrackerSheetState extends ConsumerState<EditTrackerSheet> {
                 ? const SizedBox(
                     height: 20,
                     width: 20,
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2,
-                    ),
+                    child: AppProgressIndicator(type: AppProgressType.circular, color: Colors.white, strokeWidth: 2),
                   )
                 : const Text('Save Changes'),
           ),

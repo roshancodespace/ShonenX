@@ -12,6 +12,7 @@ import 'package:shonenx/source_engine/models/source_info.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/source_engine/source_engine_provider.dart';
 import 'package:shonenx/source_engine/utils/media_type_extensions.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 enum _FixStep { selectSource, searchMatch }
 
@@ -123,7 +124,7 @@ class _FixSourceSheetState extends ConsumerState<FixSourceSheet> {
     return sourcesAsync.when(
       loading: () => const Padding(
         padding: EdgeInsets.all(32.0),
-        child: Center(child: CircularProgressIndicator()),
+        child: Center(child: AppProgressIndicator(type: AppProgressType.circular)),
       ),
       error: (e, _) => Padding(
         padding: const EdgeInsets.all(16.0),
@@ -178,7 +179,7 @@ class _FixSourceSheetState extends ConsumerState<FixSourceSheet> {
                           child: SizedBox(
                             width: 20,
                             height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
+                            child: AppProgressIndicator(type: AppProgressType.circular, strokeWidth: 2),
                           ),
                         )
                       : IconButton(

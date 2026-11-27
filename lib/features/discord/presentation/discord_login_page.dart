@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:material_ui/material_ui.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
 import 'package:webview_all/webview_all.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 class DiscordLoginPage extends StatefulWidget {
   final Function(String) onTokenExtracted;
@@ -280,7 +281,7 @@ class _DiscordLoginPageState extends State<DiscordLoginPage> {
               child: SizedBox(
                 width: 18,
                 height: 18,
-                child: CircularProgressIndicator(strokeWidth: 2),
+                child: AppProgressIndicator(type: AppProgressType.circular, strokeWidth: 2),
               ),
             ),
           )
@@ -295,13 +296,12 @@ class _DiscordLoginPageState extends State<DiscordLoginPage> {
       barBottom: PreferredSize(
         preferredSize: const Size.fromHeight(2),
         child: _isLoading && _progress > 0 && _progress < 1
-            ? LinearProgressIndicator(
+            ? AppProgressIndicator(
+                type: AppProgressType.linear,
                 value: _progress,
-                backgroundColor: Colors.transparent,
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  theme.colorScheme.primary,
-                ),
-                minHeight: 2,
+                trackColor: Colors.transparent,
+                color: theme.colorScheme.primary,
+                height: 2,
               )
             : const SizedBox(height: 2),
       ),
@@ -339,7 +339,7 @@ class _DiscordLoginPageState extends State<DiscordLoginPage> {
                 Expanded(child: WebViewWidget(controller: _controller)),
               ],
             )
-          : const Center(child: CircularProgressIndicator()),
+          : const Center(child: AppProgressIndicator(type: AppProgressType.circular)),
     );
   }
 }

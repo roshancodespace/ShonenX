@@ -11,6 +11,7 @@ import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
 
 import 'grouped_chapter_tile.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 class ChaptersBottomSheet extends ConsumerStatefulWidget {
   final MediaArgs matchArgs;
@@ -291,7 +292,7 @@ class _ChaptersBottomSheetState extends ConsumerState<ChaptersBottomSheet> {
         },
         loading: () => const Padding(
           padding: EdgeInsets.all(32.0),
-          child: Center(child: CircularProgressIndicator()),
+          child: Center(child: AppProgressIndicator(type: AppProgressType.circular)),
         ),
         error: (err, _) => Padding(
           padding: const EdgeInsets.all(32.0),

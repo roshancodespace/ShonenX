@@ -26,6 +26,7 @@ import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/shared/widgets/app_dialog.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
 import 'package:shonenx/source_engine/utils/source_invalidation.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 class _CleanupItem {
   final String id;
@@ -1148,7 +1149,7 @@ class _TroubleshootSettingsScreenState
     return AppScaffold(
       title: l10n.settingsTroubleshoot,
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: AppProgressIndicator(type: AppProgressType.circular))
           : ListView(
               padding: const EdgeInsets.only(bottom: 50),
               children: [
@@ -1263,31 +1264,27 @@ class _TroubleshootSettingsScreenState
                 // Sync & Tracking
                 SettingsSection(
                   title: l10n.troubleshootSyncTrackingSection,
-                  children: [
-                    SettingsActionTile(
-                      icon: Icons.sync_problem_rounded,
-                      title: l10n.troubleshootResetTrackerBridges,
-                      subtitle: l10n.troubleshootResetTrackerBridgesSubtitle(
-                        _trackerLinksCount.toString(),
-                      ),
-                      onTap: _trackerLinksCount > 0 ? _clearTrackerLinks : null,
+                  child: SettingsActionTile(
+                    icon: Icons.sync_problem_rounded,
+                    title: l10n.troubleshootResetTrackerBridges,
+                    subtitle: l10n.troubleshootResetTrackerBridgesSubtitle(
+                      _trackerLinksCount.toString(),
                     ),
-                  ],
+                    onTap: _trackerLinksCount > 0 ? _clearTrackerLinks : null,
+                  ),
                 ),
                 const SizedBox(height: 8),
 
                 // Authentication & Accounts
                 SettingsSection(
                   title: l10n.troubleshootAuthAccountsSection,
-                  children: [
-                    SettingsActionTile(
-                      icon: Icons.lock_reset_rounded,
-                      isDestructive: true,
-                      title: l10n.troubleshootResetAuthTitle,
-                      subtitle: l10n.troubleshootResetAuthSubtitle,
-                      onTap: _resetAuthenticationData,
-                    ),
-                  ],
+                  child: SettingsActionTile(
+                    icon: Icons.lock_reset_rounded,
+                    isDestructive: true,
+                    title: l10n.troubleshootResetAuthTitle,
+                    subtitle: l10n.troubleshootResetAuthSubtitle,
+                    onTap: _resetAuthenticationData,
+                  ),
                 ),
                 const SizedBox(height: 8),
 

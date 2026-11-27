@@ -131,54 +131,51 @@ class _SubtitleTranslationSettingsSheetState
 
           SettingsSection(
             title: l10n.subtitleTransProviderPriority,
-            children: [
-              ReorderableListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: config.providerPriority.length,
-                buildDefaultDragHandles: false,
-                onReorder: notifier.reorderProviders,
-                itemBuilder: (context, index) {
-                  final type = config.providerPriority[index];
-                  final isEnabled = config.providerEnabled[type] ?? false;
+            child: ReorderableListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: config.providerPriority.length,
+              buildDefaultDragHandles: false,
+              onReorder: notifier.reorderProviders,
+              itemBuilder: (context, index) {
+                final type = config.providerPriority[index];
+                final isEnabled = config.providerEnabled[type] ?? false;
 
-                  return ListTile(
-                    key: ValueKey(type.name),
-                    dense: true,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 10),
-                    leading: ReorderableDragStartListener(
-                      index: index,
-                      child: Icon(
-                        Icons.drag_handle_rounded,
-                        color: cs.onSurfaceVariant,
-                        size: 20,
-                      ),
+                return ListTile(
+                  key: ValueKey(type.name),
+                  dense: true,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 10),
+                  leading: ReorderableDragStartListener(
+                    index: index,
+                    child: Icon(
+                      Icons.drag_handle_rounded,
+                      color: cs.onSurfaceVariant,
+                      size: 20,
                     ),
-                    title: Text(
-                      '${index + 1}. ${type.displayName}',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 13,
-                      ),
+                  ),
+                  title: Text(
+                    '${index + 1}. ${type.displayName}',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
                     ),
-                    subtitle: Text(
-                      _getProviderSubtitle(type, config),
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: _isProviderReady(type, config)
-                            ? cs.onSurfaceVariant
-                            : cs.error,
-                      ),
+                  ),
+                  subtitle: Text(
+                    _getProviderSubtitle(type, config),
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: _isProviderReady(type, config)
+                          ? cs.onSurfaceVariant
+                          : cs.error,
                     ),
-                    trailing: Switch.adaptive(
-                      value: isEnabled,
-                      onChanged: (val) =>
-                          notifier.setProviderEnabled(type, val),
-                    ),
-                  );
-                },
-              ),
-            ],
+                  ),
+                  trailing: Switch.adaptive(
+                    value: isEnabled,
+                    onChanged: (val) => notifier.setProviderEnabled(type, val),
+                  ),
+                );
+              },
+            ),
           ),
 
           const SizedBox(height: 12),
@@ -217,24 +214,22 @@ class _SubtitleTranslationSettingsSheetState
 
           SettingsSection(
             title: l10n.settingsStorage,
-            children: [
-              SettingsActionTile(
-                icon: Icons.storage_rounded,
-                title: l10n.settingsClearCache,
-                subtitle: _isLoadingCache
-                    ? l10n.subtitleTransCalculating
-                    : _formatBytes(_cacheSizeBytes),
-                trailing: TextButton(
-                  onPressed: _cacheSizeBytes == 0
-                      ? null
-                      : () => _confirmClearCache(context),
-                  child: Text(
-                    l10n.commonClear,
-                    style: TextStyle(color: cs.error),
-                  ),
+            child: SettingsActionTile(
+              icon: Icons.storage_rounded,
+              title: l10n.settingsClearCache,
+              subtitle: _isLoadingCache
+                  ? l10n.subtitleTransCalculating
+                  : _formatBytes(_cacheSizeBytes),
+              trailing: TextButton(
+                onPressed: _cacheSizeBytes == 0
+                    ? null
+                    : () => _confirmClearCache(context),
+                child: Text(
+                  l10n.commonClear,
+                  style: TextStyle(color: cs.error),
                 ),
               ),
-            ],
+            ),
           ),
         ],
       ),

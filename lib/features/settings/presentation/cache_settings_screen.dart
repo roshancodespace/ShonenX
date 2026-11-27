@@ -5,6 +5,7 @@ import 'package:shonenx/core/caching/cache_manager.dart';
 import 'package:shonenx/core/localization/l10n_extension.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 class CacheSettingsScreen extends ConsumerStatefulWidget {
   const CacheSettingsScreen({super.key});
@@ -97,14 +98,7 @@ class _CacheSettingsScreenState extends ConsumerState<CacheSettingsScreen> {
                           return SizedBox(
                             height: 70,
                             width: 70,
-                            child: CircularProgressIndicator(
-                              value: value,
-                              strokeWidth: 6,
-                              backgroundColor: cs.surfaceContainerHighest,
-                              valueColor: AlwaysStoppedAnimation(
-                                value > 0.85 ? cs.error : cs.primary,
-                              ),
-                            ),
+                            child: AppProgressIndicator(type: AppProgressType.circular, value: value, strokeWidth: 6, trackColor: cs.surfaceContainerHighest, color: value > 0.85 ? cs.error : cs.primary,),
                           );
                         },
                       ),
@@ -210,18 +204,16 @@ class _CacheSettingsScreenState extends ConsumerState<CacheSettingsScreen> {
           const SizedBox(height: 20),
           SettingsSection(
             title: context.l10n.cacheGlobalActions,
-            children: [
-              SettingsActionTile(
-                icon: Icons.delete_forever_outlined,
-                title: context.l10n.settingsClearEntireCache,
-                subtitle: context.l10n.cacheClearEntireSubtitle,
-                isDestructive: true,
-                onTap: () async {
-                  await ref.read(cacheManagerProvider).clearCache();
-                  await _loadCacheData();
-                },
-              ),
-            ],
+            child: SettingsActionTile(
+              icon: Icons.delete_forever_outlined,
+              title: context.l10n.settingsClearEntireCache,
+              subtitle: context.l10n.cacheClearEntireSubtitle,
+              isDestructive: true,
+              onTap: () async {
+                await ref.read(cacheManagerProvider).clearCache();
+                await _loadCacheData();
+              },
+            ),
           ),
         ],
       ),

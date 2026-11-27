@@ -1,8 +1,11 @@
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:shonenx/features/calendar/providers/calendar_prefs_provider.dart';
 import 'package:shonenx/features/calendar/providers/calendar_schedule_provider.dart';
+import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
+import 'package:shonenx/shared/widgets/app_icon_button.dart';
 
 class CalendarWeekHeader extends ConsumerWidget {
   const CalendarWeekHeader({super.key});
@@ -13,6 +16,8 @@ class CalendarWeekHeader extends ConsumerWidget {
     final weekEnd = weekStart.add(const Duration(days: 6));
     final prefs = ref.watch(calendarPrefsProvider);
     final prefsNotifier = ref.read(calendarPrefsProvider.notifier);
+    final style = ref.watch(uiPrefsProvider.select((s) => s.settingsStyle));
+    final isClassic = style == SettingsStyle.classic;
     final cs = Theme.of(context).colorScheme;
 
     final now = DateTime.now();
@@ -56,20 +61,26 @@ class CalendarWeekHeader extends ConsumerWidget {
                     const SizedBox(width: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
+                        horizontal: 8,
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: cs.primary.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(4),
+                        color: isClassic
+                            ? cs.primary.withValues(alpha: 0.12)
+                            : cs.primaryContainer,
+                        borderRadius: BorderRadius.circular(
+                          isClassic ? 4 : 999,
+                        ),
                       ),
                       child: Text(
                         'CURRENT WEEK',
                         style: TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w900,
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w800,
                           letterSpacing: 0.4,
-                          color: cs.primary,
+                          color: isClassic
+                              ? cs.primary
+                              : cs.onPrimaryContainer,
                         ),
                       ),
                     ),
@@ -79,14 +90,13 @@ class CalendarWeekHeader extends ConsumerWidget {
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  IconButton(
-                    icon: const Icon(Icons.chevron_left_rounded, size: 20),
+                  AppIconButton(
+                    icon: const Icon(CupertinoIcons.chevron_back),
                     tooltip: 'Previous Week',
-                    visualDensity: VisualDensity.compact,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(
-                      minWidth: 32,
-                      minHeight: 32,
+                    size: 34,
+                    radius: isClassic ? 8.0 : 999.0,
+                    backgroundColor: cs.surfaceContainerHighest.withValues(
+                      alpha: 0.4,
                     ),
                     onPressed: () {
                       ref
@@ -94,15 +104,14 @@ class CalendarWeekHeader extends ConsumerWidget {
                           .previousWeek();
                     },
                   ),
-                  const SizedBox(width: 4),
-                  IconButton(
-                    icon: const Icon(Icons.chevron_right_rounded, size: 20),
+                  const SizedBox(width: 6),
+                  AppIconButton(
+                    icon: const Icon(CupertinoIcons.chevron_forward),
                     tooltip: 'Next Week',
-                    visualDensity: VisualDensity.compact,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(
-                      minWidth: 32,
-                      minHeight: 32,
+                    size: 34,
+                    radius: isClassic ? 8.0 : 999.0,
+                    backgroundColor: cs.surfaceContainerHighest.withValues(
+                      alpha: 0.4,
                     ),
                     onPressed: () {
                       ref.read(selectedWeekStartProvider.notifier).nextWeek();

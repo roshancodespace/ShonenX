@@ -4,6 +4,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/localization/l10n_extension.dart';
 import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 void showWallpaperCustomizationSheet(
   BuildContext context, {
@@ -320,10 +321,7 @@ class _WallpaperCustomizationOverlayState
                               ? SizedBox(
                                   width: 18,
                                   height: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: cs.onPrimary,
-                                  ),
+                                  child: AppProgressIndicator(type: AppProgressType.circular, strokeWidth: 2, color: cs.onPrimary),
                                 )
                               : const Icon(Icons.check_rounded, size: 20),
                           label: Text(

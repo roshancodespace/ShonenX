@@ -5,6 +5,7 @@ import 'package:shonenx/features/calendar/domain/models/calendar_source.dart';
 import 'package:shonenx/features/calendar/providers/calendar_prefs_provider.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
+import 'package:shonenx/shared/widgets/app_button.dart';
 import 'package:shonenx/shared/widgets/selection_card_group.dart';
 
 extension CalendarSourceTrackerX on CalendarSource {
@@ -67,21 +68,10 @@ class CalendarSourceSelectorSheet extends ConsumerWidget {
             }).toList(),
           ),
           const SizedBox(height: 16),
-          FilledButton(
+          AppButton(
+            label: 'Done',
+            isExpanded: true,
             onPressed: context.pop,
-            style: FilledButton.styleFrom(
-              backgroundColor: cs.primary,
-              foregroundColor: cs.onPrimary,
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
-              ),
-              elevation: 1,
-            ),
-            child: const Text(
-              'Done',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-            ),
           ),
         ],
       ),

@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
 import 'package:shonenx/shared/widgets/unified_search_bar.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 enum LogFilterLevel {
   all('All'),
@@ -630,7 +631,7 @@ class _LogsScreenState extends State<LogsScreen> {
           _buildControlBar(context),
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? const Center(child: AppProgressIndicator(type: AppProgressType.circular))
                 : _filteredEntries.isEmpty
                 ? _buildEmptyState(context)
                 : ListView.builder(

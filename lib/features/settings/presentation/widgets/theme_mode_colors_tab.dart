@@ -1,3 +1,4 @@
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/localization/l10n_extension.dart';
@@ -122,7 +123,7 @@ class ThemeModeColorsTab extends ConsumerWidget {
               onTap: () => SchemeCreatorSheet.show(context),
             ),
             SettingsActionTile(
-              icon: Icons.palette_outlined,
+              icon: CupertinoIcons.sparkles,
               title: context.l10n.settingsThemeVariantTitle,
               subtitle: context.l10n.settingsThemeVariantSubtitle,
               onTap: () => showThemeVariantPicker(
@@ -142,7 +143,8 @@ class ThemeModeColorsTab extends ConsumerWidget {
                   ),
                   const SizedBox(width: 8),
                   Icon(
-                    Icons.chevron_right_rounded,
+                    CupertinoIcons.chevron_forward,
+                    size: 18,
                     color: cs.onSurfaceVariant.withValues(alpha: 0.5),
                   ),
                 ],
@@ -175,7 +177,6 @@ class ThemeModeColorsTab extends ConsumerWidget {
               isDark,
             ),
           ),
-          const SizedBox(height: 4),
           ThemePaletteShelf(
             title: context.l10n.settingsStandardSchemes,
             countBadge: context.l10n.themeCountThemes(
@@ -217,16 +218,14 @@ class ThemeModeColorsTab extends ConsumerWidget {
 
         SettingsSection(
           title: context.l10n.settingsColorTweaks,
-          children: [
-            SettingsSwitchTile(
-              icon: Icons.swap_horiz_rounded,
-              title: context.l10n.settingsSwapColors,
-              subtitle: context.l10n.settingsSwapColorsSubtitle,
-              value: themePrefs.swapColors,
-              onChanged: (v) =>
-                  notifier.updateTheme((p) => p.copyWith(swapColors: v)),
-            ),
-          ],
+          child: SettingsSwitchTile(
+            icon: Icons.swap_horiz_rounded,
+            title: context.l10n.settingsSwapColors,
+            subtitle: context.l10n.settingsSwapColorsSubtitle,
+            value: themePrefs.swapColors,
+            onChanged: (v) =>
+                notifier.updateTheme((p) => p.copyWith(swapColors: v)),
+          ),
         ),
       ],
     );
@@ -236,13 +235,11 @@ class ThemeModeColorsTab extends ConsumerWidget {
 Widget _buildPresetGalleryBanner(BuildContext context, WidgetRef ref) {
   return SettingsSection(
     title: context.l10n.settingsPresets,
-    children: [
-      SettingsNavTile(
-        icon: Icons.auto_awesome_outlined,
-        title: context.l10n.settingsThemePresetsTitle,
-        subtitle: context.l10n.settingsThemePresetsSubtitle,
-        onTap: () => PresetGallerySheet.show(context),
-      ),
-    ],
+    child: SettingsNavTile(
+      icon: CupertinoIcons.square_grid_2x2,
+      title: context.l10n.settingsThemePresetsTitle,
+      subtitle: context.l10n.settingsThemePresetsSubtitle,
+      onTap: () => PresetGallerySheet.show(context),
+    ),
   );
 }

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/source_engine/source_engine_provider.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 class CharactersSheet extends ConsumerStatefulWidget {
   final String mediaId;
@@ -331,9 +332,7 @@ class _CharactersSheetState extends ConsumerState<CharactersSheet> {
                               child: SizedBox(
                                 width: 20,
                                 height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
+                                child: AppProgressIndicator(type: AppProgressType.circular, strokeWidth: 2),
                               ),
                             ),
                           );
@@ -529,7 +528,7 @@ class _CharacterDetailsModalState
               child: SizedBox(
                 width: 22,
                 height: 22,
-                child: CircularProgressIndicator(strokeWidth: 2),
+                child: AppProgressIndicator(type: AppProgressType.circular, strokeWidth: 2),
               ),
             ),
           )

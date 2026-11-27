@@ -10,6 +10,7 @@ import 'package:shonenx/features/settings/presentation/widgets/settings_ui_compo
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
 import 'package:shonenx/shared/widgets/svg_icon.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 class GithubContributor {
   final String login;
@@ -166,55 +167,47 @@ class AboutScreen extends ConsumerWidget {
 
           SettingsSection(
             title: 'Legal & Attributions',
-            children: [
-              SettingsActionTile(
-                icon: Icons.movie_filter_outlined,
-                title: 'Trakt API',
-                subtitle:
-                    'This product uses the Trakt API but is not endorsed or certified by Trakt.',
-                onTap: () => launchUrl(
-                  Uri.parse('https://trakt.tv'),
-                  mode: LaunchMode.externalApplication,
-                ),
+            child: SettingsActionTile(
+              icon: Icons.movie_filter_outlined,
+              title: 'Trakt API',
+              subtitle:
+                  'This product uses the Trakt API but is not endorsed or certified by Trakt.',
+              onTap: () => launchUrl(
+                Uri.parse('https://trakt.tv'),
+                mode: LaunchMode.externalApplication,
               ),
-            ],
+            ),
           ),
 
           SettingsSection(
             title: context.l10n.detailsInformation,
-            children: [
-              SettingsActionTile(
-                icon: Icons.person_rounded,
-                title: context.l10n.settingsDeveloper,
-                subtitle: 'roshancodespace',
-                onTap: () {},
-              ),
-            ],
+            child: SettingsActionTile(
+              icon: Icons.person_rounded,
+              title: context.l10n.settingsDeveloper,
+              subtitle: 'roshancodespace',
+              onTap: () {},
+            ),
           ),
           contributors.when(
             loading: () => SettingsSection(
               title: context.l10n.settingsContributors,
-              children: [
-                SettingsActionTile(
-                  leading: const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                  title: context.l10n.aboutLoadingContributors,
-                  onTap: () {},
+              child: SettingsActionTile(
+                leading: const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: AppProgressIndicator(type: AppProgressType.circular, strokeWidth: 2),
                 ),
-              ],
+                title: context.l10n.aboutLoadingContributors,
+                onTap: () {},
+              ),
             ),
             error: (_, __) => SettingsSection(
               title: context.l10n.settingsContributors,
-              children: [
-                SettingsActionTile(
-                  icon: Icons.error_outline,
-                  title: context.l10n.aboutFailedContributors,
-                  onTap: () {},
-                ),
-              ],
+              child: SettingsActionTile(
+                icon: Icons.error_outline,
+                title: context.l10n.aboutFailedContributors,
+                onTap: () {},
+              ),
             ),
             data: (contributors) {
               final sorted = [...contributors];

@@ -1,6 +1,7 @@
 import 'package:shonenx/shared/widgets/smart_image.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:shonenx/features/reader/providers/reader_prefs_provider.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 class ReaderImage extends StatelessWidget {
   final String url;
@@ -37,10 +38,7 @@ class ReaderImage extends StatelessWidget {
       progressIndicatorBuilder: (context, url, progress) => SizedBox(
         height: MediaQuery.of(context).size.height * 0.8,
         child: Center(
-          child: CircularProgressIndicator(
-            value: progress.progress,
-            strokeWidth: 2,
-          ),
+          child: AppProgressIndicator(type: AppProgressType.circular, value: progress.progress, strokeWidth: 2),
         ),
       ),
       errorWidget: (context, url, error) => SizedBox(

@@ -10,6 +10,7 @@ import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/widgets/app_dialog.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
 import 'package:shonenx/source_engine/utils/media_type_extensions.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 class TvSourceDialog {
   static Future<void> show(
@@ -48,7 +49,7 @@ class _TvSourceSelector extends ConsumerWidget {
           child: SizedBox(
             width: 32,
             height: 32,
-            child: CircularProgressIndicator(strokeWidth: 2.5),
+            child: AppProgressIndicator(type: AppProgressType.circular, strokeWidth: 2.5),
           ),
         ),
       ),

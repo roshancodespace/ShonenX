@@ -24,6 +24,7 @@ import 'package:shonenx/source_engine/source_engine_provider.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/shared/widgets/marquee_text.dart';
 import 'package:shonenx/shared/widgets/permission_sheet.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 class DownloadSheet extends ConsumerStatefulWidget {
   final UnifiedEpisode episode;
@@ -203,7 +204,7 @@ class _DownloadSheetState extends ConsumerState<DownloadSheet> {
     if (_servers == null) {
       return const SizedBox(
         height: 200,
-        child: Center(child: CircularProgressIndicator()),
+        child: Center(child: AppProgressIndicator(type: AppProgressType.circular)),
       );
     }
     if (_servers!.isEmpty) {
@@ -309,7 +310,7 @@ class _DownloadSheetState extends ConsumerState<DownloadSheet> {
           child: SizedBox(
             width: 26,
             height: 26,
-            child: CircularProgressIndicator(strokeWidth: 2.5),
+            child: AppProgressIndicator(type: AppProgressType.circular, strokeWidth: 2.5),
           ),
         ),
       );
@@ -928,7 +929,7 @@ class _ServerTile extends StatelessWidget {
           child: SizedBox(
             width: 22,
             height: 22,
-            child: CircularProgressIndicator(strokeWidth: 2),
+            child: AppProgressIndicator(type: AppProgressType.circular, strokeWidth: 2),
           ),
         ),
       );

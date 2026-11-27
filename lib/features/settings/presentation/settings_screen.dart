@@ -135,14 +135,12 @@ class SettingsScreen extends ConsumerWidget {
           if (Platform.isAndroid || Platform.isIOS || Platform.isMacOS)
             SettingsSection(
               title: l10n.settingsNotifications,
-              children: [
-                SettingsNavTile(
-                  icon: Icons.notifications_active_outlined,
-                  title: l10n.settingsNotifications,
-                  subtitle: l10n.settingsNotificationsSubtitle,
-                  onTap: () => context.pushSettingsNotifications(),
-                ),
-              ],
+              child: SettingsNavTile(
+                icon: Icons.notifications_active_outlined,
+                title: l10n.settingsNotifications,
+                subtitle: l10n.settingsNotificationsSubtitle,
+                onTap: () => context.pushSettingsNotifications(),
+              ),
             ),
 
           SettingsSection(
@@ -171,21 +169,19 @@ class SettingsScreen extends ConsumerWidget {
 
           SettingsSection(
             title: l10n.settingsIntegrations,
-            children: [
-              SettingsNavTile(
-                leading: SvgIcon(
-                  '''<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
+            child: SettingsNavTile(
+              leading: SvgIcon(
+                '''<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
                     <path d="M0 0h24v24H0z" fill="none" />
                     <path fill="currentColor" d="M18.59 5.89c-1.23-.57-2.54-.99-3.92-1.23c-.17.3-.37.71-.5 1.04c-1.46-.22-2.91-.22-4.34 0c-.14-.33-.34-.74-.51-1.04c-1.38.24-2.69.66-3.92 1.23c-2.48 3.74-3.15 7.39-2.82 10.98c1.65 1.23 3.24 1.97 4.81 2.46c.39-.53.73-1.1 1.03-1.69c-.57-.21-1.11-.48-1.62-.79c.14-.1.27-.21.4-.31c3.13 1.46 6.52 1.46 9.61 0c.13.11.26.21.4.31c-.51.31-1.06.57-1.62.79c.3.59.64 1.16 1.03 1.69c1.57-.49 3.17-1.23 4.81-2.46c.39-4.17-.67-7.78-2.82-10.98Zm-9.75 8.78c-.94 0-1.71-.87-1.71-1.94s.75-1.94 1.71-1.94s1.72.87 1.71 1.94c0 1.06-.75 1.94-1.71 1.94m6.31 0c-.94 0-1.71-.87-1.71-1.94s.75-1.94 1.71-1.94s1.72.87 1.71 1.94c0 1.06-.75 1.94-1.71 1.94" />
                   </svg>
                 ''',
-                  color: cs.primary,
-                ),
-                title: l10n.settingsDiscordRpc,
-                subtitle: l10n.settingsDiscordRpcSubtitle,
-                onTap: context.pushSettingsDiscord,
+                color: cs.primary,
               ),
-            ],
+              title: l10n.settingsDiscordRpc,
+              subtitle: l10n.settingsDiscordRpcSubtitle,
+              onTap: context.pushSettingsDiscord,
+            ),
           ),
 
           SettingsSection(

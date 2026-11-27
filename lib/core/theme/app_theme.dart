@@ -26,19 +26,29 @@ class AppTheme {
     return textTheme.apply(fontFamilyFallback: _fontFamilyFallback);
   }
 
-  static ThemeData light(ThemePrefsState prefs, dynamic colorScheme) {
+  static ThemeData light(
+    ThemePrefsState prefs,
+    dynamic colorScheme, {
+    bool isExpressive = true,
+  }) {
     return _buildTheme(
       brightness: Brightness.light,
       prefs: prefs,
       colorScheme: colorScheme,
+      isExpressive: isExpressive,
     );
   }
 
-  static ThemeData dark(ThemePrefsState prefs, dynamic colorScheme) {
+  static ThemeData dark(
+    ThemePrefsState prefs,
+    dynamic colorScheme, {
+    bool isExpressive = true,
+  }) {
     return _buildTheme(
       brightness: Brightness.dark,
       prefs: prefs,
       colorScheme: colorScheme,
+      isExpressive: isExpressive,
     );
   }
 
@@ -46,6 +56,7 @@ class AppTheme {
     required Brightness brightness,
     required ThemePrefsState prefs,
     required dynamic colorScheme,
+    required bool isExpressive,
   }) {
     final isDark = brightness == Brightness.dark;
     final resolved = resolveThemeColors(
@@ -128,7 +139,52 @@ class AppTheme {
       visualDensity: VisualDensity.adaptivePlatformDensity,
     );
 
-    return _themeModifiers.fold(theme, (t, modifier) => modifier(t, prefs));
+    ThemeData themed = _themeModifiers.fold(
+      theme,
+      (t, modifier) => modifier(t, prefs),
+    );
+
+    if (isExpressive) {
+      themed = themed.copyWith(sliderTheme: _expressiveSliderTheme(themed));
+    }
+
+    return themed;
+  }
+
+  static SliderThemeData _expressiveSliderTheme(ThemeData theme) {
+    final cs = theme.colorScheme;
+    return theme.sliderTheme.copyWith(
+      trackHeight: 16.0,
+      trackGap: 6.0,
+      padding: EdgeInsets.zero,
+      overlayShape: const RoundSliderOverlayShape(overlayRadius: 6.0),
+      thumbShape: const HandleThumbShape(),
+      trackShape: const GappedSliderTrackShape(),
+      tickMarkShape: const RoundSliderTickMarkShape(tickMarkRadius: 2.0),
+      rangeThumbShape: const HandleRangeSliderThumbShape(),
+      rangeTrackShape: const GappedRangeSliderTrackShape(),
+      rangeTickMarkShape: const RoundRangeSliderTickMarkShape(
+        tickMarkRadius: 2.0,
+      ),
+      thumbSize: WidgetStateProperty.resolveWith((states) {
+        final pressed =
+            states.contains(WidgetState.pressed) ||
+            states.contains(WidgetState.focused);
+        return Size(pressed ? 2.0 : 4.0, 44.0);
+      }),
+      activeTrackColor: cs.primary,
+      inactiveTrackColor: cs.secondaryContainer,
+      activeTickMarkColor: cs.onPrimary.withValues(alpha: 0.7),
+      inactiveTickMarkColor: cs.onSecondaryContainer.withValues(alpha: 0.55),
+      thumbColor: cs.primary,
+      disabledActiveTrackColor: cs.onSurface.withValues(alpha: 0.38),
+      disabledInactiveTrackColor: cs.onSurface.withValues(alpha: 0.12),
+      disabledThumbColor: cs.onSurface.withValues(alpha: 0.38),
+      valueIndicatorColor: cs.inverseSurface,
+      valueIndicatorTextStyle: theme.textTheme.labelMedium?.copyWith(
+        color: cs.onInverseSurface,
+      ),
+    );
   }
 
   static final List<ThemeModifier> _themeModifiers = [_widgets, _shadows];

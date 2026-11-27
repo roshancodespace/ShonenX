@@ -11,6 +11,7 @@ import 'package:shonenx/features/settings/presentation/widgets/settings_ui_compo
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/shared/widgets/app_dialog.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 class DiscordSettingsScreen extends ConsumerWidget {
   const DiscordSettingsScreen({super.key});
@@ -117,7 +118,7 @@ class DiscordSettingsScreen extends ConsumerWidget {
       title: l10n.settingsDiscordRpc,
       subtitle: l10n.settingsDiscordRpcSubtitle,
       body: discordState.isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: AppProgressIndicator(type: AppProgressType.circular))
           : ListView(
               padding: const EdgeInsets.only(bottom: 50),
               children: [
@@ -189,9 +190,7 @@ class DiscordSettingsScreen extends ConsumerWidget {
                                               discordState.user!.avatarUrl!,
                                           fit: BoxFit.cover,
                                           placeholder: (context, url) =>
-                                              const CircularProgressIndicator(
-                                                strokeWidth: 2,
-                                              ),
+                                              const AppProgressIndicator(type: AppProgressType.circular, strokeWidth: 2),
                                           errorWidget: (context, url, error) =>
                                               const Icon(Icons.person),
                                         )
@@ -359,19 +358,17 @@ class DiscordSettingsScreen extends ConsumerWidget {
 
                 SettingsSection(
                   title: l10n.discordPresenceControl,
-                  children: [
-                    SettingsSwitchTile(
-                      icon: Icons.discord,
-                      title: l10n.discordEnableRpc,
-                      subtitle: l10n.discordEnableRpcSubtitle,
-                      value: rpcState.isEnabled,
-                      onChanged: (value) {
-                        ref
-                            .read(discordRpcProvider.notifier)
-                            .toggleEnabled(value);
-                      },
-                    ),
-                  ],
+                  child: SettingsSwitchTile(
+                    icon: Icons.discord,
+                    title: l10n.discordEnableRpc,
+                    subtitle: l10n.discordEnableRpcSubtitle,
+                    value: rpcState.isEnabled,
+                    onChanged: (value) {
+                      ref
+                          .read(discordRpcProvider.notifier)
+                          .toggleEnabled(value);
+                    },
+                  ),
                 ),
 
                 if (rpcState.isEnabled)

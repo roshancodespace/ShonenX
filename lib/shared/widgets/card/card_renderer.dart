@@ -13,6 +13,7 @@ import 'styles/material_card.dart';
 import 'styles/minimal_card.dart';
 import 'styles/neon_card.dart';
 import 'styles/wide_banner_card.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 class CardRenderer extends StatelessWidget {
   final MediaCardStyle style;
@@ -102,7 +103,7 @@ class CardRenderer extends StatelessWidget {
                 borderRadius: BorderRadius.circular(UiRadius.card),
                 child: Container(
                   color: Colors.black54,
-                  child: const Center(child: CircularProgressIndicator()),
+                  child: const Center(child: AppProgressIndicator(type: AppProgressType.circular)),
                 ),
               ),
             ),

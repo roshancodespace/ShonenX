@@ -6,6 +6,7 @@ import 'package:shonenx/shared/widgets/app_dialog.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
 import 'package:shonenx/source_engine/addon_service.dart';
 import 'package:shonenx/source_engine/models/addon_info.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 class AddonsSettingsScreen extends ConsumerStatefulWidget {
   const AddonsSettingsScreen({super.key});
@@ -162,10 +163,7 @@ class _AddonsSettingsScreenState extends ConsumerState<AddonsSettingsScreen> {
           SizedBox(
             width: 14,
             height: 14,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              value: addon.downloadProgress > 0 ? addon.downloadProgress : null,
-            ),
+            child: AppProgressIndicator(type: AppProgressType.circular, strokeWidth: 2, value: addon.downloadProgress > 0 ? addon.downloadProgress : null),
           ),
           const SizedBox(width: 8),
           Text(
@@ -250,21 +248,19 @@ class _AddonsSettingsScreenState extends ConsumerState<AddonsSettingsScreen> {
           ),
           SettingsSection(
             title: l10n.addonsMaintenanceSection,
-            children: [
-              SettingsActionTile(
-                icon: Icons.sync_rounded,
-                title: l10n.settingsCheckUpdates,
-                subtitle: l10n.addonsCheckUpdatesSubtitle,
-                trailing: _isCheckingUpdates
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : null,
-                onTap: _isCheckingUpdates ? null : _checkForUpdates,
-              ),
-            ],
+            child: SettingsActionTile(
+              icon: Icons.sync_rounded,
+              title: l10n.settingsCheckUpdates,
+              subtitle: l10n.addonsCheckUpdatesSubtitle,
+              trailing: _isCheckingUpdates
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: AppProgressIndicator(type: AppProgressType.circular, strokeWidth: 2),
+                    )
+                  : null,
+              onTap: _isCheckingUpdates ? null : _checkForUpdates,
+            ),
           ),
         ],
       ),

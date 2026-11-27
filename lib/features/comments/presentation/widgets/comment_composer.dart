@@ -1,6 +1,7 @@
 import 'package:commentum_client/commentum_client.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 class CommentComposer extends StatelessWidget {
   final TextEditingController controller;
@@ -152,10 +153,7 @@ class CommentComposer extends StatelessWidget {
                         ? SizedBox(
                             width: 16,
                             height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: cs.onPrimary,
-                            ),
+                            child: AppProgressIndicator(type: AppProgressType.circular, strokeWidth: 2, color: cs.onPrimary),
                           )
                         : const Icon(Icons.send_rounded, size: 18),
                   ),

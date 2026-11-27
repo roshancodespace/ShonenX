@@ -16,6 +16,7 @@ import 'package:shonenx/features/tracking/providers/tracker_link_provider.dart';
 import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 class TrackerManagerSheet extends ConsumerWidget {
   final UnifiedMedia media;
@@ -269,7 +270,7 @@ class _LinkedTrackerRow extends ConsumerWidget {
                         ? const SizedBox(
                             width: 18,
                             height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
+                            child: AppProgressIndicator(type: AppProgressType.circular, strokeWidth: 2),
                           )
                         : const Text('Remove Connection'),
                   ),
@@ -295,7 +296,7 @@ class _LinkedTrackerRow extends ConsumerWidget {
       loading: () {
         return const Padding(
           padding: EdgeInsets.symmetric(vertical: 20),
-          child: Center(child: CircularProgressIndicator()),
+          child: Center(child: AppProgressIndicator(type: AppProgressType.circular)),
         );
       },
       error: (_, __) {

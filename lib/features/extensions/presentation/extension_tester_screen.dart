@@ -12,6 +12,7 @@ import 'package:shonenx/shared/widgets/confirmation_bottom_sheet.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
 import 'package:shonenx/source_engine/source_engine_provider.dart';
 import 'package:shonenx/source_engine/source_registry.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 enum TestStatus { pending, running, passed, failed }
 
@@ -701,10 +702,7 @@ class _ExtensionTesterScreenState extends ConsumerState<ExtensionTesterScreen> {
           height: 16,
           child: Padding(
             padding: const EdgeInsets.all(1.0),
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
-            ),
+            child: AppProgressIndicator(type: AppProgressType.circular, strokeWidth: 2, color: colorScheme.primary),
           ),
         );
       case TestStatus.passed:
@@ -911,7 +909,7 @@ class _ExtensionTesterScreenState extends ConsumerState<ExtensionTesterScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CircularProgressIndicator(),
+                  AppProgressIndicator(type: AppProgressType.circular),
                   SizedBox(height: 16),
                   Text('Uninstalling extensions...'),
                 ],
@@ -919,7 +917,7 @@ class _ExtensionTesterScreenState extends ConsumerState<ExtensionTesterScreen> {
             );
           }
           if (isLoading) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(child: AppProgressIndicator(type: AppProgressType.circular));
           }
           if (hasError) {
             return const Center(child: Text('Failed to load extensions.'));
@@ -1037,21 +1035,14 @@ class _ExtensionTesterScreenState extends ConsumerState<ExtensionTesterScreen> {
                               return SizedBox(
                                 height: 70,
                                 width: 70,
-                                child: CircularProgressIndicator(
-                                  value: value,
-                                  strokeWidth: 5,
-                                  backgroundColor:
-                                      colorScheme.surfaceContainerHighest,
-                                  valueColor: AlwaysStoppedAnimation(
-                                    _isTesting
+                                child: AppProgressIndicator(type: AppProgressType.circular, value: value, strokeWidth: 5, trackColor:
+                                      colorScheme.surfaceContainerHighest, color: _isTesting
                                         ? colorScheme.primary
                                         : (passedCount == 0
                                               ? colorScheme.error
                                               : (passedCount == totalSelected
                                                     ? Colors.green
-                                                    : colorScheme.secondary)),
-                                  ),
-                                ),
+                                                    : colorScheme.secondary)),),
                               );
                             },
                           ),
@@ -1403,10 +1394,7 @@ class _ExtensionTesterScreenState extends ConsumerState<ExtensionTesterScreen> {
                 ? const SizedBox(
                     width: 18,
                     height: 18,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
+                    child: AppProgressIndicator(type: AppProgressType.circular, strokeWidth: 2, color: Colors.white),
                   )
                 : const Icon(Icons.play_arrow),
           );

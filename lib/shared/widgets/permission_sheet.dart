@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 class PermissionSheet extends StatefulWidget {
   final Permission permission;
@@ -108,7 +109,7 @@ class _PermissionSheetState extends State<PermissionSheet>
     if (_status == null) {
       return const SizedBox(
         height: 250,
-        child: Center(child: CircularProgressIndicator()),
+        child: Center(child: AppProgressIndicator(type: AppProgressType.circular)),
       );
     }
 

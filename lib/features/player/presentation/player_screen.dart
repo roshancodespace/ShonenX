@@ -23,6 +23,7 @@ import 'package:shonenx/features/player/providers/player_prefs_provider.dart';
 import 'package:shonenx/features/comments/presentation/widgets/comments_tab.dart';
 import 'package:shonenx/features/discord/providers/discord_rpc_provider.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 // Main video player screen.
 class PlayerScreen extends ConsumerStatefulWidget {
@@ -280,7 +281,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                   playerControllerProvider.select((s) => s.activeEpisode),
                 );
                 if (currentEpisode == null) {
-                  return const Center(child: CircularProgressIndicator());
+                  return const Center(child: AppProgressIndicator(type: AppProgressType.circular));
                 }
                 return EpisodeListPanel(
                   media: (widget.mode as PlayerModeOnline).media,

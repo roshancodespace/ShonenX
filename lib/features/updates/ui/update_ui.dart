@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_md/flutter_md.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -10,6 +11,7 @@ import 'package:shonenx/features/updates/ui/android_update_widget.dart';
 import 'package:shonenx/features/updates/ui/linux_update_widget.dart';
 import 'package:shonenx/features/updates/ui/windows_update_widget.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
+import 'package:shonenx/shared/widgets/app_button.dart';
 
 class UpdateUI {
   static String _formatDate(DateTime dt) {
@@ -63,7 +65,7 @@ class UpdateUI {
                   color: release.prerelease
                       ? Theme.of(context).colorScheme.tertiaryContainer
                       : Theme.of(context).colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
                   release.prerelease ? 'Pre-release' : 'Stable',
@@ -90,10 +92,8 @@ class UpdateUI {
           Flexible(
             child: Container(
               decoration: BoxDecoration(
-                color: Theme.of(
-                  context,
-                ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(12),
+                color: Theme.of(context).colorScheme.surfaceContainerHigh,
+                borderRadius: BorderRadius.circular(20),
               ),
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(12),
@@ -104,7 +104,7 @@ class UpdateUI {
                         : release.body.trim(),
                   ),
                   theme: MarkdownThemeData(
-                    textStyle: TextStyle(
+                    textStyle: GoogleFonts.montserrat(
                       fontSize: 14,
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                       height: 1.45,
@@ -148,25 +148,30 @@ class UpdateUI {
             runSpacing: 8,
             children: [
               if (onDismiss != null)
-                TextButton(
+                AppButton(
+                  label: 'Later',
+                  variant: AppButtonVariant.text,
                   onPressed: () {
                     onDismiss();
                     context.pop();
                   },
-                  child: const Text('Later'),
                 ),
-              OutlinedButton.icon(
+              AppButton(
+                label: 'GitHub',
+                icon: Icons.open_in_browser_rounded,
+                variant: AppButtonVariant.outlined,
                 onPressed: () async {
                   final url = Uri.parse(release.htmlUrl);
                   if (await canLaunchUrl(url)) {
                     await launchUrl(url, mode: LaunchMode.externalApplication);
                   }
                 },
-                icon: const Icon(Icons.open_in_browser_rounded, size: 18),
-                label: const Text('GitHub'),
               ),
               if (Platform.isLinux) ...[
-                OutlinedButton.icon(
+                AppButton(
+                  label: 'Terminal Command',
+                  icon: Icons.terminal_rounded,
+                  variant: AppButtonVariant.tonal,
                   onPressed: () {
                     onDownload?.call();
                     context.pop();
@@ -176,10 +181,10 @@ class UpdateUI {
                       autoStart: false,
                     );
                   },
-                  icon: const Icon(Icons.terminal_rounded, size: 18),
-                  label: const Text('Terminal Command'),
                 ),
-                FilledButton.icon(
+                AppButton(
+                  label: 'Quick Update',
+                  icon: Icons.system_update_alt_rounded,
                   onPressed: () {
                     onDownload?.call();
                     context.pop();
@@ -190,11 +195,11 @@ class UpdateUI {
                       onDownloadStarted: onDownload,
                     );
                   },
-                  icon: const Icon(Icons.system_update_alt_rounded, size: 18),
-                  label: const Text('Quick Update'),
                 ),
               ] else if (Platform.isWindows) ...[
-                FilledButton.icon(
+                AppButton(
+                  label: 'Update Now',
+                  icon: Icons.download_rounded,
                   onPressed: () {
                     onDownload?.call();
                     context.pop();
@@ -204,11 +209,11 @@ class UpdateUI {
                       onDownloadStarted: onDownload,
                     );
                   },
-                  icon: const Icon(Icons.download_rounded, size: 18),
-                  label: const Text('Update Now'),
                 ),
               ] else if (Platform.isAndroid) ...[
-                FilledButton.icon(
+                AppButton(
+                  label: 'In-App Install',
+                  icon: Icons.install_mobile_rounded,
                   onPressed: () {
                     onDownload?.call();
                     context.pop();
@@ -218,12 +223,12 @@ class UpdateUI {
                       onDownloadStarted: onDownload,
                     );
                   },
-                  icon: const Icon(Icons.install_mobile_rounded, size: 18),
-                  label: const Text('In-App Install'),
                 ),
               ] else if (release.downloadUrl != null ||
                   release.htmlUrl.isNotEmpty) ...[
-                FilledButton.icon(
+                AppButton(
+                  label: 'Download',
+                  icon: Icons.download_rounded,
                   onPressed: () async {
                     onDownload?.call();
                     context.pop();
@@ -237,8 +242,6 @@ class UpdateUI {
                       );
                     }
                   },
-                  icon: const Icon(Icons.download_rounded, size: 18),
-                  label: const Text('Download'),
                 ),
               ],
             ],

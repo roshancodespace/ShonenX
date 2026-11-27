@@ -17,6 +17,7 @@ import 'package:shonenx/shared/models/ui_style_enums.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/widgets/app_focus_hover.dart';
 import 'package:skeletonizer/skeletonizer.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 class TvLibraryScreen extends ConsumerStatefulWidget {
   const TvLibraryScreen({super.key});
@@ -734,14 +735,7 @@ class _TvLibraryCard extends StatelessWidget {
                                 if (progressFraction != null) ...[
                                   ClipRRect(
                                     borderRadius: BorderRadius.circular(2),
-                                    child: LinearProgressIndicator(
-                                      value: progressFraction,
-                                      minHeight: 3.5,
-                                      backgroundColor: Colors.white24,
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                        cs.primary,
-                                      ),
-                                    ),
+                                    child: AppProgressIndicator(type: AppProgressType.linear, value: progressFraction, height: 3.5, trackColor: Colors.white24, color: cs.primary,),
                                   ),
                                   const SizedBox(height: 4),
                                 ],

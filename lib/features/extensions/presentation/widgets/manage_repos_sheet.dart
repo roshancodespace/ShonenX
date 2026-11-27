@@ -10,6 +10,7 @@ import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/shared/widgets/app_dialog.dart';
 import 'package:shonenx/source_engine/source_registry.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 class ManageReposSheet extends ConsumerStatefulWidget {
   final String? managerId;
@@ -669,10 +670,7 @@ class _ManageReposSheetState extends ConsumerState<ManageReposSheet> {
                   ? SizedBox(
                       width: 18,
                       height: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: cs.onPrimary,
-                      ),
+                      child: AppProgressIndicator(type: AppProgressType.circular, strokeWidth: 2, color: cs.onPrimary),
                     )
                   : const Icon(Icons.add_link_rounded, size: 20),
               label: Text(

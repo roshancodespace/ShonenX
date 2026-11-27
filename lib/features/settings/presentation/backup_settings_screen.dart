@@ -13,6 +13,7 @@ import 'package:shonenx/shared/providers/backup_provider.dart';
 import 'package:shonenx/core/services/backup_service.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 class BackupSettingsScreen extends ConsumerStatefulWidget {
   const BackupSettingsScreen({super.key});
@@ -212,25 +213,23 @@ class _BackupSettingsScreenState extends ConsumerState<BackupSettingsScreen> {
           SettingsSection(
             title: l10n.backupRestoreSection,
             subtitle: l10n.backupRestoreSectionSubtitle,
-            children: [
-              SettingsActionTile(
-                icon: Icons.settings_backup_restore_rounded,
-                title: l10n.backupRestoreFromFile,
-                subtitle: l10n.backupRestoreFromFileSubtitle,
-                trailing: _importing
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Icon(
-                        Icons.chevron_right,
-                        size: 20,
-                        color: cs.onSurfaceVariant,
-                      ),
-                onTap: _importing ? null : _import,
-              ),
-            ],
+            child: SettingsActionTile(
+              icon: Icons.settings_backup_restore_rounded,
+              title: l10n.backupRestoreFromFile,
+              subtitle: l10n.backupRestoreFromFileSubtitle,
+              trailing: _importing
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: AppProgressIndicator(type: AppProgressType.circular, strokeWidth: 2),
+                    )
+                  : Icon(
+                      Icons.chevron_right,
+                      size: 20,
+                      color: cs.onSurfaceVariant,
+                    ),
+              onTap: _importing ? null : _import,
+            ),
           ),
 
           // ── Export ──
@@ -306,10 +305,7 @@ class _BackupSettingsScreenState extends ConsumerState<BackupSettingsScreen> {
                         ? const SizedBox(
                             width: 16,
                             height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
+                            child: AppProgressIndicator(type: AppProgressType.circular, strokeWidth: 2, color: Colors.white),
                           )
                         : const Icon(Icons.save_outlined),
                     label: Text(

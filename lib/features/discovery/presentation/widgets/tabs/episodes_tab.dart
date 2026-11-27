@@ -26,6 +26,7 @@ import 'package:shonenx/source_engine/models/source_info.dart';
 import 'package:shonenx/source_engine/utils/media_type_extensions.dart';
 import 'package:shonenx/features/comments/presentation/widgets/comments_tab.dart';
 import 'package:shonenx/features/tracking/providers/tracking_prefs_provider.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 bool _isReadable(MediaType type) =>
     type == MediaType.MANGA || type == MediaType.NOVEL;
@@ -172,7 +173,7 @@ class _EpisodesTabWidgetState extends ConsumerState<EpisodesTabWidget>
     final sourcesAsync = ref.watch(widget.media.type.availableSourcesProvider);
 
     if (sourcesAsync.isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: AppProgressIndicator(type: AppProgressType.circular));
     }
 
     final sources = sourcesAsync.value ?? [];

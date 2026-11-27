@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/theme/ui_visual_values.dart';
 import 'package:shonenx/shared/widgets/marquee_text.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 class PortraitMetadataRow extends StatelessWidget {
   final UnifiedMedia media;
@@ -317,12 +318,7 @@ class WideMetadataColumn extends StatelessWidget {
                 Expanded(
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(UiRadius.sm),
-                    child: LinearProgressIndicator(
-                      value: progress!.clamp(0.0, 1.0),
-                      minHeight: 4.5,
-                      backgroundColor: cs.surfaceContainerHighest,
-                      valueColor: AlwaysStoppedAnimation<Color>(cs.primary),
-                    ),
+                    child: AppProgressIndicator(type: AppProgressType.linear, value: progress!.clamp(0.0, 1.0), height: 4.5, trackColor: cs.surfaceContainerHighest, color: cs.primary),
                   ),
                 ),
               if (progress != null && progressText != null)

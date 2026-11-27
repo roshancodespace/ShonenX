@@ -34,6 +34,11 @@ class ResolvedThemeColors {
   final ExclusiveSchemeData? exclusive;
 }
 
+Color _contrastOn(Color background) =>
+    ThemeData.estimateBrightnessForColor(background) == Brightness.dark
+    ? Colors.white
+    : const Color(0xFF111111);
+
 DynamicSchemeVariant toDynamicSchemeVariant(AppThemeVariant variant) =>
     switch (variant) {
       AppThemeVariant.classic => DynamicSchemeVariant.tonalSpot,
@@ -114,8 +119,11 @@ ResolvedThemeColors resolveThemeColors(
       brightness: brightness,
       dynamicSchemeVariant: schemeVariant,
       primary: primaryKey,
+      onPrimary: _contrastOn(primaryKey),
       secondary: secondaryKey,
+      onSecondary: secondaryKey != null ? _contrastOn(secondaryKey) : null,
       tertiary: tertiaryKey,
+      onTertiary: tertiaryKey != null ? _contrastOn(tertiaryKey) : null,
     );
     source = ThemeColorSource.customPrimary;
   } else if (exclusive != null) {
@@ -128,31 +136,31 @@ ResolvedThemeColors resolveThemeColors(
       brightness: brightness,
       dynamicSchemeVariant: schemeVariant,
       primary: colors.primary,
+      onPrimary: _contrastOn(colors.primary),
       primaryContainer: colors.primaryContainer,
+      onPrimaryContainer: _contrastOn(colors.primaryContainer),
       secondary: colors.secondary,
+      onSecondary: _contrastOn(colors.secondary),
       secondaryContainer: colors.secondaryContainer,
+      onSecondaryContainer: _contrastOn(colors.secondaryContainer),
       tertiary: colors.tertiary,
+      onTertiary: _contrastOn(colors.tertiary),
       tertiaryContainer: colors.tertiaryContainer,
+      onTertiaryContainer: _contrastOn(colors.tertiaryContainer),
     );
     source = ThemeColorSource.exclusive;
   } else {
-    final schemeData = standardSchemes[prefs.flexScheme] ??
-        standardSchemes[AppScheme.deepBlue]!;
-    final colors = isDark ? schemeData.dark : schemeData.light;
-    primaryKey = colors.primary;
-    secondaryKey = colors.secondary;
-    tertiaryKey = colors.tertiary;
+    final scheme = prefs.flexScheme == AppScheme.custom
+        ? AppScheme.deepBlue
+        : prefs.flexScheme;
+    primaryKey = scheme.seedColor;
     effectiveColorScheme = ColorScheme.fromSeed(
       seedColor: primaryKey,
       brightness: brightness,
       dynamicSchemeVariant: schemeVariant,
-      primary: colors.primary,
-      primaryContainer: colors.primaryContainer,
-      secondary: colors.secondary,
-      secondaryContainer: colors.secondaryContainer,
-      tertiary: colors.tertiary,
-      tertiaryContainer: colors.tertiaryContainer,
     );
+    secondaryKey = effectiveColorScheme.secondary;
+    tertiaryKey = effectiveColorScheme.tertiary;
     source = ThemeColorSource.appScheme;
   }
 

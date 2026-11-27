@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
+import 'package:shonenx/shared/widgets/selection_card_group.dart';
 
 class AppBottomSheet extends ConsumerWidget {
   final String title;
@@ -162,88 +163,48 @@ class AppBottomSheet extends ConsumerWidget {
       contentPadding: contentPadding,
       child: Builder(
         builder: (sheetContext) {
-          return ListView.builder(
-            shrinkWrap: true,
+          return SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
-            itemCount: items.length,
-            itemBuilder: (context, index) {
-              final item = items[index];
-              final isSelected = item == selectedValue;
-              final subtitle = subtitleBuilder?.call(item);
-              return ListTile(
-                selected: isSelected,
-                selectedTileColor: Theme.of(
-                  sheetContext,
-                ).colorScheme.primary.withValues(alpha: 0.1),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                leading:
-                    leadingBuilder?.call(item, isSelected) ??
-                    (isSelected
-                        ? Icon(
-                            Icons.radio_button_checked_rounded,
-                            color: Theme.of(sheetContext).colorScheme.primary,
-                          )
-                        : Icon(
-                            Icons.radio_button_unchecked_rounded,
-                            color: Theme.of(
-                              sheetContext,
-                            ).colorScheme.onSurfaceVariant,
-                          )),
-                title: Builder(
-                  builder: (context) {
-                    final badge = badgeBuilder?.call(item);
-                    return Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            itemLabel(item),
-                            style: TextStyle(
-                              fontWeight: isSelected
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
-                              color: isSelected
-                                  ? Theme.of(sheetContext).colorScheme.primary
-                                  : Theme.of(
-                                      sheetContext,
-                                    ).colorScheme.onSurface,
-                            ),
-                          ),
-                        ),
-                        if (badge != null) ...[const SizedBox(width: 8), badge],
-                      ],
-                    );
-                  },
-                ),
-                subtitle: subtitle != null
-                    ? Text(
-                        subtitle,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Theme.of(
-                            sheetContext,
-                          ).colorScheme.onSurfaceVariant,
-                        ),
-                      )
-                    : null,
-                trailing:
-                    trailingBuilder?.call(item, isSelected) ??
-                    (isSelected
-                        ? Icon(
-                            Icons.check_rounded,
-                            color: Theme.of(sheetContext).colorScheme.primary,
-                          )
-                        : null),
-                onTap: () {
-                  onChanged(item);
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: SelectionCardGroup(
+              children: [
+                for (final item in items)
+                  Builder(
+                    builder: (_) {
+                      final isSelected = item == selectedValue;
+                      final badge = badgeBuilder?.call(item);
+                      final customTrailing = trailingBuilder?.call(
+                        item,
+                        isSelected,
+                      );
+                      final trailing = (badge != null && customTrailing != null)
+                          ? Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                badge,
+                                const SizedBox(width: 6),
+                                customTrailing,
+                              ],
+                            )
+                          : (customTrailing ?? badge);
 
-                  if (closeOnSelect) {
-                    sheetContext.pop(item);
-                  }
-                },
-              );
-            },
+                      return SelectionCardTile(
+                        leading: leadingBuilder?.call(item, isSelected),
+                        title: itemLabel(item),
+                        subtitle: subtitleBuilder?.call(item),
+                        trailing: trailing,
+                        isSelected: isSelected,
+                        onTap: () {
+                          onChanged(item);
+                          if (closeOnSelect) {
+                            sheetContext.pop(item);
+                          }
+                        },
+                      );
+                    },
+                  ),
+              ],
+            ),
           );
         },
       ),

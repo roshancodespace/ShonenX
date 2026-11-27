@@ -6,6 +6,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shonenx/features/updates/models/github_release.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
+import 'package:shonenx/shared/widgets/app_button.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 class AndroidUpdateWidget extends StatefulWidget {
   final GitHubRelease release;
@@ -170,7 +172,7 @@ class _AndroidUpdateWidgetState extends State<AndroidUpdateWidget> {
     if (_isLoadingAsset) {
       return const Padding(
         padding: EdgeInsets.all(24),
-        child: Center(child: CircularProgressIndicator()),
+        child: Center(child: AppProgressIndicator(type: AppProgressType.circular)),
       );
     }
 
@@ -181,8 +183,8 @@ class _AndroidUpdateWidgetState extends State<AndroidUpdateWidget> {
         Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(12),
+            color: cs.surfaceContainerHigh,
+            borderRadius: BorderRadius.circular(20),
           ),
           child: Row(
             children: [
@@ -217,10 +219,7 @@ class _AndroidUpdateWidgetState extends State<AndroidUpdateWidget> {
         ),
         const SizedBox(height: 16),
         if (_isDownloading) ...[
-          LinearProgressIndicator(
-            value: _progress,
-            borderRadius: BorderRadius.circular(4),
-          ),
+          AppProgressIndicator(type: AppProgressType.linear, value: _progress),
           const SizedBox(height: 8),
         ],
         Text(
@@ -230,29 +229,23 @@ class _AndroidUpdateWidgetState extends State<AndroidUpdateWidget> {
         ),
         const SizedBox(height: 16),
         if (_downloadedFile != null) ...[
-          FilledButton.icon(
+          AppButton(
+            label: 'Install APK Now',
+            icon: Icons.install_mobile_rounded,
+            isExpanded: true,
             onPressed: () => _triggerInstall(_downloadedFile!),
-            icon: const Icon(Icons.install_mobile_rounded),
-            label: const Text('Install APK Now'),
           ),
         ] else ...[
-          FilledButton.icon(
+          AppButton(
+            label: _isDownloading
+                ? 'Downloading...'
+                : 'In-App Download & Install',
+            icon: Icons.download_rounded,
+            isLoading: _isDownloading,
+            isExpanded: true,
             onPressed: _bestAsset == null || _isDownloading
                 ? null
                 : _startDownloadAndInstall,
-            icon: _isDownloading
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  )
-                : const Icon(Icons.download_rounded),
-            label: Text(
-              _isDownloading ? 'Downloading...' : 'In-App Download & Install',
-            ),
           ),
         ],
       ],

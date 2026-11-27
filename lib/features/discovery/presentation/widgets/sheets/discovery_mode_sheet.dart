@@ -15,6 +15,7 @@ import 'package:shonenx/shared/widgets/m3e_split_button_group.dart';
 import 'package:shonenx/shared/widgets/selection_card_group.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
 import 'package:shonenx/source_engine/source_registry.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 class DiscoveryModeSheet extends ConsumerStatefulWidget {
   const DiscoveryModeSheet({super.key});
@@ -424,7 +425,7 @@ class _SourceConfig extends ConsumerWidget {
               },
               loading: () => const Padding(
                 padding: EdgeInsets.symmetric(vertical: 32),
-                child: Center(child: CircularProgressIndicator()),
+                child: Center(child: AppProgressIndicator(type: AppProgressType.circular)),
               ),
               error: (e, _) => Padding(
                 padding: const EdgeInsets.symmetric(vertical: 12),

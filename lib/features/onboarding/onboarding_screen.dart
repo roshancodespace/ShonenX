@@ -34,6 +34,7 @@ import 'package:shonenx/features/discord/providers/discord_provider.dart';
 import 'package:shonenx/features/discord/providers/discord_rpc_provider.dart';
 import 'package:shonenx/features/extensions/presentation/widgets/runtime_setup_sheet.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 enum _CardTarget { browse, watching, reading }
 
@@ -1373,9 +1374,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                               placeholder: (context, url) => const SizedBox(
                                 width: 20,
                                 height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
+                                child: AppProgressIndicator(type: AppProgressType.circular, strokeWidth: 2),
                               ),
                               errorWidget: (context, url, error) => Icon(
                                 Icons.person_rounded,

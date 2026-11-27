@@ -12,6 +12,7 @@ import 'package:shonenx/source_engine/source_registry.dart';
 import 'package:shonenx/features/extensions/providers/runtime_update_provider.dart';
 import 'package:shonenx/source_engine/utils/source_invalidation.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 Future<void> showRuntimeSetupSheet(
   BuildContext context,
@@ -298,10 +299,7 @@ class _RuntimeSetupSheetState extends ConsumerState<RuntimeSetupSheet> {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    LinearProgressIndicator(
-                      value: progress > 0 ? progress : null,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
+                    AppProgressIndicator(type: AppProgressType.linear, value: progress > 0 ? progress : null, borderRadius: BorderRadius.circular(4)),
                     const SizedBox(height: 16),
                   ],
                 );

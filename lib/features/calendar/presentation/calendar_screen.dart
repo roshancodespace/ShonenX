@@ -1,13 +1,18 @@
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/features/calendar/domain/models/calendar_source.dart';
 import 'package:shonenx/features/calendar/presentation/widgets/calendar_day_row.dart';
 import 'package:shonenx/features/calendar/presentation/widgets/calendar_source_selector.dart';
 import 'package:shonenx/features/calendar/presentation/widgets/calendar_week_header.dart';
 import 'package:shonenx/features/calendar/providers/calendar_prefs_provider.dart';
 import 'package:shonenx/features/calendar/providers/calendar_schedule_provider.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
-import 'package:shonenx/shared/models/ui_style_enums.dart';
+import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
+import 'package:shonenx/shared/widgets/app_button.dart';
+import 'package:shonenx/shared/widgets/app_icon_button.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
+import 'package:shonenx/shared/widgets/m3e_dropdown.dart';
 
 class CalendarScreen extends ConsumerStatefulWidget {
   const CalendarScreen({super.key});
@@ -37,7 +42,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final radius = GlobalUI.uiRoundness;
+    final style = ref.watch(uiPrefsProvider.select((s) => s.settingsStyle));
+    final isClassic = style == SettingsStyle.classic;
     final prefs = ref.watch(calendarPrefsProvider);
     final weekStart = ref.watch(selectedWeekStartProvider);
     final weekScheduleAsync = ref.watch(filteredWeekScheduleProvider);
@@ -56,64 +62,63 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     return AppScaffold(
       title: 'Airing Calendar',
       actions: [
-        Material(
-          color: cs.surfaceContainerHighest.withValues(alpha: 0.4),
-          borderRadius: BorderRadius.circular(radius * 0.7),
-          child: InkWell(
-            onTap: () => CalendarSourceSelectorSheet.show(context),
-            borderRadius: BorderRadius.circular(radius * 0.7),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(radius * 0.7),
-                border: Border.all(
-                  color: cs.outlineVariant.withValues(alpha: 0.3),
+        M3eDropdown<CalendarSource>(
+          value: prefs.source,
+          isExpanded: false,
+          items: CalendarSource.values
+              .map(
+                (source) => DropdownMenuItem<CalendarSource>(
+                  value: source,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      source.trackerType.getIconWidget(
+                        size: 16,
+                        color: cs.primary,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        source.displayName,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: cs.onSurface,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  prefs.source.trackerType.getIconWidget(
-                    size: 16,
-                    color: cs.primary,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    prefs.source.displayName,
-                    style: TextStyle(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w700,
-                      color: cs.onSurface,
-                    ),
-                  ),
-                  const SizedBox(width: 2),
-                  Icon(
-                    Icons.arrow_drop_down_rounded,
-                    size: 18,
-                    color: cs.onSurfaceVariant,
-                  ),
-                ],
-              ),
-            ),
-          ),
+              )
+              .toList(),
+          onChanged: (source) {
+            if (source != null) {
+              ref.read(calendarPrefsProvider.notifier).setSource(source);
+            }
+          },
         ),
-        const SizedBox(width: 4),
-        if (!isCurrentWeek)
-          IconButton(
-            icon: const Icon(Icons.today_rounded, size: 20),
+        const SizedBox(width: 6),
+        if (!isCurrentWeek) ...[
+          AppIconButton(
+            icon: const Icon(Icons.today_rounded),
             tooltip: 'This Week',
-            visualDensity: VisualDensity.compact,
+            radius: isClassic ? 10.0 : 999.0,
+            backgroundColor: cs.surfaceContainerHighest.withValues(alpha: 0.45),
             onPressed: () {
               ref.read(selectedWeekStartProvider.notifier).jumpToCurrentWeek();
             },
           ),
-        IconButton(
+          const SizedBox(width: 4),
+        ],
+        AppIconButton(
           icon: Icon(
-            _isSearchOpen ? Icons.close_rounded : Icons.search_rounded,
-            size: 20,
+            _isSearchOpen ? CupertinoIcons.xmark : CupertinoIcons.search,
           ),
           tooltip: _isSearchOpen ? 'Close Search' : 'Search Anime',
-          visualDensity: VisualDensity.compact,
+          radius: isClassic ? 10.0 : 999.0,
+          backgroundColor: _isSearchOpen
+              ? cs.primaryContainer
+              : cs.surfaceContainerHighest.withValues(alpha: 0.45),
+          foregroundColor: _isSearchOpen ? cs.onPrimaryContainer : cs.onSurface,
           onPressed: () {
             setState(() {
               _isSearchOpen = !_isSearchOpen;
@@ -139,10 +144,12 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 },
                 decoration: InputDecoration(
                   hintText: 'Search anime release...',
-                  prefixIcon: const Icon(Icons.search_rounded, size: 18),
+                  prefixIcon: const Icon(CupertinoIcons.search, size: 18),
                   suffixIcon: _searchController.text.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.clear_rounded, size: 16),
+                      ? AppIconButton(
+                          icon: const Icon(CupertinoIcons.xmark_circle_fill),
+                          size: 32,
+                          radius: 999,
                           onPressed: () {
                             _searchController.clear();
                             ref
@@ -152,13 +159,15 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                         )
                       : null,
                   filled: true,
-                  fillColor: cs.surfaceContainerHighest.withValues(alpha: 0.3),
+                  fillColor: cs.surfaceContainerHighest.withValues(alpha: 0.35),
                   contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 8,
+                    horizontal: 16,
+                    vertical: 10,
                   ),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(radius),
+                    borderRadius: BorderRadius.circular(
+                      isClassic ? 10.0 : 999.0,
+                    ),
                     borderSide: BorderSide.none,
                   ),
                 ),
@@ -212,7 +221,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                           ),
                         ),
                         const SizedBox(height: 12),
-                        FilledButton.icon(
+                        AppButton(
+                          label: 'Retry',
+                          icon: Icons.refresh_rounded,
+                          variant: AppButtonVariant.tonal,
                           onPressed: () {
                             ref.invalidate(
                               calendarWeekScheduleProvider((
@@ -222,8 +234,6 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                               )),
                             );
                           },
-                          icon: const Icon(Icons.refresh_rounded, size: 16),
-                          label: const Text('Retry'),
                         ),
                       ],
                     ),

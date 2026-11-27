@@ -4,6 +4,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:shonenx/core/router/nav_bar_theme.dart';
 import 'package:shonenx/features/downloads/domain/models/download_task.dart';
 import 'package:shonenx/shared/models/ui_style_enums.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 class DownloadActivity {
   final int count;
@@ -106,17 +107,13 @@ class NavDownloadButton extends StatelessWidget {
                         child: SizedBox(
                           width: iconSize + 8,
                           height: iconSize + 8,
-                          child: CircularProgressIndicator(
-                            value: progress,
-                            strokeWidth: 2.5,
-                            color:
+                          child: AppProgressIndicator(type: AppProgressType.circular, value: progress, strokeWidth: 2.5, color:
                                 active &&
                                     themeData.isMaterial3 == false &&
                                     !themeData.showDotIndicator &&
                                     navBarStyle != NavBarStyle.frosted
                                 ? cs.onPrimary
-                                : cs.primary,
-                          ),
+                                : cs.primary),
                         ),
                       ),
                       AnimatedScale(
@@ -214,11 +211,7 @@ class DockedDownloadIcon extends StatelessWidget {
             SizedBox(
               width: 32,
               height: 32,
-              child: CircularProgressIndicator(
-                value: progress,
-                strokeWidth: 2,
-                color: cs.primary,
-              ),
+              child: AppProgressIndicator(type: AppProgressType.circular, value: progress, strokeWidth: 2, color: cs.primary),
             ),
           const Icon(Icons.download_outlined),
         ],

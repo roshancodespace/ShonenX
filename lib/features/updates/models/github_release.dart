@@ -44,31 +44,34 @@ class GitHubRelease {
     required this.assets,
   });
 
+  bool get hasCompatibleAsset {
+    if (assets.isEmpty) return false;
+    if (Platform.isLinux) {
+      return assets.any((a) => a.name.toLowerCase().endsWith('.appimage'));
+    } else if (Platform.isWindows) {
+      return assets.any((a) => a.name.toLowerCase().endsWith('.exe'));
+    } else if (Platform.isAndroid) {
+      return assets.any((a) => a.name.toLowerCase().endsWith('.apk'));
+    }
+    return false;
+  }
+
   Future<ReleaseAsset?> getBestAsset() async {
     if (assets.isEmpty) return null;
     if (Platform.isLinux) {
       for (final a in assets) {
-        final name = a.name.toLowerCase();
-        if (name.endsWith('.appimage') ||
-            name.endsWith('.flatpak') ||
-            (name.contains('linux') &&
-                (name.endsWith('.zip') || name.endsWith('.tar.gz')))) {
+        if (a.name.toLowerCase().endsWith('.appimage')) {
           return a;
         }
       }
+      return null;
     } else if (Platform.isWindows) {
       for (final a in assets) {
-        final name = a.name.toLowerCase();
-        if (name.endsWith('.exe')) {
+        if (a.name.toLowerCase().endsWith('.exe')) {
           return a;
         }
       }
-      for (final a in assets) {
-        final name = a.name.toLowerCase();
-        if (name.contains('win') && name.endsWith('.zip')) {
-          return a;
-        }
-      }
+      return null;
     } else if (Platform.isAndroid) {
       try {
         final deviceInfo = DeviceInfoPlugin();
@@ -114,32 +117,22 @@ class GitHubRelease {
           return a;
         }
       }
+      return null;
     }
-    return assets.first;
+    return null;
   }
 
   String? get downloadUrl {
     if (assets.isEmpty) return null;
     if (Platform.isLinux) {
       for (final a in assets) {
-        final name = a.name.toLowerCase();
-        if (name.endsWith('.appimage') ||
-            name.endsWith('.flatpak') ||
-            (name.contains('linux') &&
-                (name.endsWith('.zip') || name.endsWith('.tar.gz')))) {
+        if (a.name.toLowerCase().endsWith('.appimage')) {
           return a.downloadUrl;
         }
       }
     } else if (Platform.isWindows) {
       for (final a in assets) {
-        final name = a.name.toLowerCase();
-        if (name.endsWith('.exe')) {
-          return a.downloadUrl;
-        }
-      }
-      for (final a in assets) {
-        final name = a.name.toLowerCase();
-        if (name.contains('win') && name.endsWith('.zip')) {
+        if (a.name.toLowerCase().endsWith('.exe')) {
           return a.downloadUrl;
         }
       }
@@ -150,8 +143,7 @@ class GitHubRelease {
         }
       }
     }
-    // Fallback if platform specific asset not explicitly named
-    return assets.first.downloadUrl;
+    return null;
   }
 
   factory GitHubRelease.fromJson(Map<String, dynamic> json) {

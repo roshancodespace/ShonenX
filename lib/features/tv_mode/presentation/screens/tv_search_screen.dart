@@ -16,6 +16,7 @@ import 'package:shonenx/shared/models/ui_style_enums.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
 import 'package:shonenx/source_engine/utils/media_type_extensions.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 class TvSearchScreen extends ConsumerStatefulWidget {
   const TvSearchScreen({super.key});
@@ -210,7 +211,7 @@ class _TvSearchScreenState extends ConsumerState<TvSearchScreen> {
               ] else ...[
                 searchState!.when(
                   loading: () => const SliverFillRemaining(
-                    child: Center(child: CircularProgressIndicator()),
+                    child: Center(child: AppProgressIndicator(type: AppProgressType.circular)),
                   ),
                   error: (error, _) => SliverFillRemaining(
                     child: Center(
@@ -487,7 +488,7 @@ class _TvSearchScreenState extends ConsumerState<TvSearchScreen> {
 
     return filtersAsync.when(
       loading: () => const SliverFillRemaining(
-        child: Center(child: CircularProgressIndicator()),
+        child: Center(child: AppProgressIndicator(type: AppProgressType.circular)),
       ),
       error: (err, _) => SliverFillRemaining(
         child: Center(child: Text('Failed to load genres: $err')),
@@ -585,7 +586,7 @@ class _TvSearchScreenState extends ConsumerState<TvSearchScreen> {
 
     return sourcesAsync.when(
       loading: () => const SliverFillRemaining(
-        child: Center(child: CircularProgressIndicator()),
+        child: Center(child: AppProgressIndicator(type: AppProgressType.circular)),
       ),
       error: (err, _) => SliverFillRemaining(
         child: Center(child: Text('Failed to load sources: $err')),

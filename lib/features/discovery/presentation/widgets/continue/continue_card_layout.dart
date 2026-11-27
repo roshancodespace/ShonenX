@@ -4,6 +4,7 @@ import 'package:shonenx/shared/models/ui_style_enums.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/theme/ui_visual_values.dart';
 import 'package:shonenx/shared/widgets/card/card_renderer.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 class ContinueCardLayout extends StatelessWidget {
   final String variant;
@@ -107,12 +108,7 @@ class ContinueCardLayout extends StatelessWidget {
               child: SizedBox(
                 width: 32,
                 height: 32,
-                child: CircularProgressIndicator(
-                  strokeWidth: 3,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    Theme.of(context).colorScheme.primary,
-                  ),
-                ),
+                child: AppProgressIndicator(type: AppProgressType.circular, strokeWidth: 3, color: Theme.of(context).colorScheme.primary,),
               ),
             ),
           ),

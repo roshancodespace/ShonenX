@@ -133,6 +133,9 @@ class ShonenXApp extends ConsumerWidget {
     ref.listen(discordRpcProvider, (_, __) {});
 
     final themePrefs = ref.watch(themePrefsProvider);
+    final isExpressive = ref.watch(
+      uiPrefsProvider.select((u) => u.settingsStyle == SettingsStyle.expressive),
+    );
     final appLocale = ref.watch(appLocaleProvider);
     log.d('Theme changed: ${themePrefs.themeMode}, Locale: $appLocale');
 
@@ -141,10 +144,12 @@ class ShonenXApp extends ConsumerWidget {
         final lightTheme = AppTheme.light(
           themePrefs,
           themePrefs.useDynamic ? lightDynamic : null,
+          isExpressive: isExpressive,
         );
         final darkTheme = AppTheme.dark(
           themePrefs,
           themePrefs.useDynamic ? darkDynamic : null,
+          isExpressive: isExpressive,
         );
 
         return MaterialApp.router(

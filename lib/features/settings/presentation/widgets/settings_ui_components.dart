@@ -1,11 +1,12 @@
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
 import 'package:shonenx/core/localization/l10n_extension.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
+import 'package:shonenx/shared/widgets/app_slider.dart';
 import 'package:shonenx/shared/widgets/m3e_dropdown.dart';
-import 'package:shonenx/shared/widgets/m3e_slider.dart';
 import 'package:shonenx/shared/widgets/m3e_split_button_group.dart';
 
 const _compactBreakpoint = 400.0;
@@ -438,14 +439,19 @@ class SettingsGroup extends ConsumerWidget {
 class SettingsSection extends ConsumerWidget {
   final String title;
   final String? subtitle;
-  final List<Widget> children;
+  final Widget? child;
+  final List<Widget>? children;
 
   const SettingsSection({
     super.key,
     required this.title,
     this.subtitle,
-    required this.children,
-  });
+    this.child,
+    this.children,
+  }) : assert(
+         (child != null) ^ (children != null),
+         'Provide either child or children, not both.',
+       );
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -471,7 +477,7 @@ class SettingsSection extends ConsumerWidget {
                   : const EdgeInsets.fromLTRB(16, 0, 16, 8),
               child: _subtitle(colors, subtitle),
             ),
-          SettingsGroup(children: children),
+          SettingsGroup(children: children ?? [child!]),
           SizedBox(height: isClassic ? 12 : 16),
         ],
       ),
@@ -506,8 +512,11 @@ class SettingsNavTile extends StatelessWidget {
       leading: _leading(colors, icon, leading),
       title: _title(colors, title),
       subtitle: _subtitle(colors, subtitle),
-      control: (_) =>
-          Icon(Icons.chevron_right_rounded, color: colors.onSurfaceVariant),
+      control: (_) => Icon(
+        CupertinoIcons.chevron_forward,
+        size: 18,
+        color: colors.onSurfaceVariant,
+      ),
       onTap: onTap,
       onLongPress: onLongPress,
     );
@@ -866,13 +875,16 @@ class _SettingsSliderTileState extends State<SettingsSliderTile> {
                 ],
               ),
               const SizedBox(height: 10),
-              M3ESlider(
+              AppSlider(
                 focusNode: _effectiveFocusNode,
                 value: widget.value,
                 min: widget.min,
                 max: widget.max,
                 divisions: widget.divisions,
                 label: widget.label,
+                trackHeight: 8.0,
+                trackGap: 4.0,
+                thumbHeight: 24.0,
                 onChanged: widget.onChanged,
               ),
             ],

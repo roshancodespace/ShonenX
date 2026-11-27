@@ -12,6 +12,7 @@ import 'package:shonenx/shared/widgets/manual_match_list.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
 import 'package:shonenx/features/tracking/engine/remote_tracker.dart';
 import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 class ManualTrackerMatchSheet extends ConsumerStatefulWidget {
   final String mediaTitle;
@@ -138,7 +139,7 @@ class _ManualTrackerMatchSheetState
                       child: SizedBox(
                         width: 20,
                         height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        child: AppProgressIndicator(type: AppProgressType.circular, strokeWidth: 2),
                       ),
                     )
                   : IconButton(

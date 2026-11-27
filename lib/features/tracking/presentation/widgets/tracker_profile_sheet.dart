@@ -19,6 +19,7 @@ import 'package:shonenx/shared/widgets/app_dialog.dart';
 import 'package:shonenx/shared/widgets/tracker_avatar.dart';
 import 'package:shonenx/features/tracking/presentation/widgets/tracker_bio_renderer.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 class TrackerProfileSheet extends ConsumerStatefulWidget {
   final TrackerType trackerType;
@@ -709,10 +710,7 @@ class _TrackerProfileSheetState extends ConsumerState<TrackerProfileSheet> {
                                       ? SizedBox(
                                           width: 18,
                                           height: 18,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            color: cs.onPrimary,
-                                          ),
+                                          child: AppProgressIndicator(type: AppProgressType.circular, strokeWidth: 2, color: cs.onPrimary),
                                         )
                                       : const Text('Sync Profile'),
                                 ),
@@ -795,10 +793,7 @@ class _TrackerProfileSheetState extends ConsumerState<TrackerProfileSheet> {
                                           SizedBox(
                                             width: 16,
                                             height: 16,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                              color: cs.onPrimary,
-                                            ),
+                                            child: AppProgressIndicator(type: AppProgressType.circular, strokeWidth: 2, color: cs.onPrimary),
                                           ),
                                           const SizedBox(width: 10),
                                           Text(

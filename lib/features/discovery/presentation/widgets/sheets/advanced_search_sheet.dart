@@ -6,6 +6,7 @@ import 'package:shonenx/shared/models/ui_style_enums.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/shared/widgets/unified_search_bar.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 class AdvancedSearchSheet extends ConsumerStatefulWidget {
   final String initialQuery;
@@ -242,7 +243,7 @@ class _AdvancedSearchSheetState extends ConsumerState<AdvancedSearchSheet> {
                     loading: () => const Center(
                       child: Padding(
                         padding: EdgeInsets.all(16.0),
-                        child: CircularProgressIndicator(),
+                        child: AppProgressIndicator(type: AppProgressType.circular),
                       ),
                     ),
                     error: (e, _) => const SizedBox.shrink(),

@@ -27,97 +27,87 @@ class DebugSettingsScreen extends ConsumerWidget {
         children: [
           SettingsSection(
             title: 'Web & Webview Debug',
-            children: [
-              SettingsActionTile(
-                icon: Icons.discord,
-                title: 'Test Discord Webview Login',
-                subtitle: 'Launch Discord login webview directly',
-                onTap: () {
-                  context.showDiscordLogin((token) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          'Token Extracted: ${token.substring(0, 10)}...',
-                        ),
+            child: SettingsActionTile(
+              icon: Icons.discord,
+              title: 'Test Discord Webview Login',
+              subtitle: 'Launch Discord login webview directly',
+              onTap: () {
+                context.showDiscordLogin((token) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Token Extracted: ${token.substring(0, 10)}...',
                       ),
-                    );
-                  });
-                },
-              ),
-            ],
+                    ),
+                  );
+                });
+              },
+            ),
           ),
 
           SettingsSection(
             title: 'Media Player Debug',
-            children: [
-              SettingsActionTile(
-                icon: Icons.subtitles_outlined,
-                title: 'Subtitle Renderer',
-                subtitle: 'Stress-test subtitle parser and active cue overlay',
-                onTap: () {
-                  context.push('/settings/debug/subtitles');
-                },
-              ),
-            ],
+            child: SettingsActionTile(
+              icon: Icons.subtitles_outlined,
+              title: 'Subtitle Renderer',
+              subtitle: 'Stress-test subtitle parser and active cue overlay',
+              onTap: () {
+                context.push('/settings/debug/subtitles');
+              },
+            ),
           ),
 
           SettingsSection(
             title: 'Tracker Debug',
-            children: [
-              SettingsActionTile(
-                icon: Icons.person_search_outlined,
-                title: 'Tracker Bio Renderer',
-                subtitle: 'Test Markdown rendering for tracker profiles',
-                onTap: () {
-                  context.push('/settings/debug/tracker-bio');
-                },
-              ),
-            ],
+            child: SettingsActionTile(
+              icon: Icons.person_search_outlined,
+              title: 'Tracker Bio Renderer',
+              subtitle: 'Test Markdown rendering for tracker profiles',
+              onTap: () {
+                context.push('/settings/debug/tracker-bio');
+              },
+            ),
           ),
 
           SettingsSection(
             title: 'App State & Onboarding',
-            children: [
-              SettingsActionTile(
-                icon: Icons.restart_alt_rounded,
-                title: 'Reset Onboarding Status',
-                subtitle: 'Mark onboarding as incomplete and launch screen',
-                onTap: () {
-                  ref.read(onboardingProvider.notifier).resetOnboarding();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Text('Onboarding status reset!'),
-                      action: SnackBarAction(
-                        label: 'Launch Now',
-                        onPressed: () => context.goOnboarding(),
-                      ),
+            child: SettingsActionTile(
+              icon: Icons.restart_alt_rounded,
+              title: 'Reset Onboarding Status',
+              subtitle: 'Mark onboarding as incomplete and launch screen',
+              onTap: () {
+                ref.read(onboardingProvider.notifier).resetOnboarding();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: const Text('Onboarding status reset!'),
+                    action: SnackBarAction(
+                      label: 'Launch Now',
+                      onPressed: () => context.goOnboarding(),
                     ),
-                  );
-                },
-              ),
-            ],
+                  ),
+                );
+              },
+            ),
           ),
 
           SettingsSection(
             title: 'UI Feedback',
-            children: [
-              SettingsActionTile(
-                icon: Icons.notifications_active_outlined,
-                title: 'Trigger Snackbar',
-                subtitle: 'Show a floating snackbar with an action',
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Text('Debug Snackbar Triggered!'),
-                      action: SnackBarAction(
-                        label: 'Dismiss',
-                        onPressed: () {},
-                      ),
+            child: SettingsActionTile(
+              icon: Icons.notifications_active_outlined,
+              title: 'Trigger Snackbar',
+              subtitle: 'Show a floating snackbar with an action',
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: const Text('Debug Snackbar Triggered!'),
+                    action: SnackBarAction(
+                      label: 'Dismiss',
+                      onPressed: () {},
                     ),
-                  );
-                },
-              ),
-            ],
+                  ),
+                );
+              },
+            ),
           ),
 
           SettingsSection(

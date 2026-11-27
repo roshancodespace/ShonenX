@@ -63,10 +63,10 @@ class CalendarDayRow extends StatelessWidget {
             if (isToday) ...[
               const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
                   color: cs.primary,
-                  borderRadius: BorderRadius.circular(radius * 0.4),
+                  borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
                   'TODAY',

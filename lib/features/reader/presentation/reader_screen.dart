@@ -23,6 +23,7 @@ import 'widgets/reader_bottom_overlay.dart';
 import 'widgets/reader_page_view.dart';
 import 'widgets/reader_theme_info.dart';
 import 'widgets/reader_webtoon_view.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 class ReaderScreen extends ConsumerStatefulWidget {
   final ReaderModeOnline mode;
@@ -298,7 +299,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                   data: (pages) =>
                       _buildReaderView(pages, prefs, themeInfo, state),
                   loading: () =>
-                      const Center(child: CircularProgressIndicator()),
+                      const Center(child: AppProgressIndicator(type: AppProgressType.circular)),
                   error: (err, _) => _buildError(err.toString(), themeInfo),
                 ),
               ),

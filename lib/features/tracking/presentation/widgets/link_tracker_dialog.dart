@@ -10,6 +10,7 @@ import 'package:shonenx/features/tracking/providers/tracker_link_provider.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/source_engine/models/tracker_search_result.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 class LinkTrackerSheet extends ConsumerStatefulWidget {
   final String primaryMediaId;
@@ -114,7 +115,7 @@ class _LinkTrackerSheetState extends ConsumerState<LinkTrackerSheet> {
                       child: SizedBox(
                         width: 20,
                         height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        child: AppProgressIndicator(type: AppProgressType.circular, strokeWidth: 2),
                       ),
                     )
                   : IconButton(

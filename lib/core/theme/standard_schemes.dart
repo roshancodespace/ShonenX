@@ -76,15 +76,17 @@ enum AppScheme {
     AppScheme.custom => const Color(0xFF1565C0),
   };
 
-  AppSchemeColors get colors {
-    final seed = seedColor;
+  AppSchemeColors get colors => _fromSeed(seedColor, Brightness.light);
+
+  static AppSchemeColors _fromSeed(Color seed, Brightness brightness) {
+    final cs = ColorScheme.fromSeed(seedColor: seed, brightness: brightness);
     return AppSchemeColors(
-      primary: seed,
-      primaryContainer: Color.alphaBlend(seed.withValues(alpha: 0.22), const Color(0xFFFFFFFF)),
-      secondary: Color.alphaBlend(seed.withValues(alpha: 0.55), const Color(0xFF333333)),
-      secondaryContainer: Color.alphaBlend(seed.withValues(alpha: 0.14), const Color(0xFFFFFFFF)),
-      tertiary: Color.alphaBlend(seed.withValues(alpha: 0.38), const Color(0xFF888888)),
-      tertiaryContainer: Color.alphaBlend(seed.withValues(alpha: 0.10), const Color(0xFFFFFFFF)),
+      primary: cs.primary,
+      primaryContainer: cs.primaryContainer,
+      secondary: cs.secondary,
+      secondaryContainer: cs.secondaryContainer,
+      tertiary: cs.tertiary,
+      tertiaryContainer: cs.tertiaryContainer,
     );
   }
 }
@@ -111,21 +113,14 @@ class AppSchemeData {
   });
 
   factory AppSchemeData.fromScheme(AppScheme scheme) {
-    final lightColors = scheme.colors;
     final seed = scheme.seedColor;
-    final darkColors = AppSchemeColors(
-      primary: seed,
-      primaryContainer: Color.alphaBlend(seed.withValues(alpha: 0.35), const Color(0xFF000000)),
-      secondary: Color.alphaBlend(seed.withValues(alpha: 0.70), const Color(0xFFCCCCCC)),
-      secondaryContainer: Color.alphaBlend(seed.withValues(alpha: 0.20), const Color(0xFF1E1E1E)),
-      tertiary: Color.alphaBlend(seed.withValues(alpha: 0.50), const Color(0xFFEEEEEE)),
-      tertiaryContainer: Color.alphaBlend(seed.withValues(alpha: 0.15), const Color(0xFF1E1E1E)),
-    );
+    final lightColors = AppScheme._fromSeed(seed, Brightness.light);
+    final darkColors = AppScheme._fromSeed(seed, Brightness.dark);
     return AppSchemeData(
       id: scheme.name,
       name: scheme.displayName,
       description: scheme.description,
-      primary: scheme.seedColor,
+      primary: seed,
       secondary: lightColors.secondary,
       tertiary: lightColors.tertiary,
       light: lightColors,

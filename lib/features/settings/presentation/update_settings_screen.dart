@@ -8,6 +8,7 @@ import 'package:shonenx/features/updates/ui/linux_update_widget.dart';
 import 'package:shonenx/features/updates/ui/update_ui.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 class UpdateSettingsScreen extends ConsumerStatefulWidget {
   const UpdateSettingsScreen({super.key});
@@ -94,36 +95,32 @@ class _UpdateSettingsScreenState extends ConsumerState<UpdateSettingsScreen> {
             if (Platform.isLinux)
               SettingsSection(
                 title: l10n.updatesLinuxSection,
-                children: [
-                  SettingsActionTile(
-                    icon: Icons.terminal_rounded,
-                    title: l10n.updatesLinuxOpenTitle,
-                    subtitle: l10n.updatesLinuxOpenSubtitle,
-                    onTap: () => LinuxUpdateWidget.show(context),
-                  ),
-                ],
+                child: SettingsActionTile(
+                  icon: Icons.terminal_rounded,
+                  title: l10n.updatesLinuxOpenTitle,
+                  subtitle: l10n.updatesLinuxOpenSubtitle,
+                  onTap: () => LinuxUpdateWidget.show(context),
+                ),
               ),
             SettingsSection(
               title: l10n.settingsCheckUpdates,
-              children: [
-                SettingsActionTile(
-                  icon: Icons.sync_rounded,
-                  title: l10n.updatesCheckNow,
-                  subtitle: l10n.updatesCheckNowSubtitle,
-                  trailing: _isChecking
-                      ? const SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(strokeWidth: 2.5),
-                        )
-                      : FilledButton.icon(
-                          onPressed: _manualCheck,
-                          icon: const Icon(Icons.sync_rounded, size: 18),
-                          label: Text(l10n.updatesCheckButton),
-                        ),
-                  onTap: _manualCheck,
-                ),
-              ],
+              child: SettingsActionTile(
+                icon: Icons.sync_rounded,
+                title: l10n.updatesCheckNow,
+                subtitle: l10n.updatesCheckNowSubtitle,
+                trailing: _isChecking
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: AppProgressIndicator(type: AppProgressType.circular, strokeWidth: 2.5),
+                      )
+                    : FilledButton.icon(
+                        onPressed: _manualCheck,
+                        icon: const Icon(Icons.sync_rounded, size: 18),
+                        label: Text(l10n.updatesCheckButton),
+                      ),
+                onTap: _manualCheck,
+              ),
             ),
             SettingsSection(
               title: l10n.updatesPreferences,
@@ -147,13 +144,15 @@ class _UpdateSettingsScreenState extends ConsumerState<UpdateSettingsScreen> {
             SettingsSection(
               title: l10n.updatesBrowseReleases,
               subtitle: l10n.updatesBrowseReleasesSubtitle,
-              children: [
-                releasesAsync.when(
-                  loading: () => const Padding(
+              children: releasesAsync.when(
+                loading: () => const [
+                  Padding(
                     padding: EdgeInsets.all(24.0),
-                    child: Center(child: CircularProgressIndicator()),
+                    child: Center(child: AppProgressIndicator(type: AppProgressType.circular)),
                   ),
-                  error: (err, _) => Padding(
+                ],
+                error: (err, _) => [
+                  Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: Text(
                       l10n.updatesLoadFailed,
@@ -162,9 +161,11 @@ class _UpdateSettingsScreenState extends ConsumerState<UpdateSettingsScreen> {
                       ),
                     ),
                   ),
-                  data: (releases) {
-                    if (releases.isEmpty) {
-                      return Padding(
+                ],
+                data: (releases) {
+                  if (releases.isEmpty) {
+                    return [
+                      Padding(
                         padding: const EdgeInsets.all(16.0),
                         child: Text(
                           l10n.updatesNoneFound,
@@ -174,60 +175,57 @@ class _UpdateSettingsScreenState extends ConsumerState<UpdateSettingsScreen> {
                             ).colorScheme.onSurfaceVariant,
                           ),
                         ),
-                      );
-                    }
+                      ),
+                    ];
+                  }
 
-                    return Column(
-                      children: releases.map((r) {
-                        return SettingsActionTile(
-                          icon: r.prerelease
-                              ? Icons.extension_outlined
-                              : Icons.verified_outlined,
-                          title: r.name,
-                          subtitle:
-                              '${r.tagName} • ${_formatDate(r.publishedAt)}',
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (r.prerelease)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 2,
-                                  ),
-                                  margin: const EdgeInsets.only(right: 8),
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.tertiaryContainer,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                    'PRE',
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.onTertiaryContainer,
-                                    ),
-                                  ),
-                                ),
-                              Icon(
-                                Icons.chevron_right_rounded,
+                  return releases.map((r) {
+                    return SettingsActionTile(
+                      icon: r.prerelease
+                          ? Icons.extension_outlined
+                          : Icons.verified_outlined,
+                      title: r.name,
+                      subtitle: '${r.tagName} • ${_formatDate(r.publishedAt)}',
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (r.prerelease)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              margin: const EdgeInsets.only(right: 8),
+                              decoration: BoxDecoration(
                                 color: Theme.of(
                                   context,
-                                ).colorScheme.onSurfaceVariant,
+                                ).colorScheme.tertiaryContainer,
+                                borderRadius: BorderRadius.circular(8),
                               ),
-                            ],
+                              child: Text(
+                                'PRE',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onTertiaryContainer,
+                                ),
+                              ),
+                            ),
+                          Icon(
+                            Icons.chevron_right_rounded,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
                           ),
-                          onTap: () => _showReleaseDetails(context, r),
-                        );
-                      }).toList(),
+                        ],
+                      ),
+                      onTap: () => _showReleaseDetails(context, r),
                     );
-                  },
-                ),
-              ],
+                  }).toList();
+                },
+              ),
             ),
           ],
         ),

@@ -7,6 +7,7 @@ import 'package:shonenx/features/onboarding/onboarding_provider.dart';
 import 'package:shonenx/features/splash/presentation/splash_quotes.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
 import 'package:shonenx/shared/widgets/svg_icon.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -160,12 +161,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                       width: 200,
                       child: Column(
                         children: [
-                          LinearProgressIndicator(
-                            color: cs.primary,
-                            backgroundColor: cs.surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(4),
-                            minHeight: 4,
-                          ),
+                          AppProgressIndicator(type: AppProgressType.linear, color: cs.primary, trackColor: cs.surfaceContainerHighest, borderRadius: BorderRadius.circular(4), height: 4),
                           const SizedBox(height: 12),
                           Text(
                             _status,

@@ -19,6 +19,7 @@ import 'package:shonenx/shared/widgets/app_scaffold.dart';
 import 'package:shonenx/shared/widgets/tracker_avatar.dart';
 import 'package:shonenx/core/utils/env.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 class TrackingSettingsScreen extends ConsumerStatefulWidget {
   const TrackingSettingsScreen({super.key});
@@ -417,10 +418,7 @@ class _TrackingSettingsScreenState
                   child: SizedBox(
                     width: 18,
                     height: 18,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.2,
-                      color: cs.primary,
-                    ),
+                    child: AppProgressIndicator(type: AppProgressType.circular, strokeWidth: 2.2, color: cs.primary),
                   ),
                 );
               } else if (isRemote && isLoggedIn) {
@@ -444,7 +442,7 @@ class _TrackingSettingsScreenState
                         child: SizedBox(
                           width: 16,
                           height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                          child: AppProgressIndicator(type: AppProgressType.circular, strokeWidth: 2),
                         ),
                       ),
                       errorWidget: (context, url, error) =>
@@ -500,10 +498,7 @@ class _TrackingSettingsScreenState
                   icon: SizedBox(
                     width: 14,
                     height: 14,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: cs.onSurfaceVariant,
-                    ),
+                    child: AppProgressIndicator(type: AppProgressType.circular, strokeWidth: 2, color: cs.onSurfaceVariant),
                   ),
                   label: Text(l10n.trackingLoggingIn),
                 );
@@ -672,10 +667,7 @@ class _TrackingSettingsScreenState
                                     SizedBox(
                                       width: 12,
                                       height: 12,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: cs.primary,
-                                      ),
+                                      child: AppProgressIndicator(type: AppProgressType.circular, strokeWidth: 2, color: cs.primary),
                                     ),
                                     const SizedBox(width: 6),
                                     Text(

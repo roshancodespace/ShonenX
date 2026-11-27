@@ -74,18 +74,16 @@ class ContentSettingsScreen extends ConsumerWidget {
           ),
           SettingsSection(
             title: context.l10n.contentEpisodeMetadata,
-            children: [
-              SettingsNavTile(
-                icon: Icons.auto_awesome_rounded,
-                title: context.l10n.contentEpisodeMetadataProvider,
-                subtitle: prefs.episodeMetadataProvider.displayName,
-                onTap: () => _showMetadataProviderSheet(
-                  context,
-                  ref,
-                  prefs.episodeMetadataProvider,
-                ),
+            child: SettingsNavTile(
+              icon: Icons.auto_awesome_rounded,
+              title: context.l10n.contentEpisodeMetadataProvider,
+              subtitle: prefs.episodeMetadataProvider.displayName,
+              onTap: () => _showMetadataProviderSheet(
+                context,
+                ref,
+                prefs.episodeMetadataProvider,
               ),
-            ],
+            ),
           ),
         ],
       ),

@@ -16,6 +16,7 @@ import 'package:shonenx/shared/models/video_stream.dart';
 import 'package:shonenx/features/player/utils/subtitle_parser.dart';
 import 'package:shonenx/shared/models/ui_style_enums.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 final _debugSubtitleContentProvider = StateProvider<String>(
   (ref) => _testBasicSrt,
@@ -483,9 +484,7 @@ class _SubtitleDebugView extends ConsumerWidget {
                                   child: SizedBox(
                                     width: 24,
                                     height: 24,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                    ),
+                                    child: AppProgressIndicator(type: AppProgressType.circular, strokeWidth: 2),
                                   ),
                                 )
                               : IconButton(
@@ -754,7 +753,7 @@ class _SubtitleDebugView extends ConsumerWidget {
                       );
                     },
                     loading: () =>
-                        const Center(child: CircularProgressIndicator()),
+                        const Center(child: AppProgressIndicator(type: AppProgressType.circular)),
                   ),
             ),
           ),

@@ -7,6 +7,7 @@ import 'package:anymex_extension_runtime_bridge/anymex_extension_runtime_bridge.
     as bridge;
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 class CloudflareWebView extends StatefulWidget {
   final String url;
@@ -327,13 +328,12 @@ class _CloudflareWebViewState extends State<CloudflareWebView> {
         barBottom: PreferredSize(
           preferredSize: const Size.fromHeight(2),
           child: _isLoading && _progress > 0 && _progress < 1
-              ? LinearProgressIndicator(
+              ? AppProgressIndicator(
+                  type: AppProgressType.linear,
                   value: _progress,
-                  backgroundColor: Colors.transparent,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    theme.colorScheme.primary,
-                  ),
-                  minHeight: 2,
+                  trackColor: Colors.transparent,
+                  color: theme.colorScheme.primary,
+                  height: 2,
                 )
               : const SizedBox(height: 2),
         ),

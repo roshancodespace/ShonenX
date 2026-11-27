@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../batch_download_sheet.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 class QueueingStep extends StatelessWidget {
   final BatchDownloadSheetState state;
@@ -24,14 +25,9 @@ class QueueingStep extends StatelessWidget {
               SizedBox(
                 width: 64,
                 height: 64,
-                child: CircularProgressIndicator(
-                  value: state.sortedSelected.isNotEmpty
+                child: AppProgressIndicator(type: AppProgressType.circular, value: state.sortedSelected.isNotEmpty
                       ? state.currentIndex / state.sortedSelected.length
-                      : null,
-                  strokeWidth: 5,
-                  backgroundColor: cs.surfaceContainerHighest,
-                  strokeCap: StrokeCap.round,
-                ),
+                      : null, strokeWidth: 5, trackColor: cs.surfaceContainerHighest),
               ),
               if (state.sortedSelected.isNotEmpty)
                 Text(

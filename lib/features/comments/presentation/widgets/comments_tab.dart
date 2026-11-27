@@ -18,6 +18,7 @@ import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/shared/widgets/staggered_fade_in.dart';
 import 'package:shonenx/shared/widgets/app_dialog.dart';
 import 'package:skeletonizer/skeletonizer.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 class CommentsTabWidget extends ConsumerStatefulWidget {
   final UnifiedMedia media;
@@ -683,9 +684,7 @@ class _CommentsTabWidgetState extends ConsumerState<CommentsTabWidget> {
                             ? const SizedBox(
                                 width: 24,
                                 height: 24,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
+                                child: AppProgressIndicator(type: AppProgressType.circular, strokeWidth: 2),
                               )
                             : TextButton(
                                 onPressed: () => ref

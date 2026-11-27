@@ -59,13 +59,15 @@ class NeonCard extends StatelessWidget {
                 styleName: 'neon',
                 thumbWidth: constraints.maxWidth,
                 thumbHeight: constraints.maxHeight,
-                radiusOverride: (GlobalUI.uiRoundness - 2).clamp(2.0, 24.0),
+                radiusOverride: (GlobalUI.uiRoundness - 6).clamp(2.0, 999.0),
               ),
             ),
           ),
           const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(4, 0, 4, 2),
+          ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 56),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(4, 0, 4, 2),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
@@ -93,6 +95,7 @@ class NeonCard extends StatelessWidget {
                   ),
                 ],
               ],
+            ),
             ),
           ),
         ],
@@ -138,7 +141,7 @@ class NeonCard extends StatelessWidget {
                 styleName: 'neon',
                 thumbWidth: thumbW,
                 thumbHeight: content.height,
-                radiusOverride: GlobalUI.uiRoundness * 0.8,
+                radiusOverride: (GlobalUI.uiRoundness - 6).clamp(2.0, 999.0),
               ),
             ],
           ),

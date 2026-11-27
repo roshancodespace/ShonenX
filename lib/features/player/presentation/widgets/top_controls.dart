@@ -14,7 +14,7 @@ import 'package:shonenx/features/settings/presentation/widgets/subtitle_settings
 import 'package:shonenx/features/settings/presentation/widgets/subtitle_translation_settings_sheet.dart';
 import 'package:shonenx/shared/models/video_stream.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
-import 'package:shonenx/shared/widgets/m3e_split_button_group.dart';
+import 'package:shonenx/shared/widgets/app_button_group.dart';
 
 class TopControls extends ConsumerWidget {
   final bool showControls;
@@ -126,20 +126,20 @@ class TopControls extends ConsumerWidget {
         ),
         const SizedBox(width: 8),
       ],
-      M3eActionButtonGroup(
+      AppActionButtonGroup(
         outlined: true,
         height: 36,
         foregroundColor: Colors.white,
         borderColor: Colors.white30,
         items: [
           if (showComments && !isCompact)
-            M3eActionItem(
+            AppActionItem(
               icon: Icons.comment_outlined,
               tooltip: 'Comments',
               onTap: onComments!,
             ),
           if (!isCompact) ...[
-            M3eActionItem(
+            AppActionItem(
               icon: switch (ref.watch(
                 playerPrefsProvider.select((s) => s.fit),
               )) {
@@ -166,7 +166,7 @@ class TopControls extends ConsumerWidget {
                 );
               },
             ),
-            M3eActionItem(
+            AppActionItem(
               icon: Icons.camera_alt_outlined,
               tooltip: 'Screenshot',
               onTap: () async {
@@ -186,7 +186,7 @@ class TopControls extends ConsumerWidget {
               },
             ),
           ],
-          M3eActionItem(
+          AppActionItem(
             icon: Icons.settings_outlined,
             tooltip: 'Player Settings',
             onTap: () => _showUnifiedSettingsSheet(context, ref, isCompact),

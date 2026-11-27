@@ -45,7 +45,9 @@ class WideBannerCard extends StatelessWidget {
                     styleName: 'wideBanner',
                     thumbWidth: content.width * 0.40,
                     thumbHeight: content.height,
-                    radiusOverride: 0,
+                    borderRadiusOverride: BorderRadius.horizontal(
+                      left: Radius.circular(GlobalUI.uiRoundness),
+                    ),
                     fit: StackFit.expand,
                   ),
                 ],

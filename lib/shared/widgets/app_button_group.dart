@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 
-class M3eActionItem {
+class AppActionItem {
   final IconData icon;
   final String? label;
   final String? tooltip;
@@ -10,7 +10,7 @@ class M3eActionItem {
   final VoidCallback onTap;
   final VoidCallback? onLongPress;
 
-  const M3eActionItem({
+  const AppActionItem({
     required this.icon,
     this.label,
     this.tooltip,
@@ -20,16 +20,18 @@ class M3eActionItem {
   });
 }
 
-/// Connected M3 Expressive action button group (supports outlined overlay mode).
-class M3eActionButtonGroup extends ConsumerWidget {
-  final List<M3eActionItem> items;
+/// Action button group that renders as M3 Expressive connected/gapped pills in
+/// [SettingsStyle.expressive], or as a seamless bordered bar with dividers
+/// (like [SegmentedButton]) in [SettingsStyle.classic].
+class AppActionButtonGroup extends ConsumerWidget {
+  final List<AppActionItem> items;
   final bool outlined;
   final double height;
   final Color? foregroundColor;
   final Color? borderColor;
   final Color? backgroundColor;
 
-  const M3eActionButtonGroup({
+  const AppActionButtonGroup({
     super.key,
     required this.items,
     this.outlined = true,
@@ -46,16 +48,54 @@ class M3eActionButtonGroup extends ConsumerWidget {
         ref.watch(uiPrefsProvider.select((s) => s.settingsStyle)) ==
         SettingsStyle.classic;
 
+    if (isClassic) {
+      final cs = Theme.of(context).colorScheme;
+      final effectiveBorder = borderColor ?? cs.outlineVariant;
+      final bg =
+          backgroundColor ??
+          (outlined ? Colors.transparent : cs.surfaceContainerHighest);
+
+      return Container(
+        height: height,
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: effectiveBorder),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (var i = 0; i < items.length; i++) ...[
+              if (i > 0)
+                Container(width: 1, height: height, color: effectiveBorder),
+              _AppActionButton(
+                item: items[i],
+                isFirst: i == 0,
+                isLast: i == items.length - 1,
+                isClassic: true,
+                outlined: false,
+                height: height,
+                foregroundColor: foregroundColor,
+                borderColor: borderColor,
+                backgroundColor: Colors.transparent,
+              ),
+            ],
+          ],
+        ),
+      );
+    }
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         for (var i = 0; i < items.length; i++) ...[
           if (i > 0) const SizedBox(width: 3),
-          _M3eActionButton(
+          _AppActionButton(
             item: items[i],
             isFirst: i == 0,
             isLast: i == items.length - 1,
-            isClassic: isClassic,
+            isClassic: false,
             outlined: outlined,
             height: height,
             foregroundColor: foregroundColor,
@@ -68,8 +108,8 @@ class M3eActionButtonGroup extends ConsumerWidget {
   }
 }
 
-class _M3eActionButton extends StatefulWidget {
-  final M3eActionItem item;
+class _AppActionButton extends StatefulWidget {
+  final AppActionItem item;
   final bool isFirst;
   final bool isLast;
   final bool isClassic;
@@ -79,7 +119,7 @@ class _M3eActionButton extends StatefulWidget {
   final Color? borderColor;
   final Color? backgroundColor;
 
-  const _M3eActionButton({
+  const _AppActionButton({
     required this.item,
     required this.isFirst,
     required this.isLast,
@@ -92,15 +132,15 @@ class _M3eActionButton extends StatefulWidget {
   });
 
   @override
-  State<_M3eActionButton> createState() => _M3eActionButtonState();
+  State<_AppActionButton> createState() => _AppActionButtonState();
 }
 
-class _M3eActionButtonState extends State<_M3eActionButton> {
+class _AppActionButtonState extends State<_AppActionButton> {
   bool _pressed = false;
   bool _hovered = false;
 
   BorderRadius _resolveRadius() {
-    if (widget.isClassic) return BorderRadius.circular(10);
+    if (widget.isClassic) return BorderRadius.zero;
     const pill = Radius.circular(20);
     const inner = Radius.circular(8);
     if (_pressed || (widget.isFirst && widget.isLast)) {
@@ -190,16 +230,17 @@ class _M3eActionButtonState extends State<_M3eActionButton> {
   }
 }
 
-/// Material 3 Expressive connected/split button group with animated corner
-/// morphing on selection and press, plus responsive width handling.
-class M3eSplitButtonGroup<T> extends StatelessWidget {
+/// Style-aware segmented button group: renders M3 Expressive gapped/morphing
+/// pills in [SettingsStyle.expressive], and Material [SegmentedButton] in
+/// [SettingsStyle.classic].
+class AppButtonGroup<T> extends ConsumerWidget {
   final List<ButtonSegment<T>> segments;
   final Set<T> selected;
   final void Function(Set<T>)? onSelectionChanged;
   final bool expandSegments;
   final double height;
 
-  const M3eSplitButtonGroup({
+  const AppButtonGroup({
     super.key,
     required this.segments,
     required this.selected,
@@ -209,8 +250,27 @@ class M3eSplitButtonGroup<T> extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     if (segments.isEmpty) return const SizedBox.shrink();
+    final isClassic =
+        ref.watch(uiPrefsProvider.select((s) => s.settingsStyle)) ==
+        SettingsStyle.classic;
+
+    if (isClassic) {
+      final seg = SegmentedButton<T>(
+        segments: segments,
+        selected: selected,
+        onSelectionChanged: onSelectionChanged,
+        showSelectedIcon: false,
+        style: SegmentedButton.styleFrom(
+          visualDensity: VisualDensity.compact,
+          shape: const StadiumBorder(),
+        ),
+      );
+      return expandSegments
+          ? SizedBox(width: double.infinity, child: seg)
+          : seg;
+    }
 
     final children = <Widget>[];
     for (var i = 0; i < segments.length; i++) {
@@ -219,7 +279,7 @@ class M3eSplitButtonGroup<T> extends StatelessWidget {
       final isFirst = i == 0;
       final isLast = i == segments.length - 1;
 
-      final pill = _M3eSegmentButton(
+      final pill = _ExpressiveSegmentButton(
         icon: segment.icon,
         label: segment.label,
         isSelected: isSelected,
@@ -243,7 +303,7 @@ class M3eSplitButtonGroup<T> extends StatelessWidget {
   }
 }
 
-class _M3eSegmentButton extends StatefulWidget {
+class _ExpressiveSegmentButton extends StatefulWidget {
   final Widget? icon;
   final Widget? label;
   final bool isSelected;
@@ -253,7 +313,7 @@ class _M3eSegmentButton extends StatefulWidget {
   final double height;
   final VoidCallback? onTap;
 
-  const _M3eSegmentButton({
+  const _ExpressiveSegmentButton({
     this.icon,
     this.label,
     required this.isSelected,
@@ -265,10 +325,11 @@ class _M3eSegmentButton extends StatefulWidget {
   });
 
   @override
-  State<_M3eSegmentButton> createState() => _M3eSegmentButtonState();
+  State<_ExpressiveSegmentButton> createState() =>
+      _ExpressiveSegmentButtonState();
 }
 
-class _M3eSegmentButtonState extends State<_M3eSegmentButton> {
+class _ExpressiveSegmentButtonState extends State<_ExpressiveSegmentButton> {
   bool _pressed = false;
   bool _hovered = false;
 

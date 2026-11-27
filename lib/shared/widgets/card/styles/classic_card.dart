@@ -47,8 +47,10 @@ class ClassicCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 7),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: UiSpace.xs),
+          ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 54),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: UiSpace.xs),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
@@ -76,6 +78,7 @@ class ClassicCard extends StatelessWidget {
                   ),
                 ],
               ],
+            ),
             ),
           ),
         ],

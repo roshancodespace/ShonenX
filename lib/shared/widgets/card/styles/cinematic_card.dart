@@ -39,7 +39,9 @@ class CinematicCard extends StatelessWidget {
               styleName: 'cinematic',
               thumbWidth: thumbWidth,
               thumbHeight: content.height,
-              radiusOverride: 0,
+              borderRadiusOverride: BorderRadius.horizontal(
+                left: Radius.circular(GlobalUI.uiRoundness),
+              ),
             ),
             Expanded(
               child: Padding(

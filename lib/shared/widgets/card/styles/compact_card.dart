@@ -47,23 +47,26 @@ class CompactCard extends StatelessWidget {
                 styleName: 'compact',
                 thumbWidth: constraints.maxWidth,
                 thumbHeight: constraints.maxHeight,
-                radiusOverride: (GlobalUI.uiRoundness * 0.7).clamp(2.0, 16.0),
+                radiusOverride: (GlobalUI.uiRoundness - 4).clamp(2.0, 999.0),
               ),
             ),
           ),
           const SizedBox(height: 5),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(3, 0, 3, 2),
-            child: Text(
-              content.media.title.getPreferedTitle,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.labelMedium?.copyWith(
-                fontSize: 11.5,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -0.1,
-                color: cs.onSurface,
-                height: 1.15,
+          ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 30),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(3, 0, 3, 2),
+              child: Text(
+                content.media.title.getPreferedTitle,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.1,
+                  color: cs.onSurface,
+                  height: 1.15,
+                ),
               ),
             ),
           ),
@@ -99,7 +102,7 @@ class CompactCard extends StatelessWidget {
             styleName: 'compact',
             thumbWidth: thumbW,
             thumbHeight: content.height - 8,
-            radiusOverride: (GlobalUI.uiRoundness * 0.7).clamp(2.0, 16.0),
+            radiusOverride: (GlobalUI.uiRoundness - 4).clamp(2.0, 999.0),
           ),
           const SizedBox(width: 8),
           Expanded(

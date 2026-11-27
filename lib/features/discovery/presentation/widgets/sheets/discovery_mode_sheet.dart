@@ -11,7 +11,7 @@ import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
 import 'package:shonenx/shared/models/ui_style_enums.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
-import 'package:shonenx/shared/widgets/m3e_split_button_group.dart';
+import 'package:shonenx/shared/widgets/app_button_group.dart';
 import 'package:shonenx/shared/widgets/selection_card_group.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
 import 'package:shonenx/source_engine/source_registry.dart';
@@ -59,7 +59,7 @@ class _DiscoveryModeSheetState extends ConsumerState<DiscoveryModeSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            M3eSplitButtonGroup<MetadataMode>(
+            AppButtonGroup<MetadataMode>(
               expandSegments: true,
               height: 44,
               segments: const [

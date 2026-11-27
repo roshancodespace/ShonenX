@@ -122,6 +122,7 @@ class CardMediaStack extends StatelessWidget {
   final double thumbWidth;
   final double thumbHeight;
   final double? radiusOverride;
+  final BorderRadius? borderRadiusOverride;
   final StackFit? fit;
   final Widget? overlayBeforeBadges;
 
@@ -132,6 +133,7 @@ class CardMediaStack extends StatelessWidget {
     required this.thumbWidth,
     required this.thumbHeight,
     this.radiusOverride,
+    this.borderRadiusOverride,
     this.fit,
     this.overlayBeforeBadges,
   });
@@ -146,6 +148,7 @@ class CardMediaStack extends StatelessWidget {
           width: thumbWidth,
           height: thumbHeight,
           radiusOverride: radiusOverride,
+          borderRadiusOverride: borderRadiusOverride,
           isActive: content.isActive,
           progress: content.progress,
           heroTag: content.heroTag,

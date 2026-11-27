@@ -13,7 +13,7 @@ import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
-import 'package:shonenx/shared/widgets/m3e_split_button_group.dart';
+import 'package:shonenx/shared/widgets/app_button_group.dart';
 import 'package:shonenx/source_engine/source_registry.dart';
 
 import 'widgets/extension_guide_sheet.dart';
@@ -489,7 +489,7 @@ class _ExtensionsSettingsScreenState
                 ),
               ),
             )
-          : M3eSplitButtonGroup<bool>(
+          : AppButtonGroup<bool>(
               segments: segments,
               selected: {_isInstalledMode},
               expandSegments: true,

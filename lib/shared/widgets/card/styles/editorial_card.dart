@@ -48,8 +48,10 @@ class EditorialCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 3),
+          ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 62),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 3),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
@@ -87,6 +89,7 @@ class EditorialCard extends StatelessWidget {
                 ],
               ],
             ),
+            ),
           ),
         ],
       ),
@@ -119,7 +122,9 @@ class EditorialCard extends StatelessWidget {
               styleName: 'editorial',
               thumbWidth: thumbW,
               thumbHeight: content.height,
-              radiusOverride: 0,
+              borderRadiusOverride: BorderRadius.horizontal(
+                left: Radius.circular(GlobalUI.uiRoundness),
+              ),
             ),
             Expanded(
               child: Padding(

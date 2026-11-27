@@ -18,8 +18,7 @@ import 'package:shonenx/features/settings/presentation/widgets/subtitle_translat
 import 'package:shonenx/shared/models/video_server.dart';
 import 'package:shonenx/shared/models/video_stream.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
-import 'package:shonenx/shared/widgets/m3e_split_button_group.dart';
-import 'package:shonenx/shared/widgets/selection_card_group.dart';
+import 'package:shonenx/shared/widgets/app_button_group.dart';
 import 'package:shonenx/shared/widgets/selection_card_group.dart';
 import 'package:shonenx/shared/widgets/app_sheet_action.dart';
 import 'package:file_picker/file_picker.dart';
@@ -264,19 +263,19 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
         widget.playerState.subtitles.isNotEmpty &&
         widget.playerState.activeSubtitle != null;
 
-    return M3eActionButtonGroup(
+    return AppActionButtonGroup(
       outlined: true,
       height: 36,
       foregroundColor: Colors.white,
       borderColor: Colors.white30,
       items: [
-        M3eActionItem(
+        AppActionItem(
           icon: Icons.lock_outline_rounded,
           tooltip: 'Lock Controls',
           onTap: () => widget.onToggleLockControls(),
         ),
         if (widget.playerState.subtitles.isNotEmpty)
-          M3eActionItem(
+          AppActionItem(
             icon: hasSub
                 ? Icons.subtitles_outlined
                 : Icons.subtitles_off_outlined,
@@ -294,7 +293,7 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
             },
           ),
         if (actualAudioCount > 0)
-          M3eActionItem(
+          AppActionItem(
             icon: activeAudioTrack?.id == 'no'
                 ? Icons.volume_off_outlined
                 : Icons.audiotrack_outlined,
@@ -312,7 +311,7 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
             },
           ),
         if (widget.mode is PlayerModeOnline)
-          M3eActionItem(
+          AppActionItem(
             icon: Icons.format_list_bulleted_rounded,
             tooltip: 'Episodes',
             onTap: () {

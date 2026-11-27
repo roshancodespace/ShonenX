@@ -7,7 +7,7 @@ import 'package:shonenx/core/localization/l10n_extension.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/shared/widgets/app_slider.dart';
 import 'package:shonenx/shared/widgets/m3e_dropdown.dart';
-import 'package:shonenx/shared/widgets/m3e_split_button_group.dart';
+import 'package:shonenx/shared/widgets/app_button_group.dart';
 
 const _compactBreakpoint = 400.0;
 const _narrowTileWidth = 360.0;
@@ -394,11 +394,7 @@ class SettingsGroup extends ConsumerWidget {
   final List<Widget> children;
   final EdgeInsetsGeometry? padding;
 
-  const SettingsGroup({
-    super.key,
-    required this.children,
-    this.padding,
-  });
+  const SettingsGroup({super.key, required this.children, this.padding});
 
   _Position _positionOf(int index) {
     if (children.length == 1) return _Position.single;
@@ -676,7 +672,7 @@ class SettingsSegmentedTile<T> extends ConsumerWidget {
 
         Widget buildButton({required bool expanded}) {
           if (!isClassic) {
-            final group = M3eSplitButtonGroup<T>(
+            final group = AppButtonGroup<T>(
               segments: segments,
               selected: selected,
               onSelectionChanged: onSelectionChanged,

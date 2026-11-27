@@ -50,13 +50,15 @@ class ExpressiveCard extends StatelessWidget {
                 styleName: 'expressive',
                 thumbWidth: constraints.maxWidth,
                 thumbHeight: constraints.maxHeight,
-                radiusOverride: (GlobalUI.uiRoundness - 2).clamp(2.0, 24.0),
+                radiusOverride: (GlobalUI.uiRoundness - 6).clamp(2.0, 999.0),
               ),
             ),
           ),
           const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(4, 0, 4, 2),
+          ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 56),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(4, 0, 4, 2),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
@@ -84,6 +86,7 @@ class ExpressiveCard extends StatelessWidget {
                   ),
                 ],
               ],
+            ),
             ),
           ),
         ],
@@ -123,7 +126,7 @@ class ExpressiveCard extends StatelessWidget {
                 styleName: 'expressive',
                 thumbWidth: thumbW,
                 thumbHeight: content.height,
-                radiusOverride: GlobalUI.uiRoundness * 1.2,
+                radiusOverride: (GlobalUI.uiRoundness * 1.5 - 6).clamp(2.0, 999.0),
               ),
             ],
           ),

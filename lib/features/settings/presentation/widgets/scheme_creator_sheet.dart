@@ -5,7 +5,7 @@ import 'package:shonenx/core/theme/theme_color_resolver.dart';
 import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/shared/widgets/m3e_dropdown.dart';
-import 'package:shonenx/shared/widgets/m3e_split_button_group.dart';
+import 'package:shonenx/shared/widgets/app_button_group.dart';
 
 enum _CreatorMode { seed, palette }
 
@@ -293,7 +293,7 @@ class _SchemeCreatorSheetState extends ConsumerState<SchemeCreatorSheet> {
               children: [
                 Expanded(
                   flex: 3,
-                  child: M3eSplitButtonGroup<_CreatorMode>(
+                  child: AppButtonGroup<_CreatorMode>(
                     expandSegments: true,
                     height: 38,
                     segments: const [

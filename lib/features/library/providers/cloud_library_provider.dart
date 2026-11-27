@@ -18,6 +18,21 @@ final cloudLibraryProvider = AsyncNotifierProvider.autoDispose
       CloudLibraryNotifier.new,
     );
 
+final cloudLibraryLoadingMoreProvider = NotifierProvider.autoDispose
+    .family<CloudLibraryLoadingMoreNotifier, bool, CloudLibraryParams>(
+      CloudLibraryLoadingMoreNotifier.new,
+    );
+
+class CloudLibraryLoadingMoreNotifier extends Notifier<bool> {
+  final CloudLibraryParams params;
+  CloudLibraryLoadingMoreNotifier(this.params);
+
+  @override
+  bool build() => false;
+
+  void setLoading(bool value) => state = value;
+}
+
 class CloudLibraryNotifier extends AsyncNotifier<List<LibraryEntry>> {
   CloudLibraryParams params;
 
@@ -47,6 +62,14 @@ class CloudLibraryNotifier extends AsyncNotifier<List<LibraryEntry>> {
 
     _page = 1;
     _hasMore = true;
+    _isLoadingMore = false;
+    Future.microtask(() {
+      if (ref.mounted) {
+        ref
+            .read(cloudLibraryLoadingMoreProvider(params).notifier)
+            .setLoading(false);
+      }
+    });
     final entries = await _fetchPage(1);
     if (entries.length < 50) {
       _hasMore = false;
@@ -58,6 +81,7 @@ class CloudLibraryNotifier extends AsyncNotifier<List<LibraryEntry>> {
     if (!_hasMore || _isLoadingMore) return;
 
     _isLoadingMore = true;
+    ref.read(cloudLibraryLoadingMoreProvider(params).notifier).setLoading(true);
     final nextPage = _page + 1;
 
     try {
@@ -87,6 +111,9 @@ class CloudLibraryNotifier extends AsyncNotifier<List<LibraryEntry>> {
       state = AsyncError(e, st);
     } finally {
       _isLoadingMore = false;
+      ref
+          .read(cloudLibraryLoadingMoreProvider(params).notifier)
+          .setLoading(false);
     }
   }
 

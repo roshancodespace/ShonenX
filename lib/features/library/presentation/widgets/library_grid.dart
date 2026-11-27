@@ -12,6 +12,7 @@ import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
 import 'package:shonenx/features/tracking/providers/tracker_profile_provider.dart';
 import 'package:shonenx/features/tracking/providers/tracking_prefs_provider.dart';
 import 'package:shonenx/core/utils/responsive.dart';
+import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
 class LibraryGridWidget extends ConsumerWidget {
@@ -109,55 +110,37 @@ class LibraryGridWidget extends ConsumerWidget {
           );
         }
 
+        final primaryTracker = ref.watch(
+          trackingPrefsProvider.select((s) => s.primaryTracker),
+        );
+        final isCloudLoggedIn =
+            ref.watch(trackerProfileProvider)[primaryTracker] != null;
+        final isCloud =
+            viewState.mode == LibraryMode.cloud &&
+            primaryTracker != TrackerType.local &&
+            isCloudLoggedIn;
+        final cloudParams = (
+          status: viewState.status,
+          trackerType: null,
+          mediaType: viewState.mediaType,
+        );
+        final isLoadingMore = isCloud
+            ? ref.watch(cloudLibraryLoadingMoreProvider(cloudParams))
+            : false;
+
         return NotificationListener<ScrollNotification>(
           onNotification: (ScrollNotification scrollInfo) {
-            final primaryTracker = ref.read(
-              trackingPrefsProvider.select((s) => s.primaryTracker),
-            );
-            final isCloudLoggedIn =
-                ref.read(trackerProfileProvider)[primaryTracker] != null;
-            final isCloud =
-                viewState.mode == LibraryMode.cloud &&
-                primaryTracker != TrackerType.local &&
-                isCloudLoggedIn;
-
             if (isCloud &&
                 scrollInfo.metrics.pixels >=
                     scrollInfo.metrics.maxScrollExtent - 200) {
-              ref
-                  .read(
-                    cloudLibraryProvider((
-                      status: viewState.status,
-                      trackerType: null,
-                      mediaType: viewState.mediaType,
-                    )).notifier,
-                  )
-                  .loadMore();
+              ref.read(cloudLibraryProvider(cloudParams).notifier).loadMore();
             }
             return false;
           },
           child: RefreshIndicator(
             onRefresh: () async {
-              final primaryTracker = ref.read(
-                trackingPrefsProvider.select((s) => s.primaryTracker),
-              );
-              final isCloudLoggedIn =
-                  ref.read(trackerProfileProvider)[primaryTracker] != null;
-              final isCloud =
-                  viewState.mode == LibraryMode.cloud &&
-                  primaryTracker != TrackerType.local &&
-                  isCloudLoggedIn;
-
               if (isCloud) {
-                ref
-                    .read(
-                      cloudLibraryProvider((
-                        status: viewState.status,
-                        trackerType: null,
-                        mediaType: viewState.mediaType,
-                      )).notifier,
-                    )
-                    .refresh();
+                ref.read(cloudLibraryProvider(cloudParams).notifier).refresh();
               } else {
                 ref.invalidate(
                   localLibraryListProvider((
@@ -167,55 +150,80 @@ class LibraryGridWidget extends ConsumerWidget {
                 );
               }
             },
-            child: GridView.builder(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 136),
-              gridDelegate: SliverGridDelegateWithMinCrossAxisExtent(
-                minCrossAxisExtent: layout.width,
-                childAspectRatio: layout.aspectRatio,
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
+            child: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(
+                parent: BouncingScrollPhysics(),
               ),
-              itemCount: entries.length,
-              itemBuilder: (context, index) {
-                final entry = entries[index];
-                final mediaType = entry.type != null
-                    ? MediaType.fromId(entry.type!)
-                    : viewState.mediaType;
-                final isAnime = mediaType == MediaType.ANIME;
-                final unit = isAnime ? 'Ep' : 'Ch';
-                final watched = entry.episodesWatched;
-                final total = entry.episodes;
+              slivers: [
+                SliverPadding(
+                  padding: EdgeInsets.fromLTRB(
+                    16,
+                    4,
+                    16,
+                    isLoadingMore ? 16 : 136,
+                  ),
+                  sliver: SliverGrid(
+                    gridDelegate: SliverGridDelegateWithMinCrossAxisExtent(
+                      minCrossAxisExtent: layout.width,
+                      childAspectRatio: layout.aspectRatio,
+                      mainAxisSpacing: 12,
+                      crossAxisSpacing: 12,
+                    ),
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      final entry = entries[index];
+                      final mediaType = entry.type != null
+                          ? MediaType.fromId(entry.type!)
+                          : viewState.mediaType;
+                      final isAnime = mediaType == MediaType.ANIME;
+                      final unit = isAnime ? 'Ep' : 'Ch';
+                      final watched = entry.episodesWatched;
+                      final total = entry.episodes;
 
-                double? progress;
-                String? progressText;
+                      double? progress;
+                      String? progressText;
 
-                if (watched > 0) {
-                  if (total != null && total > 0) {
-                    progress = (watched / total).clamp(0.0, 1.0);
-                    progressText = '$unit $watched/$total';
-                  } else {
-                    progressText = '$unit $watched';
-                  }
-                }
+                      if (watched > 0) {
+                        if (total != null && total > 0) {
+                          progress = (watched / total).clamp(0.0, 1.0);
+                          progressText = '$unit $watched/$total';
+                        } else {
+                          progressText = '$unit $watched';
+                        }
+                      }
 
-                final cardTag =
-                    'library__${viewState.status.id}_${entry.providerId}_$index';
+                      final cardTag =
+                          'library__${viewState.status.id}_${entry.providerId}_$index';
 
-                return MediaCard(
-                  media: entry.toUnifiedMedia(),
-                  tag: cardTag,
-                  style: cardStyle,
-                  progress: progress,
-                  progressText: progressText,
-                  onTap: () {
-                    context.pushDetails(
-                      mediaType: mediaType,
-                      media: entry.toUnifiedMedia(),
-                      tag: cardTag,
-                    );
-                  },
-                );
-              },
+                      return MediaCard(
+                        media: entry.toUnifiedMedia(),
+                        tag: cardTag,
+                        style: cardStyle,
+                        progress: progress,
+                        progressText: progressText,
+                        onTap: () {
+                          context.pushDetails(
+                            mediaType: mediaType,
+                            media: entry.toUnifiedMedia(),
+                            tag: cardTag,
+                          );
+                        },
+                      );
+                    }, childCount: entries.length),
+                  ),
+                ),
+                if (isLoadingMore)
+                  const SliverToBoxAdapter(
+                    child: Padding(
+                      padding: EdgeInsets.only(top: 8, bottom: 136),
+                      child: Center(
+                        child: AppProgressIndicator(
+                          type: AppProgressType.circular,
+                          size: 32,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
         );

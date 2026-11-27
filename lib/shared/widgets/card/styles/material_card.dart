@@ -49,40 +49,45 @@ class MaterialCard extends StatelessWidget {
                   styleName: 'material',
                   thumbWidth: constraints.maxWidth,
                   thumbHeight: constraints.maxHeight,
-                  radiusOverride: 0,
+                  borderRadiusOverride: BorderRadius.vertical(
+                    top: Radius.circular(UiRadius.card),
+                  ),
                   fit: StackFit.expand,
                 ),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(10, 8, 10, 9),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    content.media.title.getPreferedTitle,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: -0.15,
-                      color: cs.onSurface,
-                      height: 1.2,
+            ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 72),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(10, 8, 10, 9),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      content.media.title.getPreferedTitle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.15,
+                        color: cs.onSurface,
+                        height: 1.2,
+                      ),
                     ),
-                  ),
-                  if (content.resolvedSubtitle != null) ...[
-                    const SizedBox(height: 4),
-                    PortraitMetadataRow(
-                      media: content.media,
-                      showRatings: content.showRatings,
-                      showYear: content.showYear,
-                      showGenres: content.showGenres,
-                      subtitle: content.subtitle,
-                    ),
+                    if (content.resolvedSubtitle != null) ...[
+                      const SizedBox(height: 4),
+                      PortraitMetadataRow(
+                        media: content.media,
+                        showRatings: content.showRatings,
+                        showYear: content.showYear,
+                        showGenres: content.showGenres,
+                        subtitle: content.subtitle,
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
           ],
@@ -125,7 +130,9 @@ class MaterialCard extends StatelessWidget {
                     styleName: 'material',
                     thumbWidth: thumbW,
                     thumbHeight: content.height,
-                    radiusOverride: 0,
+                    borderRadiusOverride: BorderRadius.horizontal(
+                      left: Radius.circular(UiRadius.card),
+                    ),
                     fit: StackFit.expand,
                   ),
                 ],

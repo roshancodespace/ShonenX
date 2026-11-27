@@ -9,6 +9,7 @@ class CardThumbnail extends StatelessWidget {
   final double width;
   final double height;
   final double? radiusOverride;
+  final BorderRadius? borderRadiusOverride;
   final bool isActive;
   final double? progress;
   final String? heroTag;
@@ -19,31 +20,52 @@ class CardThumbnail extends StatelessWidget {
     required this.width,
     required this.height,
     this.radiusOverride,
+    this.borderRadiusOverride,
     required this.isActive,
     this.progress,
     this.heroTag,
   });
+
+  static BorderRadius _insetBorderRadius(BorderRadius br, double inset) {
+    Radius insetCorner(Radius r) => r.x <= 0
+        ? Radius.zero
+        : Radius.circular((r.x - inset).clamp(0.0, 999.0));
+
+    return BorderRadius.only(
+      topLeft: insetCorner(br.topLeft),
+      topRight: insetCorner(br.topRight),
+      bottomLeft: insetCorner(br.bottomLeft),
+      bottomRight: insetCorner(br.bottomRight),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final radius = radiusOverride ?? GlobalUI.uiRoundness;
+    final effectiveBorderRadius =
+        borderRadiusOverride ?? BorderRadius.circular(radius);
 
     if (progress == null) {
-      return _buildImage(cs, w: width, h: height, r: radius);
+      return _buildImage(
+        cs,
+        w: width,
+        h: height,
+        borderRadius: effectiveBorderRadius,
+      );
     }
 
     final strokeW = isActive ? 3.5 : 2.8;
     return Stack(
       children: [
         Padding(
-          padding: EdgeInsets.all(strokeW * 0.5),
+          padding: EdgeInsets.all(strokeW),
           child: _buildImage(
             cs,
-            w: width == double.maxFinite ? width : width - strokeW,
-            h: height - strokeW,
-            r: radius - (strokeW * 0.5),
+            w: width == double.maxFinite ? width : width - (strokeW * 2),
+            h: height - (strokeW * 2),
+            borderRadius: _insetBorderRadius(effectiveBorderRadius, strokeW),
           ),
         ),
         Positioned.fill(
@@ -53,7 +75,7 @@ class CardThumbnail extends StatelessWidget {
               color: cs.primary,
               trackColor: cs.primary.withValues(alpha: UiAlpha.subtle),
               strokeWidth: strokeW,
-              radius: radius,
+              borderRadius: effectiveBorderRadius,
             ),
           ),
         ),
@@ -65,7 +87,7 @@ class CardThumbnail extends StatelessWidget {
     ColorScheme cs, {
     required double w,
     required double h,
-    required double r,
+    required BorderRadius borderRadius,
   }) {
     final finalW = (w.isFinite && w > 0) ? w : double.infinity;
     final finalH = (h.isFinite && h > 0) ? h : double.infinity;
@@ -89,14 +111,14 @@ class CardThumbnail extends StatelessWidget {
         img = Hero(tag: heroTag!, child: img);
       }
       return ClipRRect(
-        borderRadius: BorderRadius.circular(r),
+        borderRadius: borderRadius,
         clipBehavior: Clip.antiAlias,
         child: SizedBox(width: finalW, height: finalH, child: img),
       );
     }
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(r),
+      borderRadius: borderRadius,
       clipBehavior: Clip.antiAlias,
       child: _buildFallback(cs, finalW, finalH),
     );
@@ -130,28 +152,32 @@ class _ProgressBorderPainter extends CustomPainter {
   final Color color;
   final Color trackColor;
   final double strokeWidth;
-  final double radius;
+  final BorderRadius borderRadius;
 
   _ProgressBorderPainter({
     required this.progress,
     required this.color,
     required this.trackColor,
     required this.strokeWidth,
-    required this.radius,
+    required this.borderRadius,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
     if (size.width <= 0 || size.height <= 0) return;
     final halfWidth = strokeWidth / 2;
-    final rrect = RRect.fromRectAndRadius(
+    final insetBr = CardThumbnail._insetBorderRadius(borderRadius, halfWidth);
+    final rrect = RRect.fromRectAndCorners(
       Rect.fromLTWH(
         halfWidth,
         halfWidth,
         size.width - strokeWidth,
         size.height - strokeWidth,
       ),
-      Radius.circular((radius - halfWidth).clamp(0.0, 999.0)),
+      topLeft: insetBr.topLeft,
+      topRight: insetBr.topRight,
+      bottomLeft: insetBr.bottomLeft,
+      bottomRight: insetBr.bottomRight,
     );
 
     final trackPaint = Paint()
@@ -185,6 +211,6 @@ class _ProgressBorderPainter extends CustomPainter {
         oldDelegate.color != color ||
         oldDelegate.trackColor != trackColor ||
         oldDelegate.strokeWidth != strokeWidth ||
-        oldDelegate.radius != radius;
+        oldDelegate.borderRadius != borderRadius;
   }
 }

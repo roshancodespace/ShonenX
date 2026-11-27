@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:ui';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:material_ui/material_ui.dart';
@@ -99,6 +100,30 @@ class SmartImage extends StatelessWidget {
     }
 
     final raw = imageUrl!.trim();
+
+    if (raw.startsWith('/') ||
+        raw.startsWith('file://') ||
+        RegExp(r'^[a-zA-Z]:[\\/]').hasMatch(raw)) {
+      final filePath = raw.startsWith('file://')
+          ? Uri.parse(raw).toFilePath()
+          : raw;
+      final img = Image.file(
+        File(filePath),
+        width: safeWidth,
+        height: safeHeight,
+        fit: fit,
+        alignment: alignment,
+        gaplessPlayback: true,
+        filterQuality: filterQuality,
+        color: color,
+        colorBlendMode: colorBlendMode,
+        errorBuilder: (_, __, ___) => fallback,
+      );
+      if (imageBuilder != null) {
+        return _applyEffects(imageBuilder!(context, img.image));
+      }
+      return _applyEffects(img);
+    }
 
     if (raw.startsWith('http://') || raw.startsWith('https://')) {
       final cleanUrl = raw.split('#').first;

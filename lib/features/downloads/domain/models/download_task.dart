@@ -68,6 +68,13 @@ class DownloadTask {
   bool isM3u8 = false;
   bool requiresProxy = false;
 
+  bool isManga = false;
+  String mediaTitle = '';
+  String chapterTitle = '';
+  String sourceId = '';
+  String mangaFormat = 'folder';
+  List<String> pageUrls = [];
+
   List<DownloadSubtitle> subtitles = [];
 
   double progress = 0.0;

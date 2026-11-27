@@ -166,6 +166,7 @@ class ReaderWebtoonViewState extends State<ReaderWebtoonView> {
               key: ValueKey(page.url),
               url: page.url,
               headers: page.headers ?? const {},
+              bytes: page.bytes,
               index: index,
               scaleType: widget.scaleType,
               textColor: widget.textColor,

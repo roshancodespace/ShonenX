@@ -658,7 +658,8 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         if (!widget.isTv) ...[
-                          if (widget.media.type == MediaType.ANIME &&
+                          if ((widget.media.type == MediaType.ANIME ||
+                                  widget.media.type == MediaType.MANGA) &&
                               finalEpisodes.isNotEmpty) ...[
                             _ToolbarButton(
                               icon: Icons.download_for_offline_outlined,

@@ -1,4 +1,10 @@
+import 'dart:io';
+import 'dart:isolate';
+import 'dart:typed_data';
+
+import 'package:archive/archive.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path/path.dart' as p;
 import 'package:shonenx/features/history/domain/models/history_entry.dart';
 import 'package:shonenx/features/history/providers/history_provider.dart';
 import 'package:shonenx/features/reader/domain/reader_mode.dart';
@@ -9,7 +15,7 @@ import 'package:shonenx/source_engine/models/chapter_page.dart';
 import 'package:shonenx/source_engine/source_engine_provider.dart';
 
 class ReaderState {
-  final ReaderModeOnline mode;
+  final ReaderMode mode;
   final AsyncValue<List<ChapterPage>> pages;
   final int currentPage;
   final int totalPages;
@@ -24,7 +30,7 @@ class ReaderState {
   });
 
   ReaderState copyWith({
-    ReaderModeOnline? mode,
+    ReaderMode? mode,
     AsyncValue<List<ChapterPage>>? pages,
     int? currentPage,
     int? totalPages,
@@ -41,15 +47,17 @@ class ReaderState {
 }
 
 class ReaderNotifier extends Notifier<ReaderState> {
-  late final ReaderModeOnline arg;
+  late final ReaderMode arg;
 
   ReaderNotifier(this.arg);
 
   @override
   ReaderState build() {
-    final startPage = arg.startPosition == -1
-        ? 0
-        : (arg.startPosition > 0 ? arg.startPosition - 1 : 0);
+    final startPage = switch (arg) {
+      ReaderModeOnline(:final startPosition) =>
+        startPosition == -1 ? 0 : (startPosition > 0 ? startPosition - 1 : 0),
+      ReaderModeOffline() => 0,
+    };
 
     Future.microtask(() => _fetchPages(arg));
 
@@ -61,11 +69,31 @@ class ReaderNotifier extends Notifier<ReaderState> {
     );
   }
 
-  Future<void> _fetchPages(ReaderModeOnline mode) async {
+  Future<void> _fetchPages(ReaderMode mode) async {
     state = state.copyWith(pages: const AsyncValue.loading());
     try {
-      final source = ref.read(mangaSourceProvider(mode.sourceInfo));
-      final pageList = await source.getPages(mode.episode.id);
+      if (mode is ReaderModeOffline) {
+        final pageList = await _loadOfflinePages(mode.filePath);
+        if (pageList.isEmpty) {
+          state = state.copyWith(
+            pages: AsyncValue.error(
+              Exception('No readable pages found in ${mode.filePath}.'),
+              StackTrace.current,
+            ),
+          );
+          return;
+        }
+        state = state.copyWith(
+          pages: AsyncValue.data(pageList),
+          totalPages: pageList.length,
+          currentPage: 0,
+        );
+        return;
+      }
+
+      final online = mode as ReaderModeOnline;
+      final source = ref.read(mangaSourceProvider(online.sourceInfo));
+      final pageList = await source.getPages(online.episode.id);
 
       if (pageList.isEmpty) {
         state = state.copyWith(
@@ -77,9 +105,9 @@ class ReaderNotifier extends Notifier<ReaderState> {
         return;
       }
 
-      final startPage = mode.startPosition == -1
+      final startPage = online.startPosition == -1
           ? pageList.length - 1
-          : (mode.startPosition > 0 ? mode.startPosition - 1 : 0).clamp(
+          : (online.startPosition > 0 ? online.startPosition - 1 : 0).clamp(
               0,
               pageList.length - 1,
             );
@@ -94,6 +122,48 @@ class ReaderNotifier extends Notifier<ReaderState> {
     } catch (e, st) {
       state = state.copyWith(pages: AsyncValue.error(e, st));
     }
+  }
+
+  static bool _isImagePath(String path) {
+    final lower = path.toLowerCase();
+    return lower.endsWith('.jpg') ||
+        lower.endsWith('.jpeg') ||
+        lower.endsWith('.png') ||
+        lower.endsWith('.webp') ||
+        lower.endsWith('.gif');
+  }
+
+  static Future<List<ChapterPage>> _loadOfflinePages(String path) async {
+    final type = FileSystemEntity.typeSync(path);
+    if (type == FileSystemEntityType.directory) {
+      final files = Directory(path)
+          .listSync()
+          .whereType<File>()
+          .where((f) => _isImagePath(f.path))
+          .toList()
+        ..sort((a, b) => p.basename(a.path).compareTo(p.basename(b.path)));
+      return files.map((f) => ChapterPage(url: f.path)).toList();
+    }
+
+    if (type == FileSystemEntityType.file &&
+        path.toLowerCase().endsWith('.cbz')) {
+      final entries = await Isolate.run(() {
+        final bytes = File(path).readAsBytesSync();
+        final archive = ZipDecoder().decodeBytes(bytes);
+        final imageFiles = archive
+            .where((e) => e.isFile && _isImagePath(e.name))
+            .toList()
+          ..sort((a, b) => a.name.compareTo(b.name));
+        return imageFiles
+            .map((e) => (name: e.name, data: Uint8List.fromList(e.content)))
+            .toList();
+      });
+      return entries
+          .map((e) => ChapterPage(url: e.name, bytes: e.data))
+          .toList();
+    }
+
+    return const [];
   }
 
   void setPage(int page) {
@@ -117,25 +187,27 @@ class ReaderNotifier extends Notifier<ReaderState> {
   }
 
   void _saveHistory(int pageIndex, int total) {
+    final mode = arg;
+    if (mode is! ReaderModeOnline) return;
     if (total == 0) return;
     if (ref.read(securityPrefsProvider).incognitoMode) return;
     final savedPageNumber = pageIndex + 1;
 
     final entry = HistoryEntry()
       ..mediaType = MediaType.MANGA.id
-      ..itemNumber = arg.episode.number
-      ..mediaId = arg.media.id
-      ..mediaIdMal = arg.media.idMal
-      ..externalIds = arg.media.externalIds
-      ..mediaTitle = arg.media.title.getPreferedTitle
-      ..cover = arg.media.cover
-      ..banner = arg.media.banner
+      ..itemNumber = mode.episode.number
+      ..mediaId = mode.media.id
+      ..mediaIdMal = mode.media.idMal
+      ..externalIds = mode.media.externalIds
+      ..mediaTitle = mode.media.title.getPreferedTitle
+      ..cover = mode.media.cover
+      ..banner = mode.media.banner
       ..progress = savedPageNumber
       ..total = total
-      ..sourceId = arg.sourceInfo.id
-      ..sourceName = arg.sourceInfo.name
-      ..providerId = arg.media.providerId != arg.media.id
-          ? arg.media.providerId
+      ..sourceId = mode.sourceInfo.id
+      ..sourceName = mode.sourceInfo.name
+      ..providerId = mode.media.providerId != mode.media.id
+          ? mode.media.providerId
           : null
       ..lastUpdated = DateTime.now();
 
@@ -143,8 +215,8 @@ class ReaderNotifier extends Notifier<ReaderState> {
     ref
         .read(syncEngineProvider)
         .processReading(
-          media: arg.media,
-          chapterNumber: arg.episode.number,
+          media: mode.media,
+          chapterNumber: mode.episode.number,
           positionPage: savedPageNumber,
           totalPages: total,
         );
@@ -152,7 +224,7 @@ class ReaderNotifier extends Notifier<ReaderState> {
 }
 
 final readerProvider = NotifierProvider.autoDispose
-    .family<ReaderNotifier, ReaderState, ReaderModeOnline>(
+    .family<ReaderNotifier, ReaderState, ReaderMode>(
       ReaderNotifier.new,
       name: 'readerProvider',
     );

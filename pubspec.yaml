@@ -35,6 +35,7 @@ dependencies:
   volume_controller: ^3.4.4
   screen_brightness: ^2.1.7
   http: ^1.6.0
+  archive: ^4.0.0
   flutter_local_notifications: ^20.1.0
   timezone: ^0.10.1
   flutter_timezone: ^5.1.0

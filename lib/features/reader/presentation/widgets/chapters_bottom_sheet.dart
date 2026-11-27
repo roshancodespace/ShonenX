@@ -23,6 +23,7 @@ class ChaptersBottomSheet extends ConsumerStatefulWidget {
   final String mediaId;
   final SourceInfo sourceInfo;
   final void Function(UnifiedEpisode) onEpisodeSelected;
+  final void Function(UnifiedEpisode)? onDownloadEpisode;
 
   const ChaptersBottomSheet({
     super.key,
@@ -31,6 +32,7 @@ class ChaptersBottomSheet extends ConsumerStatefulWidget {
     required this.mediaId,
     required this.sourceInfo,
     required this.onEpisodeSelected,
+    this.onDownloadEpisode,
   });
 
   @override
@@ -182,6 +184,16 @@ class _ChaptersBottomSheetState extends ConsumerState<ChaptersBottomSheet> {
                                   ],
                                 ),
                               ),
+                              if (widget.onDownloadEpisode != null)
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.download_outlined,
+                                    size: 20,
+                                  ),
+                                  tooltip: 'Download Chapter',
+                                  onPressed: () =>
+                                      widget.onDownloadEpisode!(ep),
+                                ),
                               if (isCurrent)
                                 Icon(
                                   Icons.check_circle_rounded,

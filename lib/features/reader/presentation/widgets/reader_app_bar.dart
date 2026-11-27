@@ -10,16 +10,20 @@ import 'reader_theme_info.dart';
 
 class ReaderAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String mediaTitle;
-  final num episodeNumber;
+  final num? episodeNumber;
+  final String? chapterLabel;
   final ReaderThemeInfo themeInfo;
   final double uiRoundness;
+  final VoidCallback? onDownloadTap;
 
   const ReaderAppBar({
     super.key,
     required this.mediaTitle,
-    required this.episodeNumber,
+    this.episodeNumber,
+    this.chapterLabel,
     required this.themeInfo,
     required this.uiRoundness,
+    this.onDownloadTap,
   });
 
   @override
@@ -27,9 +31,15 @@ class ReaderAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    final displayChapter = episodeNumber.toString().contains('.0')
-        ? episodeNumber.toInt().toString()
-        : episodeNumber.toString();
+    final String chipLabel;
+    if (episodeNumber != null) {
+      final displayChapter = episodeNumber.toString().contains('.0')
+          ? episodeNumber!.toInt().toString()
+          : episodeNumber.toString();
+      chipLabel = 'Ch. $displayChapter';
+    } else {
+      chipLabel = chapterLabel ?? 'Offline';
+    }
 
     return SafeArea(
       bottom: false,
@@ -93,7 +103,7 @@ class ReaderAppBar extends StatelessWidget implements PreferredSizeWidget {
                     ),
                     const SizedBox(width: 10),
                     AppChip(
-                      label: 'Ch. $displayChapter',
+                      label: chipLabel,
                       selected: true,
                       showCheckmark: false,
                       padding: const EdgeInsets.symmetric(
@@ -112,6 +122,12 @@ class ReaderAppBar extends StatelessWidget implements PreferredSizeWidget {
               backgroundColor: themeInfo.appBarBg,
               foregroundColor: themeInfo.textColor,
               items: [
+                if (onDownloadTap != null)
+                  AppActionItem(
+                    icon: Icons.download_rounded,
+                    tooltip: 'Download Chapter',
+                    onTap: onDownloadTap!,
+                  ),
                 AppActionItem(
                   icon: Icons.tune_rounded,
                   tooltip: context.l10n.readerSettings,

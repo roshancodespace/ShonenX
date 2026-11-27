@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:shonenx/shared/widgets/smart_image.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:shonenx/features/reader/providers/reader_prefs_provider.dart';
@@ -6,6 +8,7 @@ import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 class ReaderImage extends StatelessWidget {
   final String url;
   final Map<String, String>? headers;
+  final Uint8List? bytes;
   final int index;
   final ReaderScaleType scaleType;
   final Color textColor;
@@ -17,6 +20,7 @@ class ReaderImage extends StatelessWidget {
     required this.scaleType,
     required this.textColor,
     this.headers,
+    this.bytes,
   });
 
   @override
@@ -26,6 +30,29 @@ class ReaderImage extends StatelessWidget {
       fit = BoxFit.fitHeight;
     } else if (scaleType == ReaderScaleType.original) {
       fit = BoxFit.contain;
+    }
+
+    if (bytes != null) {
+      return Image.memory(
+        bytes!,
+        fit: fit,
+        width: double.infinity,
+        gaplessPlayback: true,
+        errorBuilder: (context, error, stackTrace) => SizedBox(
+          height: MediaQuery.of(context).size.height,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.broken_image, color: Colors.grey, size: 48),
+              const SizedBox(height: 8),
+              Text(
+                'Failed to load page ${index + 1}',
+                style: TextStyle(color: textColor.withValues(alpha: 0.5)),
+              ),
+            ],
+          ),
+        ),
+      );
     }
 
     return SmartImage(

@@ -10,6 +10,7 @@ import 'package:shonenx/features/discovery/presentation/widgets/episodes_panel/e
 import 'package:shonenx/features/discovery/presentation/widgets/sheets/manual_match_sheet.dart';
 import 'package:shonenx/features/discovery/providers/matched_media_provider.dart';
 import 'package:shonenx/features/discovery/providers/media_preference_provider.dart';
+import 'package:shonenx/features/downloads/providers/download_provider.dart';
 import 'package:shonenx/features/history/providers/history_provider.dart';
 import 'package:shonenx/features/player/domain/player_mode.dart';
 import 'package:shonenx/features/reader/domain/reader_mode.dart';
@@ -158,6 +159,38 @@ class _EpisodesTabWidgetState extends ConsumerState<EpisodesTabWidget>
                       sources.first,
                   widget.media,
                 );
+              },
+            ),
+          if (widget.media.type == MediaType.MANGA)
+            ListTile(
+              title: const Text('Download Chapter'),
+              leading: const Icon(Icons.download_rounded),
+              onTap: () {
+                sheetContext.pop();
+                final sourceInfo =
+                    ref
+                        .read(
+                          mediaPreferenceProvider(
+                            MediaArgs.fromMedia(widget.media),
+                          ),
+                        )
+                        .value
+                        ?.sourceInfo ??
+                    sources.first;
+                ref.read(downloadManagerProvider.notifier).enqueueMangaChapter(
+                      media: widget.media,
+                      chapter: episode,
+                      sourceInfo: sourceInfo,
+                    );
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Queued $_unitLabel ${_formatNumber(episode.number)} for download',
+                      ),
+                    ),
+                  );
+                }
               },
             ),
         ],

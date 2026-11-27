@@ -38,8 +38,26 @@ class ReaderModeOnline extends ReaderMode {
 }
 
 class ReaderModeOffline extends ReaderMode {
-  final String filePath; // To be implemented later for downloaded chapters
+  final String filePath;
   final String? title;
+  final String? chapterTitle;
 
-  const ReaderModeOffline({required this.filePath, this.title});
+  const ReaderModeOffline({
+    required this.filePath,
+    this.title,
+    this.chapterTitle,
+  });
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ReaderModeOffline &&
+          runtimeType == other.runtimeType &&
+          filePath == other.filePath &&
+          title == other.title &&
+          chapterTitle == other.chapterTitle;
+
+  @override
+  int get hashCode =>
+      filePath.hashCode ^ title.hashCode ^ chapterTitle.hashCode;
 }

@@ -8,6 +8,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shonenx/core/localization/l10n_extension.dart';
 import 'package:shonenx/core/router/app_navigator.dart';
 import 'package:shonenx/features/player/domain/player_mode.dart';
+import 'package:shonenx/features/reader/domain/reader_mode.dart';
+import 'package:shonenx/shared/widgets/app_chip.dart';
 import 'package:shonenx/features/downloads/domain/models/download_task.dart';
 import 'package:shonenx/features/downloads/providers/download_prefs_provider.dart';
 import 'package:shonenx/features/downloads/providers/download_provider.dart';
@@ -20,15 +22,29 @@ import 'package:shonenx/shared/widgets/app_icon_button.dart';
 import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
 
+enum OfflineMediaType { anime, manga }
+
+enum _OfflineFilter { all, anime, manga }
+
 sealed class OfflineItem {
   final String name;
-  const OfflineItem(this.name);
+  final OfflineMediaType mediaType;
+  const OfflineItem(this.name, this.mediaType);
 }
 
 class OfflineFile extends OfflineItem {
-  final File file;
+  final FileSystemEntity entity;
   final int sizeBytes;
-  const OfflineFile(super.name, this.file, this.sizeBytes);
+  final String? parentTitle;
+  const OfflineFile(
+    super.name,
+    super.mediaType,
+    this.entity,
+    this.sizeBytes, {
+    this.parentTitle,
+  });
+
+  File? get file => entity is File ? entity as File : null;
 }
 
 class OfflineFolder extends OfflineItem {
@@ -37,6 +53,7 @@ class OfflineFolder extends OfflineItem {
   final int totalSizeBytes;
   const OfflineFolder(
     super.name,
+    super.mediaType,
     this.directory,
     this.files,
     this.totalSizeBytes,
@@ -206,7 +223,15 @@ class _DownloadTileState extends ConsumerState<_DownloadTile> {
               alignment: Alignment.center,
               children: [
                 if (status == DownloadStatus.downloading)
-                  AppProgressIndicator(type: AppProgressType.circular, value: task.totalBytes > 0 ? task.progress : null, strokeWidth: 2.5, color: colors.primary, trackColor: colors.primary.withValues(alpha: 0.14)),
+                  AppProgressIndicator(
+                    type: AppProgressType.circular,
+                    value: (task.totalBytes > 0 || (task.isManga && task.pageUrls.isNotEmpty))
+                        ? task.progress
+                        : null,
+                    strokeWidth: 2.5,
+                    color: colors.primary,
+                    trackColor: colors.primary.withValues(alpha: 0.14),
+                  ),
                 Icon(_statusIcon(status), size: 22, color: statusColor),
               ],
             ),
@@ -259,9 +284,18 @@ class _DownloadTileState extends ConsumerState<_DownloadTile> {
                 ),
                 if (!isDone && !isCanceled) ...[
                   const SizedBox(height: 10),
-                  AppProgressIndicator(type: AppProgressType.linear, value: task.totalBytes > 0 ? task.progress : null, height: 3.5, style: (status == DownloadStatus.downloading) ? AppProgressStyle.wavy : AppProgressStyle.classic, color: _progressColor(status, colors), trackColor: colors.surfaceContainerHighest.withValues(
+                  AppProgressIndicator(
+                    type: AppProgressType.linear,
+                    value: (task.totalBytes > 0 || (task.isManga && task.pageUrls.isNotEmpty))
+                        ? task.progress
+                        : null,
+                    height: 3.5,
+                    style: (status == DownloadStatus.downloading) ? AppProgressStyle.wavy : AppProgressStyle.classic,
+                    color: _progressColor(status, colors),
+                    trackColor: colors.surfaceContainerHighest.withValues(
                       alpha: 0.55,
-                    )),
+                    ),
+                  ),
                 ],
                 if (isFailed &&
                     task.errorReason != null &&
@@ -649,6 +683,10 @@ class _DownloadTileState extends ConsumerState<_DownloadTile> {
     if (task.status == DownloadStatus.pending) {
       return 'Queued';
     }
+    if (task.isManga && task.pageUrls.isNotEmpty) {
+      final donePages = (task.progress * task.pageUrls.length).round();
+      return '$donePages / ${task.pageUrls.length} pages · ${_mb(task.downloadedBytes)} MB';
+    }
     if (task.totalBytes > 0) {
       return '${_mb(task.downloadedBytes)} / ${_mb(task.totalBytes)} MB';
     }
@@ -660,15 +698,19 @@ class _DownloadTileState extends ConsumerState<_DownloadTile> {
 
   String? _secondaryMetaText() {
     final task = widget.task;
+    final hasDeterminate =
+        task.totalBytes > 0 ||
+        task.totalSegments > 0 ||
+        (task.isManga && task.pageUrls.isNotEmpty);
     if (task.status == DownloadStatus.paused) {
-      if (task.totalBytes > 0 || task.totalSegments > 0) {
+      if (hasDeterminate) {
         return '${(task.progress * 100).toStringAsFixed(0)}% · Paused';
       }
       return 'Paused';
     }
     if (task.status == DownloadStatus.downloading) {
       final parts = <String>[];
-      if (task.totalBytes > 0 || task.totalSegments > 0) {
+      if (hasDeterminate) {
         parts.add('${(task.progress * 100).toStringAsFixed(0)}%');
       }
       if (_speedBps > 0) {
@@ -723,6 +765,7 @@ class _DownloadedFilesTab extends ConsumerStatefulWidget {
 
 class _DownloadedFilesTabState extends ConsumerState<_DownloadedFilesTab> {
   late Future<List<OfflineItem>> _itemsFuture;
+  _OfflineFilter _filter = _OfflineFilter.all;
 
   @override
   void initState() {
@@ -730,36 +773,140 @@ class _DownloadedFilesTabState extends ConsumerState<_DownloadedFilesTab> {
     _itemsFuture = _getItems();
   }
 
+  static bool _isVideoFile(String path) {
+    final lower = path.toLowerCase();
+    return lower.endsWith('.mp4') || lower.endsWith('.mkv');
+  }
+
+  static bool _isCbzFile(String path) => path.toLowerCase().endsWith('.cbz');
+
+  static bool _isImageFile(String path) {
+    final lower = path.toLowerCase();
+    return lower.endsWith('.jpg') ||
+        lower.endsWith('.jpeg') ||
+        lower.endsWith('.png') ||
+        lower.endsWith('.webp') ||
+        lower.endsWith('.gif');
+  }
+
+  Future<int> _dirSize(Directory dir) async {
+    int total = 0;
+    await for (final entity in dir.list(recursive: false)) {
+      if (entity is File) total += await entity.length();
+    }
+    return total;
+  }
+
+  Future<bool> _isImageChapterDir(Directory dir) async {
+    await for (final entity in dir.list(recursive: false)) {
+      if (entity is File && _isImageFile(entity.path)) return true;
+    }
+    return false;
+  }
+
   Future<List<OfflineItem>> _getItems() async {
     final prefs = await ref.read(downloadPrefsProvider.future);
-    final dir = Directory(prefs.downloadPath);
-    if (!await dir.exists()) return [];
+    final rootDir = Directory(prefs.downloadPath);
+    if (!await rootDir.exists()) return [];
 
     final items = <OfflineItem>[];
-    final entities = await dir.list().toList();
+    final dirsToScan = <(Directory, OfflineMediaType?)>[
+      (rootDir, null),
+      if (await Directory('${rootDir.path}/Anime').exists())
+        (Directory('${rootDir.path}/Anime'), OfflineMediaType.anime),
+      if (await Directory('${rootDir.path}/Manga').exists())
+        (Directory('${rootDir.path}/Manga'), OfflineMediaType.manga),
+    ];
 
-    for (final entity in entities) {
-      if (entity is File && entity.path.endsWith('.mp4')) {
-        final name = entity.path.split('/').last.replaceAll('.mp4', '');
-        items.add(OfflineFile(name, entity, await entity.length()));
-      } else if (entity is Directory) {
-        final subEntities = await entity.list(recursive: true).toList();
-        final files = <OfflineFile>[];
-        int totalSize = 0;
-
-        for (final sub in subEntities) {
-          if (sub is File && sub.path.endsWith('.mp4')) {
-            final name = sub.path.split('/').last.replaceAll('.mp4', '');
-            final size = await sub.length();
-            files.add(OfflineFile(name, sub, size));
-            totalSize += size;
-          }
+    for (final (scanDir, forcedType) in dirsToScan) {
+      final entities = await scanDir.list().toList();
+      for (final entity in entities) {
+        final baseName = entity.path.split('/').last;
+        if (forcedType == null &&
+            entity is Directory &&
+            (baseName == 'Anime' || baseName == 'Manga')) {
+          continue;
         }
 
-        if (files.isNotEmpty) {
-          files.sort((a, b) => a.name.compareTo(b.name));
-          final name = entity.path.split('/').last;
-          items.add(OfflineFolder(name, entity, files, totalSize));
+        if (entity is File) {
+          if (_isVideoFile(entity.path)) {
+            final name = baseName.replaceAll(RegExp(r'\.(mp4|mkv)$', caseSensitive: false), '');
+            items.add(
+              OfflineFile(
+                name,
+                forcedType ?? OfflineMediaType.anime,
+                entity,
+                await entity.length(),
+              ),
+            );
+          } else if (_isCbzFile(entity.path)) {
+            final name = baseName.replaceAll(RegExp(r'\.cbz$', caseSensitive: false), '');
+            items.add(
+              OfflineFile(
+                name,
+                forcedType ?? OfflineMediaType.manga,
+                entity,
+                await entity.length(),
+              ),
+            );
+          }
+        } else if (entity is Directory) {
+          if (await _isImageChapterDir(entity)) {
+            final size = await _dirSize(entity);
+            items.add(
+              OfflineFile(
+                baseName,
+                forcedType ?? OfflineMediaType.manga,
+                entity,
+                size,
+              ),
+            );
+            continue;
+          }
+
+          final subEntities = await entity.list(recursive: false).toList();
+          final animeFiles = <OfflineFile>[];
+          final mangaFiles = <OfflineFile>[];
+          int animeSize = 0;
+          int mangaSize = 0;
+
+          for (final sub in subEntities) {
+            final subName = sub.path.split('/').last;
+            if (sub is File && _isVideoFile(sub.path)) {
+              final name = subName.replaceAll(RegExp(r'\.(mp4|mkv)$', caseSensitive: false), '');
+              final size = await sub.length();
+              animeFiles.add(
+                OfflineFile(name, OfflineMediaType.anime, sub, size, parentTitle: baseName),
+              );
+              animeSize += size;
+            } else if (sub is File && _isCbzFile(sub.path)) {
+              final name = subName.replaceAll(RegExp(r'\.cbz$', caseSensitive: false), '');
+              final size = await sub.length();
+              mangaFiles.add(
+                OfflineFile(name, OfflineMediaType.manga, sub, size, parentTitle: baseName),
+              );
+              mangaSize += size;
+            } else if (sub is Directory && await _isImageChapterDir(sub)) {
+              final size = await _dirSize(sub);
+              mangaFiles.add(
+                OfflineFile(subName, OfflineMediaType.manga, sub, size, parentTitle: baseName),
+              );
+              mangaSize += size;
+            }
+          }
+
+          if (animeFiles.isNotEmpty) {
+            animeFiles.sort((a, b) => a.name.compareTo(b.name));
+            items.add(
+              OfflineFolder(baseName, OfflineMediaType.anime, entity, animeFiles, animeSize),
+            );
+          }
+          if (mangaFiles.isNotEmpty) {
+            mangaFiles.sort((a, b) => a.name.compareTo(b.name));
+            items.add(
+              OfflineFolder(baseName, OfflineMediaType.manga, entity, mangaFiles, mangaSize),
+            );
+          }
         }
       }
     }
@@ -773,9 +920,20 @@ class _DownloadedFilesTabState extends ConsumerState<_DownloadedFilesTab> {
     return items;
   }
 
-  void _openFile(File file) {
-    final name = file.path.split('/').last.replaceAll('.mp4', '');
-    context.pushPlayer(PlayerModeOffline(filePath: file.path, title: name));
+  void _openItem(OfflineFile item) {
+    if (item.mediaType == OfflineMediaType.manga) {
+      context.pushReader(
+        ReaderModeOffline(
+          filePath: item.entity.path,
+          title: item.parentTitle ?? item.name,
+          chapterTitle: item.name,
+        ),
+      );
+      return;
+    }
+    context.pushPlayer(
+      PlayerModeOffline(filePath: item.entity.path, title: item.name),
+    );
   }
 
   Future<void> _openExternal(File file) async {
@@ -849,7 +1007,7 @@ class _DownloadedFilesTabState extends ConsumerState<_DownloadedFilesTab> {
       title: 'Delete Episode?',
       message: 'This will permanently remove ${item.name}.',
       onDelete: () async {
-        await item.file.delete();
+        await item.entity.delete(recursive: true);
         setState(() {
           _itemsFuture = _getItems();
         });
@@ -887,73 +1045,143 @@ class _DownloadedFilesTabState extends ConsumerState<_DownloadedFilesTab> {
           return Center(child: Text('Error: ${snapshot.error}'));
         }
 
-        final items = snapshot.data ?? [];
-        if (items.isEmpty) {
-          return const AppEmptyState(
-            icon: Icons.video_library_outlined,
-            title: 'No downloaded files',
-            subtitle: 'Downloaded episodes will appear here.',
-          );
-        }
+        final allItems = snapshot.data ?? [];
+        final items = switch (_filter) {
+          _OfflineFilter.all => allItems,
+          _OfflineFilter.anime =>
+            allItems
+                .where((i) => i.mediaType == OfflineMediaType.anime)
+                .toList(),
+          _OfflineFilter.manga =>
+            allItems
+                .where((i) => i.mediaType == OfflineMediaType.manga)
+                .toList(),
+        };
 
-        return SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.only(bottom: 80, top: 10),
-          child: AppCardGroup(
-            children: items.map((item) {
-              if (item is OfflineFolder) {
-                final sizeStr = (item.totalSizeBytes / (1024 * 1024))
-                    .toStringAsFixed(1);
-                return AppCardSurface(
-                  child: Theme(
-                    data: theme.copyWith(dividerColor: Colors.transparent),
-                    child: ExpansionTile(
-                      leading: Icon(
-                        Icons.folder_open_rounded,
-                        color: colors.primary,
-                        size: 26,
-                      ),
-                      title: Text(
-                        item.name,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      subtitle: Text(
-                        '${item.files.length} episodes · $sizeStr MB',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colors.onSurfaceVariant,
-                        ),
-                      ),
-                      childrenPadding: const EdgeInsets.only(left: 12),
-                      children: [
-                        for (final fileItem in item.files)
-                          _buildFileTile(context, fileItem, theme, colors),
-                        const SizedBox(height: 8),
-                        Padding(
-                          padding: const EdgeInsets.only(right: 12, bottom: 12),
-                          child: Align(
-                            alignment: Alignment.centerRight,
-                            child: AppButton(
-                              label: 'Delete Folder',
-                              icon: Icons.delete_outline_rounded,
-                              variant: AppButtonVariant.destructive,
-                              size: AppButtonSize.small,
-                              onPressed: () =>
-                                  _confirmDeleteFolder(context, item),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+        return Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
+              child: Row(
+                children: [
+                  AppChip(
+                    label: 'All',
+                    selected: _filter == _OfflineFilter.all,
+                    onTap: () => setState(() => _filter = _OfflineFilter.all),
                   ),
-                );
-              } else if (item is OfflineFile) {
-                return _buildFileTile(context, item, theme, colors);
-              }
-              return const SizedBox.shrink();
-            }).toList(),
-          ),
+                  const SizedBox(width: 8),
+                  AppChip(
+                    label: 'Anime',
+                    selected: _filter == _OfflineFilter.anime,
+                    onTap: () =>
+                        setState(() => _filter = _OfflineFilter.anime),
+                  ),
+                  const SizedBox(width: 8),
+                  AppChip(
+                    label: 'Manga',
+                    selected: _filter == _OfflineFilter.manga,
+                    onTap: () =>
+                        setState(() => _filter = _OfflineFilter.manga),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: items.isEmpty
+                  ? const AppEmptyState(
+                      icon: Icons.video_library_outlined,
+                      title: 'No downloaded files',
+                      subtitle:
+                          'Downloaded episodes and chapters will appear here.',
+                    )
+                  : SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      padding: const EdgeInsets.only(bottom: 80, top: 6),
+                      child: AppCardGroup(
+                        children: items.map((item) {
+                          if (item is OfflineFolder) {
+                            final sizeStr = (item.totalSizeBytes / (1024 * 1024))
+                                .toStringAsFixed(1);
+                            final unit =
+                                item.mediaType == OfflineMediaType.manga
+                                ? 'chapters'
+                                : 'episodes';
+                            return AppCardSurface(
+                              child: Theme(
+                                data: theme.copyWith(
+                                  dividerColor: Colors.transparent,
+                                ),
+                                child: ExpansionTile(
+                                  leading: Icon(
+                                    item.mediaType == OfflineMediaType.manga
+                                        ? Icons.menu_book_rounded
+                                        : Icons.folder_open_rounded,
+                                    color: colors.primary,
+                                    size: 26,
+                                  ),
+                                  title: Text(
+                                    item.name,
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  subtitle: Text(
+                                    '${item.files.length} $unit · $sizeStr MB',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: colors.onSurfaceVariant,
+                                    ),
+                                  ),
+                                  childrenPadding: const EdgeInsets.only(
+                                    left: 12,
+                                  ),
+                                  children: [
+                                    for (final fileItem in item.files)
+                                      _buildFileTile(
+                                        context,
+                                        fileItem,
+                                        theme,
+                                        colors,
+                                      ),
+                                    const SizedBox(height: 8),
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                        right: 12,
+                                        bottom: 12,
+                                      ),
+                                      child: Align(
+                                        alignment: Alignment.centerRight,
+                                        child: AppButton(
+                                          label: 'Delete Folder',
+                                          icon: Icons.delete_outline_rounded,
+                                          variant:
+                                              AppButtonVariant.destructive,
+                                          size: AppButtonSize.small,
+                                          onPressed: () =>
+                                              _confirmDeleteFolder(
+                                                context,
+                                                item,
+                                              ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          } else if (item is OfflineFile) {
+                            return _buildFileTile(
+                              context,
+                              item,
+                              theme,
+                              colors,
+                            );
+                          }
+                          return const SizedBox.shrink();
+                        }).toList(),
+                      ),
+                    ),
+            ),
+          ],
         );
       },
     );
@@ -968,12 +1196,14 @@ class _DownloadedFilesTabState extends ConsumerState<_DownloadedFilesTab> {
     final sizeStr = (item.sizeBytes / (1024 * 1024)).toStringAsFixed(1);
 
     return AppCardSurface(
-      onTap: () => _openFile(item.file),
+      onTap: () => _openItem(item),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
           Icon(
-            Icons.play_circle_outline_rounded,
+            item.mediaType == OfflineMediaType.manga
+                ? Icons.menu_book_rounded
+                : Icons.play_circle_outline_rounded,
             size: 24,
             color: colors.primary,
           ),
@@ -1008,31 +1238,43 @@ class _DownloadedFilesTabState extends ConsumerState<_DownloadedFilesTab> {
               size: 20,
             ),
             onSelected: (val) {
-              if (val == 'play') _openFile(item.file);
-              if (val == 'external') _openExternal(item.file);
+              if (val == 'play') _openItem(item);
+              if (val == 'external' && item.file != null) {
+                _openExternal(item.file!);
+              }
               if (val == 'delete') _confirmDeleteFile(context, item);
             },
             itemBuilder: (_) => [
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'play',
                 child: Row(
                   children: [
-                    Icon(Icons.play_arrow_rounded, size: 20),
-                    SizedBox(width: 12),
-                    Text('Play in ShonenX'),
+                    Icon(
+                      item.mediaType == OfflineMediaType.manga
+                          ? Icons.menu_book_rounded
+                          : Icons.play_arrow_rounded,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      item.mediaType == OfflineMediaType.manga
+                          ? 'Read in ShonenX'
+                          : 'Play in ShonenX',
+                    ),
                   ],
                 ),
               ),
-              const PopupMenuItem(
-                value: 'external',
-                child: Row(
-                  children: [
-                    Icon(Icons.open_in_new_rounded, size: 20),
-                    SizedBox(width: 12),
-                    Text('Play Externally'),
-                  ],
+              if (item.file != null)
+                const PopupMenuItem(
+                  value: 'external',
+                  child: Row(
+                    children: [
+                      Icon(Icons.open_in_new_rounded, size: 20),
+                      SizedBox(width: 12),
+                      Text('Open Externally'),
+                    ],
+                  ),
                 ),
-              ),
               const PopupMenuDivider(),
               PopupMenuItem(
                 value: 'delete',

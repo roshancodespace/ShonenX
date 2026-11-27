@@ -474,7 +474,7 @@ class _DownloadSheetState extends ConsumerState<DownloadSheet> {
         : 'Episode $epNum.mp4';
     fileName = fileName.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
 
-    String targetDir = prefs.downloadPath;
+    String targetDir = prefs.mediaRootPath(isManga: false);
     if (prefs.createSubfolders) {
       final animeFolderName = widget.media.title.getPreferedTitle.replaceAll(
         RegExp(r'[\\/:*?"<>|]'),

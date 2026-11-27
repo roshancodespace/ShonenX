@@ -47,46 +47,86 @@ enum RemuxerPreference {
   }
 }
 
+enum MangaDownloadFormat {
+  folder,
+  cbz;
+
+  String get displayName {
+    switch (this) {
+      case MangaDownloadFormat.folder:
+        return 'Image Folder (Pages)';
+      case MangaDownloadFormat.cbz:
+        return 'CBZ Archive (.cbz)';
+    }
+  }
+
+  factory MangaDownloadFormat.fromString(String? value) {
+    return MangaDownloadFormat.values.firstWhere(
+      (e) => e.name == value,
+      orElse: () => MangaDownloadFormat.folder,
+    );
+  }
+}
+
 class DownloadPrefs {
   final String downloadPath;
   final FileNameFormat fileNameFormat;
   final bool createSubfolders;
+  final bool separateMediaFolders;
   final bool useOneDM;
   final bool wifiOnly;
   final int concurrentDownloads;
   final int concurrentSegments;
   final RemuxerPreference remuxerPreference;
+  final MangaDownloadFormat mangaFormat;
+  final int concurrentMangaPages;
 
   const DownloadPrefs({
     required this.downloadPath,
     required this.fileNameFormat,
     this.createSubfolders = true,
+    this.separateMediaFolders = true,
     this.useOneDM = false,
     this.wifiOnly = true,
     this.concurrentDownloads = 2,
     this.concurrentSegments = 4,
     this.remuxerPreference = RemuxerPreference.builtin,
+    this.mangaFormat = MangaDownloadFormat.folder,
+    this.concurrentMangaPages = 4,
   });
+
+  /// Returns the base directory for Anime or Manga downloads.
+  String mediaRootPath({required bool isManga}) {
+    if (!separateMediaFolders) return downloadPath;
+    final sub = isManga ? 'Manga' : 'Anime';
+    return '$downloadPath/$sub';
+  }
 
   DownloadPrefs copyWith({
     String? downloadPath,
     FileNameFormat? fileNameFormat,
     bool? createSubfolders,
+    bool? separateMediaFolders,
     bool? useOneDM,
     bool? wifiOnly,
     int? concurrentDownloads,
     int? concurrentSegments,
     RemuxerPreference? remuxerPreference,
+    MangaDownloadFormat? mangaFormat,
+    int? concurrentMangaPages,
   }) {
     return DownloadPrefs(
       downloadPath: downloadPath ?? this.downloadPath,
       fileNameFormat: fileNameFormat ?? this.fileNameFormat,
       createSubfolders: createSubfolders ?? this.createSubfolders,
+      separateMediaFolders: separateMediaFolders ?? this.separateMediaFolders,
       useOneDM: useOneDM ?? this.useOneDM,
       wifiOnly: wifiOnly ?? this.wifiOnly,
       concurrentDownloads: concurrentDownloads ?? this.concurrentDownloads,
       concurrentSegments: concurrentSegments ?? this.concurrentSegments,
       remuxerPreference: remuxerPreference ?? this.remuxerPreference,
+      mangaFormat: mangaFormat ?? this.mangaFormat,
+      concurrentMangaPages: concurrentMangaPages ?? this.concurrentMangaPages,
     );
   }
 
@@ -95,11 +135,14 @@ class DownloadPrefs {
       downloadPath: map['downloadPath'] ?? defaultPath,
       fileNameFormat: FileNameFormat.fromString(map['fileNameFormat']),
       createSubfolders: map['createSubfolders'] ?? true,
+      separateMediaFolders: map['separateMediaFolders'] ?? true,
       useOneDM: map['useOneDM'] ?? false,
       wifiOnly: map['wifiOnly'] ?? true,
       concurrentDownloads: map['concurrentDownloads'] ?? 2,
       concurrentSegments: map['concurrentSegments'] ?? 4,
       remuxerPreference: RemuxerPreference.fromString(map['remuxerPreference']),
+      mangaFormat: MangaDownloadFormat.fromString(map['mangaFormat']),
+      concurrentMangaPages: map['concurrentMangaPages'] ?? 4,
     );
   }
 
@@ -108,11 +151,14 @@ class DownloadPrefs {
       'downloadPath': downloadPath,
       'fileNameFormat': fileNameFormat.name,
       'createSubfolders': createSubfolders,
+      'separateMediaFolders': separateMediaFolders,
       'useOneDM': useOneDM,
       'wifiOnly': wifiOnly,
       'concurrentDownloads': concurrentDownloads,
       'concurrentSegments': concurrentSegments,
       'remuxerPreference': remuxerPreference.name,
+      'mangaFormat': mangaFormat.name,
+      'concurrentMangaPages': concurrentMangaPages,
     };
   }
 }
@@ -197,6 +243,26 @@ class DownloadPrefsNotifier extends AsyncNotifier<DownloadPrefs> {
   Future<void> setRemuxerPreference(RemuxerPreference value) async {
     final prefs = ref.read(sharedPreferencesProvider);
     state = AsyncData(state.value!.copyWith(remuxerPreference: value));
+    await prefs.setString(_key, jsonEncode(state.value!.toMap()));
+  }
+
+  Future<void> setSeparateMediaFolders(bool value) async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    state = AsyncData(state.value!.copyWith(separateMediaFolders: value));
+    await prefs.setString(_key, jsonEncode(state.value!.toMap()));
+  }
+
+  Future<void> setMangaFormat(MangaDownloadFormat value) async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    state = AsyncData(state.value!.copyWith(mangaFormat: value));
+    await prefs.setString(_key, jsonEncode(state.value!.toMap()));
+  }
+
+  Future<void> setConcurrentMangaPages(int value) async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    state = AsyncData(
+      state.value!.copyWith(concurrentMangaPages: value.clamp(1, 8)),
+    );
     await prefs.setString(_key, jsonEncode(state.value!.toMap()));
   }
 
@@ -288,7 +354,13 @@ class DownloadPrefsNotifier extends AsyncNotifier<DownloadPrefs> {
               pathLower.contains('/.zsh-cache')) {
             continue;
           }
-          if (pathLower.endsWith('.mp4') || pathLower.endsWith('.mkv')) {
+          if (pathLower.endsWith('.mp4') ||
+              pathLower.endsWith('.mkv') ||
+              pathLower.endsWith('.cbz') ||
+              pathLower.endsWith('.jpg') ||
+              pathLower.endsWith('.jpeg') ||
+              pathLower.endsWith('.png') ||
+              pathLower.endsWith('.webp')) {
             files.add(entity);
           }
         }

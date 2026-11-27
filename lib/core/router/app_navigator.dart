@@ -94,7 +94,7 @@ extension AppNavigator on BuildContext {
 
   // Player & Reader
   void pushPlayer(PlayerMode mode) => push('/player', extra: mode);
-  void pushReader(ReaderModeOnline mode) => push('/reader', extra: mode);
+  void pushReader(ReaderMode mode) => push('/reader', extra: mode);
 
   // Discover & Library & Calendar
   void pushLibrary() => push('/library');

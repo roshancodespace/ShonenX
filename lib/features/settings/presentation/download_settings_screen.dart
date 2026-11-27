@@ -88,6 +88,18 @@ class DownloadSettingsScreen extends ConsumerWidget {
                 ),
                 _DisableWhen(
                   disabled: prefs.useOneDM,
+                  child: SettingsSwitchTile(
+                    icon: Icons.folder_copy_outlined,
+                    title: 'Separate Anime & Manga Folders',
+                    subtitle: 'Save under Anime/ and Manga/ inside root path',
+                    value: prefs.separateMediaFolders,
+                    onChanged: (val) {
+                      prefsNotifier.setSeparateMediaFolders(val);
+                    },
+                  ),
+                ),
+                _DisableWhen(
+                  disabled: prefs.useOneDM,
                   child: SettingsDropdownTile<FileNameFormat>(
                     icon: Icons.title_outlined,
                     title: context.l10n.downloadFileNameFormat,
@@ -274,6 +286,45 @@ class DownloadSettingsScreen extends ConsumerWidget {
                     },
                   ),
                 ],
+              ],
+            ),
+            SettingsSection(
+              title: 'Manga Downloads',
+              children: [
+                SettingsDropdownTile<MangaDownloadFormat>(
+                  icon: Icons.menu_book_outlined,
+                  title: 'Manga Storage Format',
+                  subtitle: prefs.mangaFormat == MangaDownloadFormat.cbz
+                      ? 'Single compressed .cbz archive per chapter'
+                      : 'Folder of page images per chapter',
+                  value: prefs.mangaFormat,
+                  items: MangaDownloadFormat.values
+                      .map(
+                        (f) => DropdownMenuItem(
+                          value: f,
+                          child: Text(f.displayName),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (value) {
+                    if (value != null) {
+                      prefsNotifier.setMangaFormat(value);
+                    }
+                  },
+                ),
+                SettingsSliderTile(
+                  icon: Icons.burst_mode_outlined,
+                  title: 'Concurrent Page Downloads',
+                  subtitle: 'Pages downloaded simultaneously per chapter',
+                  value: prefs.concurrentMangaPages.toDouble(),
+                  min: 1,
+                  max: 8,
+                  divisions: 7,
+                  label: prefs.concurrentMangaPages.toString(),
+                  onChanged: (val) {
+                    prefsNotifier.setConcurrentMangaPages(val.toInt());
+                  },
+                ),
               ],
             ),
           ],

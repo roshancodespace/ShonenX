@@ -103,6 +103,7 @@ class _ReaderPageViewState extends State<ReaderPageView> {
               key: ValueKey(page.url),
               url: page.url,
               headers: page.headers ?? const {},
+              bytes: page.bytes,
               index: index,
               scaleType: widget.scaleType,
               textColor: widget.textColor,

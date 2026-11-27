@@ -181,6 +181,10 @@ class BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
 
   void goToChoosePreference() {
     if (selectedEpisodes.isEmpty) return;
+    if (widget.media.type == MediaType.MANGA) {
+      _startMangaBatchQueueing();
+      return;
+    }
     final firstEp = sortedSelected.first;
     setState(() {
       referenceEpisode = firstEp;
@@ -196,6 +200,52 @@ class BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
       referenceStreamsCache.clear();
     });
     fetchServersForReference(firstEp);
+  }
+
+  Future<void> _startMangaBatchQueueing() async {
+    final sorted = sortedSelected;
+    final total = sorted.length;
+    setState(() {
+      currentStep = BatchStep.queueing;
+      currentIndex = 0;
+      successCount = 0;
+      failedEpisodes.clear();
+      failureReasons.clear();
+      isQueueingCancelled = false;
+      queuedTaskIds.clear();
+      currentQueueStatus = 'Queueing $total chapters...';
+    });
+
+    final notifier = ref.read(downloadManagerProvider.notifier);
+    for (int i = 0; i < total; i++) {
+      if (!mounted || isQueueingCancelled) break;
+      final ep = sorted[i];
+      final chNum = ep.number.toString().endsWith('.0')
+          ? ep.number.toInt().toString()
+          : ep.number.toString();
+      setState(() {
+        currentIndex = i;
+        currentQueueStatus = 'Queueing Chapter $chNum (${i + 1}/$total)...';
+      });
+      try {
+        await notifier.enqueueMangaChapter(
+          media: widget.media,
+          chapter: ep,
+          sourceInfo: widget.source,
+        );
+        successCount++;
+      } catch (e) {
+        failedEpisodes.add(ep);
+        failureReasons[ep] = e.toString();
+      }
+    }
+
+    if (mounted && !isQueueingCancelled) {
+      setState(() {
+        currentIndex = total;
+        currentQueueStatus = 'Queued $successCount/$total chapters.';
+      });
+    }
   }
 
   Future<void> fetchServersForReference(UnifiedEpisode initialEp) async {
@@ -503,7 +553,7 @@ class BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
             : 'Episode $epNumStr.mp4';
         fileName = fileName.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
 
-        String targetDir = prefs.downloadPath;
+        String targetDir = prefs.mediaRootPath(isManga: false);
         if (prefs.createSubfolders) {
           final animeFolderName = widget.media.title.getPreferedTitle
               .replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');

@@ -6,6 +6,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 
 import 'package:shonenx/features/discovery/domain/media_args.dart';
 import 'package:shonenx/features/discovery/providers/episodes_provider.dart';
+import 'package:shonenx/features/downloads/providers/download_provider.dart';
 import 'package:shonenx/features/reader/domain/reader_mode.dart';
 import 'package:shonenx/features/reader/providers/preferred_scanlator_provider.dart';
 import 'package:shonenx/features/reader/providers/reader_prefs_provider.dart';
@@ -26,7 +27,7 @@ import 'widgets/reader_webtoon_view.dart';
 import 'package:shonenx/shared/widgets/app_progress_indicator.dart';
 
 class ReaderScreen extends ConsumerStatefulWidget {
-  final ReaderModeOnline mode;
+  final ReaderMode mode;
 
   const ReaderScreen({super.key, required this.mode});
 
@@ -36,11 +37,14 @@ class ReaderScreen extends ConsumerStatefulWidget {
 
 class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   late final FocusNode _focusNode;
-  late final MediaArgs _matchArgs;
+  MediaArgs? _matchArgs;
   late PageController _pageController;
   GlobalKey<ReaderWebtoonViewState> _webtoonKey = GlobalKey();
 
   Offset? _pointerDownPos;
+
+  ReaderModeOnline? get _onlineMode =>
+      widget.mode is ReaderModeOnline ? widget.mode as ReaderModeOnline : null;
 
   @override
   void initState() {
@@ -51,22 +55,30 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     _focusNode = FocusNode()..requestFocus();
     HardwareKeyboard.instance.addHandler(_onKeyEvent);
 
-    final startPage = widget.mode.startPosition == -1
-        ? 0
-        : (widget.mode.startPosition > 0 ? widget.mode.startPosition - 1 : 0);
+    final startPos = _onlineMode?.startPosition ?? 1;
+    final startPage = startPos == -1 ? 0 : (startPos > 0 ? startPos - 1 : 0);
     _pageController = PageController(initialPage: startPage);
 
-    _matchArgs = MediaArgs.fromMedia(widget.mode.media);
+    if (_onlineMode != null) {
+      _matchArgs = MediaArgs.fromMedia(_onlineMode!.media);
+    }
   }
 
   @override
   void didUpdateWidget(covariant ReaderScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.mode.episode.id != widget.mode.episode.id) {
+    final oldKey = switch (oldWidget.mode) {
+      ReaderModeOnline(:final episode) => episode.id,
+      ReaderModeOffline(:final filePath) => filePath,
+    };
+    final newKey = switch (widget.mode) {
+      ReaderModeOnline(:final episode) => episode.id,
+      ReaderModeOffline(:final filePath) => filePath,
+    };
+    if (oldKey != newKey) {
       _webtoonKey = GlobalKey<ReaderWebtoonViewState>();
-      final startPage = widget.mode.startPosition == -1
-          ? 0
-          : (widget.mode.startPosition > 0 ? widget.mode.startPosition - 1 : 0);
+      final startPos = _onlineMode?.startPosition ?? 1;
+      final startPage = startPos == -1 ? 0 : (startPos > 0 ? startPos - 1 : 0);
       _pageController.dispose();
       _pageController = PageController(initialPage: startPage);
     }
@@ -78,11 +90,13 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     _focusNode.dispose();
     _pageController.dispose();
     _disableImmersiveMode();
-    try {
-      ref
-          .read(discordRpcProvider.notifier)
-          .updateMediaPresence(widget.mode.media);
-    } catch (_) {}
+    if (_onlineMode != null) {
+      try {
+        ref
+            .read(discordRpcProvider.notifier)
+            .updateMediaPresence(_onlineMode!.media);
+      } catch (_) {}
+    }
     try {
       WakelockPlus.disable();
     } catch (_) {}
@@ -90,12 +104,14 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   }
 
   void _updateDiscordRpc(ReaderState state) {
+    final online = _onlineMode;
+    if (online == null) return;
     ref
         .read(discordRpcProvider.notifier)
         .updateMangaPresence(
-          manga: widget.mode.media,
-          chapterNumber: widget.mode.episode.number.toInt(),
-          chapterTitle: widget.mode.episode.title,
+          manga: online.media,
+          chapterNumber: online.episode.number.toInt(),
+          chapterTitle: online.episode.title,
           currentPage: state.currentPage + 1,
           totalPages: state.totalPages > 0 ? state.totalPages : null,
         );
@@ -180,10 +196,13 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   }
 
   void _skipToChapter({required bool next}) {
-    final episodesState = ref.read(episodesListProvider(_matchArgs)).value;
+    final online = _onlineMode;
+    final matchArgs = _matchArgs;
+    if (online == null || matchArgs == null) return;
+    final episodesState = ref.read(episodesListProvider(matchArgs)).value;
     if (episodesState == null) return;
 
-    final currentNum = widget.mode.episode.number;
+    final currentNum = online.episode.number;
     final adjacentEps = episodesState.episodes
         .where((e) => next ? e.number > currentNum : e.number < currentNum)
         .toList();
@@ -194,7 +213,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     final candidates = adjacentEps.where((e) => e.number == targetNum).toList();
 
     final prefScanlator = ref.read(
-      preferredScanlatorProvider(widget.mode.media.id),
+      preferredScanlatorProvider(online.media.id),
     );
     final target = candidates.firstWhere(
       (e) => e.scanlator == prefScanlator,
@@ -205,19 +224,24 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   }
 
   bool _hasChapter({required bool next}) {
-    final episodesState = ref.read(episodesListProvider(_matchArgs)).value;
+    final online = _onlineMode;
+    final matchArgs = _matchArgs;
+    if (online == null || matchArgs == null) return false;
+    final episodesState = ref.read(episodesListProvider(matchArgs)).value;
     if (episodesState == null) return false;
-    final currentNum = widget.mode.episode.number;
+    final currentNum = online.episode.number;
     return episodesState.episodes.any(
       (e) => next ? e.number > currentNum : e.number < currentNum,
     );
   }
 
   void _navigateToEpisode(UnifiedEpisode ep, SourceInfo sourceInfo) {
+    final online = _onlineMode;
+    if (online == null) return;
     context.replace(
       '/reader',
       extra: ReaderModeOnline(
-        media: widget.mode.media,
+        media: online.media,
         episode: ep,
         sourceInfo: sourceInfo,
       ),
@@ -225,18 +249,31 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   }
 
   void _showChaptersSheet() {
-    final episodesState = ref.read(episodesListProvider(_matchArgs)).value;
+    final online = _onlineMode;
+    final matchArgs = _matchArgs;
+    if (online == null || matchArgs == null) return;
+    final episodesState = ref.read(episodesListProvider(matchArgs)).value;
     if (episodesState == null) return;
 
     AppBottomSheet.show(
       context: context,
       title: 'Chapters',
       child: ChaptersBottomSheet(
-        matchArgs: _matchArgs,
-        currentEpisode: widget.mode.episode,
-        mediaId: widget.mode.media.id,
+        matchArgs: matchArgs,
+        currentEpisode: online.episode,
+        mediaId: online.media.id,
         sourceInfo: episodesState.source,
         onEpisodeSelected: (ep) => _navigateToEpisode(ep, episodesState.source),
+        onDownloadEpisode: (ep) {
+          ref.read(downloadManagerProvider.notifier).enqueueMangaChapter(
+                media: online.media,
+                chapter: ep,
+                sourceInfo: episodesState.source,
+              );
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Queued Chapter ${ep.number} for download')),
+          );
+        },
       ),
     );
   }
@@ -318,10 +355,37 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                 duration: const Duration(milliseconds: 250),
                 opacity: state.showOverlay ? 1.0 : 0.0,
                 child: ReaderAppBar(
-                  mediaTitle: widget.mode.media.title.getPreferedTitle,
-                  episodeNumber: widget.mode.episode.number,
+                  mediaTitle: switch (widget.mode) {
+                    ReaderModeOnline(:final media) =>
+                      media.title.getPreferedTitle,
+                    ReaderModeOffline(:final title) => title ?? 'Offline Manga',
+                  },
+                  episodeNumber: _onlineMode?.episode.number,
+                  chapterLabel: switch (widget.mode) {
+                    ReaderModeOnline() => null,
+                    ReaderModeOffline(:final chapterTitle) => chapterTitle,
+                  },
                   themeInfo: themeInfo,
                   uiRoundness: GlobalUI.uiRoundness,
+                  onDownloadTap: _onlineMode == null
+                      ? null
+                      : () {
+                          final online = _onlineMode!;
+                          ref
+                              .read(downloadManagerProvider.notifier)
+                              .enqueueMangaChapter(
+                                media: online.media,
+                                chapter: online.episode,
+                                sourceInfo: online.sourceInfo,
+                              );
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Queued Chapter ${online.episode.number} for download',
+                              ),
+                            ),
+                          );
+                        },
                 ),
               ),
             ),
@@ -381,7 +445,9 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                     ],
                   ),
                   child: Text(
-                    'Ch. ${widget.mode.episode.number} • ${state.currentPage + 1}/${state.totalPages}',
+                    _onlineMode != null
+                        ? 'Ch. ${_onlineMode!.episode.number} • ${state.currentPage + 1}/${state.totalPages}'
+                        : '${state.currentPage + 1}/${state.totalPages}',
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
@@ -421,8 +487,12 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       }
     });
 
+    final modeKey = switch (widget.mode) {
+      ReaderModeOnline(:final episode) => episode.id,
+      ReaderModeOffline(:final filePath) => filePath,
+    };
     return ReaderPageView(
-      key: ValueKey('${widget.mode.episode.id}_${prefs.direction.name}'),
+      key: ValueKey('${modeKey}_${prefs.direction.name}'),
       pages: pages,
       controller: _pageController,
       direction: prefs.direction,

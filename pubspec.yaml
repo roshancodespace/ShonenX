@@ -25,15 +25,9 @@ dependencies:
   commentum_client:
     path: packages/commentum_client
   media_kit:
-    git:
-        url: https://github.com/Predidit/media-kit.git
-        ref: 484639aca5ffc754a65876c22f01dbb070225732
-        path: ./media_kit
+    path: packages/media_kit/media_kit
   media_kit_video:
-    git:
-      url: https://github.com/Predidit/media-kit.git
-      ref: 484639aca5ffc754a65876c22f01dbb070225732
-      path: ./media_kit_video
+    path: packages/media_kit/media_kit_video
   get: ^4.7.3
   google_fonts: ^9.0.0
   shared_preferences: ^2.5.5

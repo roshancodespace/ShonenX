@@ -17,3 +17,6 @@
 	path = packages/flutter_web_auth
 	url = https://github.com/roshancodespace/flutter_web_auth_2.git
 	branch = patch_webview_all
+[submodule "packages/media_kit"]
+	path = packages/media_kit
+	url = https://github.com/roshancodespace/media-kit.git

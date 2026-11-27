@@ -130,6 +130,7 @@ jobs:
           git submodule update --init packages/flutter_web_auth
           git submodule update --init packages/commentum_client
           git submodule update --init packages/byte_me
+          git submodule update --init packages/media_kit
 
       - name: Override pubspec.yaml version
         if: github.event_name == 'workflow_dispatch'
@@ -231,6 +232,7 @@ jobs:
           git submodule update --init packages/flutter_web_auth
           git submodule update --init packages/commentum_client
           git submodule update --init packages/byte_me
+          git submodule update --init packages/media_kit
 
       - name: Override pubspec.yaml version
         if: github.event_name == 'workflow_dispatch'
@@ -363,6 +365,7 @@ jobs:
           git submodule update --init packages/flutter_web_auth
           git submodule update --init packages/commentum_client
           git submodule update --init packages/byte_me
+          git submodule update --init packages/media_kit
 
       - name: Override pubspec.yaml version
         if: github.event_name == 'workflow_dispatch'
@@ -457,6 +460,7 @@ jobs:
           git submodule update --init packages/flutter_web_auth
           git submodule update --init packages/commentum_client
           git submodule update --init packages/byte_me
+          git submodule update --init packages/media_kit
 
       - name: Override pubspec.yaml version
         if: github.event_name == 'workflow_dispatch'
@@ -534,6 +538,7 @@ jobs:
           git submodule update --init packages/flutter_web_auth
           git submodule update --init packages/commentum_client
           git submodule update --init packages/byte_me
+          git submodule update --init packages/media_kit
 
       - name: Override pubspec.yaml version
         if: github.event_name == 'workflow_dispatch'

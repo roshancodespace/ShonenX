@@ -126,11 +126,7 @@ jobs:
 
       - name: Init specific submodules
         run: |
-          git submodule update --init packages/anymex_extension_bridge
-          git submodule update --init packages/flutter_web_auth
-          git submodule update --init packages/commentum_client
-          git submodule update --init packages/byte_me
-          git submodule update --init packages/media_kit
+          git submodule update --init --depth 1 --jobs 4 packages/anymex_extension_bridge packages/flutter_web_auth packages/commentum_client packages/byte_me packages/media_kit
 
       - name: Override pubspec.yaml version
         if: github.event_name == 'workflow_dispatch'
@@ -164,6 +160,18 @@ jobs:
           flutter-version: 3.50.1 
           cache: true
 
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: android-rust
+
+      - name: Cache Pub dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
       - name: Decode keystore
         run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
 
@@ -193,7 +201,7 @@ jobs:
           EOF
 
       - name: Get Dependencies
-        run: find . -name "pubspec.lock" -type f -delete && flutter pub upgrade
+        run: flutter pub get
 
       - name: Build APKs
         run: flutter build apk --release --split-per-abi --dart-define-from-file=keys.json
@@ -215,7 +223,7 @@ jobs:
     steps:
       - name: Install system dependencies & optimize Arch container
         run: |
-          pacman -Syu --noconfirm git jq zip unzip curl xz tar clang cmake ninja pkgconf gtk3 libsecret webkit2gtk-4.1 mpv alsa-lib rustup flatpak flatpak-builder
+          pacman -Sy --needed --noconfirm git jq zip unzip curl xz tar clang cmake ninja pkgconf gtk3 libsecret webkit2gtk-4.1 mpv alsa-lib rustup flatpak flatpak-builder
           pacman -Scc --noconfirm
 
       - name: Setup Rust toolchain (Linux)
@@ -228,11 +236,7 @@ jobs:
 
       - name: Init specific submodules
         run: |
-          git submodule update --init packages/anymex_extension_bridge
-          git submodule update --init packages/flutter_web_auth
-          git submodule update --init packages/commentum_client
-          git submodule update --init packages/byte_me
-          git submodule update --init packages/media_kit
+          git submodule update --init --depth 1 --jobs 4 packages/anymex_extension_bridge packages/flutter_web_auth packages/commentum_client packages/byte_me packages/media_kit
 
       - name: Override pubspec.yaml version
         if: github.event_name == 'workflow_dispatch'
@@ -255,6 +259,30 @@ jobs:
           flutter-version: 3.50.1 
           cache: true
 
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: android-rust
+
+      - name: Cache Pub dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: linux-rust
+
+      - name: Cache Pub dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
       - name: Create env file
         run: |
           cat > keys.json <<EOF
@@ -274,14 +302,11 @@ jobs:
       - name: Enable Linux config
         run: flutter config --enable-linux-desktop
 
-      - name: Clean stale build directory
-        run: rm -rf build
-
       - name: Get Dependencies
-        run: find . -name "pubspec.lock" -type f -delete && flutter pub upgrade -v
+        run: flutter pub get
 
       - name: Build Linux app
-        run: flutter build linux --release -v --dart-define-from-file=keys.json
+        run: flutter build linux --release --dart-define-from-file=keys.json
 
       - name: Zip Linux bundle
         run: |
@@ -361,11 +386,7 @@ jobs:
 
       - name: Init specific submodules
         run: |
-          git submodule update --init packages/anymex_extension_bridge
-          git submodule update --init packages/flutter_web_auth
-          git submodule update --init packages/commentum_client
-          git submodule update --init packages/byte_me
-          git submodule update --init packages/media_kit
+          git submodule update --init --depth 1 --jobs 4 packages/anymex_extension_bridge packages/flutter_web_auth packages/commentum_client packages/byte_me packages/media_kit
 
       - name: Override pubspec.yaml version
         if: github.event_name == 'workflow_dispatch'
@@ -391,6 +412,30 @@ jobs:
           flutter-version: 3.50.1 
           cache: true
 
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: android-rust
+
+      - name: Cache Pub dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: windows-rust
+
+      - name: Cache Pub dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/AppData/Local/Pub/Cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
       - name: Enable Windows config
         run: flutter config --enable-windows-desktop
 
@@ -412,7 +457,7 @@ jobs:
           EOF
 
       - name: Get Dependencies
-        run: flutter pub upgrade
+        run: flutter pub get
 
       - name: Build Windows app
         shell: pwsh
@@ -456,11 +501,7 @@ jobs:
 
       - name: Init specific submodules
         run: |
-          git submodule update --init packages/anymex_extension_bridge
-          git submodule update --init packages/flutter_web_auth
-          git submodule update --init packages/commentum_client
-          git submodule update --init packages/byte_me
-          git submodule update --init packages/media_kit
+          git submodule update --init --depth 1 --jobs 4 packages/anymex_extension_bridge packages/flutter_web_auth packages/commentum_client packages/byte_me packages/media_kit
 
       - name: Override pubspec.yaml version
         if: github.event_name == 'workflow_dispatch'
@@ -488,6 +529,32 @@ jobs:
           flutter-version: 3.50.1 
           cache: true
 
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: android-rust
+
+      - name: Cache Pub dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: macos-rust
+
+      - name: Cache Pub & CocoaPods dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+            ~/Library/Caches/CocoaPods
+          key: ${{ runner.os }}-deps-${{ hashFiles('**/pubspec.lock', '**/Podfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-deps-
+
       - name: Enable macOS config
         run: flutter config --enable-macos-desktop
 
@@ -508,7 +575,7 @@ jobs:
           EOF
 
       - name: Get Dependencies
-        run: flutter pub upgrade
+        run: flutter pub get
 
       - name: Build macOS app
         run: flutter build macos --release --dart-define-from-file=keys.json
@@ -534,11 +601,7 @@ jobs:
 
       - name: Init specific submodules
         run: |
-          git submodule update --init packages/anymex_extension_bridge
-          git submodule update --init packages/flutter_web_auth
-          git submodule update --init packages/commentum_client
-          git submodule update --init packages/byte_me
-          git submodule update --init packages/media_kit
+          git submodule update --init --depth 1 --jobs 4 packages/anymex_extension_bridge packages/flutter_web_auth packages/commentum_client packages/byte_me packages/media_kit
 
       - name: Override pubspec.yaml version
         if: github.event_name == 'workflow_dispatch'
@@ -566,6 +629,32 @@ jobs:
           flutter-version: 3.50.1 
           cache: true
 
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: android-rust
+
+      - name: Cache Pub dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ios-rust
+
+      - name: Cache Pub & CocoaPods dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+            ~/Library/Caches/CocoaPods
+          key: ${{ runner.os }}-deps-${{ hashFiles('**/pubspec.lock', '**/Podfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-deps-
+
       - name: Create env file
         run: |
           cat > keys.json <<EOF
@@ -583,7 +672,7 @@ jobs:
           EOF
 
       - name: Get Dependencies
-        run: flutter pub upgrade
+        run: flutter pub get
 
       - name: Build iOS app (Unsigned)
         run: flutter build ios --release --no-codesign --dart-define-from-file=keys.json
@@ -659,15 +748,15 @@ jobs:
 
           NOTES=""
           if [ -n "$GEMINI_API_KEY" ]; then
-            PROMPT="You are a professional software release manager. Format the following git commit messages into minimal, clean, professional Markdown release notes for version ${CURRENT_TAG}.
+            PROMPT="You are writing release notes for ShonenX ${CURRENT_TAG} in the voice of the solo dev: grounded, concise, slightly dry/sarcastic like a real human developer, NOT generic AI marketing copy.
 
           Rules:
-          1. Keep it minimal and professional.
-          2. Focus ONLY on user-facing app features, bug fixes, UI/UX enhancements, and app improvements. Completely EXCLUDE any CI/CD, GitHub Actions, workflow, build configuration, or internal script changes.
-          3. Group related user-facing changes logically (e.g., Features, Bug Fixes, Improvements) if applicable, or use clean bullet points.
-          4. DO NOT deviate significantly from what the commit messages say. Do not invent features or exaggerate changes.
-          5. STRICT NO EMOJI POLICY: Do NOT output a single emoji whatsoever. 0 emojis.
-          6. Return ONLY the Markdown text for the release notes without any introductory or concluding remarks from the AI.
+          1. Sound human, casual-professional, and slightly witty/dry — never use AI slop phrases like 'thrilled to announce', 'elevate your experience', 'seamless', 'delve', 'under the hood', or 'exciting update'.
+          2. Stay strictly faithful to the commit messages. Do not invent or exaggerate anything.
+          3. Include ONLY user-facing changes (features, bug fixes, UI/UX, performance). Drop CI, workflow, build, chore, and internal refactor noise unless it directly affects users.
+          4. Format for both GitHub and Discord Embeds: use only '### Section' headers (e.g. '### What\'s New', '### Fixes', '### Performance') and '- ' bullet points. No tables, no HTML, no '---' dividers.
+          5. Keep emojis to 0 (or at most 1 if it genuinely fits dry humor, never spam).
+          6. Output ONLY the release notes Markdown, no intro or outro.
 
           Commits:
           ${COMMITS}"
@@ -679,25 +768,55 @@ jobs:
               curl -s -X POST \
                 "https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}" \
                 -H "Content-Type: application/json" \
-                -d "$PAYLOAD"
+                -d "$PAYLOAD" || true
             }
 
-            for MODEL in "gemini-2.5-flash" "gemini-3.5-flash" "gemini-2.5-pro" "gemini-1.5-flash"; do
+            for MODEL in "gemini-2.5-flash" "gemini-2.5-flash-lite" "gemini-2.5-pro"; do
               RESPONSE=$(call_gemini "$MODEL")
-              NOTES=$(echo "$RESPONSE" | jq -r '.candidates[0].content.parts[0].text // empty')
+              NOTES=$(echo "$RESPONSE" | jq -r '.candidates[0].content.parts[0].text // empty' 2>/dev/null || true)
               if [ -n "$NOTES" ]; then break; fi
             done
           fi
 
           if [ -z "$NOTES" ]; then
-            NOTES="## What's Changed\n\n$COMMITS"
+            NOTES=$(python3 - "$COMMITS" <<'PY'
+          import re, sys
+
+          lines = [l.strip() for l in sys.argv[1].splitlines() if l.strip()]
+          groups = {"Features": [], "Fixes": [], "Performance": []}
+          pattern = re.compile(r'^-\s*(feat|fix|perf)(?:\(([^)]+)\))?!?:\s*(.+)$', re.IGNORECASE)
+
+          for line in lines:
+              m = pattern.match(line)
+              if not m:
+                  continue
+              kind, scope, msg = m.group(1).lower(), m.group(2), m.group(3)
+              bullet = f"- **{scope}:** {msg}" if scope else f"- {msg}"
+              if kind == "feat":
+                  groups["Features"].append(bullet)
+              elif kind == "fix":
+                  groups["Fixes"].append(bullet)
+              elif kind == "perf":
+                  groups["Performance"].append(bullet)
+
+          sections = []
+          for title, items in groups.items():
+              if items:
+                  sections.append(f"### {title}\n" + "\n".join(items))
+
+          if sections:
+              print("\n\n".join(sections))
+          else:
+              print("### Changes\n" + "\n".join(lines[:15]))
+          PY
+          )
           fi
 
           if [ -n "$COMPARE_LINK" ]; then
-            NOTES="$NOTES\n\n---\n**Full Changelog**: $COMPARE_LINK"
+            NOTES="${NOTES}"$'\n\n'"**Full Changelog:** ${COMPARE_LINK}"
           fi
 
-          echo -e "$NOTES" > release_notes.md
+          printf '%s\n' "$NOTES" > release_notes.md
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -716,6 +835,7 @@ jobs:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
           TAG: ${{ needs.resolve-release-tag.outputs.tag_name }}
           NOTIFY_EVERYONE: ${{ github.event.inputs.notify_everyone }}
+          IS_PRERELEASE: ${{ needs.resolve-release-tag.outputs.is_prerelease }}
         run: |
           if [ -z "$DISCORD_WEBHOOK" ]; then
             echo "Skipping Discord notification: Webhook missing."
@@ -723,29 +843,61 @@ jobs:
           fi
 
           REPO_URL="https://github.com/${{ github.repository }}"
-          RELEASE_URL="${REPO_URL}/releases/download/${TAG}"
+          RELEASE_PAGE_URL="${REPO_URL}/releases/tag/${TAG}"
+          RELEASE_DL_URL="${REPO_URL}/releases/download/${TAG}"
 
-          # Truncate changelog to safely fit under Discord's 2000 character payload limit
-          CHANGELOG=$(cat release_notes.md | head -c 1500)
+          # Safely truncate changelog to fit Discord embed description limit (4096 chars)
+          CHANGELOG=$(head -c 3500 release_notes.md)
+          if [ "$(wc -c < release_notes.md)" -gt 3500 ]; then
+            CHANGELOG="${CHANGELOG}..."$'\n\n'"[Read full release notes](${RELEASE_PAGE_URL})"
+          fi
 
-          # Build Download Links strictly from the artifacts we just released
+          # Build clean download links using real newlines
           LINKS=""
           cd release-artifacts
           for f in *; do
             if [ -f "$f" ]; then
-              LINKS="${LINKS}\n• [${f}](${RELEASE_URL}/${f})"
+              LINKS="${LINKS}• [${f}](${RELEASE_DL_URL}/${f})"$'\n'
             fi
           done
+          LINKS="${LINKS%$'\n'}"
+          if [ ${#LINKS} -gt 1024 ]; then
+            LINKS="[View all release downloads](${RELEASE_PAGE_URL})"
+          fi
 
           MENTION=""
           if [ "$NOTIFY_EVERYONE" = "true" ] || [ "${{ github.event_name }}" = "push" ]; then
-            MENTION="@everyone "
+            MENTION="@everyone"
           fi
 
-          # Assemble clean Markdown structure
-          BODY="${MENTION}**ShonenX Release Compiled: ${TAG}**\n\n**Changelog:**\n${CHANGELOG}\n\n**Direct Asset Downloads:**${LINKS}"
+          TITLE="ShonenX ${TAG} Released"
+          if [ "$IS_PRERELEASE" = "true" ]; then
+            TITLE="ShonenX ${TAG} (Pre-release)"
+          fi
 
-          # Escape securely via jq
-          PAYLOAD=$(jq -n --arg content "$BODY" '{content: $content}')
+          PAYLOAD=$(jq -n \
+            --arg content "$MENTION" \
+            --arg title "$TITLE" \
+            --arg url "$RELEASE_PAGE_URL" \
+            --arg desc "$CHANGELOG" \
+            --arg links "${LINKS:-No assets attached.}" \
+            '{
+              content: $content,
+              embeds: [{
+                title: $title,
+                url: $url,
+                description: $desc,
+                color: 5793266,
+                fields: [{
+                  name: "Direct Asset Downloads",
+                  value: $links
+                }]
+              }]
+            }')
 
-          curl -s -X POST -H "Content-Type: application/json" -d "$PAYLOAD" "$DISCORD_WEBHOOK"
+          HTTP_CODE=$(curl -s -o /tmp/discord_resp.txt -w "%{http_code}" -X POST -H "Content-Type: application/json" -d "$PAYLOAD" "$DISCORD_WEBHOOK")
+          echo "Discord webhook status: $HTTP_CODE"
+          if [ "$HTTP_CODE" -ge 400 ]; then
+            cat /tmp/discord_resp.txt
+            exit 1
+          fi

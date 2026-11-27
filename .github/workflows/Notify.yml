@@ -1,14 +1,20 @@
 name: Notify Release
 
 on:
-  workflow_run:
-    workflows: ["Release Build"]
-    types: [completed]
   workflow_dispatch:
     inputs:
+      custom_message:
+        description: "Custom message to send as the bot (skips release notification)"
+        type: string
+        default: ""
+      bot_username:
+        description: "Optional custom bot name (used with custom_message)"
+        type: string
+        default: ""
       notify_everyone:
+        description: "Ping @everyone?"
         type: boolean
-        default: true
+        default: false
       include_logs:
         type: boolean
         default: true
@@ -49,43 +55,61 @@ permissions:
 jobs:
   notify:
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call' || github.event.workflow_run.conclusion == 'success' }}
-    
+
     steps:
+      - name: Send Custom Bot Message
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.custom_message != '' }}
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          CUSTOM_MESSAGE: ${{ inputs.custom_message }}
+          BOT_USERNAME: ${{ inputs.bot_username }}
+          NOTIFY_EVERYONE: ${{ inputs.notify_everyone }}
+        run: |
+          if [ -z "$DISCORD_WEBHOOK" ]; then
+            echo "Skipping: DISCORD_WEBHOOK secret is missing."
+            exit 1
+          fi
+
+          CONTENT="$CUSTOM_MESSAGE"
+          if [ "$NOTIFY_EVERYONE" = "true" ]; then
+            CONTENT="@everyone $CONTENT"
+          fi
+
+          PAYLOAD=$(jq -n \
+            --arg content "$CONTENT" \
+            --arg username "$BOT_USERNAME" \
+            'if $username != "" then {content: $content, username: $username} else {content: $content} end')
+
+          HTTP_CODE=$(curl -s -o /tmp/discord_resp.txt -w "%{http_code}" -H "Content-Type: application/json" -X POST -d "$PAYLOAD" "$DISCORD_WEBHOOK")
+          echo "Discord webhook status: $HTTP_CODE"
+          if [ "$HTTP_CODE" -ge 400 ]; then
+            cat /tmp/discord_resp.txt
+            exit 1
+          fi
+
       # This step fixes the "not a git repository" crash
       - uses: actions/checkout@v4
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.custom_message == '' }}
 
       - name: Set up Environment
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.custom_message == '' }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_run" ]; then
-            echo "NOTIFY_EVERYONE=true" >> $GITHUB_ENV
-            echo "INCLUDE_LOGS=true" >> $GITHUB_ENV
-            
-            if [[ "${{ github.event.workflow_run.head_branch }}" == *"-"* ]]; then
-              echo "IS_PRERELEASE=true" >> $GITHUB_ENV
-            else
-              echo "IS_PRERELEASE=false" >> $GITHUB_ENV
-            fi
-            
-            echo "TAG_NAME=${{ github.event.workflow_run.head_branch }}" >> $GITHUB_ENV
-            echo "TARGET_RUN_ID=${{ github.event.workflow_run.id }}" >> $GITHUB_ENV
+          echo "NOTIFY_EVERYONE=${{ inputs.notify_everyone }}" >> $GITHUB_ENV
+          echo "INCLUDE_LOGS=${{ inputs.include_logs }}" >> $GITHUB_ENV
+          echo "IS_PRERELEASE=${{ inputs.is_prerelease }}" >> $GITHUB_ENV
+          echo "TAG_NAME=${{ inputs.tag_name }}" >> $GITHUB_ENV
+
+          if [ "${{ inputs.use_latest_artifacts }}" = "true" ]; then
+            export GH_TOKEN="${{ secrets.GITHUB_TOKEN }}"
+            RUN_ID=$(gh run list --workflow "Release Build" --status success --limit 1 --json databaseId -q ".[0].databaseId")
+            echo "TARGET_RUN_ID=${RUN_ID:-${{ github.run_id }}}" >> $GITHUB_ENV
           else
-            echo "NOTIFY_EVERYONE=${{ inputs.notify_everyone }}" >> $GITHUB_ENV
-            echo "INCLUDE_LOGS=${{ inputs.include_logs }}" >> $GITHUB_ENV
-            echo "IS_PRERELEASE=${{ inputs.is_prerelease }}" >> $GITHUB_ENV
-            echo "TAG_NAME=${{ inputs.tag_name }}" >> $GITHUB_ENV
-            
-            if [ "${{ inputs.use_latest_artifacts }}" = "true" ]; then
-              export GH_TOKEN="${{ secrets.GITHUB_TOKEN }}"
-              RUN_ID=$(gh run list --workflow "Release Build" --status success --limit 1 --json databaseId -q ".[0].databaseId")
-              echo "TARGET_RUN_ID=${RUN_ID:-${{ github.run_id }}}" >> $GITHUB_ENV
-            else
-              echo "TARGET_RUN_ID=${{ github.run_id }}" >> $GITHUB_ENV
-            fi
+            echo "TARGET_RUN_ID=${{ github.run_id }}" >> $GITHUB_ENV
           fi
 
       - name: Download workflow artifacts
         uses: actions/download-artifact@v4
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.custom_message == '' }}
         continue-on-error: true
         with:
           run-id: ${{ env.TARGET_RUN_ID }}
@@ -95,6 +119,7 @@ jobs:
 
       - name: Fetch Data
         id: fetch_data
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.custom_message == '' }}
         run: |
           set -euo pipefail
           export GH_TOKEN="${{ secrets.GITHUB_TOKEN }}"
@@ -165,6 +190,7 @@ jobs:
           fi
 
       - name: Categorize Assets
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.custom_message == '' }}
         run: |
           if [ -s assets.json ] && [ "$(cat assets.json)" != "null" ] && [ "$(cat assets.json)" != "[]" ]; then
             jq -r '.[] | "🔹 [\(.name)](\(.browser_download_url // .url)) | \((.size/1048576) | tonumber | round) MB"' assets.json > asset_list.txt
@@ -173,6 +199,7 @@ jobs:
           fi
 
       - name: Send Discord Notification
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.custom_message == '' }}
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
           MENTION: ${{ env.NOTIFY_EVERYONE == 'true' && '@everyone' || '' }}

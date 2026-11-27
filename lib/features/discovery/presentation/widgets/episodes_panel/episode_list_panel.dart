@@ -81,6 +81,7 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
   bool _descending = false;
   int _chunkIndex = 0;
   int? _selectedSeason;
+  bool _hasInitializedSeason = false;
   final ScrollController _scrollController = ScrollController();
   bool _hasAutoScrolled = false;
   bool _isRetrying = false;
@@ -96,6 +97,37 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
       _lastAutoChunkEpisode = null;
       _hasInitializedSort = false;
     }
+    if (oldWidget.media.id != widget.media.id) {
+      _hasInitializedSeason = false;
+      _selectedSeason = null;
+    }
+  }
+
+  static int? _inferSeasonFromMedia(UnifiedMedia media) {
+    final candidates = [
+      media.title.english,
+      media.title.romaji,
+      media.title.native,
+    ];
+    final patterns = [
+      RegExp(r'\b(?:season|s)\s*0*(\d+)\b', caseSensitive: false),
+      RegExp(r'\b(\d+)(?:st|nd|rd|th)\s+season\b', caseSensitive: false),
+      RegExp(r'\s0*(\d+)\s*$'),
+    ];
+    for (final raw in candidates) {
+      if (raw == null || raw.trim().isEmpty) continue;
+      final title = raw.trim();
+      for (final re in patterns) {
+        final m = re.firstMatch(title);
+        if (m != null) {
+          final parsed = int.tryParse(m.group(1) ?? '');
+          if (parsed != null && parsed > 0 && parsed <= 50) {
+            return parsed;
+          }
+        }
+      }
+    }
+    return null;
   }
 
   @override
@@ -459,6 +491,16 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
           if (b == null) return -1;
           return a.compareTo(b);
         });
+
+        if (!_hasInitializedSeason && uniqueSeasons.isNotEmpty) {
+          _hasInitializedSeason = true;
+          final inferred = _inferSeasonFromMedia(widget.media);
+          if (inferred != null && uniqueSeasons.contains(inferred)) {
+            _selectedSeason = inferred;
+          } else {
+            _selectedSeason = uniqueSeasons.firstOrNull;
+          }
+        }
 
         int? activeSeason = _selectedSeason;
         if (!uniqueSeasons.contains(activeSeason)) {

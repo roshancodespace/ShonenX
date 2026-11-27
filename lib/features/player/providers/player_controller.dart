@@ -928,12 +928,13 @@ class PlayerController extends Notifier<PlayerState> {
 
     _isSkipping = true;
     try {
-      final episodes = await ref.read(
+      final allEpisodes = await ref.read(
         episodesListProvider(
           MediaArgs.fromMedia(_media!),
         ).selectAsync((s) => s.episodes),
       );
 
+      final episodes = _filterByActiveSeason(allEpisodes, state.activeEpisode!);
       final currentIndex = _findEpisodeIndex(episodes, state.activeEpisode!);
       if (currentIndex == -1) return;
 
@@ -950,8 +951,9 @@ class PlayerController extends Notifier<PlayerState> {
   bool get hasNextEpisode {
     if (_media == null || state.activeEpisode == null) return false;
 
-    final episodes = _getEpisodesList();
-    if (episodes != null) {
+    final allEpisodes = _getEpisodesList();
+    if (allEpisodes != null) {
+      final episodes = _filterByActiveSeason(allEpisodes, state.activeEpisode!);
       final idx = _findEpisodeIndex(episodes, state.activeEpisode!);
       if (idx != -1) return idx < episodes.length - 1;
     }
@@ -966,13 +968,26 @@ class PlayerController extends Notifier<PlayerState> {
   bool get hasPrevEpisode {
     if (_media == null || state.activeEpisode == null) return false;
 
-    final episodes = _getEpisodesList();
-    if (episodes != null) {
+    final allEpisodes = _getEpisodesList();
+    if (allEpisodes != null) {
+      final episodes = _filterByActiveSeason(allEpisodes, state.activeEpisode!);
       final idx = _findEpisodeIndex(episodes, state.activeEpisode!);
       if (idx != -1) return idx > 0;
     }
 
     return state.activeEpisode!.number > 1;
+  }
+
+  List<UnifiedEpisode> _filterByActiveSeason(
+    List<UnifiedEpisode> episodes,
+    UnifiedEpisode active,
+  ) {
+    final seasonFiltered = episodes
+        .where((e) => e.season == active.season)
+        .toList();
+    if (seasonFiltered.isEmpty) return episodes;
+    seasonFiltered.sort((a, b) => a.number.compareTo(b.number));
+    return seasonFiltered;
   }
 
   // Find episode by ID, or fallback to matching episode number (handles float numbers like 12.5)
